@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React, { useState } from "react";
 
 type Laser = {
@@ -23,6 +24,7 @@ export default function LIDT() {
   return (
     <>
       <h1>Laser Induced Damage Threshold (LIDT)</h1>
+      <Link href="/">Home</Link>
 
       <h2>Pulsed Lasers</h2>
 
