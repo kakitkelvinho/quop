@@ -8,6 +8,7 @@ export default function Home() {
       <Link href="/energy-wavelength-calculator">
         Energy Wavelength Calculator
       </Link>
+      <Link href="/lidt">LIDT Calculator</Link>
     </>
   );
 }
