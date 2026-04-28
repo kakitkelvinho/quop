@@ -97,7 +97,7 @@ export default function LIDT() {
           Wavelength:
           <input
             inputMode="decimal"
-            value={laser.w0}
+            value={laser.wvlen}
             type="number"
             step="any"
             min="0"
