@@ -9,6 +9,30 @@ type Laser = {
   wvlen: number;
 };
 
+function LaserProperty(props) {
+  return (
+    <p>
+      <label>
+        {props.field}:{" "}
+        <input
+          inputMode="decimal"
+          value={props.property}
+          type="number"
+          step="any"
+          min="0"
+          onChange={(e) => {
+            props.setter((prev: Laser) => ({
+              ...prev,
+              [props.property_name]: parseFloat(e.target.value),
+            }));
+          }}
+        />
+        {props.unit}
+      </label>
+    </p>
+  );
+}
+
 export default function LIDT() {
   //const [lidt, setLidt] = useState(5); // default: 5 J/cm^2
   const [laser, setLaser] = useState<Laser>({
@@ -32,86 +56,38 @@ export default function LIDT() {
         Input the specs for your laser (if you are in Europe please use comma
         for decimals)
       </p>
-      <p>
-        <label>
-          Average power:{" "}
-          <input
-            inputMode="decimal"
-            value={laser.power}
-            type="number"
-            step="any"
-            min="0"
-            onChange={(e) => {
-              setLaser((prev) => ({
-                ...prev,
-                power: parseFloat(e.target.value),
-              }));
-            }}
-          />
-          W
-        </label>
-      </p>
 
-      <p>
-        <label>
-          Repetition Rate:
-          <input
-            inputMode="decimal"
-            value={laser.repetition}
-            type="number"
-            step="any"
-            min="0"
-            onChange={(e) => {
-              setLaser((prev) => ({
-                ...prev,
-                repetition: parseFloat(e.target.value),
-              }));
-            }}
-          />
-          Hz
-        </label>
-      </p>
+      <LaserProperty
+        field="Average power"
+        property={laser.power}
+        setter={setLaser}
+        property_name="power"
+        unit="W"
+      />
 
-      <p>
-        <label>
-          Beam Waist:
-          <input
-            inputMode="decimal"
-            value={laser.w0}
-            type="number"
-            step="any"
-            min="1e-10"
-            onChange={(e) => {
-              setLaser((prev) => ({
-                ...prev,
-                w0: parseFloat(e.target.value),
-              }));
-            }}
-          />
-          cm
-        </label>
-      </p>
+      <LaserProperty
+        field="Repetition rate"
+        property={laser.repetition}
+        setter={setLaser}
+        property_name="repetition"
+        unit="Hz"
+      />
 
-      <p>
-        <label>
-          Wavelength:
-          <input
-            inputMode="decimal"
-            value={laser.wvlen}
-            type="number"
-            step="any"
-            min="0"
-            onChange={(e) => {
-              setLaser((prev) => ({
-                ...prev,
-                wavelength: parseFloat(e.target.value),
-              }));
-            }}
-          />
-          nm
-        </label>
-      </p>
+      <LaserProperty
+        field="Beam waist"
+        property={laser.w0}
+        setter={setLaser}
+        property_name="w0"
+        unit="cm"
+      />
 
+      <LaserProperty
+        field="Wavelength"
+        property={laser.wvlen}
+        setter={setLaser}
+        property_name="wvlen"
+        unit="nm"
+      />
       <p>Energy: {energy} J/pulse</p>
       <p>Energy density: {density} J/cm^2</p>
     </>
