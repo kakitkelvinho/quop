@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 
 type Laser = {
   power: number;
@@ -9,7 +9,14 @@ type Laser = {
   wvlen: number;
 };
 
-function LaserProperty(props) {
+type LaserProp = {
+  property: number;
+  field: string;
+  setter: Dispatch<SetStateAction<Laser>>;
+  property_name: string;
+  unit: string;
+};
+function LaserProperty(props: LaserProp) {
   return (
     <p>
       <label>
