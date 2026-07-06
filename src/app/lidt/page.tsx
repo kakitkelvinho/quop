@@ -45,12 +45,12 @@ export default function LIDT() {
   const [laser, setLaser] = useState<Laser>({
     power: 1.0, // Watts, average power
     repetition: 1000, // Hz
-    w0: 1.1, //cm, 1/e^2 waist
+    w0: 1.1, //cm, 1/e^2 waist radius
     wvlen: 980, //nm, wavelength
   });
 
   const energy = laser.power / laser.repetition;
-  const density = energy / (Math.PI * (laser.w0 * 1e-2) ** 2);
+  const density = energy / (Math.PI * laser.w0 ** 2);
 
   return (
     <>
