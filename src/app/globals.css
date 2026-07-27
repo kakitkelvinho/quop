@@ -1,8 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f8fb;
+  --foreground: #17202a;
+  --muted: #5e6b7a;
+  --surface: #ffffff;
+  --surface-strong: #f9fbff;
+  --border: #dce5ee;
+  --accent: #0f7b8c;
+  --accent-strong: #0b5f6d;
+  --accent-soft: #e7f7f8;
+  --shadow: 0 20px 45px rgb(23 32 42 / 0.08);
 }
 
 @theme inline {
@@ -14,13 +22,194 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #111827;
+    --foreground: #edf2f7;
+    --muted: #a7b2c0;
+    --surface: #182231;
+    --surface-strong: #202d3e;
+    --border: #334155;
+    --accent: #66d9e8;
+    --accent-strong: #9eeaf2;
+    --accent-soft: #123845;
+    --shadow: 0 22px 55px rgb(0 0 0 / 0.32);
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
 body {
+  min-height: 100vh;
+  margin: 0;
+  padding: clamp(32px, 6vw, 72px) clamp(18px, 4vw, 40px);
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    radial-gradient(circle at 14% 18%, rgb(15 123 140 / 0.14), transparent 30rem),
+    radial-gradient(circle at 84% 8%, rgb(126 87 194 / 0.10), transparent 28rem),
+    linear-gradient(180deg, rgb(255 255 255 / 0.76), transparent 24rem);
+  pointer-events: none;
+}
+
+body > * {
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 900px;
+  margin-bottom: 0.85rem;
+  font-size: clamp(2.15rem, 6vw, 4.4rem);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+h2 {
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--accent-strong);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+p {
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+a {
+  color: var(--accent-strong);
+  font-weight: 650;
+  text-decoration-color: rgb(15 123 140 / 0.35);
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.22em;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+a:hover {
+  color: var(--accent);
+  text-decoration-color: currentColor;
+}
+
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgb(102 217 232 / 0.55);
+  outline-offset: 3px;
+}
+
+p:has(a) {
+  margin-bottom: 0.75rem;
+}
+
+p:has(a) a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: min(100%, 22rem);
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(23 32 42 / 0.06);
+  text-decoration: none;
+}
+
+p:has(a) a::after {
+  content: ">";
+  margin-left: 1.5rem;
+  color: var(--accent);
+}
+
+p:has(a) a:hover {
+  border-color: rgb(15 123 140 / 0.35);
+  transform: translateY(-1px);
+}
+
+p:has(input) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+  box-shadow: var(--shadow);
+}
+
+p:has(input) label {
+  display: contents;
+}
+
+input {
+  width: min(100%, 11rem);
+  min-height: 2.7rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font: inherit;
+  box-shadow: inset 0 1px 2px rgb(23 32 42 / 0.05);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+input:hover {
+  border-color: rgb(15 123 140 / 0.35);
+}
+
+input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px rgb(15 123 140 / 0.12);
+}
+
+p:has(input) + p:not(:has(input)) {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+@media (max-width: 520px) {
+  body {
+    padding-top: 28px;
+  }
+
+  p:has(a) a,
+  p:has(input) {
+    width: 100%;
+  }
 }
