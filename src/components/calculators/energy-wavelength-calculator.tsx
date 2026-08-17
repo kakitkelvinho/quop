@@ -22,7 +22,6 @@ export function EnergyWavelengthCalculator() {
 
   return (
     <section className="pageSection">
-      <span className="eyebrow">Calculator</span>
       <h1>Energy-Wavelength Calculator</h1>
       <p className="lead">
         Convert between photon energy in electron volts and wavelength in

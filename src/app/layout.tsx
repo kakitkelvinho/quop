@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "quop",
-  description: "Quantum optics notes, calculators, theory, and visualizers.",
+  description: "Quantum optics notes, calculators, theory, and plotters.",
 };
 
 const themeScript = `
@@ -41,9 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${lato.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${lato.variable} ${geistMono.variable} antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <AppShell>{children}</AppShell>
       </body>

@@ -36,14 +36,29 @@ export const navSections: NavSection[] = [
     links: [],
   },
   {
-    href: "/visualizers",
-    label: "Visualizers",
-    description: "Interactive views for optics and photonics ideas.",
+    href: "/plotters",
+    label: "Plotters",
+    description: "Interactive plotting tools for arrays, CSV traces, and lab data.",
     links: [
       {
-        href: "/visualizers/array-plotter",
+        href: "/plotters/array-plotter",
         label: "Array Plotter",
         description: "Plot x and y arrays in a Chart.js figure.",
+      },
+      {
+        href: "/plotters/csv-plotter",
+        label: "CSV Plotter",
+        description: "Upload a two-column CSV and plot one column against the other.",
+      },
+      {
+        href: "/plotters/fits-plotter",
+        label: "FITS Plotter",
+        description: "Upload a FITS image and preview its first frame in the browser.",
+      },
+      {
+        href: "/plotters/csv-fits-viewer",
+        label: "CSV + FITS Viewer",
+        description: "Open CSV and FITS viewers side by side in one comparison layout.",
       },
     ],
   },

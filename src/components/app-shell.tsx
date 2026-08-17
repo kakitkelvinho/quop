@@ -30,13 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav className="sidebarNav" aria-label="Primary">
           {navSections.map((section) => (
             <div className="navGroup" key={section.href}>
-              <p className="navGroup__title">{section.label}</p>
-              <Link
-                href={section.href}
-                className={`navLink ${
-                  isActive(pathname, section.href) ? "is-active" : ""
-                }`}
-              >
+              <Link href={section.href} className="navGroup__title">
                 {section.label}
               </Link>
               {section.links.map((link) => (

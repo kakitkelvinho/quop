@@ -62,7 +62,6 @@ export function LidtCalculator() {
 
   return (
     <section className="pageSection">
-      <span className="eyebrow">Calculator</span>
       <h1>Laser Induced Damage Threshold (LIDT)</h1>
       <p className="lead">
         Estimate per-pulse energy and energy density from a pulsed laser&apos;s

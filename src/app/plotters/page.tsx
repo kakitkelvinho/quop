@@ -2,24 +2,25 @@ import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
 
-const calculators = navSections.find((section) => section.href === "/calculators");
+const plotters = navSections.find((section) => section.href === "/plotters");
 
-export default function CalculatorsPage() {
+export default function PlottersPage() {
   return (
     <section className="pageSection">
-      <h1>Calculators</h1>
+      <h1>Plotters</h1>
       <p className="lead">
-        Practical optics tools for quick conversions and threshold estimates.
+        Interactive plotting tools for quick inspection of arrays, traces, and
+        exported lab data.
       </p>
 
       <div className="cardGrid">
-        {calculators?.links.map((link) => (
+        {plotters?.links.map((link) => (
           <article className="sectionCard" key={link.href}>
-            <p className="sectionCard__kicker">Calculator</p>
+            <p className="sectionCard__kicker">Plotter</p>
             <h2>{link.label}</h2>
             <p>{link.description}</p>
             <Link className="buttonLink" href={link.href}>
-              Open calculator
+              Open plotter
             </Link>
           </article>
         ))}
