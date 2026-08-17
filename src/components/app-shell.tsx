@@ -29,19 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </p>
         </div>
 
-        <ThemeToggle />
-
         <nav className="sidebarNav" aria-label="Primary">
-          <div className="navGroup">
-            <p className="navGroup__title">Home</p>
-            <Link
-              href="/"
-              className={`navLink ${isActive(pathname, "/") ? "is-active" : ""}`}
-            >
-              Overview
-            </Link>
-          </div>
-
           {navSections.map((section) => (
             <div className="navGroup" key={section.href}>
               <p className="navGroup__title">{section.label}</p>
@@ -67,6 +55,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+
+        <div className="sidebarFooter">
+          <ThemeToggle />
+        </div>
       </aside>
 
       <main className="content">

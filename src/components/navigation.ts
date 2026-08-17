@@ -39,7 +39,13 @@ export const navSections: NavSection[] = [
     href: "/visualizers",
     label: "Visualizers",
     description: "Interactive views for optics and photonics ideas.",
-    links: [],
+    links: [
+      {
+        href: "/visualizers/array-plotter",
+        label: "Array Plotter",
+        description: "Plot x and y arrays in a Chart.js figure.",
+      },
+    ],
   },
   {
     href: "/experiment",
