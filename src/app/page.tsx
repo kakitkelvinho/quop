@@ -5,11 +5,11 @@ import { navSections } from "@/components/navigation";
 export default function Home() {
   return (
     <section className="pageSection">
-      <span className="eyebrow">Overview</span>
-      <h1>Quantum optics, organized by section.</h1>
+      <h1>Quantum Optics</h1>
       <p className="lead">
-        Browse calculators, theory notes, visualizers, and experiment pages
-        from a single section-based layout.
+        Welcome! Here is a scattered collection of information, knowledge and
+        tools acquired from first-hand experience. Hope you will find something
+        useful here!
       </p>
 
       <div className="cardGrid">

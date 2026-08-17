@@ -24,9 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link className="brand__link" href="/">
             quop
           </Link>
-          <p className="brand__copy">
-            Quantum optics notes, calculators, and reference pages.
-          </p>
+          <p className="brand__copy">Perspectives from the field.</p>
         </div>
 
         <nav className="sidebarNav" aria-label="Primary">
