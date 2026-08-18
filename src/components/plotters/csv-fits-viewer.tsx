@@ -351,62 +351,57 @@ function selectImageHdu(hdus: readonly Hdu[]) {
 
 async function parseFitsFile(file: File): Promise<FitsSummary> {
   const reader = new BlobReader(file);
+  const { hdus } = await openFits(reader);
+  const hdu = selectImageHdu(hdus);
 
-  try {
-    const { hdus } = await openFits(reader);
-    const hdu = selectImageHdu(hdus);
+  if (!hdu) {
+    throw new Error("This FITS file does not contain an image HDU I can preview.");
+  }
 
-    if (!hdu) {
-      throw new Error("This FITS file does not contain an image HDU I can preview.");
-    }
+  const image = await readImage(hdu, reader);
+  const pixels = normalizeImageArray(image);
+  const range = computeRange(pixels);
+  const bitpix = image.bitpix;
+  const shape = image.shape;
+  const headerSummary = buildHeaderSummary(hdu.header, shape, bitpix);
+  const width = shape[0] ?? pixels.length;
+  const height = shape[1] ?? 1;
+  const frameCount = shape[2] ?? 1;
 
-    const image = await readImage(hdu, reader);
-    const pixels = normalizeImageArray(image);
-    const range = computeRange(pixels);
-    const bitpix = image.bitpix;
-    const shape = image.shape;
-    const headerSummary = buildHeaderSummary(hdu.header, shape, bitpix);
-    const width = shape[0] ?? pixels.length;
-    const height = shape[1] ?? 1;
-    const frameCount = shape[2] ?? 1;
-
-    if (height <= 1 || width <= 1) {
-      const length = Math.max(width, height);
-      const xValues = buildAxisValues(length, hdu.header);
-      const xLabel = buildAxisLabel(hdu.header, "pixel", 1);
-      const yLabel = readHeaderString(hdu.header, "BUNIT") ?? "intensity";
-
-      return {
-        kind: "series",
-        bitpix,
-        frameCount,
-        headerSummary,
-        max: range.max,
-        min: range.min,
-        points: xValues.map((x, index) => ({ x, y: pixels[index] })),
-        sourceLabel: file.name,
-        xLabel,
-        yLabel,
-      };
-    }
+  if (height <= 1 || width <= 1) {
+    const length = Math.max(width, height);
+    const xValues = buildAxisValues(length, hdu.header);
+    const xLabel = buildAxisLabel(hdu.header, "pixel", 1);
+    const yLabel = readHeaderString(hdu.header, "BUNIT") ?? "intensity";
 
     return {
-      kind: "image",
+      kind: "series",
       bitpix,
       frameCount,
       headerSummary,
-      height,
       max: range.max,
       min: range.min,
-      pixels,
+      points: xValues.map((x, index) => ({ x, y: pixels[index] })),
       sourceLabel: file.name,
-      width,
-      xLabel: buildAxisLabel(hdu.header, "x", 1),
-      yLabel: buildAxisLabel(hdu.header, "y", 2),
+      xLabel,
+      yLabel,
     };
-  } finally {
-    await reader.close?.();
   }
+
+  return {
+    kind: "image",
+    bitpix,
+    frameCount,
+    headerSummary,
+    height,
+    max: range.max,
+    min: range.min,
+    pixels,
+    sourceLabel: file.name,
+    width,
+    xLabel: buildAxisLabel(hdu.header, "x", 1),
+    yLabel: buildAxisLabel(hdu.header, "y", 2),
+  };
 }
 
 function renderImagePreview(canvas: HTMLCanvasElement, summary: ImageSummary) {
