@@ -572,6 +572,105 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   background: var(--surface-strong);
 }
 
+.interactiveChart {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.9rem;
+  height: 100%;
+  min-height: 24rem;
+}
+
+.interactiveChart__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.interactiveChart__stage {
+  position: relative;
+  min-height: 22rem;
+}
+
+.interactiveChart__selection {
+  position: absolute;
+  border: 1px solid rgb(156 255 143 / 0.8);
+  background: rgb(156 255 143 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(156 255 143 / 0.16);
+  pointer-events: none;
+}
+
+.interactiveChart__controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  width: min(14rem, 100%);
+}
+
+.interactiveChart__button,
+.interactiveChart__reset {
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  background: rgb(255 255 255 / 0.84);
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+html[data-theme="dark"] .interactiveChart__button,
+html[data-theme="dark"] .interactiveChart__reset {
+  background: rgb(18 22 31 / 0.82);
+}
+
+.interactiveChart__button {
+  min-height: 2.1rem;
+  padding: 0.35rem 0.45rem;
+}
+
+.interactiveChart__button--toggle {
+  grid-column: span 3;
+}
+
+.interactiveChart__button--toggle.is-active {
+  border-color: rgb(156 255 143 / 0.45);
+  background: rgb(156 255 143 / 0.16);
+  color: #205f1d;
+}
+
+html[data-theme="dark"] .interactiveChart__button--toggle.is-active {
+  color: #b9ffb3;
+}
+
+.interactiveChart__button:hover,
+.interactiveChart__reset:hover {
+  transform: translateY(-1px);
+}
+
+.interactiveChart__footer {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.interactiveChart__reset {
+  padding: 0.45rem 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .interactiveChart__controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(10.5rem, 100%);
+  }
+
+  .interactiveChart__button--toggle {
+    grid-column: span 2;
+  }
+}
+
 .visualizerEmptyState {
   display: grid;
   place-items: center;
@@ -579,6 +678,18 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   color: var(--muted);
   font-weight: 600;
   text-align: center;
+}
+
+.visualizerOverlayState {
+  position: absolute;
+  inset: 1rem;
+  border-radius: 0.85rem;
+  background: rgb(247 241 230 / 0.82);
+  backdrop-filter: blur(4px);
+}
+
+html[data-theme="dark"] .visualizerOverlayState {
+  background: rgb(21 24 33 / 0.78);
 }
 
 .resultCard {
@@ -698,7 +809,13 @@ html[data-theme="dark"] .field__control:focus-within {
   align-content: start;
 }
 
+.fitsImageViewport {
+  position: relative;
+  width: 100%;
+}
+
 .fitsImageCanvas {
+  display: block;
   width: 100%;
   max-height: 28rem;
   object-fit: contain;
@@ -716,6 +833,64 @@ html[data-theme="dark"] .field__control:focus-within {
     0 8px,
     8px -8px,
     -8px 0;
+}
+
+.fitsCrosshair,
+.fitsCrosshairBox,
+.fitsReadout {
+  pointer-events: none;
+}
+
+.fitsCrosshair {
+  position: absolute;
+  z-index: 2;
+  background: #9cff8f;
+  box-shadow: 0 0 14px rgb(156 255 143 / 0.45);
+}
+
+.fitsCrosshair--vertical {
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+.fitsCrosshair--horizontal {
+  left: 0;
+  right: 0;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.fitsCrosshairBox {
+  position: absolute;
+  z-index: 3;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #9cff8f;
+  border-radius: 0.2rem;
+  background: rgb(156 255 143 / 0.1);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 16px rgb(156 255 143 / 0.38);
+}
+
+.fitsReadout {
+  position: absolute;
+  z-index: 4;
+  top: 0.8rem;
+  left: 0.8rem;
+  display: inline-flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgb(156 255 143 / 0.38);
+  border-radius: 0.65rem;
+  background: rgb(12 18 14 / 0.78);
+  color: #b9ffb3;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
 }
 
 .fitsImageCaption {

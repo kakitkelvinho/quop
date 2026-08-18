@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Scatter } from "react-chartjs-2";
+import { useState, type ChangeEvent } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -15,6 +14,9 @@ import {
   type ChartOptions,
 } from "chart.js";
 import { BlobReader, openFits, readImage, type FitsImage, type Hdu } from "@fits-js/core";
+
+import FitsImageViewer from "@/components/plotters/fits-image-viewer";
+import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -404,35 +406,6 @@ async function parseFitsFile(file: File): Promise<FitsSummary> {
   };
 }
 
-function renderImagePreview(canvas: HTMLCanvasElement, summary: ImageSummary) {
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    return;
-  }
-
-  const { width, height, pixels, min, max } = summary;
-  const imageData = context.createImageData(width, height);
-  const span = max - min || 1;
-
-  for (let index = 0; index < pixels.length; index += 1) {
-    const value = pixels[index];
-    const normalized = Number.isFinite(value)
-      ? Math.max(0, Math.min(255, Math.round(((value - min) / span) * 255)))
-      : 0;
-    const pixelIndex = index * 4;
-
-    imageData.data[pixelIndex] = normalized;
-    imageData.data[pixelIndex + 1] = normalized;
-    imageData.data[pixelIndex + 2] = normalized;
-    imageData.data[pixelIndex + 3] = 255;
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  context.putImageData(imageData, 0, 0);
-}
-
 function CsvCompactPanel() {
   const [csvInput, setCsvInput] = useState(demoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-time-series.csv");
@@ -535,11 +508,10 @@ function CsvCompactPanel() {
       </div>
 
       <div className="comparisonPanel__viewer visualizerChartSurface">
+        <InteractiveScatterChart data={chartData} options={chartOptions} />
         {parsed.error ? (
-          <div className="visualizerEmptyState">Fix the CSV input to render the figure.</div>
-        ) : (
-          <Scatter data={chartData} options={chartOptions} />
-        )}
+          <div className="visualizerEmptyState visualizerOverlayState">Fix the CSV input to render the figure.</div>
+        ) : null}
       </div>
     </article>
   );
@@ -549,15 +521,6 @@ function FitsCompactPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<FitsSummary | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
-  useEffect(() => {
-    if (!summary || summary.kind !== "image" || !canvasRef.current) {
-      return;
-    }
-
-    renderImagePreview(canvasRef.current, summary);
-  }, [summary]);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -663,15 +626,8 @@ function FitsCompactPanel() {
         {!summary && !error && !isLoading ? (
           <div className="visualizerEmptyState">Upload a FITS file to render a preview.</div>
         ) : null}
-        {summary?.kind === "series" ? <Scatter data={seriesData} options={seriesOptions} /> : null}
-        {summary?.kind === "image" ? (
-          <div className="fitsImageFrame">
-            <canvas className="fitsImageCanvas" ref={canvasRef} />
-            <p className="fitsImageCaption">
-              {summary.width} × {summary.height} pixels. Axes: {summary.xLabel} / {summary.yLabel}.
-            </p>
-          </div>
-        ) : null}
+        {summary?.kind === "series" ? <InteractiveScatterChart data={seriesData} options={seriesOptions} /> : null}
+        {summary?.kind === "image" ? <FitsImageViewer summary={summary} /> : null}
         {error ? <div className="visualizerEmptyState">{error}</div> : null}
       </div>
     </article>

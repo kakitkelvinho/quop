@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Scatter } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   Legend,
@@ -13,6 +12,8 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
+
+import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -187,13 +188,12 @@ export default function ArrayPlotter() {
           <h2>Data Plot</h2>
         </div>
         <div className="visualizerChartSurface">
+          <InteractiveScatterChart data={chartData} options={chartOptions} />
           {series.error ? (
-            <div className="visualizerEmptyState">
+            <div className="visualizerEmptyState visualizerOverlayState">
               Fix the input arrays to render the figure.
             </div>
-          ) : (
-            <Scatter data={chartData} options={chartOptions} />
-          )}
+          ) : null}
         </div>
       </div>
     </div>

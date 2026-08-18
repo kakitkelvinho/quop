@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
-import { Scatter } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   Legend,
@@ -14,6 +13,8 @@ import {
   type ChartDataset,
   type ChartOptions,
 } from "chart.js";
+
+import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -348,13 +349,12 @@ export default function CsvPlotter() {
           </p>
         </div>
         <div className="visualizerChartSurface">
+          <InteractiveScatterChart data={chartData} options={chartOptions} />
           {parsed.error ? (
-            <div className="visualizerEmptyState">
+            <div className="visualizerEmptyState visualizerOverlayState">
               Fix the CSV input to render the figure.
             </div>
-          ) : (
-            <Scatter data={chartData} options={chartOptions} />
-          )}
+          ) : null}
         </div>
       </div>
     </div>
