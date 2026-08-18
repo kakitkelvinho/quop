@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import { Scatter } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -14,7 +21,14 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+);
 
 type Bounds = {
   xMin: number;
@@ -37,7 +51,12 @@ function extractFinitePoints(data: ChartData<"scatter">) {
 
   for (const dataset of data.datasets) {
     for (const entry of dataset.data ?? []) {
-      if (typeof entry !== "object" || entry === null || !("x" in entry) || !("y" in entry)) {
+      if (
+        typeof entry !== "object" ||
+        entry === null ||
+        !("x" in entry) ||
+        !("y" in entry)
+      ) {
         continue;
       }
 
@@ -132,7 +151,11 @@ function normalizeYBounds(base: Bounds, nextMin: number, nextMax: number) {
   return { yMin: nextMin, yMax: nextMax };
 }
 
-function getCanvasPoint(chart: ChartJS<"scatter">, clientX: number, clientY: number) {
+function getCanvasPoint(
+  chart: ChartJS<"scatter">,
+  clientX: number,
+  clientY: number,
+) {
   const rect = chart.canvas.getBoundingClientRect();
 
   return {
@@ -149,8 +172,10 @@ export default function InteractiveScatterChart({
   options: ChartOptions<"scatter">;
 }) {
   const chartRef = useRef<ChartJS<"scatter"> | null>(null);
-  const [dragSelection, setDragSelection] = useState<DragSelection | null>(null);
-  const [scrollZoomEnabled, setScrollZoomEnabled] = useState(true);
+  const [dragSelection, setDragSelection] = useState<DragSelection | null>(
+    null,
+  );
+  const [scrollZoomEnabled, setScrollZoomEnabled] = useState(false);
   const baseBounds = useMemo(() => buildBaseBounds(data), [data]);
   const [viewport, setViewport] = useState<Bounds>(baseBounds);
 
@@ -163,7 +188,11 @@ export default function InteractiveScatterChart({
     setViewport((current) => {
       const center = (current.xMin + current.xMax) / 2;
       const halfRange = ((current.xMax - current.xMin) * factor) / 2;
-      const next = normalizeXBounds(baseBounds, center - halfRange, center + halfRange);
+      const next = normalizeXBounds(
+        baseBounds,
+        center - halfRange,
+        center + halfRange,
+      );
 
       return { ...current, ...next };
     });
@@ -186,12 +215,15 @@ export default function InteractiveScatterChart({
     setViewport((current) => {
       const range = current.xMax - current.xMin;
       const shift = range * 0.18 * direction;
-      const next = normalizeXBounds(baseBounds, current.xMin + shift, current.xMax + shift);
+      const next = normalizeXBounds(
+        baseBounds,
+        current.xMin + shift,
+        current.xMax + shift,
+      );
 
       return { ...current, ...next };
     });
   }
-
 
   function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
     const chart = chartRef.current;
@@ -292,14 +324,15 @@ export default function InteractiveScatterChart({
   }
 
   const chartArea = chartRef.current?.chartArea;
-  const selectionStyle = dragSelection && chartArea
-    ? {
-        left: `${(Math.min(dragSelection.startX, dragSelection.currentX) / chartRef.current!.width) * 100}%`,
-        width: `${(Math.abs(dragSelection.currentX - dragSelection.startX) / chartRef.current!.width) * 100}%`,
-        top: `${(chartArea.top / chartRef.current!.height) * 100}%`,
-        height: `${((chartArea.bottom - chartArea.top) / chartRef.current!.height) * 100}%`,
-      }
-    : null;
+  const selectionStyle =
+    dragSelection && chartArea
+      ? {
+          left: `${(Math.min(dragSelection.startX, dragSelection.currentX) / chartRef.current!.width) * 100}%`,
+          width: `${(Math.abs(dragSelection.currentX - dragSelection.startX) / chartRef.current!.width) * 100}%`,
+          top: `${(chartArea.top / chartRef.current!.height) * 100}%`,
+          height: `${((chartArea.bottom - chartArea.top) / chartRef.current!.height) * 100}%`,
+        }
+      : null;
 
   const mergedOptions: ChartOptions<"scatter"> = {
     ...options,
@@ -324,17 +357,33 @@ export default function InteractiveScatterChart({
     <div className="interactiveChart">
       <div className="interactiveChart__toolbar">
         <div className="interactiveChart__controls">
-          <button className="interactiveChart__button" onClick={() => zoomX(0.75)} type="button">X+</button>
-          <button className="interactiveChart__button" onClick={() => zoomX(1.35)} type="button">X-</button>
-          <button className="interactiveChart__button" onClick={() => panX(-1)} type="button">←</button>
-          <button className="interactiveChart__button" onClick={() => panX(1)} type="button">→</button>
           <button
-            aria-pressed={scrollZoomEnabled}
-            className={`interactiveChart__button interactiveChart__button--toggle ${scrollZoomEnabled ? "is-active" : ""}`}
-            onClick={() => setScrollZoomEnabled((current) => !current)}
+            className="interactiveChart__button"
+            onClick={() => zoomX(0.75)}
             type="button"
           >
-            Scroll: {scrollZoomEnabled ? "on" : "off"}
+            X+
+          </button>
+          <button
+            className="interactiveChart__button"
+            onClick={() => zoomX(1.35)}
+            type="button"
+          >
+            X-
+          </button>
+          <button
+            className="interactiveChart__button"
+            onClick={() => panX(-1)}
+            type="button"
+          >
+            ←
+          </button>
+          <button
+            className="interactiveChart__button"
+            onClick={() => panX(1)}
+            type="button"
+          >
+            →
           </button>
         </div>
       </div>
@@ -348,12 +397,26 @@ export default function InteractiveScatterChart({
         onWheel={handleWheel}
       >
         <Scatter data={data} options={mergedOptions} ref={chartRef} />
-        {selectionStyle ? <div className="interactiveChart__selection" style={selectionStyle} /> : null}
+        {selectionStyle ? (
+          <div className="interactiveChart__selection" style={selectionStyle} />
+        ) : null}
       </div>
 
       <div className="interactiveChart__footer">
-        <button className="interactiveChart__reset" onClick={() => setViewport(baseBounds)} type="button">
+        <button
+          className="interactiveChart__reset"
+          onClick={() => setViewport(baseBounds)}
+          type="button"
+        >
           Reset zoom
+        </button>
+        <button
+          aria-pressed={scrollZoomEnabled}
+          className={`interactiveChart__button interactiveChart__button--toggle ${scrollZoomEnabled ? "is-active" : ""}`}
+          onClick={() => setScrollZoomEnabled((current) => !current)}
+          type="button"
+        >
+          Scroll: {scrollZoomEnabled ? "on" : "off"}
         </button>
       </div>
     </div>
