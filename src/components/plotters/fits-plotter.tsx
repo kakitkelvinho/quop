@@ -352,7 +352,7 @@ export default function FitsPlotter() {
             <InteractiveScatterChart data={seriesData} options={seriesOptions} />
           ) : null}
           {summary?.kind === "image" ? (
-            <FitsImageViewer summary={summary} />
+            <FitsImageViewer key={summary.sourceLabel} summary={summary} />
           ) : null}
           {error ? <div className="visualizerEmptyState">{error}</div> : null}
         </div>

@@ -64,7 +64,8 @@ a {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -565,19 +566,46 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 
 .visualizerChartSurface {
   position: relative;
+  min-width: 0;
   min-height: 26rem;
   padding: 1rem;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 0.95rem;
   background: var(--surface-strong);
 }
 
 .interactiveChart {
+  --interactive-chart-border: rgba(91, 102, 117, 0.2);
+  --interactive-chart-button-bg: rgb(255 255 255 / 0.84);
+  --interactive-chart-button-color: #243244;
+  --interactive-chart-surface-bg: linear-gradient(180deg, rgb(255 252 247 / 0.98), rgb(246 239 227 / 0.98));
+  --interactive-chart-stage-bg: linear-gradient(180deg, rgb(255 255 255 / 0.82), rgb(248 243 234 / 0.94));
+  --interactive-chart-stage-border: rgba(91, 102, 117, 0.16);
+  --interactive-chart-text: #243244;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 0.9rem;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
   min-height: 24rem;
+  padding: 0.7rem;
+  border: 1px solid var(--interactive-chart-border);
+  border-radius: 1rem;
+  background: var(--interactive-chart-surface-bg);
+  color: var(--interactive-chart-text);
+}
+
+.interactiveChart--dark {
+  --interactive-chart-border: rgba(148, 163, 184, 0.24);
+  --interactive-chart-button-bg: rgb(18 22 31 / 0.9);
+  --interactive-chart-button-color: #ebf1f7;
+  --interactive-chart-surface-bg: linear-gradient(180deg, rgb(19 25 36 / 0.98), rgb(11 15 24 / 0.98));
+  --interactive-chart-stage-bg: linear-gradient(180deg, rgb(17 23 33 / 0.96), rgb(10 14 22 / 0.98));
+  --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
+  --interactive-chart-text: #ebf1f7;
 }
 
 .interactiveChart__toolbar {
@@ -587,7 +615,12 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 
 .interactiveChart__stage {
   position: relative;
+  min-width: 0;
   min-height: 22rem;
+  overflow: hidden;
+  border: 1px solid var(--interactive-chart-stage-border);
+  border-radius: 0.9rem;
+  background: var(--interactive-chart-stage-bg);
 }
 
 .interactiveChart__selection {
@@ -598,21 +631,23 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   pointer-events: none;
 }
 
-.interactiveChart__controls {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
-  width: min(14rem, 100%);
+.interactiveChart__selection--y {
+  border-color: rgb(241 148 68 / 0.85);
+  background: rgb(241 148 68 / 0.14);
+  box-shadow: inset 0 0 0 1px rgb(241 148 68 / 0.18);
 }
 
-.interactiveChart__button,
-.interactiveChart__reset {
-  border: 1px solid var(--border);
-  border-radius: 0.65rem;
-  background: rgb(255 255 255 / 0.84);
-  color: var(--foreground);
-  font: inherit;
-  font-weight: 700;
+.interactiveChart__iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border: 1px solid var(--interactive-chart-border);
+  border-radius: 0.72rem;
+  background: var(--interactive-chart-button-bg);
+  color: var(--interactive-chart-button-color);
   cursor: pointer;
   backdrop-filter: blur(10px);
   transition:
@@ -622,53 +657,237 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
     color 160ms ease;
 }
 
-html[data-theme="dark"] .interactiveChart__button,
-html[data-theme="dark"] .interactiveChart__reset {
-  background: rgb(18 22 31 / 0.82);
-}
-
-.interactiveChart__button {
-  min-height: 2.1rem;
-  padding: 0.35rem 0.45rem;
-}
-
-.interactiveChart__button--toggle {
-  grid-column: span 3;
-}
-
-.interactiveChart__button--toggle.is-active {
-  border-color: rgb(156 255 143 / 0.45);
-  background: rgb(156 255 143 / 0.16);
-  color: #205f1d;
-}
-
-html[data-theme="dark"] .interactiveChart__button--toggle.is-active {
-  color: #b9ffb3;
-}
-
-.interactiveChart__button:hover,
-.interactiveChart__reset:hover {
+.interactiveChart__iconButton:hover {
   transform: translateY(-1px);
+}
+
+.interactiveChart__iconButton svg {
+  width: 1.12rem;
+  height: 1.12rem;
+}
+
+.interactiveChart__iconButton.is-active {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton.is-active {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--theme.is-dark {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--theme.is-dark {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--join.is-joined {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--join.is-joined {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--size.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--size.is-open {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--axis.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--axis.is-open {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--legend.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--legend.is-open {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--font.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--font.is-open {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--title.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--title.is-open {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--save.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--save.is-open {
+  color: #ffd99d;
+}
+
+.interactiveChart__iconButton--ticks.is-open {
+  border-color: rgba(230, 171, 88, 0.42);
+  background: rgba(230, 171, 88, 0.16);
+  color: #8f5f12;
+}
+
+.interactiveChart--dark .interactiveChart__iconButton--ticks.is-open {
+  color: #ffd99d;
 }
 
 .interactiveChart__footer {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+  gap: 0.45rem;
   justify-content: flex-start;
+  min-width: 0;
+  padding-top: 0.1rem;
 }
 
-.interactiveChart__reset {
-  padding: 0.45rem 0.75rem;
+.interactiveChart__sliderBar,
+.interactiveChart__editorBar {
+  display: grid;
+  gap: 0.55rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.7rem 0.85rem 0.8rem;
+  overflow: hidden;
+  border: 1px solid var(--interactive-chart-border);
+  border-radius: 0.9rem;
+  background: rgb(255 255 255 / 0.46);
 }
 
-@media (max-width: 640px) {
-  .interactiveChart__controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: min(10.5rem, 100%);
-  }
+.interactiveChart--dark .interactiveChart__sliderBar,
+.interactiveChart--dark .interactiveChart__editorBar {
+  background: rgb(18 22 31 / 0.42);
+}
 
-  .interactiveChart__button--toggle {
-    grid-column: span 2;
-  }
+.interactiveChart__fieldRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 700;
+}
+
+.interactiveChart__fieldRow span {
+  font-style: italic;
+}
+
+.interactiveChart__checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 700;
+}
+
+.interactiveChart__checkboxRow input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #d17a22;
+}
+
+.interactiveChart__checkboxRow span {
+  font-style: normal;
+}
+
+.interactiveChart__textInput {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--interactive-chart-border);
+  border-radius: 0.7rem;
+  background: rgb(255 255 255 / 0.82);
+  color: inherit;
+  font: inherit;
+}
+
+.interactiveChart__textInput--mono {
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.interactiveChart__select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--interactive-chart-border);
+  border-radius: 0.7rem;
+  background: rgb(255 255 255 / 0.82);
+  color: inherit;
+}
+
+.interactiveChart--dark .interactiveChart__textInput,
+.interactiveChart--dark .interactiveChart__select {
+  background: rgb(12 17 26 / 0.82);
+}
+
+.interactiveChart__sliderLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.interactiveChart__sliderLabel strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.interactiveChart__slider {
+  width: 100%;
+  accent-color: #d17a22;
+}
+
+.interactiveChart__applyButton {
+  justify-self: start;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid rgba(73, 146, 69, 0.35);
+  border-radius: 0.7rem;
+  background: rgba(102, 191, 94, 0.18);
+  color: #21601c;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.interactiveChart--dark .interactiveChart__applyButton {
+  color: #c9ffbf;
 }
 
 .visualizerEmptyState {
@@ -809,9 +1028,18 @@ html[data-theme="dark"] .field__control:focus-within {
   align-content: start;
 }
 
+.fitsImageDisplay {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
 .fitsImageViewport {
   position: relative;
   width: 100%;
+  min-width: 0;
 }
 
 .fitsImageCanvas {
@@ -893,6 +1121,62 @@ html[data-theme="dark"] .field__control:focus-within {
   backdrop-filter: blur(8px);
 }
 
+.fitsColorbar {
+  display: grid;
+  justify-items: center;
+  align-content: stretch;
+  gap: 0.45rem;
+  width: 3.5rem;
+}
+
+.fitsColorbar__scale {
+  width: 1rem;
+  min-height: 18rem;
+  height: min(28rem, 100%);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
+}
+
+.fitsColorbar__label {
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  word-break: break-word;
+}
+
+.fitsColorControl {
+  display: grid;
+  gap: 0.35rem;
+  width: min(18rem, 100%);
+  font-weight: 700;
+}
+
+.fitsColorControl span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fitsColorControl__select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font: inherit;
+}
+
+html[data-theme="dark"] .fitsColorControl__select {
+  background: rgb(12 17 26 / 0.82);
+}
+
 .fitsImageCaption {
   color: var(--muted);
   font-weight: 600;
@@ -905,6 +1189,7 @@ html[data-theme="dark"] .field__control:focus-within {
 }
 
 .comparisonPanel {
+  min-width: 0;
   min-height: 44rem;
   align-content: start;
   grid-template-rows: auto minmax(18rem, 1fr);
@@ -916,6 +1201,7 @@ html[data-theme="dark"] .field__control:focus-within {
 }
 
 .comparisonPanel__viewer {
+  min-width: 0;
   min-height: 22rem;
 }
 
@@ -931,12 +1217,31 @@ html[data-theme="dark"] .field__control:focus-within {
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 }
 
-@media (max-width: 820px) {
+@media (max-width: 1120px) {
   .comparisonLayout {
     grid-template-columns: 1fr;
   }
 
   .comparisonPanel {
     min-height: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .fitsImageDisplay {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fitsColorbar {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .fitsColorbar__scale {
+    width: 100%;
+    min-height: 1rem;
+    height: 1rem;
   }
 }
