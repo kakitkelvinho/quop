@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -74,6 +75,14 @@ type DragSelection =
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+function getDocumentColorMode(): "light" | "dark" {
+  if (typeof document === "undefined") {
+    return "light";
+  }
+
+  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
 function getAxisTitleText(title: unknown) {
@@ -587,9 +596,26 @@ function InteractiveScatterChartInner({
     null,
   );
   const [scrollZoomEnabled, setScrollZoomEnabled] = useState(false);
-  const [colorMode, setColorMode] = useState<"light" | "dark">(() =>
-    document.documentElement.dataset.theme === "dark" ? "dark" : "light",
-  );
+  const [colorMode, setColorMode] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const syncColorMode = () => {
+      setColorMode(getDocumentColorMode());
+    };
+
+    syncColorMode();
+
+    const observer = new MutationObserver(syncColorMode);
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
   const [joinedPoints, setJoinedPoints] = useState(() =>
     data.datasets.some((dataset) => dataset.showLine),
   );

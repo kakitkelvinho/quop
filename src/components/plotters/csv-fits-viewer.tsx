@@ -13,12 +13,25 @@ import {
   type ChartDataset,
   type ChartOptions,
 } from "chart.js";
-import { BlobReader, openFits, readImage, type FitsImage, type Hdu } from "@fits-js/core";
+import {
+  BlobReader,
+  openFits,
+  readImage,
+  type FitsImage,
+  type Hdu,
+} from "@fits-js/core";
 
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
-ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+);
 
 type DataPoint = {
   x: number;
@@ -132,9 +145,12 @@ function createDemoCsv() {
   for (let index = 0; index < 320; index += 1) {
     const time = -6.7e-8 + index * 1.41e-10;
     const ch2 = 0.2 + 0.06 * Math.exp(-(index / 120)) * Math.sin(index * 0.18);
-    const ch3 = -0.005 + 0.0035 * Math.exp(-(index / 90)) * Math.cos(index * 0.16);
+    const ch3 =
+      -0.005 + 0.0035 * Math.exp(-(index / 90)) * Math.cos(index * 0.16);
 
-    rows.push(`${ch2.toFixed(12)},${ch3.toFixed(12)},${time.toExponential(12)}`);
+    rows.push(
+      `${ch2.toFixed(12)},${ch3.toFixed(12)},${time.toExponential(12)}`,
+    );
   }
 
   return rows.join("\n");
@@ -143,7 +159,9 @@ function createDemoCsv() {
 const demoCsv = createDemoCsv();
 
 function findTimeColumn(headers: string[]) {
-  return headers.findIndex((header) => /(^|[^a-z])time([^a-z]|$)/i.test(header));
+  return headers.findIndex((header) =>
+    /(^|[^a-z])time([^a-z]|$)/i.test(header),
+  );
 }
 
 function parseTimeSeriesCsv(csv: string): ParsedCsv {
@@ -162,7 +180,9 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
     };
   }
 
-  const headers = parseCsvRow(lines[0]).map((header, index) => header || `column_${index + 1}`);
+  const headers = parseCsvRow(lines[0]).map(
+    (header, index) => header || `column_${index + 1}`,
+  );
 
   if (headers.length < 2) {
     return {
@@ -200,7 +220,10 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
     };
   }
 
-  const series = channelIndexes.map(({ label }) => ({ label, points: [] as DataPoint[] }));
+  const series = channelIndexes.map(({ label }) => ({
+    label,
+    points: [] as DataPoint[],
+  }));
 
   for (let index = 1; index < lines.length; index += 1) {
     const columns = parseCsvRow(lines[index]);
@@ -227,7 +250,11 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
       };
     }
 
-    for (let channelOffset = 0; channelOffset < channelIndexes.length; channelOffset += 1) {
+    for (
+      let channelOffset = 0;
+      channelOffset < channelIndexes.length;
+      channelOffset += 1
+    ) {
       const channelIndex = channelIndexes[channelOffset].index;
       const yValue = Number(columns[channelIndex]);
 
@@ -299,7 +326,11 @@ function computeRange(values: ArrayLike<number>) {
   return { min, max };
 }
 
-function buildAxisLabel(header: HeaderAccessor, fallback: string, axis: number) {
+function buildAxisLabel(
+  header: HeaderAccessor,
+  fallback: string,
+  axis: number,
+) {
   return readHeaderString(header, `CTYPE${axis}`) ?? fallback;
 }
 
@@ -317,7 +348,11 @@ function buildAxisValues(length: number, header: HeaderAccessor) {
   });
 }
 
-function buildHeaderSummary(header: HeaderAccessor, shape: readonly number[], bitpix: number) {
+function buildHeaderSummary(
+  header: HeaderAccessor,
+  shape: readonly number[],
+  bitpix: number,
+) {
   const width = shape[0] ?? 0;
   const height = shape[1] ?? 1;
   const frameCount = shape[2] ?? 1;
@@ -348,7 +383,11 @@ function normalizeImageArray(image: FitsImage) {
 }
 
 function selectImageHdu(hdus: readonly Hdu[]) {
-  return hdus.find((hdu) => (hdu.type === "primary" || hdu.type === "image") && hdu.header.get("NAXIS") !== 0);
+  return hdus.find(
+    (hdu) =>
+      (hdu.type === "primary" || hdu.type === "image") &&
+      hdu.header.get("NAXIS") !== 0,
+  );
 }
 
 async function parseFitsFile(file: File): Promise<FitsSummary> {
@@ -357,7 +396,9 @@ async function parseFitsFile(file: File): Promise<FitsSummary> {
   const hdu = selectImageHdu(hdus);
 
   if (!hdu) {
-    throw new Error("This FITS file does not contain an image HDU I can preview.");
+    throw new Error(
+      "This FITS file does not contain an image HDU I can preview.",
+    );
   }
 
   const image = await readImage(hdu, reader);
@@ -412,20 +453,22 @@ function CsvCompactPanel() {
   const parsed = parseTimeSeriesCsv(csvInput);
 
   const chartData: ChartData<"scatter"> = {
-    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel, index) => {
-      const color = palette[index % palette.length];
+    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>(
+      (channel, index) => {
+        const color = palette[index % palette.length];
 
-      return {
-        label: channel.label,
-        data: channel.points,
-        showLine: true,
-        borderWidth: 2,
-        borderColor: color.border,
-        backgroundColor: color.background,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      };
-    }),
+        return {
+          label: channel.label,
+          data: channel.points,
+          showLine: true,
+          borderWidth: 2,
+          borderColor: color.border,
+          backgroundColor: color.background,
+          pointRadius: 1.5,
+          pointHoverRadius: 3,
+        };
+      },
+    ),
   };
 
   const chartOptions: ChartOptions<"scatter"> = {
@@ -478,7 +521,9 @@ function CsvCompactPanel() {
         <div>
           <p className="sectionCard__kicker">CSV</p>
           <h2>CSV Viewer</h2>
-          <p>Upload a time-series CSV and plot all non-time columns against time.</p>
+          <p>
+            Upload a time-series CSV and plot all non-time columns against time.
+          </p>
         </div>
 
         <label className="field">
@@ -494,9 +539,15 @@ function CsvCompactPanel() {
         </label>
 
         <div className="buttonRow comparisonButtonRow">
-          <button type="button" className="buttonControl" onClick={loadDemoData}>
+          <button
+            type="button"
+            className="buttonControl"
+            onClick={loadDemoData}
+          >
             <span className="buttonControl__title">Load demo CSV</span>
-            <span className="buttonControl__meta">Multi-channel time trace</span>
+            <span className="buttonControl__meta">
+              Multi-channel time trace
+            </span>
           </button>
         </div>
 
@@ -510,7 +561,9 @@ function CsvCompactPanel() {
       <div className="comparisonPanel__viewer visualizerChartSurface">
         <InteractiveScatterChart data={chartData} options={chartOptions} />
         {parsed.error ? (
-          <div className="visualizerEmptyState visualizerOverlayState">Fix the CSV input to render the figure.</div>
+          <div className="visualizerEmptyState visualizerOverlayState">
+            Fix the CSV input to render the figure.
+          </div>
         ) : null}
       </div>
     </article>
@@ -537,7 +590,11 @@ function FitsCompactPanel() {
       setSummary(nextSummary);
     } catch (nextError) {
       setSummary(null);
-      setError(nextError instanceof Error ? nextError.message : "Unable to parse this FITS file.");
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Unable to parse this FITS file.",
+      );
     } finally {
       setIsLoading(false);
       event.target.value = "";
@@ -569,11 +626,17 @@ function FitsCompactPanel() {
     scales: {
       x: {
         type: "linear",
-        title: { display: true, text: summary?.kind === "series" ? summary.xLabel : "x" },
+        title: {
+          display: true,
+          text: summary?.kind === "series" ? summary.xLabel : "x",
+        },
         grid: { color: "rgba(91, 102, 117, 0.18)" },
       },
       y: {
-        title: { display: true, text: summary?.kind === "series" ? summary.yLabel : "value" },
+        title: {
+          display: true,
+          text: summary?.kind === "series" ? summary.yLabel : "value",
+        },
         grid: { color: "rgba(91, 102, 117, 0.18)" },
       },
     },
@@ -585,7 +648,10 @@ function FitsCompactPanel() {
         <div>
           <p className="sectionCard__kicker">FITS</p>
           <h2>FITS Viewer</h2>
-          <p>Upload a FITS image and preview the first image HDU as a trace or grayscale frame.</p>
+          <p>
+            Upload a FITS image and preview the first image HDU as a trace or
+            grayscale frame.
+          </p>
         </div>
 
         <label className="field">
@@ -624,10 +690,16 @@ function FitsCompactPanel() {
 
       <div className="comparisonPanel__viewer visualizerChartSurface">
         {!summary && !error && !isLoading ? (
-          <div className="visualizerEmptyState">Upload a FITS file to render a preview.</div>
+          <div className="visualizerEmptyState">
+            Upload a FITS file to render a preview.
+          </div>
         ) : null}
-        {summary?.kind === "series" ? <InteractiveScatterChart data={seriesData} options={seriesOptions} /> : null}
-        {summary?.kind === "image" ? <FitsImageViewer summary={summary} /> : null}
+        {summary?.kind === "series" ? (
+          <InteractiveScatterChart data={seriesData} options={seriesOptions} />
+        ) : null}
+        {summary?.kind === "image" ? (
+          <FitsImageViewer summary={summary} />
+        ) : null}
         {error ? <div className="visualizerEmptyState">{error}</div> : null}
       </div>
     </article>
