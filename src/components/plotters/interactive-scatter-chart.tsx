@@ -94,13 +94,21 @@ function getAxisTitleText(title: unknown) {
   return "";
 }
 
+function getFontSize(fontSource: unknown) {
+  if (!fontSource || typeof fontSource !== "object") {
+    return undefined;
+  }
+
+  const size = (fontSource as { size?: number }).size;
+  return typeof size === "number" ? size : undefined;
+}
+
 function getAxisTitleFontSize(title: unknown) {
   if (!title || typeof title !== "object") {
     return undefined;
   }
 
-  const font = (title as { font?: { size?: number } }).font;
-  return typeof font?.size === "number" ? font.size : undefined;
+  return getFontSize((title as { font?: unknown }).font);
 }
 
 function getChartTitleText(title: unknown) {
@@ -126,8 +134,7 @@ function getChartTitleFontSize(title: unknown) {
     return undefined;
   }
 
-  const font = (title as { font?: { size?: number } }).font;
-  return typeof font?.size === "number" ? font.size : undefined;
+  return getFontSize((title as { font?: unknown }).font);
 }
 
 function getFontFamily(fontSource: unknown) {
@@ -144,8 +151,7 @@ function getTickFontSize(ticks: unknown) {
     return undefined;
   }
 
-  const font = (ticks as { font?: { size?: number } }).font;
-  return typeof font?.size === "number" ? font.size : undefined;
+  return getFontSize((ticks as { font?: unknown }).font);
 }
 
 function getTickMultiplierFromExponent(exponent: number) {
@@ -612,9 +618,7 @@ function InteractiveScatterChartInner({
     const datasetRadius =
       typeof firstDataset?.pointRadius === "number"
         ? firstDataset.pointRadius
-        : typeof firstDataset?.radius === "number"
-          ? firstDataset.radius
-          : undefined;
+        : undefined;
     const optionRadius =
       typeof options.elements?.point?.radius === "number"
         ? options.elements.point.radius
@@ -643,10 +647,7 @@ function InteractiveScatterChartInner({
     initialAxisLabelFontSize,
   );
   const initialLegendFontSize =
-    typeof options.plugins?.legend === "object" &&
-    typeof options.plugins.legend.labels?.font?.size === "number"
-      ? options.plugins.legend.labels.font.size
-      : 12;
+    getFontSize(options.plugins?.legend?.labels?.font) ?? 12;
   const [legendControlsOpen, setLegendControlsOpen] = useState(false);
   const [legendFontSize, setLegendFontSize] = useState(initialLegendFontSize);
   const initialXTickFontSize = getTickFontSize(options.scales?.x?.ticks) ?? 12;
