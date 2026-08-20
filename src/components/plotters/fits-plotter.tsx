@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -234,6 +234,51 @@ export default function FitsPlotter() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<FitsSummary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDefaultFits() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/data/bec15.fits");
+
+        if (!response.ok) {
+          throw new Error("Unable to load default FITS file.");
+        }
+
+        const buffer = await response.arrayBuffer();
+        const file = new File([buffer], "bec15.fits", {
+          type: "application/fits",
+        });
+        const nextSummary = await parseFitsFile(file);
+
+        if (cancelled) {
+          return;
+        }
+
+        setSummary(nextSummary);
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setSummary(null);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadDefaultFits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -16,7 +16,14 @@ import {
 
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
-ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+);
 
 type DataPoint = {
   x: number;
@@ -83,9 +90,12 @@ function createDemoCsv() {
   for (let index = 0; index < 320; index += 1) {
     const time = -6.7e-8 + index * 1.41e-10;
     const ch2 = 0.2 + 0.06 * Math.exp(-(index / 120)) * Math.sin(index * 0.18);
-    const ch3 = -0.005 + 0.0035 * Math.exp(-(index / 90)) * Math.cos(index * 0.16);
+    const ch3 =
+      -0.005 + 0.0035 * Math.exp(-(index / 90)) * Math.cos(index * 0.16);
 
-    rows.push(`${ch2.toFixed(12)},${ch3.toFixed(12)},${time.toExponential(12)}`);
+    rows.push(
+      `${ch2.toFixed(12)},${ch3.toFixed(12)},${time.toExponential(12)}`,
+    );
   }
 
   return rows.join("\n");
@@ -94,7 +104,9 @@ function createDemoCsv() {
 const demoCsv = createDemoCsv();
 
 function findTimeColumn(headers: string[]) {
-  return headers.findIndex((header) => /(^|[^a-z])time([^a-z]|$)/i.test(header));
+  return headers.findIndex((header) =>
+    /(^|[^a-z])time([^a-z]|$)/i.test(header),
+  );
 }
 
 function parseTimeSeriesCsv(csv: string): ParsedCsv {
@@ -113,7 +125,9 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
     };
   }
 
-  const headers = parseCsvRow(lines[0]).map((header, index) => header || `column_${index + 1}`);
+  const headers = parseCsvRow(lines[0]).map(
+    (header, index) => header || `column_${index + 1}`,
+  );
 
   if (headers.length < 2) {
     return {
@@ -151,7 +165,10 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
     };
   }
 
-  const series = channelIndexes.map(({ label }) => ({ label, points: [] as DataPoint[] }));
+  const series = channelIndexes.map(({ label }) => ({
+    label,
+    points: [] as DataPoint[],
+  }));
 
   for (let index = 1; index < lines.length; index += 1) {
     const columns = parseCsvRow(lines[index]);
@@ -178,7 +195,11 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
       };
     }
 
-    for (let channelOffset = 0; channelOffset < channelIndexes.length; channelOffset += 1) {
+    for (
+      let channelOffset = 0;
+      channelOffset < channelIndexes.length;
+      channelOffset += 1
+    ) {
       const channelIndex = channelIndexes[channelOffset].index;
       const yValue = Number(columns[channelIndex]);
 
@@ -209,23 +230,61 @@ export default function CsvPlotter() {
   const [csvInput, setCsvInput] = useState(demoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-time-series.csv");
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDefaultCsv() {
+      try {
+        const response = await fetch("/data/power15.csv");
+
+        if (!response.ok) {
+          throw new Error("Unable to load default CSV.");
+        }
+
+        const nextCsv = await response.text();
+
+        if (cancelled) {
+          return;
+        }
+
+        setCsvInput(nextCsv);
+        setSourceLabel("power15.csv");
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setCsvInput(demoCsv);
+        setSourceLabel("demo-time-series.csv");
+      }
+    }
+
+    void loadDefaultCsv();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const parsed = parseTimeSeriesCsv(csvInput);
 
   const chartData: ChartData<"scatter"> = {
-    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel, index) => {
-      const color = palette[index % palette.length];
+    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>(
+      (channel, index) => {
+        const color = palette[index % palette.length];
 
-      return {
-        label: channel.label,
-        data: channel.points,
-        showLine: true,
-        borderWidth: 2,
-        borderColor: color.border,
-        backgroundColor: color.background,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      };
-    }),
+        return {
+          label: channel.label,
+          data: channel.points,
+          showLine: true,
+          borderWidth: 2,
+          borderColor: color.border,
+          backgroundColor: color.background,
+          pointRadius: 1.5,
+          pointHoverRadius: 3,
+        };
+      },
+    ),
   };
 
   const chartOptions: ChartOptions<"scatter"> = {
@@ -274,20 +333,15 @@ export default function CsvPlotter() {
     event.target.value = "";
   }
 
-  function loadDemoData() {
-    setCsvInput(demoCsv);
-    setSourceLabel("demo-time-series.csv");
-  }
-
   return (
     <div className="visualizerLayout">
       <div className="inputCard fieldStack">
         <div>
           <h2>Time-Series CSV</h2>
           <p className="lead">
-            Upload a CSV that includes a <code>time</code> column and one or more
-            channel columns. Time always stays on the x-axis, and each other
-            header becomes its own y-series in the legend.
+            Upload a CSV that includes a <code>time</code> column and one or
+            more channel columns. Time always stays on the x-axis, and each
+            other header becomes its own y-series in the legend.
           </p>
         </div>
 
@@ -302,20 +356,6 @@ export default function CsvPlotter() {
             }}
           />
         </label>
-
-        <div className="buttonCluster">
-          <p className="buttonCluster__label">Quick actions</p>
-          <div className="buttonRow">
-            <button
-              type="button"
-              className="buttonControl"
-              onClick={loadDemoData}
-            >
-              <span className="buttonControl__title">Load demo CSV</span>
-              <span className="buttonControl__meta">Multi-channel time trace</span>
-            </button>
-          </div>
-        </div>
 
         <label className="field">
           <span>CSV contents</span>

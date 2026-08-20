@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -450,6 +450,42 @@ async function parseFitsFile(file: File): Promise<FitsSummary> {
 function CsvCompactPanel() {
   const [csvInput, setCsvInput] = useState(demoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-time-series.csv");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDefaultCsv() {
+      try {
+        const response = await fetch("/data/power15.csv");
+
+        if (!response.ok) {
+          throw new Error("Unable to load default CSV.");
+        }
+
+        const nextCsv = await response.text();
+
+        if (cancelled) {
+          return;
+        }
+
+        setCsvInput(nextCsv);
+        setSourceLabel("power15.csv");
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setCsvInput(demoCsv);
+        setSourceLabel("demo-time-series.csv");
+      }
+    }
+
+    void loadDefaultCsv();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const parsed = parseTimeSeriesCsv(csvInput);
 
   const chartData: ChartData<"scatter"> = {
@@ -510,11 +546,6 @@ function CsvCompactPanel() {
     event.target.value = "";
   }
 
-  function loadDemoData() {
-    setCsvInput(demoCsv);
-    setSourceLabel("demo-time-series.csv");
-  }
-
   return (
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
@@ -537,19 +568,6 @@ function CsvCompactPanel() {
             }}
           />
         </label>
-
-        <div className="buttonRow comparisonButtonRow">
-          <button
-            type="button"
-            className="buttonControl"
-            onClick={loadDemoData}
-          >
-            <span className="buttonControl__title">Load demo CSV</span>
-            <span className="buttonControl__meta">
-              Multi-channel time trace
-            </span>
-          </button>
-        </div>
 
         <p className="resultCard comparisonResultCard">
           {parsed.error
@@ -574,6 +592,51 @@ function FitsCompactPanel() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<FitsSummary | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDefaultFits() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/data/bec15.fits");
+
+        if (!response.ok) {
+          throw new Error("Unable to load default FITS file.");
+        }
+
+        const buffer = await response.arrayBuffer();
+        const file = new File([buffer], "bec15.fits", {
+          type: "application/fits",
+        });
+        const nextSummary = await parseFitsFile(file);
+
+        if (cancelled) {
+          return;
+        }
+
+        setSummary(nextSummary);
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setSummary(null);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadDefaultFits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
