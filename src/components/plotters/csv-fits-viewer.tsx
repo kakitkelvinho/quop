@@ -586,7 +586,7 @@ function CsvCompactPanel() {
       </div>
 
       <div className="comparisonPanel__viewer visualizerChartSurface">
-        <InteractiveScatterChart data={chartData} options={chartOptions} />
+        <InteractiveScatterChart data={chartData} options={chartOptions} sourceLabel={sourceLabel} />
         {parsed.error ? (
           <div className="visualizerEmptyState visualizerOverlayState">
             Fix the CSV input to render the figure.
@@ -767,7 +767,7 @@ function FitsCompactPanel() {
           </div>
         ) : null}
         {summary?.kind === "series" ? (
-          <InteractiveScatterChart data={seriesData} options={seriesOptions} />
+          <InteractiveScatterChart data={seriesData} options={seriesOptions} sourceLabel={summary.sourceLabel} />
         ) : null}
         {summary?.kind === "image" ? (
           <FitsImageViewer summary={summary} />

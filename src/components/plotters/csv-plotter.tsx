@@ -398,7 +398,7 @@ export default function CsvPlotter() {
           </p>
         </div>
         <div className="visualizerChartSurface">
-          <InteractiveScatterChart data={chartData} options={chartOptions} />
+          <InteractiveScatterChart data={chartData} options={chartOptions} sourceLabel={sourceLabel} />
           {parsed.error ? (
             <div className="visualizerEmptyState visualizerOverlayState">
               Fix the CSV input to render the figure.

@@ -167,6 +167,20 @@ function getTickMultiplierFromExponent(exponent: number) {
   return 10 ** exponent;
 }
 
+function getDefaultTitleFromSourceLabel(sourceLabel?: string) {
+  if (!sourceLabel) {
+    return "";
+  }
+
+  const normalized = sourceLabel.replace(/\\/g, "/").split("/").pop()?.trim() ?? "";
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.replace(/\.[^.]+$/, "");
+}
+
 function parseIntegerDraft(
   draft: string,
   fallback: number,
@@ -480,8 +494,22 @@ function ThemeIcon() {
 function JoinDotsIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="6.5" cy="16.5" r="2.1" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="17.5" cy="7.5" r="2.1" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle
+        cx="6.5"
+        cy="16.5"
+        r="2.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <circle
+        cx="17.5"
+        cy="7.5"
+        r="2.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
       <path
         d="M8.5 15.2c2.3-0.1 3.9-1 5-2.2 1-1 1.6-2.1 2-3.3"
         fill="none"
@@ -496,11 +524,44 @@ function JoinDotsIcon() {
 function PointSizeIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="3.1" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M14.6 9.4 18.6 5.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="m16.2 5.4 2.4 0v2.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-      <path d="M9.4 14.6 5.4 18.6" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M7.8 18.6H5.4v-2.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+      <circle
+        cx="12"
+        cy="12"
+        r="3.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M14.6 9.4 18.6 5.4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m16.2 5.4 2.4 0v2.4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M9.4 14.6 5.4 18.6"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M7.8 18.6H5.4v-2.4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
     </svg>
   );
 }
@@ -527,11 +588,29 @@ function LegendIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <circle cx="6.5" cy="7" r="1.5" fill="currentColor" />
-      <path d="M10 7h8" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path
+        d="M10 7h8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
       <circle cx="6.5" cy="12" r="1.5" fill="currentColor" />
-      <path d="M10 12h8" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path
+        d="M10 12h8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
       <circle cx="6.5" cy="17" r="1.5" fill="currentColor" />
-      <path d="M10 17h8" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path
+        d="M10 17h8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
     </svg>
   );
 }
@@ -556,7 +635,13 @@ function FontIcon() {
 function TitleIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M5.5 5.5h13v13h-13z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+      <path
+        d="M5.5 5.5h13v13h-13z"
+        fill="none"
+        stroke="currentColor"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
       <rect x="8" y="7.4" width="8" height="3.3" rx="0.8" fill="currentColor" />
     </svg>
   );
@@ -565,10 +650,34 @@ function TitleIcon() {
 function TickAxesIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M5 18.5h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" />
-      <path d="M5.5 19V5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" />
-      <path d="M9 18.5v3M14 18.5v3M19 18.5v3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" />
-      <path d="M2.5 15h3M1.2 10h4.3M2.5 5h3" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.9" />
+      <path
+        d="M5 18.5h14"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.9"
+      />
+      <path
+        d="M5.5 19V5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.9"
+      />
+      <path
+        d="M9 18.5v3M14 18.5v3M19 18.5v3"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.9"
+      />
+      <path
+        d="M2.5 15h3M1.2 10h4.3M2.5 5h3"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.9"
+      />
     </svg>
   );
 }
@@ -576,10 +685,151 @@ function TickAxesIcon() {
 function SaveIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M6 19h12" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M12 5v10" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="m8.5 11.5 3.5 3.5 3.5-3.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
-      <path d="M7 19v-3.5h10V19" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+      <path
+        d="M6 19h12"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M12 5v10"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="m8.5 11.5 3.5 3.5 3.5-3.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M7 19v-3.5h10V19"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
+function MouseClickIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M12 3.4c-3 0-5.4 2.4-5.4 5.4v5.6c0 3.4 2.5 6.2 5.4 6.2s5.4-2.8 5.4-6.2V8.8c0-3-2.4-5.4-5.4-5.4Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M12 3.9v5.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M8 5.9h4"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M8.1 6c0 1.8 1.3 3.1 3.9 3.1"
+        fill="currentColor"
+        opacity="0.22"
+      />
+    </svg>
+  );
+}
+
+function SelectionFrameIcon({ axis }: { axis: "x" | "y" }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 28 24">
+      <rect
+        x="10"
+        y="7"
+        width="8"
+        height="10"
+        rx="1.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      {axis === "x" ? (
+        <>
+          <path
+            d="M2.5 12h6"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="M25.5 12h-6"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="m5.4 9.4-2.9 2.6 2.9 2.6"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="m22.6 9.4 2.9 2.6-2.9 2.6"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+          />
+        </>
+      ) : (
+        <>
+          <path
+            d="M14 2.5v3.5"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="M14 21.5V18"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="m11.4 5.4 2.6-2.9 2.6 2.9"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+          />
+          <path
+            d="m11.4 18.6 2.6 2.9 2.6-2.9"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.7"
+          />
+        </>
+      )}
     </svg>
   );
 }
@@ -587,9 +837,11 @@ function SaveIcon() {
 function InteractiveScatterChartInner({
   data,
   options,
+  sourceLabel,
 }: {
   data: ChartData<"scatter">;
   options: ChartOptions<"scatter">;
+  sourceLabel?: string;
 }) {
   const chartRef = useRef<ChartJS<"scatter"> | null>(null);
   const [dragSelection, setDragSelection] = useState<DragSelection | null>(
@@ -652,7 +904,9 @@ function InteractiveScatterChartInner({
 
     return datasetRadius ?? optionRadius ?? 3;
   });
-  const initialChartTitle = getChartTitleText(options.plugins?.title);
+  const initialChartTitle =
+    getChartTitleText(options.plugins?.title) ||
+    getDefaultTitleFromSourceLabel(sourceLabel);
   const initialChartTitleFontSize =
     getChartTitleFontSize(options.plugins?.title) ?? 18;
   const [titleControlsOpen, setTitleControlsOpen] = useState(false);
@@ -950,7 +1204,9 @@ function InteractiveScatterChartInner({
         return;
       }
 
-      setXTickDecimalPlaces(parseIntegerDraft(draft, xTickDecimalPlaces, 0, 12));
+      setXTickDecimalPlaces(
+        parseIntegerDraft(draft, xTickDecimalPlaces, 0, 12),
+      );
       return;
     }
 
@@ -1168,13 +1424,17 @@ function InteractiveScatterChartInner({
       },
       tooltip: {
         ...options.plugins?.tooltip,
-        backgroundColor: isDarkMode ? "rgba(15, 19, 28, 0.96)" : "rgba(255, 251, 245, 0.96)",
+        backgroundColor: isDarkMode
+          ? "rgba(15, 19, 28, 0.96)"
+          : "rgba(255, 251, 245, 0.96)",
         bodyColor: chartTextColor,
         bodyFont: {
           ...options.plugins?.tooltip?.bodyFont,
           family: fontFamily,
         },
-        borderColor: isDarkMode ? "rgba(148, 163, 184, 0.35)" : "rgba(91, 102, 117, 0.22)",
+        borderColor: isDarkMode
+          ? "rgba(148, 163, 184, 0.35)"
+          : "rgba(91, 102, 117, 0.22)",
         borderWidth: 1,
         titleColor: chartTextColor,
         titleFont: {
@@ -1205,7 +1465,8 @@ function InteractiveScatterChartInner({
         min: viewport.xMin,
         ticks: {
           ...options.scales?.x?.ticks,
-          callback: (value) => formatTickValue(value, xTickMultiplier, xTickDecimalPlaces),
+          callback: (value) =>
+            formatTickValue(value, xTickMultiplier, xTickDecimalPlaces),
           color: chartTextColor,
           font: {
             ...options.scales?.x?.ticks?.font,
@@ -1236,7 +1497,8 @@ function InteractiveScatterChartInner({
         min: viewport.yMin,
         ticks: {
           ...options.scales?.y?.ticks,
-          callback: (value) => formatTickValue(value, yTickMultiplier, yTickDecimalPlaces),
+          callback: (value) =>
+            formatTickValue(value, yTickMultiplier, yTickDecimalPlaces),
           color: chartTextColor,
           font: {
             ...options.scales?.y?.ticks?.font,
@@ -1315,7 +1577,11 @@ function InteractiveScatterChartInner({
           <JoinDotsIcon />
         </button>
         <button
-          aria-label={pointSizeControlsOpen ? "Hide point size slider" : "Show point size slider"}
+          aria-label={
+            pointSizeControlsOpen
+              ? "Hide point size slider"
+              : "Show point size slider"
+          }
           aria-pressed={pointSizeControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--size ${pointSizeControlsOpen ? "is-open" : ""}`}
           onClick={() => setPointSizeControlsOpen((current) => !current)}
@@ -1325,7 +1591,9 @@ function InteractiveScatterChartInner({
           <PointSizeIcon />
         </button>
         <button
-          aria-label={fontControlsOpen ? "Hide font editor" : "Show font editor"}
+          aria-label={
+            fontControlsOpen ? "Hide font editor" : "Show font editor"
+          }
           aria-pressed={fontControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--font ${fontControlsOpen ? "is-open" : ""}`}
           onClick={() => setFontControlsOpen((current) => !current)}
@@ -1335,7 +1603,9 @@ function InteractiveScatterChartInner({
           <FontIcon />
         </button>
         <button
-          aria-label={titleControlsOpen ? "Hide title editor" : "Show title editor"}
+          aria-label={
+            titleControlsOpen ? "Hide title editor" : "Show title editor"
+          }
           aria-pressed={titleControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--title ${titleControlsOpen ? "is-open" : ""}`}
           onClick={() => setTitleControlsOpen((current) => !current)}
@@ -1345,7 +1615,11 @@ function InteractiveScatterChartInner({
           <TitleIcon />
         </button>
         <button
-          aria-label={axisControlsOpen ? "Hide axis label editor" : "Show axis label editor"}
+          aria-label={
+            axisControlsOpen
+              ? "Hide axis label editor"
+              : "Show axis label editor"
+          }
           aria-pressed={axisControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--axis ${axisControlsOpen ? "is-open" : ""}`}
           onClick={() => setAxisControlsOpen((current) => !current)}
@@ -1355,7 +1629,9 @@ function InteractiveScatterChartInner({
           <AxisLabelsIcon />
         </button>
         <button
-          aria-label={legendControlsOpen ? "Hide legend editor" : "Show legend editor"}
+          aria-label={
+            legendControlsOpen ? "Hide legend editor" : "Show legend editor"
+          }
           aria-pressed={legendControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--legend ${legendControlsOpen ? "is-open" : ""}`}
           onClick={() => setLegendControlsOpen((current) => !current)}
@@ -1365,7 +1641,9 @@ function InteractiveScatterChartInner({
           <LegendIcon />
         </button>
         <button
-          aria-label={tickControlsOpen ? "Hide tick editor" : "Show tick editor"}
+          aria-label={
+            tickControlsOpen ? "Hide tick editor" : "Show tick editor"
+          }
           aria-pressed={tickControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--ticks ${tickControlsOpen ? "is-open" : ""}`}
           onClick={() => setTickControlsOpen((current) => !current)}
@@ -1376,7 +1654,9 @@ function InteractiveScatterChartInner({
         </button>
         <button
           aria-label={
-            colorMode === "dark" ? "Switch this chart to bright mode" : "Switch this chart to dark mode"
+            colorMode === "dark"
+              ? "Switch this chart to bright mode"
+              : "Switch this chart to dark mode"
           }
           aria-pressed={colorMode === "dark"}
           className={`interactiveChart__iconButton interactiveChart__iconButton--theme ${colorMode === "dark" ? "is-dark" : ""}`}
@@ -1389,7 +1669,9 @@ function InteractiveScatterChartInner({
           <ThemeIcon />
         </button>
         <button
-          aria-label={saveControlsOpen ? "Hide save options" : "Show save options"}
+          aria-label={
+            saveControlsOpen ? "Hide save options" : "Show save options"
+          }
           aria-pressed={saveControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--save ${saveControlsOpen ? "is-open" : ""}`}
           onClick={() => setSaveControlsOpen((current) => !current)}
@@ -1398,6 +1680,40 @@ function InteractiveScatterChartInner({
         >
           <SaveIcon />
         </button>
+      </div>
+
+      <div className="interactiveChart__gesturePanel">
+        <div className="interactiveChart__gestureRow">
+          <div className="interactiveChart__gestureIcons">
+            <span className="interactiveChart__gestureIconWrap">
+              <MouseClickIcon />
+            </span>
+            <span className="interactiveChart__gestureArrow" aria-hidden="true">
+              →
+            </span>
+            <span className="interactiveChart__gestureIconWrap interactiveChart__gestureIconWrap--frame">
+              <SelectionFrameIcon axis="x" />
+            </span>
+          </div>
+          <span className="interactiveChart__gestureComma" aria-hidden="true">
+            ,
+          </span>
+          <div className="interactiveChart__gestureIcons">
+            <span className="interactiveChart__gestureKey">Shift</span>
+            <span className="interactiveChart__gesturePlus" aria-hidden="true">
+              +
+            </span>
+            <span className="interactiveChart__gestureIconWrap">
+              <MouseClickIcon />
+            </span>
+            <span className="interactiveChart__gestureArrow" aria-hidden="true">
+              →
+            </span>
+            <span className="interactiveChart__gestureIconWrap interactiveChart__gestureIconWrap--frame">
+              <SelectionFrameIcon axis="y" />
+            </span>
+          </div>
+        </div>
       </div>
 
       {pointSizeControlsOpen ? (
@@ -1459,7 +1775,9 @@ function InteractiveScatterChartInner({
             className="interactiveChart__slider"
             max="32"
             min="10"
-            onChange={(event) => setChartTitleFontSize(Number(event.target.value))}
+            onChange={(event) =>
+              setChartTitleFontSize(Number(event.target.value))
+            }
             step="1"
             type="range"
             value={chartTitleFontSize}
@@ -1496,7 +1814,9 @@ function InteractiveScatterChartInner({
             className="interactiveChart__slider"
             max="24"
             min="8"
-            onChange={(event) => setAxisLabelFontSize(Number(event.target.value))}
+            onChange={(event) =>
+              setAxisLabelFontSize(Number(event.target.value))
+            }
             step="1"
             type="range"
             value={axisLabelFontSize}
@@ -1526,18 +1846,24 @@ function InteractiveScatterChartInner({
       {tickControlsOpen ? (
         <div className="interactiveChart__editorBar">
           <label className="interactiveChart__fieldRow">
-            <span><i>x</i>: 10<sup>x</sup></span>
+            <span>
+              <i>x</i>: 10<sup>x</sup>
+            </span>
             <input
               className="interactiveChart__textInput interactiveChart__textInput--mono"
               inputMode="numeric"
-              onChange={(event) => handleTickExponentChange("x", event.target.value)}
+              onChange={(event) =>
+                handleTickExponentChange("x", event.target.value)
+              }
               step="1"
               type="number"
               value={xTickExponentDraft}
             />
           </label>
           <label className="interactiveChart__fieldRow">
-            <span><i>x</i> decimals</span>
+            <span>
+              <i>x</i> decimals
+            </span>
             <input
               className="interactiveChart__textInput interactiveChart__textInput--mono"
               inputMode="numeric"
@@ -1550,7 +1876,9 @@ function InteractiveScatterChartInner({
             />
           </label>
           <label className="interactiveChart__sliderLabel">
-            <span><i>x</i> tick font size</span>
+            <span>
+              <i>x</i> tick font size
+            </span>
             <strong>{xTickFontSize.toFixed(0)}</strong>
           </label>
           <input
@@ -1564,18 +1892,24 @@ function InteractiveScatterChartInner({
             value={xTickFontSize}
           />
           <label className="interactiveChart__fieldRow">
-            <span><i>y</i>: 10<sup>x</sup></span>
+            <span>
+              <i>y</i>: 10<sup>x</sup>
+            </span>
             <input
               className="interactiveChart__textInput interactiveChart__textInput--mono"
               inputMode="numeric"
-              onChange={(event) => handleTickExponentChange("y", event.target.value)}
+              onChange={(event) =>
+                handleTickExponentChange("y", event.target.value)
+              }
               step="1"
               type="number"
               value={yTickExponentDraft}
             />
           </label>
           <label className="interactiveChart__fieldRow">
-            <span><i>y</i> decimals</span>
+            <span>
+              <i>y</i> decimals
+            </span>
             <input
               className="interactiveChart__textInput interactiveChart__textInput--mono"
               inputMode="numeric"
@@ -1588,7 +1922,9 @@ function InteractiveScatterChartInner({
             />
           </label>
           <label className="interactiveChart__sliderLabel">
-            <span><i>y</i> tick font size</span>
+            <span>
+              <i>y</i> tick font size
+            </span>
             <strong>{yTickFontSize.toFixed(0)}</strong>
           </label>
           <input
@@ -1646,6 +1982,7 @@ function InteractiveScatterChartInner({
 export default function InteractiveScatterChart(props: {
   data: ChartData<"scatter">;
   options: ChartOptions<"scatter">;
+  sourceLabel?: string;
 }) {
   const chartKey = useMemo(() => buildDataSignature(props.data), [props.data]);
 

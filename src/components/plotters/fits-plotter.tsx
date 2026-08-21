@@ -403,7 +403,7 @@ export default function FitsPlotter() {
             </div>
           ) : null}
           {summary?.kind === "series" ? (
-            <InteractiveScatterChart data={seriesData} options={seriesOptions} />
+            <InteractiveScatterChart data={seriesData} options={seriesOptions} sourceLabel={summary.sourceLabel} />
           ) : null}
           {summary?.kind === "image" ? (
             <FitsImageViewer key={summary.sourceLabel} summary={summary} />
