@@ -93,6 +93,15 @@ const palette = [
   { border: "#5c4b8a", background: "#5c4b8a" },
 ];
 
+function getBundledAssetPath(filename: string) {
+  if (typeof window === "undefined") {
+    return `/data/${filename}`;
+  }
+
+  const basePath = window.location.pathname.split("/plotters/")[0] ?? "";
+  return `${basePath}/data/${filename}`;
+}
+
 const baseChartOptions: ChartOptions<"scatter"> = {
   responsive: true,
   maintainAspectRatio: false,
@@ -456,7 +465,7 @@ function CsvCompactPanel() {
 
     async function loadDefaultCsv() {
       try {
-        const response = await fetch("/data/power15.csv");
+        const response = await fetch(getBundledAssetPath("power15.csv"));
 
         if (!response.ok) {
           throw new Error("Unable to load default CSV.");
@@ -601,7 +610,7 @@ function FitsCompactPanel() {
       setError(null);
 
       try {
-        const response = await fetch("/data/bec15.fits");
+        const response = await fetch(getBundledAssetPath("bec15.fits"));
 
         if (!response.ok) {
           throw new Error("Unable to load default FITS file.");

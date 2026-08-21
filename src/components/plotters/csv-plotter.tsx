@@ -103,6 +103,15 @@ function createDemoCsv() {
 
 const demoCsv = createDemoCsv();
 
+function getBundledAssetPath(filename: string) {
+  if (typeof window === "undefined") {
+    return `/data/${filename}`;
+  }
+
+  const basePath = window.location.pathname.split("/plotters/")[0] ?? "";
+  return `${basePath}/data/${filename}`;
+}
+
 function findTimeColumn(headers: string[]) {
   return headers.findIndex((header) =>
     /(^|[^a-z])time([^a-z]|$)/i.test(header),
@@ -235,7 +244,7 @@ export default function CsvPlotter() {
 
     async function loadDefaultCsv() {
       try {
-        const response = await fetch("/data/power15.csv");
+        const response = await fetch(getBundledAssetPath("power15.csv"));
 
         if (!response.ok) {
           throw new Error("Unable to load default CSV.");

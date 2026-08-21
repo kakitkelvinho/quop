@@ -53,6 +53,15 @@ type SeriesSummary = {
 
 type FitsSummary = ImageSummary | SeriesSummary;
 
+function getBundledAssetPath(filename: string) {
+  if (typeof window === "undefined") {
+    return `/data/${filename}`;
+  }
+
+  const basePath = window.location.pathname.split("/plotters/")[0] ?? "";
+  return `${basePath}/data/${filename}`;
+}
+
 const imageOptions: ChartOptions<"scatter"> = {
   responsive: true,
   maintainAspectRatio: false,
@@ -243,7 +252,7 @@ export default function FitsPlotter() {
       setError(null);
 
       try {
-        const response = await fetch("/data/bec15.fits");
+        const response = await fetch(getBundledAssetPath("bec15.fits"));
 
         if (!response.ok) {
           throw new Error("Unable to load default FITS file.");
