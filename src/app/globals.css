@@ -367,6 +367,72 @@ h2 {
   grid-template-columns: minmax(0, 720px);
 }
 
+.paceCalculator {
+  display: grid;
+  gap: 1rem;
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.paceCalculator__panel {
+  min-height: 100%;
+}
+
+.paceCalculator__panelHeader {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.paceCalculator__dualField,
+.paceCalculator__paceResult {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.paceCalculator__swapWrap {
+  display: grid;
+  align-items: center;
+}
+
+.paceCalculator__swap {
+  justify-items: center;
+  min-width: 8.5rem;
+  min-height: 8.5rem;
+  text-align: center;
+}
+
+.paceCalculator__swapIcon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.paceCalculator__resultCard {
+  display: grid;
+  gap: 0.2rem;
+  align-content: center;
+  justify-items: start;
+  min-height: 8.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.32), transparent),
+    var(--accent-soft);
+}
+
+.paceCalculator__resultValue {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.paceCalculator__resultUnit {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .sectionCard,
 .inputCard,
 .infoPanel {
@@ -1084,6 +1150,14 @@ html[data-theme="dark"] .field__control:focus-within {
     grid-template-columns: 1fr;
   }
 
+  .paceCalculator {
+    grid-template-columns: 1fr;
+  }
+
+  .paceCalculator__swap {
+    min-height: 5.5rem;
+  }
+
   .visualizerChartCard {
     min-height: auto;
   }
@@ -1143,9 +1217,40 @@ html[data-theme="dark"] .field__control:focus-within {
 }
 
 .fitsImageViewport {
+  display: grid;
+  justify-items: start;
   position: relative;
   width: 100%;
   min-width: 0;
+}
+
+.fitsImageViewport__surface {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.fitsImageViewport__surface--free {
+  max-width: none;
+  min-width: 140px;
+  min-height: 100px;
+  overflow: hidden;
+}
+
+.fitsImageViewport__resizeHint {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 6;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 999px;
+  background: rgb(12 18 14 / 0.78);
+  color: #d4fbd0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  pointer-events: none;
 }
 
 .fitsImageCanvas {
@@ -1167,6 +1272,11 @@ html[data-theme="dark"] .field__control:focus-within {
     0 8px,
     8px -8px,
     -8px 0;
+}
+
+.fitsImageCanvas--free {
+  height: 100%;
+  max-height: none;
 }
 
 .fitsCrosshair,
@@ -1288,6 +1398,75 @@ html[data-theme="dark"] .fitsColorControl__select {
   font-weight: 600;
 }
 
+.fitsInspectorGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.fitsInspectorCard,
+.fitsSlicePanel {
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.fitsInspectorCard {
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+.fitsInspectorCard__header,
+.fitsSlicePanel__header {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.fitsInspectorCard h3,
+.fitsSlicePanel h3 {
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.fitsInspectorCard__meta,
+.fitsSlicePanel__meta {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.fitsInspectorCard__button {
+  width: 100%;
+}
+
+.fitsColorControl--compact {
+  width: 100%;
+}
+
+.fitsSliceControls {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+}
+
+.fitsSliceControls__field {
+  align-content: end;
+}
+
+.fitsSlicePanel {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.fitsSlicePanel__chart {
+  min-height: 16rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface-strong);
+}
+
 
 .fitsImageFrame {
   --interactive-chart-border: var(--border);
@@ -1381,6 +1560,25 @@ html[data-theme="dark"] .fitsColorControl__select {
 .fitsImageViewport__selection {
   z-index: 5;
   border-radius: 0.25rem;
+}
+
+.fitsSliceBand {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid rgb(255 213 79 / 0.7);
+  background: rgb(255 213 79 / 0.18);
+  box-shadow: inset 0 0 0 1px rgb(255 213 79 / 0.12);
+  pointer-events: none;
+}
+
+.fitsSliceBand--horizontal {
+  left: 0;
+  right: 0;
+}
+
+.fitsSliceBand--vertical {
+  bottom: 0;
+  top: 0;
 }
 
 .fitsColorbar {
@@ -1495,6 +1693,10 @@ html[data-theme="dark"] .fitsColorControl__select {
     min-width: 1.45rem;
   }
 
+  .fitsSliceControls {
+    grid-template-columns: 1fr;
+  }
+
   .fitsColorbar {
     grid-column: 1 / -1;
     grid-template-columns: auto 1fr auto;
@@ -1527,4 +1729,53 @@ html[data-theme="dark"] .fitsColorControl__select {
     min-height: 1rem;
     height: 1rem;
   }
+}
+
+.fitsImageViewport {
+  display: grid;
+  justify-items: start;
+}
+
+.fitsImageViewport__surface {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.fitsImageViewport__surface--free {
+  max-width: none;
+  min-width: 140px;
+  min-height: 100px;
+  overflow: hidden;
+}
+
+.fitsImageCanvas--free {
+  display: block;
+  max-height: none;
+}
+
+.fitsSlicePanel__chart {
+  padding: 0;
+  overflow: hidden;
+}
+
+.fitsSlicePanel__chart .interactiveChart {
+  min-height: 20rem;
+}
+
+.fitsImageViewport--free {
+  overflow: auto;
+}
+
+.fitsImageViewport__resizeHandle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 7;
+  width: 1.4rem;
+  height: 1.4rem;
+  cursor: nwse-resize;
+  background:
+    linear-gradient(135deg, transparent 0 48%, rgb(255 255 255 / 0.7) 48% 56%, transparent 56%),
+    linear-gradient(135deg, transparent 0 66%, rgb(255 255 255 / 0.5) 66% 73%, transparent 73%);
 }

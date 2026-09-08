@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from "react";
+import { type ChartData, type ChartOptions } from "chart.js";
+
+import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 type FitsImageSummary = {
   height: number;
@@ -27,12 +37,28 @@ type DragSelection = {
   startY: number;
 };
 
+type ResizeDrag = {
+  pointerId: number;
+  startHeight: number;
+  startWidth: number;
+  startX: number;
+  startY: number;
+};
+
 type HoverSample = {
   left: number;
   top: number;
   value: number;
   x: number;
   y: number;
+};
+
+type DisplayMode = "data" | "free";
+type SliceAxis = "horizontal" | "vertical";
+
+type DisplayFrameSize = {
+  height: number;
+  width: number;
 };
 
 type ColorMapName = "gray" | "viridis" | "plasma" | "inferno" | "magma";
@@ -248,6 +274,88 @@ function getPointerDetails(
   };
 }
 
+function getDefaultFreeDisplaySize(summary: FitsImageSummary): DisplayFrameSize {
+  const maxWidth = 760;
+  const maxHeight = 420;
+  const widthScale = maxWidth / summary.width;
+  const heightScale = maxHeight / summary.height;
+  const scale = Math.min(widthScale, heightScale, 1);
+
+  return {
+    width: Math.max(280, Math.round(summary.width * scale)),
+    height: Math.max(160, Math.round(summary.height * scale)),
+  };
+}
+
+function buildSliceSeries(
+  summary: FitsImageSummary,
+  sliceAxis: SliceAxis,
+  selectedRow: number,
+  selectedColumn: number,
+) {
+  if (sliceAxis === "horizontal") {
+    const row = clamp(selectedRow, 0, summary.height - 1);
+    const points = Array.from({ length: summary.width }, (_, x) => ({
+      x,
+      y: summary.pixels[row * summary.width + x] ?? Number.NaN,
+    }));
+
+    return {
+      axisLabel: summary.xLabel || "x",
+      points,
+      selectionLabel: `${summary.yLabel || "y"} = ${row}`,
+    };
+  }
+
+  const column = clamp(selectedColumn, 0, summary.width - 1);
+  const points = Array.from({ length: summary.height }, (_, y) => ({
+    x: y,
+    y: summary.pixels[y * summary.width + column] ?? Number.NaN,
+  }));
+
+  return {
+    axisLabel: summary.yLabel || "y",
+    points,
+    selectionLabel: `${summary.xLabel || "x"} = ${column}`,
+  };
+}
+
+function buildSliceBandStyle(
+  viewport: Viewport,
+  sliceAxis: SliceAxis,
+  sliceIndex: number,
+  summary: FitsImageSummary,
+): CSSProperties | null {
+  if (sliceAxis === "horizontal") {
+    if (sliceIndex < viewport.top || sliceIndex >= viewport.top + viewport.height) {
+      return null;
+    }
+
+    const top = ((sliceIndex - viewport.top) / viewport.height) * 100;
+    const height = Math.max(100 / viewport.height, 0.4);
+
+    return {
+      height: `${height}%`,
+      insetInline: 0,
+      top: `${top}%`,
+    };
+  }
+
+  if (sliceIndex < viewport.left || sliceIndex >= viewport.left + viewport.width) {
+    return null;
+  }
+
+  const left = ((sliceIndex - viewport.left) / viewport.width) * 100;
+  const width = Math.max(100 / viewport.width, 0.4);
+
+  return {
+    bottom: 0,
+    left: `${left}%`,
+    top: 0,
+    width: `${width}%`,
+  };
+}
+
 function ResetZoomIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -416,8 +524,16 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   const colorbarBottomLabelRef = useRef<HTMLSpanElement | null>(null);
   const [hoverSample, setHoverSample] = useState<HoverSample | null>(null);
   const [dragSelection, setDragSelection] = useState<DragSelection | null>(null);
+  const [resizeDrag, setResizeDrag] = useState<ResizeDrag | null>(null);
   const [colorMap, setColorMap] = useState<ColorMapName>("gray");
   const [viewport, setViewport] = useState<Viewport>(() => buildBaseViewport(summary));
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("data");
+  const [freeDisplaySize, setFreeDisplaySize] = useState<DisplayFrameSize>(() =>
+    getDefaultFreeDisplaySize(summary),
+  );
+  const [sliceAxis, setSliceAxis] = useState<SliceAxis>("horizontal");
+  const [selectedRow, setSelectedRow] = useState(() => Math.floor(summary.height / 2));
+  const [selectedColumn, setSelectedColumn] = useState(() => Math.floor(summary.width / 2));
   const [titleControlsOpen, setTitleControlsOpen] = useState(false);
   const [chartTitle, setChartTitle] = useState(() =>
     getDefaultTitleFromSourceLabel(summary.sourceLabel),
@@ -532,6 +648,16 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
 
     setDragSelection(null);
 
+    if (xDistance < 6 && yDistance < 6) {
+      if (sliceAxis === "horizontal") {
+        setSelectedRow(nextSample.y);
+      } else {
+        setSelectedColumn(nextSample.x);
+      }
+
+      return;
+    }
+
     if (xDistance < 6 || yDistance < 6) {
       return;
     }
@@ -556,6 +682,56 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     }
 
     setDragSelection(null);
+  }
+
+  function handleResizePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (displayMode !== "free" || event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setResizeDrag({
+      pointerId: event.pointerId,
+      startHeight: freeDisplaySize.height,
+      startWidth: freeDisplaySize.width,
+      startX: event.clientX,
+      startY: event.clientY,
+    });
+  }
+
+  function handleResizePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!resizeDrag || resizeDrag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    setFreeDisplaySize({
+      width: clamp(
+        Math.round(resizeDrag.startWidth + (event.clientX - resizeDrag.startX)),
+        140,
+        2400,
+      ),
+      height: clamp(
+        Math.round(resizeDrag.startHeight + (event.clientY - resizeDrag.startY)),
+        100,
+        1600,
+      ),
+    });
+  }
+
+  function handleResizePointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (!resizeDrag || resizeDrag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    setResizeDrag(null);
   }
 
   function handleSave() {
@@ -718,6 +894,10 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     viewport.top !== baseViewport.top ||
     viewport.width !== baseViewport.width ||
     viewport.height !== baseViewport.height;
+  const activeRow = clamp(selectedRow, 0, summary.height - 1);
+  const activeColumn = clamp(selectedColumn, 0, summary.width - 1);
+  const activeSliceIndex = sliceAxis === "horizontal" ? activeRow : activeColumn;
+  const sliceBandStyle = buildSliceBandStyle(viewport, sliceAxis, activeSliceIndex, summary);
   const selectionStyle = dragSelection
     ? {
         height: `${Math.abs(dragSelection.currentY - dragSelection.startY) * 100}%`,
@@ -726,6 +906,69 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
         width: `${Math.abs(dragSelection.currentX - dragSelection.startX) * 100}%`,
       }
     : null;
+  const displayAspectRatio =
+    displayMode === "free"
+      ? freeDisplaySize.width / Math.max(freeDisplaySize.height, 1)
+      : viewport.width / Math.max(viewport.height, 1);
+  const sliceSeries = useMemo(
+    () => buildSliceSeries(summary, sliceAxis, activeRow, activeColumn),
+    [activeColumn, activeRow, sliceAxis, summary],
+  );
+  const sliceChartData: ChartData<"scatter"> = useMemo(
+    () => ({
+      datasets: [
+        {
+          label: sliceSeries.selectionLabel,
+          data: sliceSeries.points,
+          parsing: false,
+          showLine: true,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          borderWidth: 2,
+          borderColor: "#8b1e3f",
+          backgroundColor: "rgba(139, 30, 63, 0.18)",
+        },
+      ],
+    }),
+    [sliceSeries],
+  );
+  const sliceChartOptions: ChartOptions<"scatter"> = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        title: {
+          display: true,
+          text: sliceSeries.selectionLabel,
+        },
+        tooltip: { enabled: true },
+      },
+      scales: {
+        x: {
+          type: "linear",
+          title: {
+            display: true,
+            text: sliceSeries.axisLabel,
+          },
+          grid: { color: "rgba(91, 102, 117, 0.16)" },
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Intensity",
+          },
+          grid: { color: "rgba(91, 102, 117, 0.16)" },
+        },
+      },
+      elements: {
+        line: { tension: 0 },
+        point: { radius: 0, hoverRadius: 3 },
+      },
+    }),
+    [sliceSeries.axisLabel, sliceSeries.selectionLabel],
+  );
 
   return (
     <div className="fitsImageFrame">
@@ -747,41 +990,79 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
               </span>
             </div>
           ) : null}
-          <div className="fitsImageViewport">
-            <canvas
-              className="fitsImageCanvas"
-              onPointerCancel={handlePointerCancel}
-              onPointerDown={handlePointerDown}
-              onPointerLeave={() => {
-                if (!dragSelection) {
-                  setHoverSample(null);
+          <div className={`fitsImageViewport ${displayMode === "free" ? "fitsImageViewport--free" : ""}`}>
+            <div
+              className={`fitsImageViewport__surface ${displayMode === "free" ? "fitsImageViewport__surface--free" : ""}`}
+              style={
+                displayMode === "free"
+                  ? {
+                      height: `${freeDisplaySize.height}px`,
+                      width: `${freeDisplaySize.width}px`,
+                    }
+                  : undefined
+              }
+            >
+              <canvas
+                className={`fitsImageCanvas ${displayMode === "free" ? "fitsImageCanvas--free" : ""}`}
+                onPointerCancel={handlePointerCancel}
+                onPointerDown={handlePointerDown}
+                onPointerLeave={() => {
+                  if (!dragSelection) {
+                    setHoverSample(null);
+                  }
+                }}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                ref={canvasRef}
+                style={
+                  displayMode === "free"
+                    ? {
+                        height: `${freeDisplaySize.height}px`,
+                        width: `${freeDisplaySize.width}px`,
+                      }
+                    : undefined
                 }
-              }}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              ref={canvasRef}
-            />
-            {selectionStyle ? (
-              <div className="interactiveChart__selection fitsImageViewport__selection" style={selectionStyle} />
-            ) : null}
-            {hoverSample ? (
-              <>
-                <div className="fitsCrosshair fitsCrosshair--vertical" style={{ left: `${hoverSample.left}%` }} />
-                <div className="fitsCrosshair fitsCrosshair--horizontal" style={{ top: `${hoverSample.top}%` }} />
+              />
+              {sliceBandStyle ? (
                 <div
-                  className="fitsCrosshairBox"
-                  style={{
-                    left: `${hoverSample.left}%`,
-                    top: `${hoverSample.top}%`,
-                  }}
+                  className={`fitsSliceBand fitsSliceBand--${sliceAxis}`}
+                  style={sliceBandStyle}
                 />
-                <div className="fitsReadout">
-                  <span>x {hoverSample.x}</span>
-                  <span>y {hoverSample.y}</span>
-                  <span>value {formatPixelValue(hoverSample.value)}</span>
-                </div>
-              </>
-            ) : null}
+              ) : null}
+              {selectionStyle ? (
+                <div className="interactiveChart__selection fitsImageViewport__selection" style={selectionStyle} />
+              ) : null}
+              {hoverSample ? (
+                <>
+                  <div className="fitsCrosshair fitsCrosshair--vertical" style={{ left: `${hoverSample.left}%` }} />
+                  <div className="fitsCrosshair fitsCrosshair--horizontal" style={{ top: `${hoverSample.top}%` }} />
+                  <div
+                    className="fitsCrosshairBox"
+                    style={{
+                      left: `${hoverSample.left}%`,
+                      top: `${hoverSample.top}%`,
+                    }}
+                  />
+                  <div className="fitsReadout">
+                    <span>x {hoverSample.x}</span>
+                    <span>y {hoverSample.y}</span>
+                    <span>value {formatPixelValue(hoverSample.value)}</span>
+                  </div>
+                </>
+              ) : null}
+              {displayMode === "free" ? (
+                <>
+                  <div className="fitsImageViewport__resizeHint">Drag corner to resize display aspect</div>
+                  <div
+                    className="fitsImageViewport__resizeHandle"
+                    onPointerDown={handleResizePointerDown}
+                    onPointerMove={handleResizePointerMove}
+                    onPointerUp={handleResizePointerUp}
+                    onPointerCancel={handleResizePointerUp}
+                  />
+                </>
+              ) : null}
+            </div>
           </div>
           <div className="fitsColorbar" aria-hidden="true">
             <span className="fitsColorbar__label" ref={colorbarTopLabelRef}>
@@ -942,6 +1223,132 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           </button>
         </div>
       ) : null}
+
+      <div className="fitsInspectorGrid">
+        <section className="fitsInspectorCard">
+          <div className="fitsInspectorCard__header">
+            <p className="sectionCard__kicker">Display</p>
+            <h3>Aspect ratio</h3>
+          </div>
+          <label className="fitsColorControl fitsColorControl--compact">
+            <span>Mode</span>
+            <select
+              className="fitsColorControl__select"
+              onChange={(event) => setDisplayMode(event.target.value as DisplayMode)}
+              value={displayMode}
+            >
+              <option value="data">Data aspect</option>
+              <option value="free">Free resize</option>
+            </select>
+          </label>
+          <p className="fitsInspectorCard__meta">
+            Current display ratio {displayAspectRatio.toFixed(3)}:1.
+            {displayMode === "free"
+              ? " Drag the lower-right corner of the image frame to reshape it."
+              : " Switch to free resize when you want to distort the display intentionally."}
+          </p>
+          <button
+            className="buttonControl buttonControl--secondary fitsInspectorCard__button"
+            onClick={() => setFreeDisplaySize(getDefaultFreeDisplaySize(summary))}
+            type="button"
+          >
+            <span className="buttonControl__title">Reset display frame</span>
+            <span className="buttonControl__meta">Back to the default free-size preview</span>
+          </button>
+        </section>
+
+        <section className="fitsInspectorCard">
+          <div className="fitsInspectorCard__header">
+            <p className="sectionCard__kicker">Slice</p>
+            <h3>1D intensity plot</h3>
+          </div>
+          <div className="fitsSliceControls">
+            <label className="fitsColorControl fitsColorControl--compact">
+              <span>Direction</span>
+              <select
+                className="fitsColorControl__select"
+                onChange={(event) => setSliceAxis(event.target.value as SliceAxis)}
+                value={sliceAxis}
+              >
+                <option value="horizontal">Horizontal slice (pick y)</option>
+                <option value="vertical">Vertical slice (pick x)</option>
+              </select>
+            </label>
+            {sliceAxis === "horizontal" ? (
+              <label className="field fitsSliceControls__field">
+                <span>y index</span>
+                <div className="field__control">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max={Math.max(summary.height - 1, 0)}
+                    step="1"
+                    value={activeRow}
+                    onChange={(event) =>
+                      setSelectedRow(
+                        clamp(
+                          Number.parseInt(event.target.value || "0", 10) || 0,
+                          0,
+                          Math.max(summary.height - 1, 0),
+                        ),
+                      )
+                    }
+                  />
+                  <span>px</span>
+                </div>
+              </label>
+            ) : (
+              <label className="field fitsSliceControls__field">
+                <span>x index</span>
+                <div className="field__control">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    max={Math.max(summary.width - 1, 0)}
+                    step="1"
+                    value={activeColumn}
+                    onChange={(event) =>
+                      setSelectedColumn(
+                        clamp(
+                          Number.parseInt(event.target.value || "0", 10) || 0,
+                          0,
+                          Math.max(summary.width - 1, 0),
+                        ),
+                      )
+                    }
+                  />
+                  <span>px</span>
+                </div>
+              </label>
+            )}
+          </div>
+          <p className="fitsInspectorCard__meta">
+            Click the image to snap the active {sliceAxis === "horizontal" ? "row" : "column"} to the hovered location.
+            The highlighted band on the image matches the trace below.
+          </p>
+        </section>
+      </div>
+
+      <section className="fitsSlicePanel">
+        <div className="fitsSlicePanel__header">
+          <div>
+            <p className="sectionCard__kicker">Slice Plot</p>
+            <h3>{sliceSeries.selectionLabel}</h3>
+          </div>
+          <p className="fitsSlicePanel__meta">
+            Intensity plotted against {sliceSeries.axisLabel} for the full {sliceAxis === "horizontal" ? "row" : "column"}.
+          </p>
+        </div>
+        <div className="fitsSlicePanel__chart">
+          <InteractiveScatterChart
+            data={sliceChartData}
+            options={sliceChartOptions}
+            sourceLabel={`${summary.sourceLabel}-${sliceSeries.selectionLabel}`}
+          />
+        </div>
+      </section>
 
       <label className="fitsColorControl">
         <span>Colormap</span>

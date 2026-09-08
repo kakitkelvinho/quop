@@ -27,6 +27,11 @@ export const navSections: NavSection[] = [
         label: "LIDT",
         description: "Estimate pulse energy density for optics work.",
       },
+      {
+        href: "/calculators/pace",
+        label: "Pace",
+        description: "Swap between running pace and speed inputs.",
+      },
     ],
   },
   {
@@ -38,7 +43,8 @@ export const navSections: NavSection[] = [
   {
     href: "/plotters",
     label: "Plotters",
-    description: "Interactive plotting tools for arrays, CSV traces, and lab data.",
+    description:
+      "Interactive plotting tools for arrays, CSV traces, and lab data.",
     links: [
       {
         href: "/plotters/array-plotter",
@@ -48,17 +54,20 @@ export const navSections: NavSection[] = [
       {
         href: "/plotters/csv-plotter",
         label: "CSV Plotter",
-        description: "Upload a two-column CSV and plot one column against the other.",
+        description:
+          "Upload a two-column CSV and plot one column against the other.",
       },
       {
         href: "/plotters/fits-plotter",
         label: "FITS Plotter",
-        description: "Upload a FITS image and preview its first frame in the browser.",
+        description:
+          "Upload a FITS image and preview its first frame in the browser.",
       },
       {
         href: "/plotters/csv-fits-viewer",
         label: "CSV + FITS Viewer",
-        description: "Open CSV and FITS viewers side by side in one comparison layout.",
+        description:
+          "Open CSV and FITS viewers side by side in one comparison layout.",
       },
     ],
   },

@@ -71,6 +71,10 @@ type DragSelection =
   | {
       axis: "pan-y";
       currentY: number;
+    }
+  | {
+      axis: "pan-x";
+      currentX: number;
     };
 
 function clamp(value: number, minimum: number, maximum: number) {
@@ -965,6 +969,27 @@ function InteractiveScatterChartInner({
     });
   }
 
+  function panX(previousPixel: number, nextPixel: number, chart: ChartJS<"scatter">) {
+    const xScale = chart.scales.x;
+    const previousValue = xScale.getValueForPixel(previousPixel);
+    const nextValue = xScale.getValueForPixel(nextPixel);
+
+    if (previousValue === undefined || nextValue === undefined) {
+      return;
+    }
+
+    const shift = previousValue - nextValue;
+    setViewport((current) => {
+      const next = normalizeXBounds(
+        baseBounds,
+        current.xMin + shift,
+        current.xMax + shift,
+      );
+
+      return { ...current, ...next };
+    });
+  }
+
   function clearDragSelection() {
     setDragSelection(null);
   }
@@ -989,8 +1014,14 @@ function InteractiveScatterChartInner({
       point.x < chartArea.left &&
       point.y >= chartArea.top &&
       point.y <= chartArea.bottom;
+    const isWithinXAxis =
+      !event.shiftKey &&
+      point.x >= chartArea.left &&
+      point.x <= chartArea.right &&
+      point.y > chartArea.bottom &&
+      point.y <= chart.height;
 
-    if (!isWithinPlot && !isWithinYAxis) {
+    if (!isWithinPlot && !isWithinYAxis && !isWithinXAxis) {
       return;
     }
 
@@ -1001,6 +1032,14 @@ function InteractiveScatterChartInner({
       setDragSelection({
         axis: "pan-y",
         currentY: clamp(point.y, chartArea.top, chartArea.bottom),
+      });
+      return;
+    }
+
+    if (isWithinXAxis) {
+      setDragSelection({
+        axis: "pan-x",
+        currentX: clamp(point.x, chartArea.left, chartArea.right),
       });
       return;
     }
@@ -1065,6 +1104,16 @@ function InteractiveScatterChartInner({
       return;
     }
 
+    if (dragSelection.axis === "pan-x") {
+      const nextX = clamp(point.x, chartArea.left, chartArea.right);
+      panX(dragSelection.currentX, nextX, chart);
+      setDragSelection({
+        ...dragSelection,
+        currentX: nextX,
+      });
+      return;
+    }
+
     if (dragSelection.axis === "x") {
       setDragSelection({
         ...dragSelection,
@@ -1093,7 +1142,7 @@ function InteractiveScatterChartInner({
     const activeSelection = dragSelection;
     setDragSelection(null);
 
-    if (activeSelection.axis === "pan-y") {
+    if (activeSelection.axis === "pan-y" || activeSelection.axis === "pan-x") {
       return;
     }
 
@@ -1389,7 +1438,10 @@ function InteractiveScatterChartInner({
   );
   const mergedOptions: ChartOptions<"scatter"> = {
     ...options,
-    animation: dragSelection?.axis === "pan-y" ? false : options.animation,
+    animation:
+      dragSelection?.axis === "pan-y" || dragSelection?.axis === "pan-x"
+        ? false
+        : options.animation,
     color: chartTextColor,
     font: {
       ...options.font,
