@@ -204,11 +204,7 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
       };
     }
 
-    for (
-      let channelOffset = 0;
-      channelOffset < channelIndexes.length;
-      channelOffset += 1
-    ) {
+    for (let channelOffset = 0; channelOffset < channelIndexes.length; channelOffset += 1) {
       const channelIndex = channelIndexes[channelOffset].index;
       const yValue = Number(columns[channelIndex]);
 
@@ -278,22 +274,20 @@ export default function CsvPlotter() {
   const parsed = parseTimeSeriesCsv(csvInput);
 
   const chartData: ChartData<"scatter"> = {
-    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>(
-      (channel, index) => {
-        const color = palette[index % palette.length];
+    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel, index) => {
+      const color = palette[index % palette.length];
 
-        return {
-          label: channel.label,
-          data: channel.points,
-          showLine: true,
-          borderWidth: 2,
-          borderColor: color.border,
-          backgroundColor: color.background,
-          pointRadius: 1.5,
-          pointHoverRadius: 3,
-        };
-      },
-    ),
+      return {
+        label: channel.label,
+        data: channel.points,
+        showLine: true,
+        borderWidth: 2,
+        borderColor: color.border,
+        backgroundColor: color.background,
+        pointRadius: 1.5,
+        pointHoverRadius: 3,
+      };
+    }),
   };
 
   const chartOptions: ChartOptions<"scatter"> = {
@@ -391,7 +385,7 @@ export default function CsvPlotter() {
       <div className="sectionCard visualizerChartCard">
         <div>
           <p className="sectionCard__kicker">Time-series trace</p>
-          <h2>CSV Plot</h2>
+          <h2>Time CSV Plot</h2>
           <p>
             Any non-time header is plotted as its own series against time, even
             if the time column appears last in the file.

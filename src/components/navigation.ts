@@ -52,10 +52,16 @@ export const navSections: NavSection[] = [
         description: "Plot x and y arrays in a Chart.js figure.",
       },
       {
-        href: "/plotters/csv-plotter",
+        href: "/plotters/generic-csv-plotter",
         label: "CSV Plotter",
         description:
-          "Upload a two-column CSV and plot one column against the other.",
+          "Choose which CSV columns map to x and which become y-series.",
+      },
+      {
+        href: "/plotters/csv-plotter",
+        label: "Time CSV Plotter",
+        description:
+          "Plot every non-time column against a detected time axis.",
       },
       {
         href: "/plotters/fits-plotter",
