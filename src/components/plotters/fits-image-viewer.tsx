@@ -37,14 +37,6 @@ type DragSelection = {
   startY: number;
 };
 
-type ResizeDrag = {
-  pointerId: number;
-  startHeight: number;
-  startWidth: number;
-  startX: number;
-  startY: number;
-};
-
 type HoverSample = {
   left: number;
   top: number;
@@ -53,13 +45,7 @@ type HoverSample = {
   y: number;
 };
 
-type DisplayMode = "data" | "free";
 type SliceAxis = "horizontal" | "vertical";
-
-type DisplayFrameSize = {
-  height: number;
-  width: number;
-};
 
 type ColorMapName = "gray" | "viridis" | "plasma" | "inferno" | "magma";
 
@@ -274,19 +260,6 @@ function getPointerDetails(
   };
 }
 
-function getDefaultFreeDisplaySize(summary: FitsImageSummary): DisplayFrameSize {
-  const maxWidth = 760;
-  const maxHeight = 420;
-  const widthScale = maxWidth / summary.width;
-  const heightScale = maxHeight / summary.height;
-  const scale = Math.min(widthScale, heightScale, 1);
-
-  return {
-    width: Math.max(280, Math.round(summary.width * scale)),
-    height: Math.max(160, Math.round(summary.height * scale)),
-  };
-}
-
 function buildSliceSeries(
   summary: FitsImageSummary,
   sliceAxis: SliceAxis,
@@ -462,6 +435,17 @@ function SaveIcon() {
   );
 }
 
+function SliceIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M5 6.5h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M5 12h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M5 17.5h14" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M9 5v14" fill="none" stroke="currentColor" strokeDasharray="2.4 2.4" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function getDefaultTitleFromSourceLabel(sourceLabel: string) {
   const normalized = sourceLabel.replace(/\\/g, "/").split("/").pop()?.trim() ?? "";
 
@@ -524,13 +508,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   const colorbarBottomLabelRef = useRef<HTMLSpanElement | null>(null);
   const [hoverSample, setHoverSample] = useState<HoverSample | null>(null);
   const [dragSelection, setDragSelection] = useState<DragSelection | null>(null);
-  const [resizeDrag, setResizeDrag] = useState<ResizeDrag | null>(null);
   const [colorMap, setColorMap] = useState<ColorMapName>("gray");
   const [viewport, setViewport] = useState<Viewport>(() => buildBaseViewport(summary));
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("data");
-  const [freeDisplaySize, setFreeDisplaySize] = useState<DisplayFrameSize>(() =>
-    getDefaultFreeDisplaySize(summary),
-  );
+  const [sliceControlsOpen, setSliceControlsOpen] = useState(false);
   const [sliceAxis, setSliceAxis] = useState<SliceAxis>("horizontal");
   const [selectedRow, setSelectedRow] = useState(() => Math.floor(summary.height / 2));
   const [selectedColumn, setSelectedColumn] = useState(() => Math.floor(summary.width / 2));
@@ -684,54 +664,18 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     setDragSelection(null);
   }
 
-  function handleResizePointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (displayMode !== "free" || event.button !== 0) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setResizeDrag({
-      pointerId: event.pointerId,
-      startHeight: freeDisplaySize.height,
-      startWidth: freeDisplaySize.width,
-      startX: event.clientX,
-      startY: event.clientY,
+  function handleSaveSliceCsv() {
+    const header = "x,y";
+    const rows = sliceSeries.points.map((point) => `${point.x},${point.y}`);
+    const blob = new Blob([[header, ...rows].join("\n")], {
+      type: "text/csv;charset=utf-8",
     });
-  }
-
-  function handleResizePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!resizeDrag || resizeDrag.pointerId !== event.pointerId) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    setFreeDisplaySize({
-      width: clamp(
-        Math.round(resizeDrag.startWidth + (event.clientX - resizeDrag.startX)),
-        140,
-        2400,
-      ),
-      height: clamp(
-        Math.round(resizeDrag.startHeight + (event.clientY - resizeDrag.startY)),
-        100,
-        1600,
-      ),
-    });
-  }
-
-  function handleResizePointerUp(event: PointerEvent<HTMLDivElement>) {
-    if (!resizeDrag || resizeDrag.pointerId !== event.pointerId) {
-      return;
-    }
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    setResizeDrag(null);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${getExportFileName(chartTitle, xAxisLabel, yAxisLabel)}-${sliceAxis === "horizontal" ? `row-${activeRow}` : `column-${activeColumn}`}-slice.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   function handleSave() {
@@ -906,10 +850,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
         width: `${Math.abs(dragSelection.currentX - dragSelection.startX) * 100}%`,
       }
     : null;
-  const displayAspectRatio =
-    displayMode === "free"
-      ? freeDisplaySize.width / Math.max(freeDisplaySize.height, 1)
-      : viewport.width / Math.max(viewport.height, 1);
   const sliceSeries = useMemo(
     () => buildSliceSeries(summary, sliceAxis, activeRow, activeColumn),
     [activeColumn, activeRow, sliceAxis, summary],
@@ -990,20 +930,10 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
               </span>
             </div>
           ) : null}
-          <div className={`fitsImageViewport ${displayMode === "free" ? "fitsImageViewport--free" : ""}`}>
-            <div
-              className={`fitsImageViewport__surface ${displayMode === "free" ? "fitsImageViewport__surface--free" : ""}`}
-              style={
-                displayMode === "free"
-                  ? {
-                      height: `${freeDisplaySize.height}px`,
-                      width: `${freeDisplaySize.width}px`,
-                    }
-                  : undefined
-              }
-            >
+          <div className="fitsImageViewport">
+            <div className="fitsImageViewport__surface">
               <canvas
-                className={`fitsImageCanvas ${displayMode === "free" ? "fitsImageCanvas--free" : ""}`}
+                className="fitsImageCanvas"
                 onPointerCancel={handlePointerCancel}
                 onPointerDown={handlePointerDown}
                 onPointerLeave={() => {
@@ -1014,14 +944,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 ref={canvasRef}
-                style={
-                  displayMode === "free"
-                    ? {
-                        height: `${freeDisplaySize.height}px`,
-                        width: `${freeDisplaySize.width}px`,
-                      }
-                    : undefined
-                }
               />
               {sliceBandStyle ? (
                 <div
@@ -1048,18 +970,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                     <span>y {hoverSample.y}</span>
                     <span>value {formatPixelValue(hoverSample.value)}</span>
                   </div>
-                </>
-              ) : null}
-              {displayMode === "free" ? (
-                <>
-                  <div className="fitsImageViewport__resizeHint">Drag corner to resize display aspect</div>
-                  <div
-                    className="fitsImageViewport__resizeHandle"
-                    onPointerDown={handleResizePointerDown}
-                    onPointerMove={handleResizePointerMove}
-                    onPointerUp={handleResizePointerUp}
-                    onPointerCancel={handleResizePointerUp}
-                  />
                 </>
               ) : null}
             </div>
@@ -1121,6 +1031,16 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           type="button"
         >
           <AxisLabelsIcon />
+        </button>
+        <button
+          aria-label={sliceControlsOpen ? "Hide slice tools" : "Show slice tools"}
+          aria-pressed={sliceControlsOpen}
+          className={`interactiveChart__iconButton interactiveChart__iconButton--slice ${sliceControlsOpen ? "is-open" : ""}`}
+          onClick={() => setSliceControlsOpen((current) => !current)}
+          title="Slice tools"
+          type="button"
+        >
+          <SliceIcon />
         </button>
         <button
           aria-label={saveControlsOpen ? "Hide save options" : "Show save options"}
@@ -1224,131 +1144,111 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
         </div>
       ) : null}
 
-      <div className="fitsInspectorGrid">
-        <section className="fitsInspectorCard">
-          <div className="fitsInspectorCard__header">
-            <p className="sectionCard__kicker">Display</p>
-            <h3>Aspect ratio</h3>
-          </div>
-          <label className="fitsColorControl fitsColorControl--compact">
-            <span>Mode</span>
-            <select
-              className="fitsColorControl__select"
-              onChange={(event) => setDisplayMode(event.target.value as DisplayMode)}
-              value={displayMode}
-            >
-              <option value="data">Data aspect</option>
-              <option value="free">Free resize</option>
-            </select>
-          </label>
-          <p className="fitsInspectorCard__meta">
-            Current display ratio {displayAspectRatio.toFixed(3)}:1.
-            {displayMode === "free"
-              ? " Drag the lower-right corner of the image frame to reshape it."
-              : " Switch to free resize when you want to distort the display intentionally."}
-          </p>
-          <button
-            className="buttonControl buttonControl--secondary fitsInspectorCard__button"
-            onClick={() => setFreeDisplaySize(getDefaultFreeDisplaySize(summary))}
-            type="button"
-          >
-            <span className="buttonControl__title">Reset display frame</span>
-            <span className="buttonControl__meta">Back to the default free-size preview</span>
-          </button>
-        </section>
-
-        <section className="fitsInspectorCard">
-          <div className="fitsInspectorCard__header">
-            <p className="sectionCard__kicker">Slice</p>
-            <h3>1D intensity plot</h3>
-          </div>
-          <div className="fitsSliceControls">
-            <label className="fitsColorControl fitsColorControl--compact">
-              <span>Direction</span>
-              <select
-                className="fitsColorControl__select"
-                onChange={(event) => setSliceAxis(event.target.value as SliceAxis)}
-                value={sliceAxis}
+      {sliceControlsOpen ? (
+        <>
+          <div className="fitsInspectorGrid">
+            <section className="fitsInspectorCard">
+              <div className="fitsInspectorCard__header">
+                <p className="sectionCard__kicker">Slice</p>
+                <h3>1D intensity plot</h3>
+              </div>
+              <div className="fitsSliceControls">
+                <label className="fitsColorControl fitsColorControl--compact">
+                  <span>Direction</span>
+                  <select
+                    className="fitsColorControl__select"
+                    onChange={(event) => setSliceAxis(event.target.value as SliceAxis)}
+                    value={sliceAxis}
+                  >
+                    <option value="horizontal">Horizontal slice (pick y)</option>
+                    <option value="vertical">Vertical slice (pick x)</option>
+                  </select>
+                </label>
+                {sliceAxis === "horizontal" ? (
+                  <label className="field fitsSliceControls__field">
+                    <span>y index</span>
+                    <div className="field__control">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max={Math.max(summary.height - 1, 0)}
+                        step="1"
+                        value={activeRow}
+                        onChange={(event) =>
+                          setSelectedRow(
+                            clamp(
+                              Number.parseInt(event.target.value || "0", 10) || 0,
+                              0,
+                              Math.max(summary.height - 1, 0),
+                            ),
+                          )
+                        }
+                      />
+                      <span>px</span>
+                    </div>
+                  </label>
+                ) : (
+                  <label className="field fitsSliceControls__field">
+                    <span>x index</span>
+                    <div className="field__control">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max={Math.max(summary.width - 1, 0)}
+                        step="1"
+                        value={activeColumn}
+                        onChange={(event) =>
+                          setSelectedColumn(
+                            clamp(
+                              Number.parseInt(event.target.value || "0", 10) || 0,
+                              0,
+                              Math.max(summary.width - 1, 0),
+                            ),
+                          )
+                        }
+                      />
+                      <span>px</span>
+                    </div>
+                  </label>
+                )}
+              </div>
+              <p className="fitsInspectorCard__meta">
+                Click the image to snap the active {sliceAxis === "horizontal" ? "row" : "column"} to the hovered location.
+                The highlighted band on the image matches the trace below.
+              </p>
+              <button
+                className="buttonControl buttonControl--secondary fitsInspectorCard__button"
+                onClick={handleSaveSliceCsv}
+                type="button"
               >
-                <option value="horizontal">Horizontal slice (pick y)</option>
-                <option value="vertical">Vertical slice (pick x)</option>
-              </select>
-            </label>
-            {sliceAxis === "horizontal" ? (
-              <label className="field fitsSliceControls__field">
-                <span>y index</span>
-                <div className="field__control">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max={Math.max(summary.height - 1, 0)}
-                    step="1"
-                    value={activeRow}
-                    onChange={(event) =>
-                      setSelectedRow(
-                        clamp(
-                          Number.parseInt(event.target.value || "0", 10) || 0,
-                          0,
-                          Math.max(summary.height - 1, 0),
-                        ),
-                      )
-                    }
-                  />
-                  <span>px</span>
-                </div>
-              </label>
-            ) : (
-              <label className="field fitsSliceControls__field">
-                <span>x index</span>
-                <div className="field__control">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max={Math.max(summary.width - 1, 0)}
-                    step="1"
-                    value={activeColumn}
-                    onChange={(event) =>
-                      setSelectedColumn(
-                        clamp(
-                          Number.parseInt(event.target.value || "0", 10) || 0,
-                          0,
-                          Math.max(summary.width - 1, 0),
-                        ),
-                      )
-                    }
-                  />
-                  <span>px</span>
-                </div>
-              </label>
-            )}
+                <span className="buttonControl__title">Save slice CSV</span>
+                <span className="buttonControl__meta">Export the active slice as x,y columns</span>
+              </button>
+            </section>
           </div>
-          <p className="fitsInspectorCard__meta">
-            Click the image to snap the active {sliceAxis === "horizontal" ? "row" : "column"} to the hovered location.
-            The highlighted band on the image matches the trace below.
-          </p>
-        </section>
-      </div>
 
-      <section className="fitsSlicePanel">
-        <div className="fitsSlicePanel__header">
-          <div>
-            <p className="sectionCard__kicker">Slice Plot</p>
-            <h3>{sliceSeries.selectionLabel}</h3>
-          </div>
-          <p className="fitsSlicePanel__meta">
-            Intensity plotted against {sliceSeries.axisLabel} for the full {sliceAxis === "horizontal" ? "row" : "column"}.
-          </p>
-        </div>
-        <div className="fitsSlicePanel__chart">
-          <InteractiveScatterChart
-            data={sliceChartData}
-            options={sliceChartOptions}
-            sourceLabel={`${summary.sourceLabel}-${sliceSeries.selectionLabel}`}
-          />
-        </div>
-      </section>
+          <section className="fitsSlicePanel">
+            <div className="fitsSlicePanel__header">
+              <div>
+                <p className="sectionCard__kicker">Slice Plot</p>
+                <h3>{sliceSeries.selectionLabel}</h3>
+              </div>
+              <p className="fitsSlicePanel__meta">
+                Intensity plotted against {sliceSeries.axisLabel} for the full {sliceAxis === "horizontal" ? "row" : "column"}.
+              </p>
+            </div>
+            <div className="fitsSlicePanel__chart">
+              <InteractiveScatterChart
+                data={sliceChartData}
+                options={sliceChartOptions}
+                sourceLabel={`${summary.sourceLabel}-${sliceSeries.selectionLabel}`}
+              />
+            </div>
+          </section>
+        </>
+      ) : null}
 
       <label className="fitsColorControl">
         <span>Colormap</span>
