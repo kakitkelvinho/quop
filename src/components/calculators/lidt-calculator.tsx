@@ -2,18 +2,20 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 
+import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+
 type LaserState = {
-  power: number;
-  repetition: number;
-  w0: number;
-  wavelength: number;
+  power: string;
+  repetition: string;
+  w0: string;
+  wavelength: string;
 };
 
 type LaserFieldProps = {
   field: string;
   property: keyof LaserState;
   unit: string;
-  value: number;
+  value: string;
   setLaser: Dispatch<SetStateAction<LaserState>>;
 };
 
@@ -29,17 +31,13 @@ function LaserField({
       <span>{field}</span>
       <div className="field__control">
         <input
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="any"
-          min="0"
           value={value}
           onChange={(event) => {
-            const nextValue = Number.parseFloat(event.target.value);
-
             setLaser((previous) => ({
               ...previous,
-              [property]: nextValue,
+              [property]: event.target.value,
             }));
           }}
         />
@@ -51,14 +49,23 @@ function LaserField({
 
 export function LidtCalculator() {
   const [laser, setLaser] = useState<LaserState>({
-    power: 1,
-    repetition: 1000,
-    w0: 1.1,
-    wavelength: 980,
+    power: "1",
+    repetition: "1000",
+    w0: "1.1",
+    wavelength: "980",
   });
+  const power = parseFlexibleDecimal(laser.power);
+  const repetition = parseFlexibleDecimal(laser.repetition);
+  const w0 = parseFlexibleDecimal(laser.w0);
 
-  const pulseEnergy = laser.power / laser.repetition;
-  const energyDensity = pulseEnergy / (Math.PI * laser.w0 ** 2);
+  const pulseEnergy =
+    power !== null && repetition !== null && repetition > 0
+      ? power / repetition
+      : Number.NaN;
+  const energyDensity =
+    Number.isFinite(pulseEnergy) && w0 !== null && w0 > 0
+      ? pulseEnergy / (Math.PI * w0 ** 2)
+      : Number.NaN;
 
   return (
     <section className="pageSection">
@@ -72,8 +79,8 @@ export function LidtCalculator() {
         <div className="inputCard">
           <h2>Pulsed Lasers</h2>
           <p>
-            Enter your beam parameters below. Decimal commas are not supported
-            in the browser input fields, so use periods for decimals.
+            Enter your beam parameters below. Both decimal commas and decimal
+            periods are accepted.
           </p>
 
           <div className="fieldStack">

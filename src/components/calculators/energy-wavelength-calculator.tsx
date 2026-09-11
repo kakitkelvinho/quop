@@ -1,24 +1,27 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 
-function handleNumericChange(
-  value: string,
-  setter: Dispatch<SetStateAction<number>>,
-) {
-  setter(Number.parseFloat(value));
-}
+import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
 
 export function EnergyWavelengthCalculator() {
   const electronVolt = 1.602176634e-19;
   const c = 299792458;
   const h = 6.62607015e-34;
 
-  const [energy, setEnergy] = useState(1.2);
-  const [wavelength, setWavelength] = useState(550);
+  const [energyInput, setEnergyInput] = useState("1.2");
+  const [wavelengthInput, setWavelengthInput] = useState("550");
+  const energy = parseFlexibleDecimal(energyInput);
+  const wavelength = parseFlexibleDecimal(wavelengthInput);
 
-  const energyFromWavelength = (h * c) / (wavelength * 1e-9 * electronVolt);
-  const wavelengthFromEnergy = (h * c) / (energy * electronVolt * 1e-9);
+  const energyFromWavelength =
+    wavelength !== null && wavelength > 0
+      ? (h * c) / (wavelength * 1e-9 * electronVolt)
+      : Number.NaN;
+  const wavelengthFromEnergy =
+    energy !== null && energy > 0
+      ? (h * c) / (energy * electronVolt * 1e-9)
+      : Number.NaN;
 
   return (
     <section className="pageSection">
@@ -35,14 +38,10 @@ export function EnergyWavelengthCalculator() {
             <span>Energy</span>
             <div className="field__control">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.1"
-                min="0"
-                value={energy}
-                onChange={(event) =>
-                  handleNumericChange(event.target.value, setEnergy)
-                }
+                value={energyInput}
+                onChange={(event) => setEnergyInput(event.target.value)}
               />
               <span>eV</span>
             </div>
@@ -60,14 +59,10 @@ export function EnergyWavelengthCalculator() {
             <span>Wavelength</span>
             <div className="field__control">
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="1"
-                min="0"
-                value={wavelength}
-                onChange={(event) =>
-                  handleNumericChange(event.target.value, setWavelength)
-                }
+                value={wavelengthInput}
+                onChange={(event) => setWavelengthInput(event.target.value)}
               />
               <span>nm</span>
             </div>

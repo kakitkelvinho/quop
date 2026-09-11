@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+
 type ConversionMode = "pace-to-speed" | "speed-to-pace";
 
 export function PaceCalculator() {
@@ -15,7 +17,12 @@ export function PaceCalculator() {
   function handlePaceMinutesChange(value: string) {
     setPaceMinutes(value);
 
-    const minutesPerKm = Number(value) + Number(paceSeconds) / 60;
+    const nextMinutes = parseFlexibleDecimal(value);
+    const nextSeconds = parseFlexibleDecimal(paceSeconds);
+    const minutesPerKm =
+      nextMinutes !== null && nextSeconds !== null
+        ? nextMinutes + nextSeconds / 60
+        : Number.NaN;
 
     if (minutesPerKm > 0) {
       const result = 60 / minutesPerKm;
@@ -26,7 +33,12 @@ export function PaceCalculator() {
   function handlePaceSecondsChange(value: string) {
     setPaceSeconds(value);
 
-    const minutesPerKm = Number(paceMinutes) + Number(value) / 60;
+    const nextMinutes = parseFlexibleDecimal(paceMinutes);
+    const nextSeconds = parseFlexibleDecimal(value);
+    const minutesPerKm =
+      nextMinutes !== null && nextSeconds !== null
+        ? nextMinutes + nextSeconds / 60
+        : Number.NaN;
 
     if (minutesPerKm > 0) {
       const result = 60 / minutesPerKm;
@@ -37,9 +49,9 @@ export function PaceCalculator() {
   function handleSpeedChange(value: string) {
     setSpeed(value);
 
-    const nextSpeed = Number(value);
+    const nextSpeed = parseFlexibleDecimal(value);
 
-    if (nextSpeed > 0) {
+    if (nextSpeed !== null && nextSpeed > 0) {
       const totalMinutesPerKm = 60 / nextSpeed;
       const wholeMinutes = Math.floor(totalMinutesPerKm);
       const seconds = Math.round((totalMinutesPerKm - wholeMinutes) * 60);
@@ -54,8 +66,6 @@ export function PaceCalculator() {
       setPaceSeconds(String(seconds.toFixed(2)));
     }
   }
-
-  // Wire your conversion result into these display values.
 
   return (
     <section className="pageSection">
@@ -82,10 +92,8 @@ export function PaceCalculator() {
                 <span>Minutes</span>
                 <div className="field__control">
                   <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    step="1"
+                    type="text"
+                    inputMode="decimal"
                     value={paceMinutes}
                     onChange={(event) =>
                       handlePaceMinutesChange(event.target.value)
@@ -99,11 +107,8 @@ export function PaceCalculator() {
                 <span>Seconds</span>
                 <div className="field__control">
                   <input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max="59"
-                    step="1"
+                    type="text"
+                    inputMode="decimal"
                     value={paceSeconds}
                     onChange={(event) =>
                       handlePaceSecondsChange(event.target.value)
@@ -118,10 +123,8 @@ export function PaceCalculator() {
               <span>Speed</span>
               <div className="field__control">
                 <input
-                  type="number"
+                  type="text"
                   inputMode="decimal"
-                  min="0"
-                  step="0.1"
                   value={speed}
                   onChange={(event) => handleSpeedChange(event.target.value)}
                 />
