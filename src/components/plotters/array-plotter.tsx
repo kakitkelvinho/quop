@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -10,6 +10,7 @@ import {
   Title,
   Tooltip,
   type ChartData,
+  type ChartDataset,
   type ChartOptions,
 } from "chart.js";
 
@@ -29,8 +30,26 @@ type ParseResult = {
   yCount: number;
 };
 
+type CsvDataset = {
+  label: string;
+  points: Point[];
+};
+
+type CsvParseResult = {
+  datasets: CsvDataset[];
+  error: string | null;
+  sourceLabel: string;
+};
+
 const defaultX = "[0, 1, 2, 3, 4, 5, 6]";
 const defaultY = "[0, 1, 4, 9, 16, 25, 36]";
+const palette = [
+  { border: "#8b1e3f", background: "#8b1e3f" },
+  { border: "#1f6f78", background: "#1f6f78" },
+  { border: "#d17a22", background: "#d17a22" },
+  { border: "#4a6d3b", background: "#4a6d3b" },
+  { border: "#5c4b8a", background: "#5c4b8a" },
+];
 
 function parseNumberArray(value: string): number[] {
   const trimmed = value.trim();
@@ -56,6 +75,39 @@ function parseNumberArray(value: string): number[] {
 
     return numeric;
   });
+}
+
+function parseCsvRow(row: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let insideQuotes = false;
+
+  for (let index = 0; index < row.length; index += 1) {
+    const character = row[index];
+    const nextCharacter = row[index + 1];
+
+    if (character === '"') {
+      if (insideQuotes && nextCharacter === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        insideQuotes = !insideQuotes;
+      }
+
+      continue;
+    }
+
+    if (character === "," && !insideQuotes) {
+      values.push(current.trim());
+      current = "";
+      continue;
+    }
+
+    current += character;
+  }
+
+  values.push(current.trim());
+  return values;
 }
 
 function buildSeries(xInput: string, yInput: string): ParseResult {
@@ -97,11 +149,88 @@ function buildSeries(xInput: string, yInput: string): ParseResult {
   }
 }
 
+function parseCsvFile(contents: string, label: string): CsvParseResult {
+  const lines = contents
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !line.startsWith("%"));
+
+  if (!lines.length) {
+    return {
+      datasets: [],
+      error: `${label}: no usable CSV rows found.`,
+      sourceLabel: label,
+    };
+  }
+
+  const dataStartIndex = lines.findIndex((line) => {
+    const columns = parseCsvRow(line);
+
+    if (columns.length < 2) {
+      return false;
+    }
+
+    const xValue = Number(columns[0]);
+    const yValue = Number(columns[1]);
+    return Number.isFinite(xValue) && Number.isFinite(yValue);
+  });
+
+  if (dataStartIndex === -1) {
+    return {
+      datasets: [],
+      error: `${label}: could not find a numeric x/y data block.`,
+      sourceLabel: label,
+    };
+  }
+
+  const points: Point[] = [];
+
+  for (let index = dataStartIndex; index < lines.length; index += 1) {
+    const columns = parseCsvRow(lines[index]);
+
+    if (columns.length < 2) {
+      return {
+        datasets: [],
+        error: `${label}: row ${index + 1} does not contain at least two columns.`,
+        sourceLabel: label,
+      };
+    }
+
+    const xValue = Number(columns[0]);
+    const yValue = Number(columns[1]);
+
+    if (!Number.isFinite(xValue) || !Number.isFinite(yValue)) {
+      return {
+        datasets: [],
+        error: `${label}: row ${index + 1} has a non-numeric x or y value.`,
+        sourceLabel: label,
+      };
+    }
+
+    points.push({ x: xValue, y: yValue });
+  }
+
+  if (!points.length) {
+    return {
+      datasets: [],
+      error: `${label}: no numeric data rows found.`,
+      sourceLabel: label,
+    };
+  }
+
+  return {
+    datasets: [{ label, points }],
+    error: null,
+    sourceLabel: label,
+  };
+}
+
 const chartOptions: ChartOptions<"scatter"> = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
-    legend: { display: false },
+    legend: { display: true, position: "top" },
     title: { display: false },
     tooltip: { enabled: true },
   },
@@ -125,20 +254,79 @@ const chartOptions: ChartOptions<"scatter"> = {
 export default function ArrayPlotter() {
   const [xInput, setXInput] = useState(defaultX);
   const [yInput, setYInput] = useState(defaultY);
+  const [csvDatasets, setCsvDatasets] = useState<CsvDataset[]>([]);
+  const [csvStatus, setCsvStatus] = useState<string | null>(null);
+  const [csvError, setCsvError] = useState<string | null>(null);
 
   const series = buildSeries(xInput, yInput);
+  const usingCsvMode = csvDatasets.length > 0;
+
   const chartData: ChartData<"scatter"> = {
-    datasets: [
-      {
-        label: "Input series",
-        data: series.points,
-        showLine: true,
-        borderWidth: 2,
-        borderColor: "#8b1e3f",
-        backgroundColor: "#8b1e3f",
-      },
-    ],
+    datasets: usingCsvMode
+      ? csvDatasets.map<ChartDataset<"scatter", Point[]>>((dataset, index) => {
+          const color = palette[index % palette.length];
+
+          return {
+            label: dataset.label,
+            data: dataset.points,
+            showLine: true,
+            borderWidth: 2,
+            borderColor: color.border,
+            backgroundColor: color.background,
+          };
+        })
+      : [
+          {
+            label: "Input series",
+            data: series.points,
+            showLine: true,
+            borderWidth: 2,
+            borderColor: "#8b1e3f",
+            backgroundColor: "#8b1e3f",
+          },
+        ],
   };
+
+  async function handleCsvUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+
+    if (!files.length) {
+      return;
+    }
+
+    const results = await Promise.all(
+      files.map(async (file) => parseCsvFile(await file.text(), file.name)),
+    );
+    const firstError = results.find((result) => result.error);
+
+    if (firstError) {
+      setCsvDatasets([]);
+      setCsvStatus(null);
+      setCsvError(firstError.error);
+      event.target.value = "";
+      return;
+    }
+
+    const datasets = results.flatMap((result) => result.datasets);
+    setCsvDatasets(datasets);
+    setCsvStatus(`Loaded ${files.length} CSV file${files.length === 1 ? "" : "s"}.`);
+    setCsvError(null);
+    event.target.value = "";
+  }
+
+  function handleClearCsv() {
+    setCsvDatasets([]);
+    setCsvStatus(null);
+    setCsvError(null);
+  }
+
+  const statusMessage = usingCsvMode
+    ? csvStatus ?? `Plotting ${csvDatasets.length} CSV dataset${csvDatasets.length === 1 ? "" : "s"}.`
+    : series.error
+      ? series.error
+      : `Plotting ${series.points.length} points from ${series.xCount} x-values and ${series.yCount} y-values.`;
+
+  const activeError = usingCsvMode ? csvError : series.error;
 
   return (
     <div className="visualizerLayout">
@@ -147,9 +335,34 @@ export default function ArrayPlotter() {
           <h2>Array Input</h2>
           <p className="lead">
             Paste JSON arrays like <code>[0, 1, 2]</code> or plain values like
-            <code> 0, 1, 2</code>.
+            <code> 0, 1, 2</code>. You can also load one or more CSV files with
+            numeric x/y columns. Leading <code>%</code> comment lines and header
+            rows before the numeric data are ignored.
           </p>
         </div>
+
+        <label className="field">
+          <span>CSV files</span>
+          <input
+            className="fileInput"
+            type="file"
+            accept=".csv,text/csv"
+            multiple
+            onChange={(event) => {
+              void handleCsvUpload(event);
+            }}
+          />
+        </label>
+
+        {usingCsvMode ? (
+          <button
+            type="button"
+            className="buttonLink buttonLink--ghost"
+            onClick={handleClearCsv}
+          >
+            Clear CSV datasets
+          </button>
+        ) : null}
 
         <label className="field">
           <span>x values</span>
@@ -175,11 +388,7 @@ export default function ArrayPlotter() {
           </div>
         </label>
 
-        <p className="resultCard">
-          {series.error
-            ? series.error
-            : `Plotting ${series.points.length} points from ${series.xCount} x-values and ${series.yCount} y-values.`}
-        </p>
+        <p className="resultCard">{csvError ?? statusMessage}</p>
       </div>
 
       <div className="sectionCard visualizerChartCard">
@@ -189,9 +398,9 @@ export default function ArrayPlotter() {
         </div>
         <div className="visualizerChartSurface">
           <InteractiveScatterChart data={chartData} options={chartOptions} />
-          {series.error ? (
+          {activeError ? (
             <div className="visualizerEmptyState visualizerOverlayState">
-              Fix the input arrays to render the figure.
+              Fix the input data to render the figure.
             </div>
           ) : null}
         </div>

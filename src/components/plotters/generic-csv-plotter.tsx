@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -163,47 +163,41 @@ export default function GenericCsvPlotter() {
   const [csvInput, setCsvInput] = useState(createGenericDemoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-generic-columns.csv");
   const parsed = useMemo(() => parseGenericCsv(csvInput), [csvInput]);
-  const headerSignature = parsed.headers.join("::");
   const [xColumnIndex, setXColumnIndex] = useState(0);
   const [yColumnIndexes, setYColumnIndexes] = useState<number[]>([]);
 
-  useEffect(() => {
+  const resolvedXColumnIndex = parsed.headers.length
+    ? Math.min(xColumnIndex, parsed.headers.length - 1)
+    : 0;
+  const resolvedYColumnIndexes = useMemo(() => {
     if (!parsed.headers.length) {
-      setXColumnIndex(0);
-      setYColumnIndexes([]);
-      return;
+      return [];
     }
 
-    setXColumnIndex((current) => Math.min(current, parsed.headers.length - 1));
-  }, [headerSignature, parsed.headers.length]);
+    const filtered = yColumnIndexes.filter(
+      (index) => index < parsed.headers.length && index !== resolvedXColumnIndex,
+    );
 
-  useEffect(() => {
-    if (!parsed.headers.length) {
-      return;
-    }
+    return filtered.length
+      ? filtered
+      : parsed.headers
+          .map((_, index) => index)
+          .filter((index) => index !== resolvedXColumnIndex);
+  }, [parsed.headers, resolvedXColumnIndex, yColumnIndexes]);
 
-    setYColumnIndexes((current) => {
-      const filtered = current.filter(
-        (index) => index < parsed.headers.length && index !== xColumnIndex,
-      );
-
-      return filtered.length
-        ? filtered
-        : parsed.headers.map((_, index) => index).filter((index) => index !== xColumnIndex);
-    });
-  }, [headerSignature, parsed.headers, xColumnIndex]);
-
-  const xLabel = parsed.headers[xColumnIndex] ?? "x";
-  const selectedYLabels = yColumnIndexes.map((index) => parsed.headers[index]).filter(Boolean);
+  const xLabel = parsed.headers[resolvedXColumnIndex] ?? "x";
+  const selectedYLabels = resolvedYColumnIndexes
+    .map((index) => parsed.headers[index])
+    .filter(Boolean);
 
   const chartData: ChartData<"scatter"> = {
-    datasets: yColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex, index) => {
+    datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex, index) => {
       const color = palette[index % palette.length];
 
       return {
         label: parsed.headers[columnIndex],
         data: parsed.rows.map((row) => ({
-          x: row[xColumnIndex],
+          x: row[resolvedXColumnIndex],
           y: row[columnIndex],
         })),
         showLine: true,
@@ -265,6 +259,7 @@ export default function GenericCsvPlotter() {
     setXColumnIndex(nextIndex);
     setYColumnIndexes((current) => {
       const filtered = current.filter((index) => index !== nextIndex);
+
       return filtered.length
         ? filtered
         : parsed.headers.map((_, index) => index).filter((index) => index !== nextIndex);
@@ -281,7 +276,7 @@ export default function GenericCsvPlotter() {
     });
   }
 
-  const canRenderChart = !parsed.error && yColumnIndexes.length > 0 && parsed.rows.length > 0;
+  const canRenderChart = !parsed.error && resolvedYColumnIndexes.length > 0 && parsed.rows.length > 0;
 
   return (
     <div className="visualizerLayout">
@@ -328,15 +323,15 @@ export default function GenericCsvPlotter() {
               <p>Pick one x column and any number of y columns.</p>
             </div>
             {parsed.headers.map((header, index) => {
-              const isX = index === xColumnIndex;
-              const isY = yColumnIndexes.includes(index);
+              const isX = index === resolvedXColumnIndex;
+              const isY = resolvedYColumnIndexes.includes(index);
 
               return (
                 <div className="csvRoleRow" key={`${header}-${index}`}>
                   <span className="csvRoleRow__name">{header}</span>
                   <label className="csvRoleToggle">
                     <input
-                      checked={isX}
+                      checked={index === resolvedXColumnIndex}
                       name="generic-csv-x-column"
                       onChange={() => handleXColumnChange(index)}
                       type="radio"
@@ -363,7 +358,7 @@ export default function GenericCsvPlotter() {
         <p className="resultCard">
           {parsed.error
             ? parsed.error
-            : yColumnIndexes.length === 0
+            : resolvedYColumnIndexes.length === 0
               ? "Select at least one Y column to render the plot."
               : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${xLabel}. Y-series: ${selectedYLabels.join(", ")}.`}
         </p>
