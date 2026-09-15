@@ -13,7 +13,7 @@ function getTheme(): Theme {
 
 function MoonIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="themeToggle__icon">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[1.35rem] w-[1.35rem]">
       <path
         d="M15 2.8a9.8 9.8 0 1 0 6.2 17.4A8.6 8.6 0 0 1 15 2.8Z"
         fill="currentColor"
@@ -24,7 +24,7 @@ function MoonIcon() {
 
 function SunIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="themeToggle__icon">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[1.35rem] w-[1.35rem]">
       <circle cx="12" cy="12" r="4.2" fill="currentColor" />
       <g stroke="currentColor" strokeLinecap="round" strokeWidth="1.8">
         <path d="M12 2.5v3" />
@@ -49,7 +49,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="themeToggle"
+      className="fixed bottom-4 right-4 z-50 inline-flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-[var(--shadow)] transition-transform hover:-translate-y-0.5"
       type="button"
       onClick={handleToggle}
       aria-label="Toggle dark mode"
@@ -61,7 +61,7 @@ export function ThemeToggle() {
       <span className="themeToggle__iconWrap themeToggle__iconWrap--sun">
         <SunIcon />
       </span>
-      <span className="themeToggle__srOnly">Toggle dark mode</span>
+      <span className="sr-only">Toggle dark mode</span>
     </button>
   );
 }
