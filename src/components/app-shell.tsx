@@ -58,9 +58,9 @@ function NavItem({
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 p-4 pb-0">
+      <header className="sticky top-0 z-40">
         <nav
-          className="mx-auto grid w-full max-w-4xl grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 shadow-[var(--shadow)] backdrop-blur-[14px]"
+          className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-6 py-3 backdrop-blur-[14px]"
           aria-label="Primary"
         >
           <div className="flex items-center gap-1">
