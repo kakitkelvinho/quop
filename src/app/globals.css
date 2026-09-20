@@ -252,6 +252,21 @@ html[data-theme="dark"] .buttonLink {
   color: #1a1d26;
 }
 
+.buttonLink--ghost {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+}
+
+.buttonLink--ghost:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+html[data-theme="dark"] .buttonLink--ghost {
+  color: var(--foreground);
+}
+
 .fieldStack,
 .resultStack {
   display: grid;
@@ -423,6 +438,9 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   --interactive-chart-border: rgba(91, 102, 117, 0.2);
   --interactive-chart-button-bg: rgb(255 255 255 / 0.84);
   --interactive-chart-button-color: #243244;
+  --interactive-chart-active-border: rgba(230, 171, 88, 0.42);
+  --interactive-chart-active-bg: rgba(230, 171, 88, 0.16);
+  --interactive-chart-active-text: #8f5f12;
   --interactive-chart-surface-bg: linear-gradient(
     180deg,
     rgb(255 252 247 / 0.98),
@@ -455,6 +473,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   --interactive-chart-border: rgba(148, 163, 184, 0.24);
   --interactive-chart-button-bg: rgb(18 22 31 / 0.9);
   --interactive-chart-button-color: #ebf1f7;
+  --interactive-chart-active-text: #ffd99d;
   --interactive-chart-surface-bg: linear-gradient(
     180deg,
     rgb(19 25 36 / 0.98),
@@ -527,104 +546,15 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   height: 1.12rem;
 }
 
-.interactiveChart__iconButton.is-active {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton.is-active {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--theme.is-dark {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--theme.is-dark {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--join.is-joined {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--join.is-joined {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--size.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--size.is-open {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--axis.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--axis.is-open {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--legend.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--legend.is-open {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--font.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--font.is-open {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--title.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--title.is-open {
-  color: #ffd99d;
-}
-
+.interactiveChart__iconButton.is-active,
+.interactiveChart__iconButton--theme.is-dark,
+.interactiveChart__iconButton--join.is-joined,
+.interactiveChart__iconButton--axis.is-open,
+.interactiveChart__iconButton--title.is-open,
 .interactiveChart__iconButton--save.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--save.is-open {
-  color: #ffd99d;
-}
-
-.interactiveChart__iconButton--ticks.is-open {
-  border-color: rgba(230, 171, 88, 0.42);
-  background: rgba(230, 171, 88, 0.16);
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__iconButton--ticks.is-open {
-  color: #ffd99d;
+  border-color: var(--interactive-chart-active-border);
+  background: var(--interactive-chart-active-bg);
+  color: var(--interactive-chart-active-text);
 }
 
 .interactiveChart__footer {
@@ -639,9 +569,17 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   padding-top: 0;
 }
 
+.interactiveChart__footerDivider {
+  width: 1px;
+  height: 1.6rem;
+  margin: 0 0.15rem;
+  background: var(--interactive-chart-border);
+}
+
 .interactiveChart__gesturePanel,
 .interactiveChart__sliderBar,
-.interactiveChart__editorBar {
+.interactiveChart__editorBar,
+.interactiveChart__customizeMenu {
   display: grid;
   gap: 0.55rem;
   width: 100%;
@@ -656,8 +594,51 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 
 .interactiveChart--dark .interactiveChart__gesturePanel,
 .interactiveChart--dark .interactiveChart__sliderBar,
-.interactiveChart--dark .interactiveChart__editorBar {
+.interactiveChart--dark .interactiveChart__editorBar,
+.interactiveChart--dark .interactiveChart__customizeMenu {
   background: rgb(18 22 31 / 0.42);
+}
+
+.interactiveChart__customizeMenu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem 0.7rem;
+}
+
+.interactiveChart__customizeMenuItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--interactive-chart-border);
+  border-radius: 999px;
+  background: var(--interactive-chart-button-bg);
+  color: var(--interactive-chart-button-color);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.interactiveChart__customizeMenuItem:hover {
+  transform: translateY(-1px);
+}
+
+.interactiveChart__customizeMenuItem svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.interactiveChart__customizeMenuItem.is-active {
+  border-color: var(--interactive-chart-active-border);
+  background: var(--interactive-chart-active-bg);
+  color: var(--interactive-chart-active-text);
 }
 
 

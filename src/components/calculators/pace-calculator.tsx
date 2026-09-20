@@ -11,6 +11,7 @@ export function PaceCalculator() {
   const [paceMinutes, setPaceMinutes] = useState("4");
   const [paceSeconds, setPaceSeconds] = useState("30");
   const [speed, setSpeed] = useState("13.3");
+  const [conversionError, setConversionError] = useState<string | null>(null);
 
   const isPaceToSpeed = mode === "pace-to-speed";
 
@@ -27,6 +28,9 @@ export function PaceCalculator() {
     if (minutesPerKm > 0) {
       const result = 60 / minutesPerKm;
       setSpeed(String(result.toFixed(2)));
+      setConversionError(null);
+    } else {
+      setConversionError("Enter a pace above zero to see the speed.");
     }
   }
 
@@ -43,6 +47,9 @@ export function PaceCalculator() {
     if (minutesPerKm > 0) {
       const result = 60 / minutesPerKm;
       setSpeed(String(result.toFixed(2)));
+      setConversionError(null);
+    } else {
+      setConversionError("Enter a pace above zero to see the speed.");
     }
   }
 
@@ -59,11 +66,14 @@ export function PaceCalculator() {
       if (seconds === 60) {
         setPaceMinutes(String(wholeMinutes + 1));
         setPaceSeconds("0");
-        return;
+      } else {
+        setPaceMinutes(String(wholeMinutes));
+        setPaceSeconds(String(seconds.toFixed(2)));
       }
 
-      setPaceMinutes(String(wholeMinutes));
-      setPaceSeconds(String(seconds.toFixed(2)));
+      setConversionError(null);
+    } else {
+      setConversionError("Enter a speed above zero to see the pace.");
     }
   }
 
@@ -138,11 +148,12 @@ export function PaceCalculator() {
           <button
             type="button"
             className="buttonControl paceCalculator__swap"
-            onClick={() =>
+            onClick={() => {
+              setConversionError(null);
               setMode((current) =>
                 current === "pace-to-speed" ? "speed-to-pace" : "pace-to-speed",
-              )
-            }
+              );
+            }}
           >
             <span className="paceCalculator__swapIcon" aria-hidden="true">
               ⇄
@@ -165,7 +176,11 @@ export function PaceCalculator() {
             </p>
           </div>
 
-          {isPaceToSpeed ? (
+          {conversionError ? (
+            <p className="resultCard" aria-live="polite">
+              {conversionError}
+            </p>
+          ) : isPaceToSpeed ? (
             <div className="paceCalculator__resultCard" aria-live="polite">
               <span className="paceCalculator__resultValue">{speed}</span>
               <span className="paceCalculator__resultUnit"> km/h</span>

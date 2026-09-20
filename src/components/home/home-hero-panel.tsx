@@ -9,10 +9,15 @@ export function HomeHeroPanel() {
         <Link
           key={section.href}
           href={section.href}
-          className="flex items-center justify-center rounded-2xl border border-t-[3px] border-[var(--border)] bg-[var(--surface)] p-4 text-center text-xs font-bold uppercase tracking-[0.12em] text-[var(--foreground)] shadow-[var(--shadow)] transition-all hover:-translate-y-0.5 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] sm:text-sm"
+          className="flex flex-col items-center justify-center gap-1 rounded-2xl border border-t-[3px] border-[var(--border)] bg-[var(--surface)] p-4 text-center text-xs font-bold uppercase tracking-[0.12em] text-[var(--foreground)] shadow-[var(--shadow)] transition-all hover:-translate-y-0.5 hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] sm:text-sm"
           style={{ borderTopColor: section.accent }}
         >
-          {section.label}
+          <span>{section.label}</span>
+          {section.links.length === 0 ? (
+            <span className="text-[0.62rem] font-semibold normal-case tracking-normal text-[var(--muted)] sm:text-[0.68rem]">
+              Notes coming soon
+            </span>
+          ) : null}
         </Link>
       ))}
 

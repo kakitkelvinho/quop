@@ -21,6 +21,7 @@ import {
   type Hdu,
 } from "@fits-js/core";
 
+import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
@@ -85,13 +86,6 @@ type SeriesSummary = {
 
 type FitsSummary = ImageSummary | SeriesSummary;
 
-const palette = [
-  { border: "#8b1e3f", background: "#8b1e3f" },
-  { border: "#1f6f78", background: "#1f6f78" },
-  { border: "#d17a22", background: "#d17a22" },
-  { border: "#4a6d3b", background: "#4a6d3b" },
-  { border: "#5c4b8a", background: "#5c4b8a" },
-];
 
 function getBundledAssetPath(filename: string) {
   if (typeof window === "undefined") {

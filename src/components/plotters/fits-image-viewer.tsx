@@ -365,6 +365,26 @@ function ResetZoomIcon() {
   );
 }
 
+function ZoomInIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M10 6.8v6.4M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function ZoomOutIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function AxisLabelsIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -662,6 +682,23 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     }
 
     setDragSelection(null);
+  }
+
+  function zoomStep(factor: number) {
+    setViewport((current) => {
+      const nextWidth = current.width * factor;
+      const nextHeight = current.height * factor;
+      const centerX = current.left + current.width / 2;
+      const centerY = current.top + current.height / 2;
+
+      return normalizeViewport(
+        summary,
+        centerX - nextWidth / 2,
+        centerY - nextHeight / 2,
+        nextWidth,
+        nextHeight,
+      );
+    });
   }
 
   function handleSaveSliceCsv() {
@@ -974,11 +1011,12 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
               ) : null}
             </div>
           </div>
-          <div className="fitsColorbar" aria-hidden="true">
+          <div className="fitsColorbar" role="group" aria-label="Colorbar intensity scale">
             <span className="fitsColorbar__label" ref={colorbarTopLabelRef}>
               {formatPixelValue(summary.max)}
             </span>
             <div
+              aria-hidden="true"
               className="fitsColorbar__scale"
               ref={colorbarScaleRef}
               style={{ backgroundImage: buildColorBarGradient(colorMap) }}
@@ -1013,6 +1051,25 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           <ResetZoomIcon />
         </button>
         <button
+          aria-label="Zoom in"
+          className="interactiveChart__iconButton"
+          onClick={() => zoomStep(0.8)}
+          title="Zoom in"
+          type="button"
+        >
+          <ZoomInIcon />
+        </button>
+        <button
+          aria-label="Zoom out"
+          className="interactiveChart__iconButton"
+          onClick={() => zoomStep(1.25)}
+          title="Zoom out"
+          type="button"
+        >
+          <ZoomOutIcon />
+        </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        <button
           aria-label={titleControlsOpen ? "Hide title editor" : "Show title editor"}
           aria-pressed={titleControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--title ${titleControlsOpen ? "is-open" : ""}`}
@@ -1042,6 +1099,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
         >
           <SliceIcon />
         </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <button
           aria-label={saveControlsOpen ? "Hide save options" : "Show save options"}
           aria-pressed={saveControlsOpen}

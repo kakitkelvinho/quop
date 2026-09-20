@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "cambria math",
+        "createdAt": "2026-09-19T13:41:11.218Z",
+        "reason": "Critique Assessment B spot-check: used only as the fontFamily on an SVG <text> glyph inside AxisLabelsIcon (renders 'xy'), not UI/body typography — DESIGN.md's type system doesn't apply to icon glyph rendering"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "times new roman",
+        "createdAt": "2026-09-19T13:41:11.262Z",
+        "reason": "Critique Assessment B spot-check: used only as the fontFamily on an SVG <text> glyph inside FontIcon (renders 'A'), not UI/body typography — DESIGN.md's type system doesn't apply to icon glyph rendering"
+      }
+    ]
+  }
+}

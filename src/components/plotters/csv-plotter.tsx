@@ -14,6 +14,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 
+import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(
@@ -43,13 +44,6 @@ type ParsedCsv = {
   xLabel: string;
 };
 
-const palette = [
-  { border: "#8b1e3f", background: "#8b1e3f" },
-  { border: "#1f6f78", background: "#1f6f78" },
-  { border: "#d17a22", background: "#d17a22" },
-  { border: "#4a6d3b", background: "#4a6d3b" },
-  { border: "#5c4b8a", background: "#5c4b8a" },
-];
 
 function parseCsvRow(row: string): string[] {
   const values: string[] = [];

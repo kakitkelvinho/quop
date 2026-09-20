@@ -454,6 +454,26 @@ function ResetZoomIcon() {
   );
 }
 
+function ZoomInIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M10 6.8v6.4M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function ZoomOutIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 function ScrollIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -682,6 +702,21 @@ function TickAxesIcon() {
         strokeLinecap="round"
         strokeWidth="1.9"
       />
+    </svg>
+  );
+}
+
+function CustomizeIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M4 7h9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <circle cx="15.5" cy="7" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4 12h4.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <circle cx="11" cy="12" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M13.5 12H20" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <path d="M4 17h9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+      <circle cx="15.5" cy="17" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M17.7 7H20M17.7 17H20" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
     </svg>
   );
 }
@@ -953,6 +988,14 @@ function InteractiveScatterChartInner({
   const [saveHighQuality, setSaveHighQuality] = useState(true);
   const [saveWhiteBackground, setSaveWhiteBackground] = useState(true);
   const [saveBlackText, setSaveBlackText] = useState(true);
+  const [customizeMenuOpen, setCustomizeMenuOpen] = useState(false);
+  const anyCustomizeControlOpen =
+    pointSizeControlsOpen ||
+    fontControlsOpen ||
+    titleControlsOpen ||
+    axisControlsOpen ||
+    legendControlsOpen ||
+    tickControlsOpen;
   const baseBounds = useMemo(() => buildBaseBounds(data), [data]);
   const [viewport, setViewport] = useState<Bounds>(baseBounds);
 
@@ -966,6 +1009,25 @@ function InteractiveScatterChartInner({
       );
 
       return { ...current, ...next };
+    });
+  }
+
+  function zoomBoth(factor: number) {
+    setViewport((current) => {
+      const xCenter = (current.xMin + current.xMax) / 2;
+      const yCenter = (current.yMin + current.yMax) / 2;
+      const nextX = normalizeXBounds(
+        baseBounds,
+        xCenter - (xCenter - current.xMin) * factor,
+        xCenter + (current.xMax - xCenter) * factor,
+      );
+      const nextY = normalizeYBounds(
+        baseBounds,
+        yCenter - (yCenter - current.yMin) * factor,
+        yCenter + (current.yMax - yCenter) * factor,
+      );
+
+      return { ...current, ...nextX, ...nextY };
     });
   }
 
@@ -1607,6 +1669,24 @@ function InteractiveScatterChartInner({
           <ResetZoomIcon />
         </button>
         <button
+          aria-label="Zoom in"
+          className="interactiveChart__iconButton"
+          onClick={() => zoomBoth(0.8)}
+          title="Zoom in"
+          type="button"
+        >
+          <ZoomInIcon />
+        </button>
+        <button
+          aria-label="Zoom out"
+          className="interactiveChart__iconButton"
+          onClick={() => zoomBoth(1.25)}
+          title="Zoom out"
+          type="button"
+        >
+          <ZoomOutIcon />
+        </button>
+        <button
           aria-label={
             scrollZoomEnabled ? "Disable scroll zoom" : "Enable scroll zoom"
           }
@@ -1628,82 +1708,20 @@ function InteractiveScatterChartInner({
         >
           <JoinDotsIcon />
         </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <button
+          aria-expanded={customizeMenuOpen}
           aria-label={
-            pointSizeControlsOpen
-              ? "Hide point size slider"
-              : "Show point size slider"
+            customizeMenuOpen ? "Hide customize menu" : "Show customize menu"
           }
-          aria-pressed={pointSizeControlsOpen}
-          className={`interactiveChart__iconButton interactiveChart__iconButton--size ${pointSizeControlsOpen ? "is-open" : ""}`}
-          onClick={() => setPointSizeControlsOpen((current) => !current)}
-          title="Point size"
+          className={`interactiveChart__iconButton interactiveChart__iconButton--customize ${customizeMenuOpen || anyCustomizeControlOpen ? "is-active" : ""}`}
+          onClick={() => setCustomizeMenuOpen((current) => !current)}
+          title="Customize (point size, font, title, axis labels, legend, ticks)"
           type="button"
         >
-          <PointSizeIcon />
+          <CustomizeIcon />
         </button>
-        <button
-          aria-label={
-            fontControlsOpen ? "Hide font editor" : "Show font editor"
-          }
-          aria-pressed={fontControlsOpen}
-          className={`interactiveChart__iconButton interactiveChart__iconButton--font ${fontControlsOpen ? "is-open" : ""}`}
-          onClick={() => setFontControlsOpen((current) => !current)}
-          title="Font"
-          type="button"
-        >
-          <FontIcon />
-        </button>
-        <button
-          aria-label={
-            titleControlsOpen ? "Hide title editor" : "Show title editor"
-          }
-          aria-pressed={titleControlsOpen}
-          className={`interactiveChart__iconButton interactiveChart__iconButton--title ${titleControlsOpen ? "is-open" : ""}`}
-          onClick={() => setTitleControlsOpen((current) => !current)}
-          title="Title"
-          type="button"
-        >
-          <TitleIcon />
-        </button>
-        <button
-          aria-label={
-            axisControlsOpen
-              ? "Hide axis label editor"
-              : "Show axis label editor"
-          }
-          aria-pressed={axisControlsOpen}
-          className={`interactiveChart__iconButton interactiveChart__iconButton--axis ${axisControlsOpen ? "is-open" : ""}`}
-          onClick={() => setAxisControlsOpen((current) => !current)}
-          title="Axis labels"
-          type="button"
-        >
-          <AxisLabelsIcon />
-        </button>
-        <button
-          aria-label={
-            legendControlsOpen ? "Hide legend editor" : "Show legend editor"
-          }
-          aria-pressed={legendControlsOpen}
-          className={`interactiveChart__iconButton interactiveChart__iconButton--legend ${legendControlsOpen ? "is-open" : ""}`}
-          onClick={() => setLegendControlsOpen((current) => !current)}
-          title="Legend"
-          type="button"
-        >
-          <LegendIcon />
-        </button>
-        <button
-          aria-label={
-            tickControlsOpen ? "Hide tick editor" : "Show tick editor"
-          }
-          aria-pressed={tickControlsOpen}
-          className={`interactiveChart__iconButton interactiveChart__iconButton--ticks ${tickControlsOpen ? "is-open" : ""}`}
-          onClick={() => setTickControlsOpen((current) => !current)}
-          title="Ticks"
-          type="button"
-        >
-          <TickAxesIcon />
-        </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <button
           aria-label={
             colorMode === "dark"
@@ -1733,6 +1751,65 @@ function InteractiveScatterChartInner({
           <SaveIcon />
         </button>
       </div>
+
+      {customizeMenuOpen ? (
+        <div className="interactiveChart__customizeMenu">
+          <button
+            aria-pressed={pointSizeControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${pointSizeControlsOpen ? "is-active" : ""}`}
+            onClick={() => setPointSizeControlsOpen((current) => !current)}
+            type="button"
+          >
+            <PointSizeIcon />
+            <span>Point size</span>
+          </button>
+          <button
+            aria-pressed={fontControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${fontControlsOpen ? "is-active" : ""}`}
+            onClick={() => setFontControlsOpen((current) => !current)}
+            type="button"
+          >
+            <FontIcon />
+            <span>Font</span>
+          </button>
+          <button
+            aria-pressed={titleControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${titleControlsOpen ? "is-active" : ""}`}
+            onClick={() => setTitleControlsOpen((current) => !current)}
+            type="button"
+          >
+            <TitleIcon />
+            <span>Title</span>
+          </button>
+          <button
+            aria-pressed={axisControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${axisControlsOpen ? "is-active" : ""}`}
+            onClick={() => setAxisControlsOpen((current) => !current)}
+            type="button"
+          >
+            <AxisLabelsIcon />
+            <span>Axis labels</span>
+          </button>
+          <button
+            aria-pressed={legendControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${legendControlsOpen ? "is-active" : ""}`}
+            onClick={() => setLegendControlsOpen((current) => !current)}
+            type="button"
+          >
+            <LegendIcon />
+            <span>Legend</span>
+          </button>
+          <button
+            aria-pressed={tickControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${tickControlsOpen ? "is-active" : ""}`}
+            onClick={() => setTickControlsOpen((current) => !current)}
+            type="button"
+          >
+            <TickAxesIcon />
+            <span>Ticks</span>
+          </button>
+        </div>
+      ) : null}
 
       <div className="interactiveChart__gesturePanel">
         <div className="interactiveChart__gestureRow">

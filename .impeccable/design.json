@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T13:26:15Z",
+  "title": "Design System: QUOP",
+  "extensions": {
+    "colorMeta": {
+      "oxblood-ink": {
+        "role": "primary",
+        "displayName": "Oxblood Ink",
+        "canonical": "#8b1e3f",
+        "themePair": "lamp-amber",
+        "tonalRamp": ["#2a0a13", "#41101d", "#61122b", "#8b1e3f", "#a83a54", "#c46a7f", "#dea3b1", "#f3d8de"]
+      },
+      "oxblood-ink-deep": {
+        "role": "primary-strong",
+        "displayName": "Oxblood Ink Deep",
+        "canonical": "#61122b",
+        "themePair": "lamp-amber-light",
+        "tonalRamp": ["#1c0710", "#2d0b1a", "#61122b", "#7c1836", "#9a2c48", "#bb5a6f", "#dd94a2", "#f4cdd4"]
+      },
+      "oxblood-ink-soft": {
+        "role": "primary-wash",
+        "displayName": "Oxblood Ink Soft",
+        "canonical": "rgba(139, 30, 63, 0.1)",
+        "themePair": "lamp-amber-soft"
+      },
+      "lamp-amber": {
+        "role": "primary",
+        "displayName": "Lamp Amber",
+        "canonical": "#f4b942",
+        "themePair": "oxblood-ink",
+        "tonalRamp": ["#3d2c05", "#5c4308", "#8a640c", "#b98811", "#d9a220", "#f4b942", "#f8cf7c", "#fbe6b8"]
+      },
+      "lamp-amber-light": {
+        "role": "primary-strong",
+        "displayName": "Lamp Amber Light",
+        "canonical": "#ffd67c",
+        "themePair": "oxblood-ink-deep",
+        "tonalRamp": ["#4a3a12", "#6e561a", "#a17f26", "#c9a137", "#e6bd52", "#ffd67c", "#ffe3a3", "#fff1d1"]
+      },
+      "lamp-amber-soft": {
+        "role": "primary-wash",
+        "displayName": "Lamp Amber Soft",
+        "canonical": "rgba(244, 185, 66, 0.14)",
+        "themePair": "oxblood-ink-soft"
+      },
+      "ember-orange": {
+        "role": "wayfinding",
+        "displayName": "Ember Orange",
+        "canonical": "#ff9d5c",
+        "purpose": "Calculators section identifier"
+      },
+      "sky-blue": {
+        "role": "wayfinding",
+        "displayName": "Sky Blue",
+        "canonical": "#6da8ff",
+        "purpose": "Theory section identifier"
+      },
+      "seafoam-teal": {
+        "role": "wayfinding",
+        "displayName": "Seafoam Teal",
+        "canonical": "#75d7c0",
+        "purpose": "Plotters section identifier"
+      },
+      "coral-pink": {
+        "role": "wayfinding",
+        "displayName": "Coral Pink",
+        "canonical": "#f06f86",
+        "purpose": "Experiment section identifier"
+      },
+      "warm-parchment": {
+        "role": "neutral-bg",
+        "displayName": "Warm Parchment",
+        "canonical": "#f7f1e6",
+        "themePair": "midnight-slate"
+      },
+      "midnight-slate": {
+        "role": "neutral-bg",
+        "displayName": "Midnight Slate",
+        "canonical": "#151821",
+        "themePair": "warm-parchment"
+      },
+      "parchment-muted": {
+        "role": "neutral-bg-muted",
+        "displayName": "Parchment Muted",
+        "canonical": "#efe6d5",
+        "themePair": "midnight-slate-muted"
+      },
+      "midnight-slate-muted": {
+        "role": "neutral-bg-muted",
+        "displayName": "Midnight Slate Muted",
+        "canonical": "#1b2230",
+        "themePair": "parchment-muted"
+      },
+      "paper-surface": {
+        "role": "surface",
+        "displayName": "Paper Surface",
+        "canonical": "rgba(255, 255, 255, 0.92)",
+        "themePair": "ink-panel"
+      },
+      "ink-panel": {
+        "role": "surface",
+        "displayName": "Ink Panel",
+        "canonical": "rgba(28, 34, 48, 0.92)",
+        "themePair": "paper-surface"
+      },
+      "paper-surface-strong": {
+        "role": "surface-strong",
+        "displayName": "Paper Surface Strong",
+        "canonical": "#fffdf8",
+        "themePair": "ink-panel-strong"
+      },
+      "ink-panel-strong": {
+        "role": "surface-strong",
+        "displayName": "Ink Panel Strong",
+        "canonical": "#222a3a",
+        "themePair": "paper-surface-strong"
+      },
+      "ink-foreground": {
+        "role": "text",
+        "displayName": "Ink Foreground",
+        "canonical": "#1f2933",
+        "themePair": "paper-foreground"
+      },
+      "paper-foreground": {
+        "role": "text",
+        "displayName": "Paper Foreground",
+        "canonical": "#f2f4f8",
+        "themePair": "ink-foreground"
+      },
+      "slate-muted": {
+        "role": "text-muted",
+        "displayName": "Slate Muted",
+        "canonical": "#5b6675",
+        "themePair": "cool-gray-muted"
+      },
+      "cool-gray-muted": {
+        "role": "text-muted",
+        "displayName": "Cool Gray Muted",
+        "canonical": "#b1bac7",
+        "themePair": "slate-muted"
+      },
+      "sepia-border": {
+        "role": "border",
+        "displayName": "Sepia Border",
+        "canonical": "rgba(102, 51, 0, 0.14)",
+        "themePair": "frost-border"
+      },
+      "frost-border": {
+        "role": "border",
+        "displayName": "Frost Border",
+        "canonical": "rgba(255, 255, 255, 0.1)",
+        "themePair": "sepia-border"
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page h1s, one per page." },
+      "headline": { "displayName": "Headline", "purpose": "h2s inside cards and sections." },
+      "body": { "displayName": "Body", "purpose": "Running copy and lead paragraphs (lead steps to 1.08rem, muted color, 44rem measure)." },
+      "label": { "displayName": "Label", "purpose": "Uppercase kicker tags, nav pill text, cluster labels. Structure, never content." },
+      "readout": { "displayName": "Readout", "purpose": "FITS crosshair coordinates, colorbar labels, mono text inputs." }
+    },
+    "shadows": [
+      { "name": "card-ambient-light", "value": "0 20px 50px rgba(31, 41, 51, 0.1)", "purpose": "Resting shadow under sectionCard/inputCard/infoPanel in light theme." },
+      { "name": "card-ambient-dark", "value": "0 28px 60px rgba(0, 0, 0, 0.35)", "purpose": "Resting shadow under sectionCard/inputCard/infoPanel in dark theme." },
+      { "name": "control-ambient", "value": "0 12px 24px rgba(91, 102, 117, 0.14)", "purpose": "Resting shadow under buttonControl (plotter/data action buttons)." },
+      { "name": "control-ambient-hover", "value": "0 16px 28px rgba(91, 102, 117, 0.18)", "purpose": "Deepened shadow on buttonControl hover, paired with translateY(-2px)." },
+      { "name": "focus-ring-light", "value": "0 0 0 3px rgba(139, 30, 63, 0.3)", "purpose": "Keyboard focus ring, light theme (outline-offset 3px)." },
+      { "name": "focus-ring-dark", "value": "0 0 0 3px rgba(244, 185, 66, 0.4)", "purpose": "Keyboard focus ring, dark theme (outline-offset 3px)." }
+    ],
+    "motion": [
+      { "name": "hover-lift", "value": "transform: translateY(-1px) to translateY(-2px); transition 160ms ease", "purpose": "Standard hover lift on buttons, cards, and the theme toggle." }
+    ],
+    "breakpoints": [
+      { "name": "custom-md", "value": "900px", "purpose": "Custom breakpoint (not Tailwind default) collapsing dual-panel/visualizer layouts to single column." },
+      { "name": "custom-sm", "value": "640px", "purpose": "Custom breakpoint for field wrapping and role-row stacking." },
+      { "name": "custom-sm-alt", "value": "720px", "purpose": "Alternate small breakpoint used in FITS viewer figure/colorbar layout." },
+      { "name": "tailwind-sm", "value": "640px", "purpose": "Tailwind's sm: prefix, used on newer Tailwind-authored components (nav, hero) alongside the custom breakpoints above." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid-fill call-to-action link, e.g. \"Open calculator\".",
+      "html": "<a class=\"ds-btn-primary\" href=\"#\">Open calculator</a>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; width: fit-content; padding: 0.72rem 1rem; border-radius: 0.8rem; background: #8b1e3f; color: #fffaf1; font-weight: 700; text-decoration: none; transition: transform 160ms ease; } .ds-btn-primary:hover { transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(139, 30, 63, 0.3); outline-offset: 3px; }"
+    },
+    {
+      "name": "Action Grid Button",
+      "kind": "button",
+      "refersTo": "button-control",
+      "description": "Metallic-gradient hardware-style button for plotter/calculator actions, distinct from the ink-accent primary button.",
+      "html": "<button class=\"ds-btn-control\">Load sample data</button>",
+      "css": ".ds-btn-control { display: grid; gap: 0.2rem; justify-items: start; min-height: 4.5rem; padding: 0.95rem 1rem; border: 1px solid rgba(102, 51, 0, 0.14); border-radius: 1rem; background: linear-gradient(135deg, #d7dbe2, #bcc3cd); box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14); color: #1f2933; font-weight: 700; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease; } .ds-btn-control:hover { transform: translateY(-2px); box-shadow: 0 16px 28px rgba(91, 102, 117, 0.18); }"
+    },
+    {
+      "name": "Section Card",
+      "kind": "card",
+      "refersTo": "card-primary",
+      "description": "Kicker-labeled card used to list calculators/plotters, opening with an uppercase category tag before its heading.",
+      "html": "<article class=\"ds-card\"><p class=\"ds-card-kicker\">Calculator</p><h2 class=\"ds-card-title\">Energy-Wavelength</h2><p class=\"ds-card-body\">Convert between photon energy and wavelength.</p><a class=\"ds-btn-primary\" href=\"#\">Open calculator</a></article>",
+      "css": ".ds-card { display: grid; gap: 0.85rem; padding: 1.3rem; border: 1px solid rgba(102, 51, 0, 0.14); border-radius: 1.1rem; background: rgba(255, 255, 255, 0.92); box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1); } .ds-card-kicker { font-size: 0.84rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #61122b; } .ds-card-title { font-size: clamp(1.25rem, 2.4vw, 1.9rem); line-height: 1.15; font-weight: 700; margin: 0; } .ds-card-body { color: #5b6675; margin: 0; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Bordered outer container with a borderless inner input and an inline unit label.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Wavelength</span><div class=\"ds-field-control\"><input type=\"text\" inputmode=\"decimal\" value=\"980\" /><span class=\"ds-field-unit\">nm</span></div></label>",
+      "css": ".ds-field { display: grid; gap: 0.45rem; font-weight: 600; color: #1f2933; } .ds-field-control { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 0.9rem; border: 1px solid rgba(102, 51, 0, 0.14); border-radius: 0.9rem; background: #fffdf8; } .ds-field-control input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #1f2933; font: inherit; } .ds-field-control:focus-within { outline: 3px solid rgba(139, 30, 63, 0.3); outline-offset: 3px; } .ds-field-unit { color: #5b6675; font-weight: 700; }"
+    },
+    {
+      "name": "Nav Pill",
+      "kind": "nav",
+      "refersTo": "nav-pill",
+      "description": "Uppercase, letter-spaced navigation link; fills with the ink-accent wash when active or hovered.",
+      "html": "<a class=\"ds-nav-pill ds-nav-pill--active\" href=\"#\">Calculators</a>",
+      "css": ".ds-nav-pill { display: inline-flex; align-items: center; justify-content: center; min-height: 2.65rem; padding: 0 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; color: #1f2933; transition: background-color 160ms ease, color 160ms ease; } .ds-nav-pill:hover { background: rgba(139, 30, 63, 0.1); color: #61122b; } .ds-nav-pill--active { background: rgba(139, 30, 63, 0.1); color: #61122b; }"
+    },
+    {
+      "name": "FITS Readout Badge",
+      "kind": "custom",
+      "refersTo": "fits-readout",
+      "description": "Signature instrument-panel component: mono-font coordinate readout floating over the FITS image viewport, green-phosphor colored.",
+      "html": "<div class=\"ds-fits-readout\">x: 128&nbsp;&nbsp;y: 64&nbsp;&nbsp;value: 0.842</div>",
+      "css": ".ds-fits-readout { position: absolute; top: 0.8rem; left: 0.8rem; display: inline-flex; gap: 0.75rem; padding: 0.5rem 0.7rem; border: 1px solid rgba(156, 255, 143, 0.38); border-radius: 0.65rem; background: rgba(12, 18, 14, 0.78); color: #b9ffb3; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.78rem; font-weight: 600; backdrop-filter: blur(8px); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lab Notebook",
+    "overview": "QUOP reads as a working physicist's notebook, not a software product. By day it's warm parchment and oxblood ink: cream backgrounds, hairline sepia borders, burgundy annotations. By night the same notebook sits open under a desk lamp — midnight-navy pages, amber ink instead of oxblood, the FITS viewers glowing with green phosphor crosshairs and mono-font readouts like an old instrument's readout dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a real object a physicist actually keeps at their desk.\n\nThe mood is warm and inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Warmth shows up in the parchment palette, the soft radial glow behind the page, and cards that lift gently toward you on hover rather than sitting inert. Credibility shows up underneath that warmth: exact values in monospace, uppercase kicker labels on every card (\"CALCULATOR\", \"PLOTTER\"), and instrument-grade FITS readouts that don't soften their numbers for anyone.\n\nTwo color systems run in parallel and must not be confused: the oxblood-ink/lamp-amber pair is the notebook's own ink — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections something belongs to, currently visible as the top-edge stripe on the homepage's four hero tiles. They are tabs on a notebook's colored dividers, not brand accents.",
+    "keyCharacteristics": [
+      "Warm parchment by day, midnight instrument-panel by night — a full hue swap on the accent, not just a lightness shift",
+      "Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat",
+      "Uppercase, letter-spaced kicker labels mark structure and category; regular-case text is always actual content",
+      "FITS/data-instrument surfaces speak in mono type and green-phosphor/amber highlights, deliberately more \"instrument\" than the parchment chrome around them",
+      "Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the oxblood/amber ink accent"
+    ],
+    "rules": [
+      { "name": "The Day/Night Ink Rule", "body": "The accent does not merely lighten between themes, it swaps hue entirely: burgundy ink by day, amber lamplight by night. Any future accent work must preserve this hue swap, not soften it into a shared mid-tone.", "section": "colors" },
+      { "name": "The Divider Rule", "body": "The four section wayfinding colors exist to answer \"which section is this,\" nothing else. Do not promote one into a general UI accent, and do not let the ink pair bleed into a wayfinding role.", "section": "colors" },
+      { "name": "The Case Rule", "body": "Uppercase + letter-spacing means \"this is structure/category,\" never body content. If it's something the user typed or a real physical quantity, it's sentence case and proportional type; if it's a label the interface itself is asserting, it's uppercase and tracked.", "section": "typography" },
+      { "name": "The Always-Lifted Rule", "body": "Nothing in this system sits perfectly flat. Every card, input, and button carries a soft ambient shadow at rest and deepens that shadow (plus a small translateY lift) on hover or focus.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do preserve the full hue swap on the primary accent between themes (Oxblood Ink ↔ Lamp Amber) — see The Day/Night Ink Rule.",
+      "Do give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice.",
+      "Do keep the four section wayfinding colors purely categorical — section identification only, never a general accent.",
+      "Do reserve uppercase/letter-spaced type for structural labels and keep all real content sentence-case — see The Case Rule.",
+      "Do route FITS/data-instrument surfaces through mono type and the green-phosphor/toolbar-amber language, keeping them visibly distinct from the parchment chrome around them."
+    ],
+    "donts": [
+      "Don't treat TransitionProvider, NavTransitionLink, WavefunctionBanner, or the orbitalPhase field on navSections as part of the live design system — they exist in source but are not wired into the app, and are leftover from a prior orbital/atom hero.",
+      "Don't let the Oxblood/Amber ink pair and the section wayfinding colors trade places — mixing them removes the only categorical signal the site has.",
+      "Don't flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule.",
+      "Don't mix the two live corner-radius idioms (Tailwind's rounded-2xl/rounded-full on newer components vs. the hand-set 0.8–1.1rem scale on older CSS classes) within a single component; match whichever the surrounding file already uses."
+    ]
+  }
+}

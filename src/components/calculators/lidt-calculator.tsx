@@ -57,9 +57,10 @@ export function LidtCalculator() {
   const power = parseFlexibleDecimal(laser.power);
   const repetition = parseFlexibleDecimal(laser.repetition);
   const w0 = parseFlexibleDecimal(laser.w0);
+  const wavelength = parseFlexibleDecimal(laser.wavelength);
 
   const pulseEnergy =
-    power !== null && repetition !== null && repetition > 0
+    power !== null && power > 0 && repetition !== null && repetition > 0
       ? power / repetition
       : Number.NaN;
   const energyDensity =
@@ -71,8 +72,9 @@ export function LidtCalculator() {
     <section className="pageSection">
       <h1>Laser Induced Damage Threshold (LIDT)</h1>
       <p className="lead">
-        Estimate per-pulse energy and energy density from a pulsed laser&apos;s
-        average-power setup.
+        Estimate per-pulse energy and fluence (energy density) from a pulsed
+        laser&apos;s average-power setup, so you can compare against an
+        optic&apos;s LIDT rating.
       </p>
 
       <div className="calculatorGrid calculatorGrid--single">
@@ -117,14 +119,28 @@ export function LidtCalculator() {
           <div className="resultStack">
             <p className="resultCard">
               {Number.isNaN(pulseEnergy)
-                ? "Invalid pulse energy."
+                ? "Enter a positive average power and repetition rate to compute pulse energy."
                 : `Pulse energy: ${pulseEnergy.toExponential(6)} J`}
             </p>
             <p className="resultCard">
               {Number.isNaN(energyDensity)
-                ? "Invalid energy density."
-                : `Energy density: ${energyDensity.toExponential(6)} J/cm^2`}
+                ? "Enter a positive beam waist to compute fluence."
+                : `Fluence (energy density): ${energyDensity.toExponential(6)} J/cm^2`}
             </p>
+            {Number.isFinite(energyDensity) ? (
+              <p className="infoPanel">
+                This calculator estimates fluence from your beam parameters
+                only &mdash; it does not know your optic&apos;s actual damage
+                threshold. Compare the fluence above against the
+                manufacturer&apos;s LIDT rating
+                {wavelength !== null && wavelength > 0
+                  ? ` at ${wavelength} nm`
+                  : ""}
+                : damage thresholds are wavelength- and pulse-duration-dependent,
+                so a rating quoted at a different wavelength or pulse length
+                is not directly comparable.
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
