@@ -982,7 +982,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 onPointerUp={handlePointerUp}
                 ref={canvasRef}
               />
-              {sliceBandStyle ? (
+              {sliceControlsOpen && sliceBandStyle ? (
                 <div
                   className={`fitsSliceBand fitsSliceBand--${sliceAxis}`}
                   style={sliceBandStyle}
