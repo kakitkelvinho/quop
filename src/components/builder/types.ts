@@ -64,3 +64,32 @@ export function createComponentId(type: ComponentType): string {
 export function createBeamId(): string {
   return `beam-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+// A sample pump-probe layout so the builder isn't a blank table on first
+// load — illustrates the "beam line = mirror-mount color" convention from
+// the design brief (purple pump line, red probe line, sharing the PBS).
+export const DEFAULT_SCENE: BuilderSceneData = {
+  components: [
+    { id: "laser-pump", type: "laser-source", position: [-300, 0, -100], rotation: 0, label: "Pump laser" },
+    { id: "mirror-pump-1", type: "mirror-mount", position: [-150, 0, -100], rotation: 45, color: "#7c3aed" },
+    { id: "lens-pump", type: "lens", position: [-50, 0, -100], rotation: 0 },
+    { id: "pbs-1", type: "pbs-cube", position: [50, 0, -100], rotation: 0 },
+    { id: "detector-pump", type: "photodiode", position: [250, 0, -100], rotation: 0 },
+    { id: "laser-probe", type: "laser-source", position: [50, 0, 150], rotation: 180, label: "Probe laser" },
+    { id: "waveplate-probe", type: "waveplate", position: [50, 0, 75], rotation: 0 },
+    { id: "mirror-probe-1", type: "mirror-mount", position: [50, 0, 0], rotation: 135, color: "#dc2626" },
+    { id: "spectrometer-probe", type: "spectrometer", position: [250, 0, 100], rotation: 0 },
+  ],
+  beams: [
+    {
+      id: "beam-pump",
+      path: ["laser-pump", "mirror-pump-1", "lens-pump", "pbs-1", "detector-pump"],
+      color: "#7c3aed",
+    },
+    {
+      id: "beam-probe",
+      path: ["laser-probe", "waveplate-probe", "mirror-probe-1", "pbs-1", "spectrometer-probe"],
+      color: "#dc2626",
+    },
+  ],
+};

@@ -14,6 +14,7 @@ import {
   TABLE_WIDTH_MM,
   createBeamId,
   createComponentId,
+  DEFAULT_SCENE,
   snapToGrid,
   type Beam,
   type BuilderComponent,
@@ -68,8 +69,10 @@ export type BuilderSceneProps = {
 };
 
 export default function BuilderScene({ initial }: BuilderSceneProps) {
-  const [components, setComponents] = useState<BuilderComponent[]>(initial?.components ?? []);
-  const [beams, setBeams] = useState<Beam[]>(initial?.beams ?? []);
+  const [components, setComponents] = useState<BuilderComponent[]>(
+    initial?.components ?? DEFAULT_SCENE.components,
+  );
+  const [beams, setBeams] = useState<Beam[]>(initial?.beams ?? DEFAULT_SCENE.beams);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
@@ -299,7 +302,13 @@ export default function BuilderScene({ initial }: BuilderSceneProps) {
       </aside>
 
       <div className="builderCanvasHost">
-        <Canvas orthographic camera={{ zoom: 3.2, near: 1, far: 4000 }} shadows={false}>
+        <Canvas
+          orthographic
+          camera={{ zoom: 3.2, near: 1, far: 4000 }}
+          shadows={false}
+          gl={{ alpha: false }}
+        >
+          <color attach="background" args={["#11151f"]} />
           <IsometricRig />
           <ambientLight intensity={0.65} />
           <directionalLight position={[300, 500, 200]} intensity={0.9} />
