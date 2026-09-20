@@ -40,10 +40,15 @@ type ParsedCsv = {
   channelLabels: string[];
   error: string | null;
   rowCount: number;
+  skippedRowCount: number;
   series: ChannelSeries[];
   xLabel: string;
+  extraInfo: string;
 };
 
+// Instrument exports (Moku, oscilloscopes, spectrometers, ...) often prefix
+// metadata lines with a comment marker before the real header/data rows.
+const COMMENT_PREFIXES = ["%", "#", ";", "//"];
 
 function parseCsvRow(row: string): string[] {
   const values: string[] = [];
@@ -76,6 +81,23 @@ function parseCsvRow(row: string): string[] {
 
   values.push(current.trim());
   return values;
+}
+
+function stripCommentPrefix(line: string): string {
+  for (const prefix of COMMENT_PREFIXES) {
+    if (line.startsWith(prefix)) {
+      return line.slice(prefix.length).trim();
+    }
+  }
+
+  return line;
+}
+
+function isFullyNumericRow(fields: string[]): boolean {
+  return (
+    fields.length >= 2 &&
+    fields.every((field) => field !== "" && Number.isFinite(Number(field)))
+  );
 }
 
 function createDemoCsv() {
@@ -113,34 +135,79 @@ function findTimeColumn(headers: string[]) {
 }
 
 function parseTimeSeriesCsv(csv: string): ParsedCsv {
-  const lines = csv
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
-  if (lines.length < 2) {
+  if (rawLines.length < 2) {
     return {
       channelLabels: [],
       error: "Provide a header row and at least one data row.",
       rowCount: 0,
+      skippedRowCount: 0,
       series: [],
       xLabel: "time",
+      extraInfo: "",
     };
   }
 
-  const headers = parseCsvRow(lines[0]).map(
-    (header, index) => header || `column_${index + 1}`,
-  );
+  // Strip any comment marker up front so a commented header row (e.g. a
+  // Moku export's "% Time (s), Channel A ...") is treated the same as a
+  // plain one, and pre-compute each line's fields once.
+  const lines = rawLines.map((line) => {
+    const text = stripCommentPrefix(line);
+    const fields = text ? parseCsvRow(text) : [];
+    return { text, fields, isNumericRow: isFullyNumericRow(fields) };
+  });
 
-  if (headers.length < 2) {
+  const dataStartIndex = lines.findIndex((line) => line.isNumericRow);
+
+  if (dataStartIndex === -1) {
     return {
       channelLabels: [],
-      error: "CSV input must contain at least two columns including time.",
+      error: "Couldn't find any numeric data rows in this file.",
       rowCount: 0,
+      skippedRowCount: 0,
       series: [],
       xLabel: "time",
+      extraInfo: rawLines.map((line) => stripCommentPrefix(line)).join("\n"),
     };
   }
+
+  // The header is the nearest line above the first data row whose column
+  // count matches the data - everything above that is treated as file
+  // metadata/notes rather than something to plot.
+  const dataColumnCount = lines[dataStartIndex].fields.length;
+  let headerIndex = -1;
+
+  for (let index = dataStartIndex - 1; index >= 0; index -= 1) {
+    const candidate = lines[index];
+
+    if (!candidate.isNumericRow && candidate.fields.length === dataColumnCount) {
+      headerIndex = index;
+      break;
+    }
+  }
+
+  const leadingInfo = lines
+    .slice(0, headerIndex === -1 ? dataStartIndex : headerIndex)
+    .map((line) => line.text)
+    .filter(Boolean);
+
+  if (headerIndex === -1) {
+    return {
+      channelLabels: [],
+      error:
+        "Couldn't find a header row above the data with a matching number of columns.",
+      rowCount: 0,
+      skippedRowCount: 0,
+      series: [],
+      xLabel: "time",
+      extraInfo: leadingInfo.join("\n"),
+    };
+  }
+
+  const headers = lines[headerIndex].fields.map(
+    (header, index) => header || `column_${index + 1}`,
+  );
 
   const timeIndex = findTimeColumn(headers);
 
@@ -149,8 +216,10 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
       channelLabels: [],
       error: "CSV input must include a column named time.",
       rowCount: 0,
+      skippedRowCount: 0,
       series: [],
       xLabel: "time",
+      extraInfo: leadingInfo.join("\n"),
     };
   }
 
@@ -163,8 +232,10 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
       channelLabels: [],
       error: "CSV input must include at least one channel column besides time.",
       rowCount: 0,
+      skippedRowCount: 0,
       series: [],
       xLabel: headers[timeIndex],
+      extraInfo: leadingInfo.join("\n"),
     };
   }
 
@@ -173,55 +244,71 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
     points: [] as DataPoint[],
   }));
 
-  for (let index = 1; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index]);
+  let skippedRowCount = 0;
+  const trailingInfo: string[] = [];
 
-    if (columns.length !== headers.length) {
-      return {
-        channelLabels: channelIndexes.map(({ label }) => label),
-        error: `Row ${index + 1} does not contain ${headers.length} columns.`,
-        rowCount: index - 1,
-        series: [],
-        xLabel: headers[timeIndex],
-      };
+  for (let index = dataStartIndex; index < lines.length; index += 1) {
+    const row = lines[index];
+
+    if (row.fields.length !== headers.length) {
+      skippedRowCount += 1;
+      if (row.text) trailingInfo.push(row.text);
+      continue;
     }
 
-    const timeValue = Number(columns[timeIndex]);
+    const timeValue = Number(row.fields[timeIndex]);
 
     if (!Number.isFinite(timeValue)) {
-      return {
-        channelLabels: channelIndexes.map(({ label }) => label),
-        error: `Row ${index + 1} has an invalid time value.`,
-        rowCount: index - 1,
-        series: [],
-        xLabel: headers[timeIndex],
-      };
+      skippedRowCount += 1;
+      continue;
     }
 
-    for (let channelOffset = 0; channelOffset < channelIndexes.length; channelOffset += 1) {
-      const channelIndex = channelIndexes[channelOffset].index;
-      const yValue = Number(columns[channelIndex]);
+    const rowValues: number[] = [];
+    let rowIsValid = true;
 
-      if (!Number.isFinite(yValue)) {
-        return {
-          channelLabels: channelIndexes.map(({ label }) => label),
-          error: `Row ${index + 1} has an invalid value in ${headers[channelIndex]}.`,
-          rowCount: index - 1,
-          series: [],
-          xLabel: headers[timeIndex],
-        };
+    for (const { index: channelIndex } of channelIndexes) {
+      const value = Number(row.fields[channelIndex]);
+
+      if (!Number.isFinite(value)) {
+        rowIsValid = false;
+        break;
       }
 
-      series[channelOffset].points.push({ x: timeValue, y: yValue });
+      rowValues.push(value);
     }
+
+    if (!rowIsValid) {
+      skippedRowCount += 1;
+      continue;
+    }
+
+    channelIndexes.forEach((_channel, offset) => {
+      series[offset].points.push({ x: timeValue, y: rowValues[offset] });
+    });
+  }
+
+  const rowCount = series[0]?.points.length ?? 0;
+
+  if (rowCount === 0) {
+    return {
+      channelLabels: channelIndexes.map(({ label }) => label),
+      error: "No valid numeric data rows were found under the header row.",
+      rowCount: 0,
+      skippedRowCount,
+      series: [],
+      xLabel: headers[timeIndex],
+      extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
+    };
   }
 
   return {
     channelLabels: channelIndexes.map(({ label }) => label),
     error: null,
-    rowCount: lines.length - 1,
+    rowCount,
+    skippedRowCount,
     series,
     xLabel: headers[timeIndex],
+    extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
   };
 }
 
@@ -330,6 +417,14 @@ export default function CsvPlotter() {
     event.target.value = "";
   }
 
+  const statusMessage = parsed.error
+    ? parsed.error
+    : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${parsed.xLabel}. Channels: ${parsed.channelLabels.join(", ")}.${
+        parsed.skippedRowCount > 0
+          ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
+          : ""
+      }`;
+
   return (
     <div className="visualizerLayout">
       <div className="inputCard fieldStack">
@@ -338,7 +433,10 @@ export default function CsvPlotter() {
           <p className="lead">
             Upload a CSV that includes a <code>time</code> column and one or
             more channel columns. Time always stays on the x-axis, and each
-            other header becomes its own y-series in the legend.
+            other header becomes its own y-series in the legend. Any
+            instrument metadata or comment lines (like a Moku export&apos;s
+            leading <code>%</code> block) are detected automatically and
+            shown separately instead of breaking the plot.
           </p>
         </div>
 
@@ -369,11 +467,21 @@ export default function CsvPlotter() {
           </div>
         </label>
 
-        <p className="resultCard">
-          {parsed.error
-            ? parsed.error
-            : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${parsed.xLabel}. Channels: ${parsed.channelLabels.join(", ")}.`}
-        </p>
+        {parsed.extraInfo ? (
+          <label className="field">
+            <span>File metadata / notes</span>
+            <div className="field__control field__control--textarea">
+              <textarea
+                value={parsed.extraInfo}
+                readOnly
+                spellCheck={false}
+                aria-label="Non-plotted file metadata"
+              />
+            </div>
+          </label>
+        ) : null}
+
+        <p className="resultCard">{statusMessage}</p>
       </div>
 
       <div className="sectionCard visualizerChartCard">

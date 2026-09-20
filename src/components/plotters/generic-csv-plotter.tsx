@@ -35,9 +35,15 @@ type ParsedGenericCsv = {
   error: string | null;
   headers: string[];
   rowCount: number;
+  skippedRowCount: number;
   rows: number[][];
+  extraInfo: string;
 };
 
+// Instrument/acquisition exports often prefix metadata lines with a comment
+// marker (or just tack them on above the real header) before the actual
+// header/data rows show up.
+const COMMENT_PREFIXES = ["%", "#", ";", "//"];
 
 function parseCsvRow(row: string): string[] {
   const values: string[] = [];
@@ -72,6 +78,23 @@ function parseCsvRow(row: string): string[] {
   return values;
 }
 
+function stripCommentPrefix(line: string): string {
+  for (const prefix of COMMENT_PREFIXES) {
+    if (line.startsWith(prefix)) {
+      return line.slice(prefix.length).trim();
+    }
+  }
+
+  return line;
+}
+
+function isFullyNumericRow(fields: string[]): boolean {
+  return (
+    fields.length >= 2 &&
+    fields.every((field) => field !== "" && Number.isFinite(Number(field)))
+  );
+}
+
 function createGenericDemoCsv() {
   const rows = ["position,signal_a,signal_b,signal_c"];
 
@@ -90,66 +113,119 @@ function createGenericDemoCsv() {
 }
 
 function parseGenericCsv(csv: string): ParsedGenericCsv {
-  const lines = csv
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
+  const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
-  if (lines.length < 2) {
+  if (rawLines.length < 2) {
     return {
       error: "Provide a header row and at least one data row.",
       headers: [],
       rowCount: 0,
+      skippedRowCount: 0,
       rows: [],
+      extraInfo: "",
     };
   }
 
-  const headers = parseCsvRow(lines[0]).map(
-    (header, index) => header || `column_${index + 1}`,
-  );
+  // Strip any comment marker up front and pre-compute each line's fields
+  // once, so a commented header row is treated the same as a plain one.
+  const lines = rawLines.map((line) => {
+    const text = stripCommentPrefix(line);
+    const fields = text ? parseCsvRow(text) : [];
+    return { text, fields, isNumericRow: isFullyNumericRow(fields) };
+  });
+
+  const dataStartIndex = lines.findIndex((line) => line.isNumericRow);
+
+  if (dataStartIndex === -1) {
+    return {
+      error: "Couldn't find any numeric data rows in this file.",
+      headers: [],
+      rowCount: 0,
+      skippedRowCount: 0,
+      rows: [],
+      extraInfo: rawLines.map((line) => stripCommentPrefix(line)).join("\n"),
+    };
+  }
+
+  // The header is the nearest line above the first data row whose column
+  // count matches the data - everything above that (instrument settings,
+  // acquisition notes, ...) is treated as metadata rather than plotted.
+  const dataColumnCount = lines[dataStartIndex].fields.length;
+  let headerIndex = -1;
+
+  for (let index = dataStartIndex - 1; index >= 0; index -= 1) {
+    const candidate = lines[index];
+
+    if (!candidate.isNumericRow && candidate.fields.length === dataColumnCount) {
+      headerIndex = index;
+      break;
+    }
+  }
+
+  const leadingInfo = lines
+    .slice(0, headerIndex === -1 ? dataStartIndex : headerIndex)
+    .map((line) => line.text)
+    .filter(Boolean);
+
+  const headers =
+    headerIndex === -1
+      ? Array.from({ length: dataColumnCount }, (_, index) => `column_${index + 1}`)
+      : lines[headerIndex].fields.map(
+          (header, index) => header || `column_${index + 1}`,
+        );
 
   if (headers.length < 2) {
     return {
       error: "CSV input must contain at least two numeric columns.",
       headers,
       rowCount: 0,
+      skippedRowCount: 0,
       rows: [],
+      extraInfo: leadingInfo.join("\n"),
     };
   }
 
   const rows: number[][] = [];
+  let skippedRowCount = 0;
+  const trailingInfo: string[] = [];
 
-  for (let index = 1; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index]);
+  for (let index = dataStartIndex; index < lines.length; index += 1) {
+    const row = lines[index];
 
-    if (columns.length !== headers.length) {
-      return {
-        error: `Row ${index + 1} does not contain ${headers.length} columns.`,
-        headers,
-        rowCount: index - 1,
-        rows: [],
-      };
+    if (row.fields.length !== headers.length) {
+      skippedRowCount += 1;
+      if (row.text) trailingInfo.push(row.text);
+      continue;
     }
 
-    const numericRow = columns.map(Number);
+    const numericRow = row.fields.map(Number);
 
     if (numericRow.some((value) => !Number.isFinite(value))) {
-      return {
-        error: `Row ${index + 1} contains a non-numeric value.`,
-        headers,
-        rowCount: index - 1,
-        rows: [],
-      };
+      skippedRowCount += 1;
+      continue;
     }
 
     rows.push(numericRow);
+  }
+
+  if (rows.length === 0) {
+    return {
+      error: "No valid numeric data rows were found under the header row.",
+      headers,
+      rowCount: 0,
+      skippedRowCount,
+      rows: [],
+      extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
+    };
   }
 
   return {
     error: null,
     headers,
     rowCount: rows.length,
+    skippedRowCount,
     rows,
+    extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
   };
 }
 
@@ -272,6 +348,16 @@ export default function GenericCsvPlotter() {
 
   const canRenderChart = !parsed.error && resolvedYColumnIndexes.length > 0 && parsed.rows.length > 0;
 
+  const statusMessage = parsed.error
+    ? parsed.error
+    : resolvedYColumnIndexes.length === 0
+      ? "Select at least one Y column to render the plot."
+      : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${xLabel}. Y-series: ${selectedYLabels.join(", ")}.${
+          parsed.skippedRowCount > 0
+            ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
+            : ""
+        }`;
+
   return (
     <div className="visualizerLayout">
       <div className="inputCard fieldStack">
@@ -279,7 +365,10 @@ export default function GenericCsvPlotter() {
           <h2>Generic CSV</h2>
           <p className="lead">
             Upload a numeric CSV with headers, then choose which column is the
-            x-axis and which columns should be plotted as y-series.
+            x-axis and which columns should be plotted as y-series. Leading
+            metadata or comment lines (camera settings, fit parameters, a
+            <code>#</code>/<code>%</code> block, ...) are detected
+            automatically and shown separately instead of breaking the plot.
           </p>
         </div>
 
@@ -309,6 +398,20 @@ export default function GenericCsvPlotter() {
             />
           </div>
         </label>
+
+        {parsed.extraInfo ? (
+          <label className="field">
+            <span>File metadata / notes</span>
+            <div className="field__control field__control--textarea">
+              <textarea
+                value={parsed.extraInfo}
+                readOnly
+                spellCheck={false}
+                aria-label="Non-plotted file metadata"
+              />
+            </div>
+          </label>
+        ) : null}
 
         {parsed.headers.length ? (
           <div className="csvRoleChooser">
@@ -349,13 +452,7 @@ export default function GenericCsvPlotter() {
           </div>
         ) : null}
 
-        <p className="resultCard">
-          {parsed.error
-            ? parsed.error
-            : resolvedYColumnIndexes.length === 0
-              ? "Select at least one Y column to render the plot."
-              : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${xLabel}. Y-series: ${selectedYLabels.join(", ")}.`}
-        </p>
+        <p className="resultCard">{statusMessage}</p>
       </div>
 
       <div className="sectionCard visualizerChartCard">

@@ -91,6 +91,12 @@ export const navSections: NavSection[] = [
     description: "Lab setup notes, measurement workflows, and practical implementation details.",
     accent: "#f06f86",
     orbitalPhase: 4.9,
-    links: [],
+    links: [
+      {
+        href: "/experiment/builder",
+        label: "Builder",
+        description: "Design and visualize your own optical setup on a virtual table.",
+      },
+    ],
   },
 ];
