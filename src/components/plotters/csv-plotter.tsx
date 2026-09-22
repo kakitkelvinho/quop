@@ -16,6 +16,7 @@ import {
 
 import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
 ChartJS.register(
   LinearScale,
@@ -315,6 +316,7 @@ function parseTimeSeriesCsv(csv: string): ParsedCsv {
 export default function CsvPlotter() {
   const [csvInput, setCsvInput] = useState(demoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-time-series.csv");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -426,62 +428,71 @@ export default function CsvPlotter() {
       }`;
 
   return (
-    <div className="visualizerLayout">
-      <div className="inputCard fieldStack">
-        <div>
-          <h2>Time-Series CSV</h2>
-          <p className="lead">
-            Upload a CSV that includes a <code>time</code> column and one or
-            more channel columns. Time always stays on the x-axis, and each
-            other header becomes its own y-series in the legend. Any
-            instrument metadata or comment lines (like a Moku export&apos;s
-            leading <code>%</code> block) are detected automatically and
-            shown separately instead of breaking the plot.
-          </p>
-        </div>
-
-        <label className="field">
-          <span>CSV file</span>
-          <input
-            className="fileInput"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(event) => {
-              void handleFileUpload(event);
-            }}
-          />
-        </label>
-
-        <label className="field">
-          <span>CSV contents</span>
-          <div className="field__control field__control--textarea">
-            <textarea
-              value={csvInput}
-              onChange={(event) => {
-                setCsvInput(event.target.value);
-                setSourceLabel("inline CSV");
-              }}
-              spellCheck={false}
-              aria-label="CSV input"
-            />
+    <div
+      className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
+    >
+      <div className="visualizerSidebar">
+        <SidebarCollapseToggle
+          collapsed={sidebarCollapsed}
+          label="input panel"
+          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        />
+        <div className="inputCard fieldStack">
+          <div>
+            <h2>Time-Series CSV</h2>
+            <p className="lead">
+              Upload a CSV that includes a <code>time</code> column and one or
+              more channel columns. Time always stays on the x-axis, and each
+              other header becomes its own y-series in the legend. Any
+              instrument metadata or comment lines (like a Moku export&apos;s
+              leading <code>%</code> block) are detected automatically and
+              shown separately instead of breaking the plot.
+            </p>
           </div>
-        </label>
 
-        {parsed.extraInfo ? (
           <label className="field">
-            <span>File metadata / notes</span>
+            <span>CSV file</span>
+            <input
+              className="fileInput"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => {
+                void handleFileUpload(event);
+              }}
+            />
+          </label>
+
+          <label className="field">
+            <span>CSV contents</span>
             <div className="field__control field__control--textarea">
               <textarea
-                value={parsed.extraInfo}
-                readOnly
+                value={csvInput}
+                onChange={(event) => {
+                  setCsvInput(event.target.value);
+                  setSourceLabel("inline CSV");
+                }}
                 spellCheck={false}
-                aria-label="Non-plotted file metadata"
+                aria-label="CSV input"
               />
             </div>
           </label>
-        ) : null}
 
-        <p className="resultCard">{statusMessage}</p>
+          {parsed.extraInfo ? (
+            <label className="field">
+              <span>File metadata / notes</span>
+              <div className="field__control field__control--textarea">
+                <textarea
+                  value={parsed.extraInfo}
+                  readOnly
+                  spellCheck={false}
+                  aria-label="Non-plotted file metadata"
+                />
+              </div>
+            </label>
+          ) : null}
+
+          <p className="resultCard">{statusMessage}</p>
+        </div>
       </div>
 
       <div className="sectionCard visualizerChartCard">

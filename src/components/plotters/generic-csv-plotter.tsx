@@ -16,6 +16,7 @@ import {
 
 import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
 ChartJS.register(
   LinearScale,
@@ -232,6 +233,7 @@ function parseGenericCsv(csv: string): ParsedGenericCsv {
 export default function GenericCsvPlotter() {
   const [csvInput, setCsvInput] = useState(createGenericDemoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-generic-columns.csv");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const parsed = useMemo(() => parseGenericCsv(csvInput), [csvInput]);
   const [xColumnIndex, setXColumnIndex] = useState(0);
   const [yColumnIndexes, setYColumnIndexes] = useState<number[]>([]);
@@ -359,100 +361,110 @@ export default function GenericCsvPlotter() {
         }`;
 
   return (
-    <div className="visualizerLayout">
-      <div className="inputCard fieldStack">
-        <div>
-          <h2>Generic CSV</h2>
-          <p className="lead">
-            Upload a numeric CSV with headers, then choose which column is the
-            x-axis and which columns should be plotted as y-series. Leading
-            metadata or comment lines (camera settings, fit parameters, a
-            <code>#</code>/<code>%</code> block, ...) are detected
-            automatically and shown separately instead of breaking the plot.
-          </p>
-        </div>
-
-        <label className="field">
-          <span>CSV file</span>
-          <input
-            className="fileInput"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(event) => {
-              void handleFileUpload(event);
-            }}
-          />
-        </label>
-
-        <label className="field">
-          <span>CSV contents</span>
-          <div className="field__control field__control--textarea">
-            <textarea
-              value={csvInput}
-              onChange={(event) => {
-                setCsvInput(event.target.value);
-                setSourceLabel("inline CSV");
-              }}
-              spellCheck={false}
-              aria-label="CSV input"
-            />
+    <div
+      className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
+    >
+      <div className="visualizerSidebar">
+        <SidebarCollapseToggle
+          collapsed={sidebarCollapsed}
+          label="input panel"
+          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        />
+        <div className="inputCard fieldStack">
+          <div>
+            <h2>Generic CSV</h2>
+            <p className="lead">
+              Upload a numeric CSV with headers, then choose which column is
+              the x-axis and which columns should be plotted as y-series.
+              Leading metadata or comment lines (camera settings, fit
+              parameters, a <code>#</code>/<code>%</code> block, ...) are
+              detected automatically and shown separately instead of breaking
+              the plot.
+            </p>
           </div>
-        </label>
 
-        {parsed.extraInfo ? (
           <label className="field">
-            <span>File metadata / notes</span>
+            <span>CSV file</span>
+            <input
+              className="fileInput"
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => {
+                void handleFileUpload(event);
+              }}
+            />
+          </label>
+
+          <label className="field">
+            <span>CSV contents</span>
             <div className="field__control field__control--textarea">
               <textarea
-                value={parsed.extraInfo}
-                readOnly
+                value={csvInput}
+                onChange={(event) => {
+                  setCsvInput(event.target.value);
+                  setSourceLabel("inline CSV");
+                }}
                 spellCheck={false}
-                aria-label="Non-plotted file metadata"
+                aria-label="CSV input"
               />
             </div>
           </label>
-        ) : null}
 
-        {parsed.headers.length ? (
-          <div className="csvRoleChooser">
-            <div className="csvRoleChooser__header">
-              <p className="sectionCard__kicker">Column Roles</p>
-              <p>Pick one x column and any number of y columns.</p>
+          {parsed.extraInfo ? (
+            <label className="field">
+              <span>File metadata / notes</span>
+              <div className="field__control field__control--textarea">
+                <textarea
+                  value={parsed.extraInfo}
+                  readOnly
+                  spellCheck={false}
+                  aria-label="Non-plotted file metadata"
+                />
+              </div>
+            </label>
+          ) : null}
+
+          {parsed.headers.length ? (
+            <div className="csvRoleChooser">
+              <div className="csvRoleChooser__header">
+                <p className="sectionCard__kicker">Column Roles</p>
+                <p>Pick one x column and any number of y columns.</p>
+              </div>
+              {parsed.headers.map((header, index) => {
+                const isX = index === resolvedXColumnIndex;
+                const isY = resolvedYColumnIndexes.includes(index);
+
+                return (
+                  <div className="csvRoleRow" key={`${header}-${index}`}>
+                    <span className="csvRoleRow__name">{header}</span>
+                    <label className="csvRoleToggle">
+                      <input
+                        checked={index === resolvedXColumnIndex}
+                        name="generic-csv-x-column"
+                        onChange={() => handleXColumnChange(index)}
+                        type="radio"
+                      />
+                      <span>X</span>
+                    </label>
+                    <label className="csvRoleToggle">
+                      <input
+                        checked={isY}
+                        disabled={isX}
+                        onChange={(event) =>
+                          handleYColumnToggle(index, event.target.checked)
+                        }
+                        type="checkbox"
+                      />
+                      <span>Y</span>
+                    </label>
+                  </div>
+                );
+              })}
             </div>
-            {parsed.headers.map((header, index) => {
-              const isX = index === resolvedXColumnIndex;
-              const isY = resolvedYColumnIndexes.includes(index);
+          ) : null}
 
-              return (
-                <div className="csvRoleRow" key={`${header}-${index}`}>
-                  <span className="csvRoleRow__name">{header}</span>
-                  <label className="csvRoleToggle">
-                    <input
-                      checked={index === resolvedXColumnIndex}
-                      name="generic-csv-x-column"
-                      onChange={() => handleXColumnChange(index)}
-                      type="radio"
-                    />
-                    <span>X</span>
-                  </label>
-                  <label className="csvRoleToggle">
-                    <input
-                      checked={isY}
-                      disabled={isX}
-                      onChange={(event) =>
-                        handleYColumnToggle(index, event.target.checked)
-                      }
-                      type="checkbox"
-                    />
-                    <span>Y</span>
-                  </label>
-                </div>
-              );
-            })}
-          </div>
-        ) : null}
-
-        <p className="resultCard">{statusMessage}</p>
+          <p className="resultCard">{statusMessage}</p>
+        </div>
       </div>
 
       <div className="sectionCard visualizerChartCard">

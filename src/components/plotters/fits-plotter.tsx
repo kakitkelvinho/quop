@@ -16,6 +16,7 @@ import { BlobReader, openFits, readImage, type Hdu, type FitsImage } from "@fits
 
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -243,6 +244,7 @@ export default function FitsPlotter() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [summary, setSummary] = useState<FitsSummary | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -342,48 +344,58 @@ export default function FitsPlotter() {
   };
 
   return (
-    <div className="visualizerLayout">
-      <div className="inputCard fieldStack">
-        <div>
-          <h2>FITS Upload</h2>
-          <p className="lead">
-            Upload a <code>.fits</code> or <code>.fit</code> file. Image HDUs are
-            previewed directly, and 1D FITS data are rendered as a trace.
-          </p>
-        </div>
-
-        <label className="field">
-          <span>FITS file</span>
-          <input
-            className="fileInput"
-            type="file"
-            accept=".fits,.fit,application/fits"
-            onChange={(event) => {
-              void handleFileUpload(event);
-            }}
-          />
-        </label>
-
-        <p className="resultCard">
-          {isLoading
-            ? "Loading FITS file..."
-            : error
-              ? error
-              : summary
-                ? `Loaded ${summary.sourceLabel}. BITPIX ${summary.bitpix}, range ${summary.min.toExponential(3)} to ${summary.max.toExponential(3)}.`
-                : "Upload a FITS file to preview its first image HDU."}
-        </p>
-
-        {summary ? (
-          <div className="fitsMetaGrid">
-            {summary.headerSummary.map((item) => (
-              <div className="fitsMetaCard" key={item.label}>
-                <span className="fitsMetaCard__label">{item.label}</span>
-                <strong>{item.value}</strong>
-              </div>
-            ))}
+    <div
+      className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
+    >
+      <div className="visualizerSidebar">
+        <SidebarCollapseToggle
+          collapsed={sidebarCollapsed}
+          label="input panel"
+          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        />
+        <div className="inputCard fieldStack">
+          <div>
+            <h2>FITS Upload</h2>
+            <p className="lead">
+              Upload a <code>.fits</code> or <code>.fit</code> file. Image
+              HDUs are previewed directly, and 1D FITS data are rendered as a
+              trace.
+            </p>
           </div>
-        ) : null}
+
+          <label className="field">
+            <span>FITS file</span>
+            <input
+              className="fileInput"
+              type="file"
+              accept=".fits,.fit,application/fits"
+              onChange={(event) => {
+                void handleFileUpload(event);
+              }}
+            />
+          </label>
+
+          <p className="resultCard">
+            {isLoading
+              ? "Loading FITS file..."
+              : error
+                ? error
+                : summary
+                  ? `Loaded ${summary.sourceLabel}. BITPIX ${summary.bitpix}, range ${summary.min.toExponential(3)} to ${summary.max.toExponential(3)}.`
+                  : "Upload a FITS file to preview its first image HDU."}
+          </p>
+
+          {summary ? (
+            <div className="fitsMetaGrid">
+              {summary.headerSummary.map((item) => (
+                <div className="fitsMetaCard" key={item.label}>
+                  <span className="fitsMetaCard__label">{item.label}</span>
+                  <strong>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <div className="sectionCard visualizerChartCard">

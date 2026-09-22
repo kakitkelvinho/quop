@@ -56,6 +56,9 @@ function NavItem({
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isBuilderRoute = pathname.startsWith("/experiment/builder");
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40">
@@ -84,7 +87,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <ThemeToggle />
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6">
+      <main
+        className={
+          isBuilderRoute
+            ? "builderMain"
+            : "mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6"
+        }
+      >
         {children}
       </main>
     </div>

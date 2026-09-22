@@ -413,6 +413,59 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
 }
 
+.visualizerLayout--sidebarCollapsed {
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+}
+
+.visualizerSidebar {
+  position: relative;
+  min-width: 0;
+}
+
+.visualizerLayout--sidebarCollapsed .visualizerSidebar .inputCard {
+  display: none;
+}
+
+.sidebarCollapseToggle {
+  position: absolute;
+  top: 1rem;
+  right: -1.15rem;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.sidebarCollapseToggle:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-strong);
+  color: var(--accent-strong);
+}
+
+.sidebarCollapseToggle svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  transition: transform 160ms ease;
+}
+
+.sidebarCollapseToggle.is-collapsed svg {
+  transform: rotate(180deg);
+}
+
 .visualizerChartCard {
   min-height: 32rem;
 }
@@ -1512,57 +1565,139 @@ html[data-theme="dark"] .fitsColorControl__select {
   accent-color: var(--accent);
 }
 
+/* ===========================================================================
+   Experiment Builder
+   The panel stays in the notebook language (parchment card, kickers, lifted
+   surfaces); the canvas and its badges switch into instrument language —
+   mono readouts, green phosphor, toolbar amber — exactly like the FITS
+   viewers do.
+   =========================================================================== */
 
-
-.builderLayout {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
-  align-items: start;
+.builderMain {
+  height: calc(100vh - 4rem);
+  padding: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
-  .builderLayout {
-    grid-template-columns: 1fr;
+  .builderMain {
+    height: auto;
+    max-width: 72rem;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+    overflow: visible;
   }
+}
+
+@media (min-width: 640px) and (max-width: 900px) {
+  .builderMain {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+.builderPage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .builderPage {
+    height: auto;
+  }
+}
+
+.builderLayout {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: min(74vh, 680px);
+  width: 100%;
+  height: 100%;
+}
+
+.builderSidebar {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 20;
+  width: min(320px, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+}
+
+.builderLayout--sidebarCollapsed .builderSidebar .builderPanel {
+  display: none;
 }
 
 .builderPanel {
   display: grid;
-  gap: 0.85rem;
+  gap: 1.15rem;
   padding: 1.3rem;
   border: 1px solid var(--border);
   border-radius: 1.1rem;
   background: var(--surface);
   box-shadow: var(--shadow);
   align-content: start;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.builderGroup {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.builderGroup + .builderGroup {
+  padding-top: 1.05rem;
+  border-top: 1px solid var(--border);
+}
+
+.builderSubgroup {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.builderSubgroup__label {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .builderPalette {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
 }
 
 .builderPaletteButton {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  padding: 0.6rem 0.8rem;
+  padding: 0.5rem 0.7rem;
   border: 1px solid var(--border);
   border-radius: 0.7rem;
-  background: transparent;
+  background: var(--surface-strong);
+  box-shadow: 0 6px 14px rgb(31 41 51 / 0.06);
   color: var(--foreground);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .builderPaletteButton:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--accent-strong);
+  box-shadow: 0 10px 18px rgb(31 41 51 / 0.1);
 }
 
 .builderPaletteButton.is-active {
@@ -1572,24 +1707,315 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 .builderHint {
-  margin: -0.2rem 0 0;
-  font-size: 0.82rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.builderHint--active {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.builderInlineButton {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- inspector ----------------------------------------------------------- */
+
+.builderInspector {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.builderInspector__type {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.builderFieldRow {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+
+.builderPanel .field {
+  gap: 0.3rem;
+  font-size: 0.78rem;
+}
+
+.builderPanel .field__control {
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.builderRotateRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.builderColorField {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--muted);
 }
 
-.builderFileInput {
-  display: none;
+.builderColorField input[type="color"],
+.builderSwatchPicker {
+  width: 2.2rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: none;
+  cursor: pointer;
 }
+
+/* --- beams --------------------------------------------------------------- */
+
+.builderBeamDraft {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.builderSwatchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.builderSwatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgb(31 41 51 / 0.18);
+  cursor: pointer;
+}
+
+.builderSwatch.is-active {
+  border-color: var(--foreground);
+}
+
+.builderBeamList {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.builderBeamItem {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface-strong);
+}
+
+.builderBeamItem__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 0.55rem;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.builderBeamItem__dot {
+  flex: none;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+
+.builderBeamItem__text {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.builderBeamItem__name {
+  overflow: hidden;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builderReadout {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.builderIconButton {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: none;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.builderIconButton:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* --- table controls ------------------------------------------------------ */
+
+.builderToggleRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.builderChip {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+  box-shadow: 0 4px 10px rgb(31 41 51 / 0.06);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.builderChip:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.builderChip.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.builderChip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.builderPanel .buttonRow {
+  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+}
+
+.builderPanel button.buttonLink,
+.builderPanel .buttonLink {
+  width: auto;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.builderPanel button.buttonLink:not(.buttonLink--ghost) {
+  border: 0;
+  box-shadow: 0 8px 18px rgb(31 41 51 / 0.14);
+}
+
+.builderPanel .buttonLink:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.builderPanel .buttonLink:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.builderFileLabel {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.builderFileLabel input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.builderShortcuts {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.builderShortcuts > div {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.builderShortcuts dt {
+  color: var(--accent-strong);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.builderShortcuts dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* --- canvas -------------------------------------------------------------- */
 
 .builderCanvasHost {
   position: relative;
   width: 100%;
-  height: min(70vh, 640px);
-  border: 1px solid var(--border);
-  border-radius: 1.1rem;
+  height: 100%;
+  min-height: min(74vh, 680px);
   overflow: hidden;
-  background: #11151f;
-  box-shadow: var(--shadow);
+  background: var(--surface-strong);
+}
+
+.builderCanvasHost.is-picking {
+  cursor: crosshair;
 }
 
 .builderCanvasHost canvas {
@@ -1597,15 +2023,115 @@ html[data-theme="dark"] .fitsColorControl__select {
   touch-action: none;
 }
 
+/* Instrument language, borrowed from the FITS viewers: mono, phosphor green. */
+.builderReadoutBadge {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgb(185 255 179 / 0.22);
+  border-radius: 0.5rem;
+  background: rgb(12 18 14 / 0.78);
+  color: #b9ffb3;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: pre;
+  pointer-events: none;
+}
+
+.builderModeBadge {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  margin: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgb(230 171 88 / 0.18);
+  color: #8f5f12;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .builderModeBadge {
+  color: #ffd99d;
+}
+
+.builderStatus {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  margin: 0;
+  max-width: 55%;
+  padding: 0 0.6rem;
+  border-radius: 0.5rem;
+  background: rgb(12 18 14 / 0.78);
+  color: #e8f3ff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.9;
+  text-align: right;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.builderStatus:not(:empty) {
+  opacity: 1;
+}
+
+/* drei renders each in-scene label into a wrapper div laid over the canvas.
+   Left alone it intercepts the clicks meant for the parts underneath. */
+.builderHtmlLayer,
+.builderHtmlLayer * {
+  pointer-events: none !important;
+}
+
 .builderLabel {
-  padding: 0.15rem 0.5rem;
+  /* lifted clear of its part in screen space, so a top-down view doesn't bury
+     the component under its own label */
+  display: inline-block;
+  transform: translateY(-1.4rem);
+  padding: 0.12rem 0.45rem;
+  border: 1px solid var(--border);
   border-radius: 0.4rem;
-  background: rgb(10 12 18 / 0.72);
-  color: #f5f5f5;
-  font-size: 0.68rem;
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
   white-space: nowrap;
   pointer-events: none;
+}
+
+.builderLabel.is-selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fffaf1;
+}
+
+html[data-theme="dark"] .builderLabel.is-selected {
+  color: #1a1d26;
+}
+
+.builderOrderBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fffaf1;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+html[data-theme="dark"] .builderOrderBadge {
+  color: #1a1d26;
 }

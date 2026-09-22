@@ -237,7 +237,10 @@ function formatTickValue(
   });
 }
 
-function cloneScatterData(data: ChartData<"scatter">): ChartData<"scatter"> {
+function cloneScatterData(
+  data: ChartData<"scatter">,
+  scaleFactor = 1,
+): ChartData<"scatter"> {
   return {
     ...data,
     datasets: data.datasets.map((dataset) => ({
@@ -245,6 +248,23 @@ function cloneScatterData(data: ChartData<"scatter">): ChartData<"scatter"> {
       data: (dataset.data ?? []).map((entry) =>
         typeof entry === "object" && entry !== null ? { ...entry } : entry,
       ),
+      ...(typeof dataset.pointRadius === "number"
+        ? { pointRadius: dataset.pointRadius * scaleFactor }
+        : null),
+      ...(typeof dataset.pointHoverRadius === "number"
+        ? { pointHoverRadius: dataset.pointHoverRadius * scaleFactor }
+        : null),
+      ...(typeof dataset.borderWidth === "number"
+        ? { borderWidth: dataset.borderWidth * scaleFactor }
+        : null),
+      ...(typeof (dataset as unknown as { radius?: number }).radius ===
+      "number"
+        ? {
+            radius:
+              (dataset as unknown as { radius: number }).radius *
+              scaleFactor,
+          }
+        : null),
     })),
   };
 }
@@ -1358,12 +1378,21 @@ function InteractiveScatterChartInner({
     const exportGridColor = saveBlackText
       ? "rgba(107, 114, 128, 0.32)"
       : chartGridColor;
-    const exportData = cloneScatterData(chartData);
+    const exportData = cloneScatterData(chartData, scaleFactor);
     const exportOptions: ChartOptions<"scatter"> = {
       ...mergedOptions,
       responsive: false,
       animation: false,
       color: exportTextColor,
+      elements: {
+        ...mergedOptions.elements,
+        point: {
+          ...mergedOptions.elements?.point,
+          hoverRadius:
+            Math.max(pointSize + 1.5, pointSize * 1.5) * scaleFactor,
+          radius: pointSize * scaleFactor,
+        },
+      },
       plugins: {
         ...mergedOptions.plugins,
         legend: mergedOptions.plugins?.legend
@@ -1372,6 +1401,11 @@ function InteractiveScatterChartInner({
               labels: {
                 ...mergedOptions.plugins.legend.labels,
                 color: exportTextColor,
+                font: {
+                  ...mergedOptions.plugins.legend.labels?.font,
+                  family: fontFamily,
+                  size: legendFontSize * scaleFactor,
+                },
               },
             }
           : mergedOptions.plugins?.legend,
@@ -1379,6 +1413,11 @@ function InteractiveScatterChartInner({
           ? {
               ...mergedOptions.plugins.title,
               color: exportTextColor,
+              font: {
+                ...mergedOptions.plugins.title.font,
+                family: fontFamily,
+                size: chartTitleFontSize * scaleFactor,
+              },
             }
           : mergedOptions.plugins?.title,
         tooltip: mergedOptions.plugins?.tooltip
@@ -1400,10 +1439,20 @@ function InteractiveScatterChartInner({
           ticks: {
             ...mergedOptions.scales?.x?.ticks,
             color: exportTextColor,
+            font: {
+              ...mergedOptions.scales?.x?.ticks?.font,
+              family: fontFamily,
+              size: xTickFontSize * scaleFactor,
+            },
           },
           title: {
             ...mergedOptions.scales?.x?.title,
             color: exportTextColor,
+            font: {
+              ...mergedOptions.scales?.x?.title?.font,
+              family: fontFamily,
+              size: axisLabelFontSize * scaleFactor,
+            },
           },
         },
         y: {
@@ -1415,10 +1464,20 @@ function InteractiveScatterChartInner({
           ticks: {
             ...mergedOptions.scales?.y?.ticks,
             color: exportTextColor,
+            font: {
+              ...mergedOptions.scales?.y?.ticks?.font,
+              family: fontFamily,
+              size: yTickFontSize * scaleFactor,
+            },
           },
           title: {
             ...mergedOptions.scales?.y?.title,
             color: exportTextColor,
+            font: {
+              ...mergedOptions.scales?.y?.title?.font,
+              family: fontFamily,
+              size: axisLabelFontSize * scaleFactor,
+            },
           },
         },
       },

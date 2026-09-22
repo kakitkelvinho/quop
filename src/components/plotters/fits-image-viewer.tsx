@@ -730,7 +730,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
       return;
     }
 
-    const scaleFactor = Math.max(2, Math.ceil(window.devicePixelRatio || 1));
+    const scaleFactor = Math.max(3, Math.ceil(window.devicePixelRatio || 1));
     const exportCanvas = document.createElement("canvas");
     exportCanvas.width = Math.max(1, Math.round(figureRect.width * scaleFactor));
     exportCanvas.height = Math.max(1, Math.round(figureRect.height * scaleFactor));
@@ -832,8 +832,11 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
       context.strokeRect(scaleRect.x, scaleRect.y, scaleRect.width, scaleRect.height);
     }
 
+    const colorbarLabelFontSize =
+      parseFloat(getComputedStyle(colorbarTopLabelRef.current ?? figure).fontSize) || 12;
+
     context.fillStyle = exportTextColor;
-    context.font = `700 ${Math.max(12, 12 * scaleFactor)}px ${labelFontFamily}`;
+    context.font = `700 ${colorbarLabelFontSize * scaleFactor}px ${labelFontFamily}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
 

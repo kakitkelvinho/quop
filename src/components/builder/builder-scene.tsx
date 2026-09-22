@@ -1,155 +1,181 @@
 "use client";
 
-import { Canvas, type ThreeEvent, useThree } from "@react-three/fiber";
-import { Grid, Line, OrbitControls } from "@react-three/drei";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ThreeEvent } from "@react-three/fiber";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
-import { ComponentMesh, componentHeight } from "@/components/builder/component-models";
+import BuilderCanvas, { type CameraView } from "@/components/builder/builder-canvas";
+import BuilderPanel from "@/components/builder/builder-panel";
+import { useScenePalette } from "@/components/builder/scene-theme";
+import { useBuilderScene } from "@/components/builder/use-builder-scene";
+import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 import {
-  COMPONENT_LIBRARY,
-  DEFAULT_MOUNT_COLOR,
+  BEAM_COLORS,
+  COMPONENT_SPECS,
+  FINE_GRID_MM,
   GRID_SIZE_MM,
-  ROTATION_STEP_DEG,
   TABLE_DEPTH_MM,
   TABLE_WIDTH_MM,
-  createBeamId,
-  createComponentId,
-  DEFAULT_SCENE,
+  beamLengthMm,
+  componentById,
+  componentDisplayName,
+  lengthToPicoseconds,
+  parseScene,
+  serializeScene,
   snapToGrid,
   type Beam,
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
-  type Vec3,
 } from "@/components/builder/types";
 
-const CAMERA_DISTANCE = 480;
-
-function IsometricRig() {
-  const { camera } = useThree();
-  useEffect(() => {
-    camera.position.set(CAMERA_DISTANCE, CAMERA_DISTANCE, CAMERA_DISTANCE);
-    camera.lookAt(0, 0, 0);
-    camera.updateProjectionMatrix();
-  }, [camera]);
-  return null;
-}
-
-function TablePlane({ onPlace }: { onPlace: (point: Vec3) => void }) {
-  const handlePointerDown = useCallback(
-    (event: ThreeEvent<PointerEvent>) => {
-      event.stopPropagation();
-      const x = snapToGrid(event.point.x);
-      const z = snapToGrid(event.point.z);
-      onPlace([x, 0, z]);
-    },
-    [onPlace],
-  );
-
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} onPointerDown={handlePointerDown}>
-      <planeGeometry args={[TABLE_WIDTH_MM, TABLE_DEPTH_MM]} />
-      <meshStandardMaterial color="#1c2230" roughness={0.95} metalness={0.05} />
-    </mesh>
-  );
-}
-
-function beamPoints(components: BuilderComponent[], beam: Beam): Vec3[] {
-  return beam.path
-    .map((id) => components.find((component) => component.id === id))
-    .filter((component): component is BuilderComponent => Boolean(component))
-    .map((component) => {
-      const height = componentHeight(component.type) / 2;
-      return [component.position[0], height, component.position[2]] as Vec3;
-    });
-}
-
-export type BuilderSceneProps = {
-  initial?: BuilderSceneData;
+type DragState = {
+  id: string;
+  offsetX: number;
+  offsetZ: number;
+  /** scene as it was when the drag began — pushed to history on the first real move */
+  snapshot: BuilderSceneData;
+  started: boolean;
 };
 
-export default function BuilderScene({ initial }: BuilderSceneProps) {
-  const [components, setComponents] = useState<BuilderComponent[]>(
-    initial?.components ?? DEFAULT_SCENE.components,
-  );
-  const [beams, setBeams] = useState<Beam[]>(initial?.beams ?? DEFAULT_SCENE.beams);
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+}
+
+export default function BuilderScene() {
+  const api = useBuilderScene();
+  const palette = useScenePalette();
+  const { scene } = api;
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedBeamId, setSelectedBeamId] = useState<string | null>(null);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
-  const [beamColor, setBeamColor] = useState(DEFAULT_MOUNT_COLOR);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
+  const [showLabels, setShowLabels] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
+  const [view, setView] = useState<CameraView>("iso");
+  const [fitToken, setFitToken] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const dragRef = useRef<DragState | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Pointer handlers run outside React's render pass and need the newest
+  // scene without re-subscribing on every edit.
+  const sceneRef = useRef(scene);
+  useEffect(() => {
+    sceneRef.current = scene;
+  }, [scene]);
 
   const selected = useMemo(
-    () => components.find((component) => component.id === selectedId) ?? null,
-    [components, selectedId],
+    () => (selectedId ? componentById(scene.components, selectedId) ?? null : null),
+    [scene.components, selectedId],
+  );
+  const selectedBeam = useMemo(
+    () => scene.beams.find((beam) => beam.id === selectedBeamId) ?? null,
+    [scene.beams, selectedBeamId],
   );
 
-  const handlePlace = useCallback(
-    (point: Vec3) => {
-      if (!placingType) {
-        setSelectedId(null);
+  // A transient line of feedback under the canvas — the builder does a lot of
+  // things (export, load, clear) whose only evidence would otherwise be off-screen.
+  const announce = useCallback((message: string) => {
+    setStatus(message);
+    window.setTimeout(() => setStatus((current) => (current === message ? null : current)), 4000);
+  }, []);
+
+  // ---- placing & selection -------------------------------------------------
+
+  const handleSurfaceClick = useCallback(
+    (x: number, z: number) => {
+      if (beamMode) return;
+      if (placingType) {
+        const id = api.addComponent(placingType, [snapToGrid(x), 0, snapToGrid(z)]);
+        setSelectedId(id);
+        setPlacingType(null);
         return;
       }
-      const nextComponent: BuilderComponent = {
-        id: createComponentId(placingType),
-        type: placingType,
-        position: point,
-        rotation: 0,
-        color: placingType === "mirror-mount" ? DEFAULT_MOUNT_COLOR : undefined,
-      };
-      setComponents((current) => [...current, nextComponent]);
-      setSelectedId(nextComponent.id);
-      setPlacingType(null);
+      setSelectedId(null);
+      setSelectedBeamId(null);
     },
-    [placingType],
+    [api, beamMode, placingType],
   );
 
-  const handleSelectComponent = useCallback(
-    (id: string) => {
+  const handleComponentPointerDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>) => {
       if (beamMode) {
-        setBeamDraft((current) => (current[current.length - 1] === id ? current : [...current, id]));
+        setBeamDraft((current) =>
+          current[current.length - 1] === id ? current : [...current, id],
+        );
         return;
       }
+      const component = componentById(sceneRef.current.components, id);
+      if (!component) return;
+
       setPlacingType(null);
       setSelectedId(id);
+      setSelectedBeamId(null);
+      dragRef.current = {
+        id,
+        offsetX: component.position[0] - event.point.x,
+        offsetZ: component.position[2] - event.point.z,
+        snapshot: sceneRef.current,
+        started: false,
+      };
+      setDragging(true);
     },
     [beamMode],
   );
 
-  const rotateSelected = useCallback(() => {
-    if (!selectedId) return;
-    setComponents((current) =>
-      current.map((component) =>
-        component.id === selectedId
-          ? { ...component, rotation: (component.rotation + ROTATION_STEP_DEG) % 360 }
-          : component,
-      ),
-    );
-  }, [selectedId]);
+  const handleSurfaceDrag = useCallback(
+    (x: number, z: number, event: ThreeEvent<PointerEvent>) => {
+      const drag = dragRef.current;
+      if (!drag) return;
 
-  const recolorSelected = useCallback(
-    (color: string) => {
-      if (!selectedId) return;
-      setComponents((current) =>
-        current.map((component) => (component.id === selectedId ? { ...component, color } : component)),
-      );
+      const step = event.nativeEvent.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+      const nextX = snapToGrid(x + drag.offsetX, step);
+      const nextZ = snapToGrid(z + drag.offsetZ, step);
+
+      const component = componentById(sceneRef.current.components, drag.id);
+      if (!component) return;
+      if (component.position[0] === nextX && component.position[2] === nextZ) return;
+
+      // First real movement is what earns an undo entry — a plain click shouldn't.
+      if (!drag.started) {
+        drag.started = true;
+        api.commitCheckpoint(drag.snapshot);
+      }
+      api.moveComponent(drag.id, nextX, nextZ, false);
     },
-    [selectedId],
+    [api],
   );
 
-  const deleteSelected = useCallback(() => {
-    if (!selectedId) return;
-    setComponents((current) => current.filter((component) => component.id !== selectedId));
-    setBeams((current) => current.filter((beam) => !beam.path.includes(selectedId)));
-    setSelectedId(null);
-  }, [selectedId]);
+  useEffect(() => {
+    const endDrag = () => {
+      if (!dragRef.current) return;
+      dragRef.current = null;
+      setDragging(false);
+    };
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    return () => {
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+    };
+  }, []);
+
+  // ---- beams ---------------------------------------------------------------
 
   const startBeam = useCallback(() => {
-    setSelectedId(null);
-    setPlacingType(null);
     setBeamMode(true);
     setBeamDraft([]);
+    setPlacingType(null);
+    setSelectedId(null);
+    setBeamColor(BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length]);
   }, []);
 
   const cancelBeam = useCallback(() => {
@@ -159,189 +185,294 @@ export default function BuilderScene({ initial }: BuilderSceneProps) {
 
   const finishBeam = useCallback(() => {
     if (beamDraft.length >= 2) {
-      const beam: Beam = { id: createBeamId(), path: beamDraft, color: beamColor };
-      setBeams((current) => [...current, beam]);
+      const first = componentById(sceneRef.current.components, beamDraft[0]);
+      const last = componentById(sceneRef.current.components, beamDraft[beamDraft.length - 1]);
+      const label =
+        first && last ? `${componentDisplayName(first)} → ${componentDisplayName(last)}` : undefined;
+      api.addBeam(beamDraft, beamColor, label);
+      announce("Beam added.");
     }
     setBeamMode(false);
     setBeamDraft([]);
-  }, [beamDraft, beamColor]);
+  }, [announce, api, beamColor, beamDraft]);
 
-  const clearTable = useCallback(() => {
-    setComponents([]);
-    setBeams([]);
-    setSelectedId(null);
-    setBeamMode(false);
-    setBeamDraft([]);
-  }, []);
+  const undoBeamStep = useCallback(() => setBeamDraft((current) => current.slice(0, -1)), []);
+
+  // ---- file & image --------------------------------------------------------
 
   const handleSave = useCallback(() => {
-    const data: BuilderSceneData = { components, beams };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([serializeScene(sceneRef.current)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `quop-setup-${Date.now()}.json`;
+    link.download = `quop-setup-${new Date().toISOString().slice(0, 10)}.json`;
     link.click();
     URL.revokeObjectURL(url);
-  }, [components, beams]);
+    announce("Setup saved as JSON.");
+  }, [announce]);
 
-  const handleLoadFile = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result)) as Partial<BuilderSceneData>;
-        setComponents(Array.isArray(parsed.components) ? parsed.components : []);
-        setBeams(Array.isArray(parsed.beams) ? parsed.beams : []);
-        setSelectedId(null);
-        setBeamMode(false);
-        setBeamDraft([]);
-      } catch {
-        window.alert("That file doesn't look like a valid setup JSON.");
+  const handleLoad = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = parseScene(JSON.parse(String(reader.result)));
+          if (!parsed) {
+            announce("That file isn't a QUOP setup — no components found.");
+            return;
+          }
+          api.replaceScene(parsed);
+          setSelectedId(null);
+          setSelectedBeamId(null);
+          cancelBeam();
+          announce(`Loaded ${parsed.components.length} parts from ${file.name}.`);
+        } catch {
+          announce("Couldn't read that file — it isn't valid JSON.");
+        }
+      };
+      reader.readAsText(file);
+    },
+    [announce, api, cancelBeam],
+  );
+
+  const handleExportPng = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    try {
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = `quop-setup-${new Date().toISOString().slice(0, 10)}.png`;
+      link.click();
+      announce("Exported the view as a PNG.");
+    } catch {
+      announce("Couldn't export the canvas in this browser.");
+    }
+  }, [announce]);
+
+  const handleCanvasReady = useCallback((canvas: HTMLCanvasElement) => {
+    canvasRef.current = canvas;
+  }, []);
+
+  // ---- keyboard ------------------------------------------------------------
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) return;
+
+      const meta = event.metaKey || event.ctrlKey;
+      if (meta && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) api.redo();
+        else api.undo();
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (beamMode) cancelBeam();
+        else if (placingType) setPlacingType(null);
+        else {
+          setSelectedId(null);
+          setSelectedBeamId(null);
+        }
+        return;
+      }
+
+      if (beamMode && event.key === "Enter") {
+        event.preventDefault();
+        finishBeam();
+        return;
+      }
+
+      if (!selectedId) return;
+
+      const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+      switch (event.key) {
+        case "ArrowLeft":
+          event.preventDefault();
+          api.nudgeComponent(selectedId, -step, 0);
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          api.nudgeComponent(selectedId, step, 0);
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          api.nudgeComponent(selectedId, 0, -step);
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          api.nudgeComponent(selectedId, 0, step);
+          break;
+        case "Delete":
+        case "Backspace":
+          event.preventDefault();
+          api.deleteComponent(selectedId);
+          setSelectedId(null);
+          break;
+        case "r":
+        case "R":
+          api.rotateComponent(selectedId, event.shiftKey ? -1 : 1);
+          break;
+        case "d":
+        case "D": {
+          if (meta) return;
+          const copyId = api.duplicateComponent(selectedId);
+          if (copyId) setSelectedId(copyId);
+          break;
+        }
+        default:
+          break;
       }
     };
-    reader.readAsText(file);
-    event.target.value = "";
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [api, beamMode, cancelBeam, finishBeam, placingType, selectedId]);
+
+  // ---- readout -------------------------------------------------------------
+
+  const readout = useMemo(() => {
+    if (selected) {
+      return [
+        COMPONENT_SPECS[selected.type].tag.toUpperCase(),
+        `x ${Math.round(selected.position[0])}`,
+        `z ${Math.round(selected.position[2])}`,
+        `yaw ${Math.round(selected.rotation)}°`,
+      ].join("   ");
+    }
+    if (selectedBeam) {
+      const length = beamLengthMm(scene.components, selectedBeam);
+      return [
+        "BEAM",
+        `${selectedBeam.path.length} stops`,
+        `${Math.round(length)} mm`,
+        `${lengthToPicoseconds(length).toFixed(1)} ps`,
+      ].join("   ");
+    }
+    return [
+      `${scene.components.length} parts`,
+      `${scene.beams.length} beams`,
+      `table ${TABLE_WIDTH_MM}×${TABLE_DEPTH_MM} mm`,
+    ].join("   ");
+  }, [scene.beams.length, scene.components, selected, selectedBeam]);
+
+  const updateSelected = useCallback(
+    (patch: Partial<Omit<BuilderComponent, "id" | "type">>) => {
+      if (!selectedId) return;
+      api.updateComponent(selectedId, patch);
+    },
+    [api, selectedId],
+  );
+
+  const handleSelectBeam = useCallback((beam: Beam) => {
+    setSelectedBeamId((current) => (current === beam.id ? null : beam.id));
+    setSelectedId(null);
   }, []);
 
   return (
-    <div className="builderLayout">
-      <aside className="builderPanel">
-        <p className="sectionCard__kicker">Components</p>
-        <div className="builderPalette">
-          {COMPONENT_LIBRARY.map((entry) => (
-            <button
-              key={entry.type}
-              type="button"
-              className={`builderPaletteButton ${placingType === entry.type ? "is-active" : ""}`}
-              onClick={() => {
-                setPlacingType((current) => (current === entry.type ? null : entry.type));
-                setSelectedId(null);
-              }}
-            >
-              {entry.label}
-            </button>
-          ))}
-        </div>
-        {placingType ? (
-          <p className="builderHint">Click the table to place a {placingType}.</p>
-        ) : null}
-
-        <p className="sectionCard__kicker">Beams</p>
-        {beamMode ? (
-          <div className="builderPalette">
-            <label className="field">
-              <span>Beam color</span>
-              <input
-                type="color"
-                value={beamColor}
-                onChange={(event) => setBeamColor(event.target.value)}
-              />
-            </label>
-            <p className="builderHint">
-              Click components in order ({beamDraft.length} selected). Finish when done.
-            </p>
-            <div className="buttonRow">
-              <button type="button" className="buttonLink" onClick={finishBeam}>
-                Finish beam
-              </button>
-              <button type="button" className="buttonLink buttonLink--ghost" onClick={cancelBeam}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button type="button" className="buttonLink buttonLink--ghost" onClick={startBeam}>
-            Draw a beam path
-          </button>
-        )}
-
-        {selected ? (
-          <>
-            <p className="sectionCard__kicker">Selected: {selected.type}</p>
-            <div className="buttonRow">
-              <button type="button" className="buttonLink buttonLink--ghost" onClick={rotateSelected}>
-                Rotate 15°
-              </button>
-              <button type="button" className="buttonLink buttonLink--ghost" onClick={deleteSelected}>
-                Delete
-              </button>
-            </div>
-            {selected.type === "mirror-mount" ? (
-              <label className="field">
-                <span>Mount color</span>
-                <input
-                  type="color"
-                  value={selected.color ?? DEFAULT_MOUNT_COLOR}
-                  onChange={(event) => recolorSelected(event.target.value)}
-                />
-              </label>
-            ) : null}
-          </>
-        ) : null}
-
-        <div className="buttonRow">
-          <button type="button" className="buttonLink" onClick={handleSave}>
-            Save JSON
-          </button>
-          <button type="button" className="buttonLink buttonLink--ghost" onClick={() => fileInputRef.current?.click()}>
-            Load JSON
-          </button>
-          <button type="button" className="buttonLink buttonLink--ghost" onClick={clearTable}>
-            Clear table
-          </button>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          className="builderFileInput"
-          onChange={handleLoadFile}
+    <div
+      className={`builderLayout${sidebarCollapsed ? " builderLayout--sidebarCollapsed" : ""}`}
+    >
+      <div className="builderSidebar">
+        <SidebarCollapseToggle
+          collapsed={sidebarCollapsed}
+          label="toolbar"
+          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
-      </aside>
+        <BuilderPanel
+          components={scene.components}
+          beams={scene.beams}
+          selected={selected}
+          placingType={placingType}
+          beamMode={beamMode}
+          beamDraft={beamDraft}
+          beamColor={beamColor}
+          showLabels={showLabels}
+          showGrid={showGrid}
+          view={view}
+          canUndo={api.canUndo}
+          canRedo={api.canRedo}
+          onPickType={setPlacingType}
+          onUpdateSelected={updateSelected}
+          onRotateSelected={(direction) => selectedId && api.rotateComponent(selectedId, direction)}
+          onDuplicateSelected={() => {
+            if (!selectedId) return;
+            const copyId = api.duplicateComponent(selectedId);
+            if (copyId) setSelectedId(copyId);
+          }}
+          onDeleteSelected={() => {
+            if (!selectedId) return;
+            api.deleteComponent(selectedId);
+            setSelectedId(null);
+          }}
+          onStartBeam={startBeam}
+          onFinishBeam={finishBeam}
+          onCancelBeam={cancelBeam}
+          onUndoBeamStep={undoBeamStep}
+          onBeamColorChange={setBeamColor}
+          onSelectBeam={handleSelectBeam}
+          onDeleteBeam={(id) => {
+            api.deleteBeam(id);
+            setSelectedBeamId((current) => (current === id ? null : current));
+          }}
+          onToggleLabels={() => setShowLabels((current) => !current)}
+          onToggleGrid={() => setShowGrid((current) => !current)}
+          onViewChange={setView}
+          onFit={() => setFitToken((token) => token + 1)}
+          onUndo={api.undo}
+          onRedo={api.redo}
+          onSave={handleSave}
+          onLoad={handleLoad}
+          onExportPng={handleExportPng}
+          onResetExample={() => {
+            api.resetToExample();
+            setSelectedId(null);
+            announce("Loaded the example pump + reference layout.");
+          }}
+          onClear={() => {
+            api.clearScene();
+            setSelectedId(null);
+            setSelectedBeamId(null);
+            cancelBeam();
+          }}
+        />
+      </div>
 
-      <div className="builderCanvasHost">
-        <Canvas
-          orthographic
-          camera={{ zoom: 3.2, near: 1, far: 4000 }}
-          shadows={false}
-          gl={{ alpha: false }}
-        >
-          <color attach="background" args={["#11151f"]} />
-          <IsometricRig />
-          <ambientLight intensity={0.65} />
-          <directionalLight position={[300, 500, 200]} intensity={0.9} />
-          <directionalLight position={[-200, 300, -300]} intensity={0.35} />
-          <TablePlane onPlace={handlePlace} />
-          <Grid
-            args={[TABLE_WIDTH_MM, TABLE_DEPTH_MM]}
-            cellSize={GRID_SIZE_MM}
-            cellThickness={0.5}
-            cellColor="#3a4256"
-            sectionColor="#4c5670"
-            sectionThickness={0.9}
-            fadeDistance={1600}
-            position={[0, 0.2, 0]}
-          />
-          {components.map((component) => (
-            <ComponentMesh
-              key={component.id}
-              component={component}
-              selected={component.id === selectedId}
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                handleSelectComponent(component.id);
-              }}
-            />
-          ))}
-          {beams.map((beam) => {
-            const points = beamPoints(components, beam);
-            if (points.length < 2) return null;
-            return <Line key={beam.id} points={points} color={beam.color} lineWidth={2.5} />;
-          })}
-          <OrbitControls enableRotate={false} enableZoom enablePan minZoom={1} maxZoom={12} />
-        </Canvas>
+      <div className={`builderCanvasHost${placingType || beamMode ? " is-picking" : ""}`}>
+        <BuilderCanvas
+          components={scene.components}
+          beams={scene.beams}
+          palette={palette}
+          selectedId={selectedId}
+          hoveredId={hoveredId}
+          beamDraft={beamDraft}
+          showLabels={showLabels}
+          showGrid={showGrid}
+          view={view}
+          fitToken={fitToken}
+          dragging={dragging}
+          onSurfaceClick={handleSurfaceClick}
+          onSurfaceDrag={handleSurfaceDrag}
+          onComponentPointerDown={handleComponentPointerDown}
+          onComponentHover={setHoveredId}
+          onCanvasReady={handleCanvasReady}
+        />
+        <p className="builderReadoutBadge">{readout}</p>
+        {beamMode ? (
+          <p className="builderModeBadge">Beam mode — click parts in order, Enter to finish</p>
+        ) : null}
+        {placingType ? (
+          <p className="builderModeBadge">
+            Placing {COMPONENT_SPECS[placingType].label.toLowerCase()} — click the table
+          </p>
+        ) : null}
+        <p className="builderStatus" role="status" aria-live="polite">
+          {status}
+        </p>
       </div>
     </div>
   );
