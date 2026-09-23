@@ -76,7 +76,11 @@ function boredPlate(size: number, corner: number, bore: number, depth: number) {
   hole.absarc(0, 0, bore / 2, 0, Math.PI * 2, true);
   shape.holes.push(hole);
 
-  return new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 40 });
+  return new ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: false,
+    curveSegments: 24,
+  });
 }
 
 /** SR100 front plate: 49 mm square, 25.4 mm clear aperture, 8 mm thick. */
@@ -90,7 +94,13 @@ function Anodised({ color }: { color: string }) {
 }
 
 function Stainless({ palette }: { palette: ScenePalette }) {
-  return <meshStandardMaterial color={palette.metal} roughness={0.3} metalness={0.85} />;
+  return (
+    <meshStandardMaterial
+      color={palette.metal}
+      roughness={0.3}
+      metalness={0.85}
+    />
+  );
 }
 
 /**
@@ -112,7 +122,13 @@ function Hardware({ palette }: { palette: ScenePalette }) {
  * A 170-TPI fine-thread adjuster: knurled head standing proud of the back
  * plate on a slim shaft. These are the tell that a mount is kinematic.
  */
-function Adjuster({ palette, position }: { palette: ScenePalette; position: [number, number, number] }) {
+function Adjuster({
+  palette,
+  position,
+}: {
+  palette: ScenePalette;
+  position: [number, number, number];
+}) {
   return (
     <group position={position}>
       <mesh rotation={[0, 0, Math.PI / 2]}>
@@ -121,7 +137,11 @@ function Adjuster({ palette, position }: { palette: ScenePalette; position: [num
       </mesh>
       <mesh position={[-7, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[4.6, 4.6, 6, 18]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.55} metalness={0.8} />
+        <meshStandardMaterial
+          color={palette.metal}
+          roughness={0.55}
+          metalness={0.8}
+        />
         <Edges color={palette.mode === "dark" ? "#6d7686" : "#8d94a1"} />
       </mesh>
     </group>
@@ -133,7 +153,11 @@ function Adjuster({ palette, position }: { palette: ScenePalette; position: [num
  * is the squat clamped base you actually bolt to the breadboard; the holder is
  * the sleeve with the knurled side screw that sets the height.
  */
-function Post({ palette, top = AXIS, radius = 6.35 }: ModelProps & { top?: number; radius?: number }) {
+function Post({
+  palette,
+  top = AXIS,
+  radius = 6.35,
+}: ModelProps & { top?: number; radius?: number }) {
   const holderTop = Math.min(14 + 26, Math.max(18, top - 14));
   return (
     <group>
@@ -144,7 +168,11 @@ function Post({ palette, top = AXIS, radius = 6.35 }: ModelProps & { top?: numbe
       </mesh>
       <mesh position={[0, 9.6, 0]}>
         <cylinderGeometry args={[10, 10, 3, 24]} />
-        <meshStandardMaterial color={palette.body} roughness={0.7} metalness={0.3} />
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.7}
+          metalness={0.3}
+        />
       </mesh>
       {/* the post itself */}
       <mesh position={[0, top / 2 + 8, 0]}>
@@ -153,12 +181,25 @@ function Post({ palette, top = AXIS, radius = 6.35 }: ModelProps & { top?: numbe
       </mesh>
       {/* post holder sleeve with its knurled locking screw */}
       <mesh position={[0, (holderTop + 12) / 2, 0]}>
-        <cylinderGeometry args={[radius + 3.4, radius + 3.4, holderTop - 12, 20]} />
-        <meshStandardMaterial color={palette.body} roughness={0.6} metalness={0.35} />
+        <cylinderGeometry
+          args={[radius + 3.4, radius + 3.4, holderTop - 12, 20]}
+        />
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.6}
+          metalness={0.35}
+        />
       </mesh>
-      <mesh position={[radius + 4.5, holderTop - 5, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh
+        position={[radius + 4.5, holderTop - 5, 0]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
         <cylinderGeometry args={[3, 3, 5, 14]} />
-        <meshStandardMaterial color={palette.metal} roughness={0.55} metalness={0.8} />
+        <meshStandardMaterial
+          color={palette.metal}
+          roughness={0.55}
+          metalness={0.8}
+        />
       </mesh>
     </group>
   );
@@ -193,7 +234,7 @@ function KinematicMount({
       {/* back plate */}
       <RoundedBox
         args={[10, size, size]}
-        radius={2.4}
+        radius={0.8}
         smoothness={3}
         position={[-13, AXIS, 0]}
       >
@@ -206,7 +247,9 @@ function KinematicMount({
       </mesh>
       <Adjuster palette={palette} position={[-22, AXIS - corner, -corner]} />
       <Adjuster palette={palette} position={[-22, AXIS + corner, corner]} />
-      {screws === 3 ? <Adjuster palette={palette} position={[-22, AXIS - corner, corner]} /> : null}
+      {screws === 3 ? (
+        <Adjuster palette={palette} position={[-22, AXIS - corner, corner]} />
+      ) : null}
       {children}
     </group>
   );
@@ -222,23 +265,48 @@ function LaserSource({ palette }: ModelProps) {
       {/* head sits on two feet, aperture on the shared axis */}
       <mesh position={[-24, (AXIS - 20) / 2 + 6, 0]}>
         <boxGeometry args={[22, AXIS - 20, 34]} />
-        <meshStandardMaterial color={palette.body} roughness={0.7} metalness={0.3} />
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.7}
+          metalness={0.3}
+        />
       </mesh>
       <mesh position={[26, (AXIS - 20) / 2 + 6, 0]}>
         <boxGeometry args={[22, AXIS - 20, 34]} />
-        <meshStandardMaterial color={palette.body} roughness={0.7} metalness={0.3} />
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.7}
+          metalness={0.3}
+        />
       </mesh>
-      <RoundedBox args={[96, 40, 40]} radius={4} smoothness={3} position={[0, AXIS, 0]}>
-        <meshStandardMaterial color={palette.body} roughness={0.5} metalness={0.4} />
+      <RoundedBox
+        args={[96, 40, 40]}
+        radius={0.8}
+        smoothness={3}
+        position={[0, AXIS, 0]}
+      >
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.5}
+          metalness={0.4}
+        />
       </RoundedBox>
       <mesh position={[50, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[7, 7, 12, 22]} />
-        <meshStandardMaterial color={EMITTER_RED} emissive={EMITTER_RED} emissiveIntensity={0.6} />
+        <meshStandardMaterial
+          color={EMITTER_RED}
+          emissive={EMITTER_RED}
+          emissiveIntensity={0.6}
+        />
       </mesh>
       {/* the +x arrow: which way this source fires */}
       <mesh position={[64, AXIS, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <coneGeometry args={[5, 12, 16]} />
-        <meshStandardMaterial color={EMITTER_RED} emissive={EMITTER_RED} emissiveIntensity={0.35} />
+        <meshStandardMaterial
+          color={EMITTER_RED}
+          emissive={EMITTER_RED}
+          emissiveIntensity={0.35}
+        />
       </mesh>
     </group>
   );
@@ -250,7 +318,11 @@ function MirrorMount({ palette, color }: ModelProps) {
       {/* the mirror substrate, seated in the bore */}
       <mesh position={[2, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 6, 36]} />
-        <meshStandardMaterial color="#e8eef5" roughness={0.05} metalness={0.95} />
+        <meshStandardMaterial
+          color="#e8eef5"
+          roughness={0.05}
+          metalness={0.95}
+        />
       </mesh>
     </KinematicMount>
   );
@@ -261,7 +333,12 @@ function Beamsplitter({ palette, color }: ModelProps) {
     <KinematicMount palette={palette} color={color} screws={2}>
       <mesh position={[3, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 3, 36]} />
-        <meshStandardMaterial color={GLASS_BLUE} transparent opacity={0.45} roughness={0.08} />
+        <meshStandardMaterial
+          color={GLASS_BLUE}
+          transparent
+          opacity={0.45}
+          roughness={0.08}
+        />
         <Edges color="#4d7fa0" />
       </mesh>
     </KinematicMount>
@@ -277,7 +354,7 @@ function PbsCube({ palette, color }: ModelProps) {
       {/* cube platform: a plain anodised plate, the way a PBS actually sits */}
       <RoundedBox
         args={[44, 8, 44]}
-        radius={2}
+        radius={0.8}
         smoothness={3}
         position={[0, AXIS - cube / 2 - 4, 0]}
       >
@@ -285,13 +362,24 @@ function PbsCube({ palette, color }: ModelProps) {
       </RoundedBox>
       <mesh position={[0, AXIS, 0]}>
         <boxGeometry args={[cube, cube, cube]} />
-        <meshStandardMaterial color={GLASS_CYAN} transparent opacity={0.42} roughness={0.08} />
+        <meshStandardMaterial
+          color={GLASS_CYAN}
+          transparent
+          opacity={0.42}
+          roughness={0.08}
+        />
         <Edges color="#3d6a70" />
       </mesh>
       {/* the internal 45 degree coating plane — the tell that says "splits by polarisation" */}
       <mesh position={[0, AXIS, 0]} rotation={[0, Math.PI / 4, 0]}>
         <planeGeometry args={[cube * 1.41, cube]} />
-        <meshStandardMaterial color="#5fd0e0" transparent opacity={0.4} side={DoubleSide} roughness={0.1} />
+        <meshStandardMaterial
+          color="#5fd0e0"
+          transparent
+          opacity={0.4}
+          side={DoubleSide}
+          roughness={0.1}
+        />
       </mesh>
     </group>
   );
@@ -305,7 +393,12 @@ function Lens({ palette, color }: ModelProps) {
       {/* lens tube ring on a post — no kinematics needed for a lens */}
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[20, 20, 16, 36, 1, true]} />
-        <meshStandardMaterial color={mount} roughness={0.5} metalness={0.3} side={DoubleSide} />
+        <meshStandardMaterial
+          color={mount}
+          roughness={0.5}
+          metalness={0.3}
+          side={DoubleSide}
+        />
       </mesh>
       <mesh position={[0, AXIS - 18, 0]}>
         <boxGeometry args={[14, 8, 14]} />
@@ -313,7 +406,12 @@ function Lens({ palette, color }: ModelProps) {
       </mesh>
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <sphereGeometry args={[OPTIC_D / 2, 32, 20]} />
-        <meshStandardMaterial color={GLASS_BLUE} transparent opacity={0.5} roughness={0.05} />
+        <meshStandardMaterial
+          color={GLASS_BLUE}
+          transparent
+          opacity={0.5}
+          roughness={0.05}
+        />
       </mesh>
     </group>
   );
@@ -340,7 +438,12 @@ function Waveplate({ palette, color }: ModelProps) {
       </mesh>
       <mesh position={[7, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 3, 32]} />
-        <meshStandardMaterial color={PLATE_AMBER} transparent opacity={0.72} roughness={0.15} />
+        <meshStandardMaterial
+          color={PLATE_AMBER}
+          transparent
+          opacity={0.72}
+          roughness={0.15}
+        />
         <Edges color="#b08a3a" />
       </mesh>
     </group>
@@ -361,7 +464,12 @@ function Filter({ palette, color }: ModelProps) {
       </mesh>
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[12, 12, 3, 32]} />
-        <meshStandardMaterial color={FILTER_TEAL} transparent opacity={0.7} roughness={0.25} />
+        <meshStandardMaterial
+          color={FILTER_TEAL}
+          transparent
+          opacity={0.7}
+          roughness={0.25}
+        />
         <Edges color="#3f7a6c" />
       </mesh>
     </group>
@@ -409,16 +517,29 @@ function Sample({ palette }: ModelProps) {
       </mesh>
       <mesh position={[0, AXIS + 4, 0]}>
         <cylinderGeometry args={[20, 20, AXIS - 20, 28]} />
-        <meshStandardMaterial color={SAMPLE_COPPER} roughness={0.35} metalness={0.8} />
+        <meshStandardMaterial
+          color={SAMPLE_COPPER}
+          roughness={0.35}
+          metalness={0.8}
+        />
       </mesh>
       <mesh position={[0, AXIS + 34, 0]}>
         <cylinderGeometry args={[12, 16, 26, 24]} />
-        <meshStandardMaterial color={palette.body} roughness={0.55} metalness={0.4} />
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.55}
+          metalness={0.4}
+        />
       </mesh>
       {/* optical access window, on the shared beam axis */}
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[11, 11, 44, 24]} />
-        <meshStandardMaterial color={GLASS_BLUE} transparent opacity={0.3} roughness={0.05} />
+        <meshStandardMaterial
+          color={GLASS_BLUE}
+          transparent
+          opacity={0.3}
+          roughness={0.05}
+        />
       </mesh>
     </group>
   );
@@ -428,12 +549,25 @@ function Photodiode({ palette }: ModelProps) {
   return (
     <group>
       <Post palette={palette} top={AXIS - 14} />
-      <RoundedBox args={[26, 26, 22]} radius={2} smoothness={3} position={[2, AXIS, 0]}>
-        <meshStandardMaterial color={palette.body} roughness={0.55} metalness={0.35} />
+      <RoundedBox
+        args={[26, 26, 22]}
+        radius={0.8}
+        smoothness={3}
+        position={[2, AXIS, 0]}
+      >
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.55}
+          metalness={0.35}
+        />
       </RoundedBox>
       <mesh position={[-11.5, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[8, 8, 3, 24]} />
-        <meshStandardMaterial color={SENSOR_GREEN} emissive={SENSOR_GREEN} emissiveIntensity={0.35} />
+        <meshStandardMaterial
+          color={SENSOR_GREEN}
+          emissive={SENSOR_GREEN}
+          emissiveIntensity={0.35}
+        />
       </mesh>
       {/* BNC stub out the back */}
       <mesh position={[17, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -448,8 +582,17 @@ function CameraBody({ palette }: ModelProps) {
   return (
     <group>
       <Post palette={palette} top={AXIS - 22} />
-      <RoundedBox args={[46, 44, 44]} radius={3} smoothness={3} position={[14, AXIS, 0]}>
-        <meshStandardMaterial color={palette.body} roughness={0.5} metalness={0.4} />
+      <RoundedBox
+        args={[46, 44, 44]}
+        radius={0.8}
+        smoothness={3}
+        position={[14, AXIS, 0]}
+      >
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.5}
+          metalness={0.4}
+        />
       </RoundedBox>
       {/* C-mount barrel on the axis */}
       <mesh position={[-12, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -470,7 +613,11 @@ function Spectrometer({ palette }: ModelProps) {
     <group>
       <mesh position={[0, body / 2, 0]}>
         <boxGeometry args={[110, body, 80]} />
-        <meshStandardMaterial color={palette.body} roughness={0.6} metalness={0.35} />
+        <meshStandardMaterial
+          color={palette.body}
+          roughness={0.6}
+          metalness={0.35}
+        />
       </mesh>
       {/* input slit / fibre port, on the shared axis */}
       <mesh position={[-57, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -489,7 +636,12 @@ function SelectionRing({ radius, color }: { radius: number; color: string }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.6, 0]}>
       <ringGeometry args={[radius, radius + 3, 48]} />
-      <meshBasicMaterial color={color} transparent opacity={0.9} depthWrite={false} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.9}
+        depthWrite={false}
+      />
     </mesh>
   );
 }
@@ -498,7 +650,12 @@ function HoverRing({ radius, color }: { radius: number; color: string }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.4, 0]}>
       <ringGeometry args={[radius, radius + 1.6, 48]} />
-      <meshBasicMaterial color={color} transparent opacity={0.45} depthWrite={false} />
+      <meshBasicMaterial
+        color={color}
+        transparent
+        opacity={0.45}
+        depthWrite={false}
+      />
     </mesh>
   );
 }
@@ -560,9 +717,15 @@ export function ComponentMesh({
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
-      {component.type === "laser-source" ? <LaserSource {...modelProps} /> : null}
-      {component.type === "mirror-mount" ? <MirrorMount {...modelProps} /> : null}
-      {component.type === "beamsplitter" ? <Beamsplitter {...modelProps} /> : null}
+      {component.type === "laser-source" ? (
+        <LaserSource {...modelProps} />
+      ) : null}
+      {component.type === "mirror-mount" ? (
+        <MirrorMount {...modelProps} />
+      ) : null}
+      {component.type === "beamsplitter" ? (
+        <Beamsplitter {...modelProps} />
+      ) : null}
       {component.type === "pbs-cube" ? <PbsCube {...modelProps} /> : null}
       {component.type === "lens" ? <Lens {...modelProps} /> : null}
       {component.type === "waveplate" ? <Waveplate {...modelProps} /> : null}
@@ -571,11 +734,19 @@ export function ComponentMesh({
       {component.type === "sample" ? <Sample {...modelProps} /> : null}
       {component.type === "photodiode" ? <Photodiode {...modelProps} /> : null}
       {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
-      {component.type === "spectrometer" ? <Spectrometer {...modelProps} /> : null}
+      {component.type === "spectrometer" ? (
+        <Spectrometer {...modelProps} />
+      ) : null}
 
-      {hovered && !selected ? <HoverRing radius={spec.radius} color={palette.hover} /> : null}
-      {selected ? <SelectionRing radius={spec.radius} color={palette.accent} /> : null}
-      {beamOrder ? <BeamOrderBadge order={beamOrder} height={spec.height} /> : null}
+      {hovered && !selected ? (
+        <HoverRing radius={spec.radius} color={palette.hover} />
+      ) : null}
+      {selected ? (
+        <SelectionRing radius={spec.radius} color={palette.accent} />
+      ) : null}
+      {beamOrder ? (
+        <BeamOrderBadge order={beamOrder} height={spec.height} />
+      ) : null}
 
       {showLabel ? (
         <Html

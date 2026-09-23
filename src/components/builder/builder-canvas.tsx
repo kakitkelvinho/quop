@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Edges, Grid, Line, OrbitControls } from "@react-three/drei";
 import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
+import { NeutralToneMapping } from "three";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { ContactShadows } from "@react-three/drei";
 import {
   MOUSE,
   Matrix4,
@@ -98,6 +101,14 @@ function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
   return null;
 }
 
+function useDeferredBake<T>(key: T, dragging: boolean): T {
+  const [bakedKey, setBakedKey] = useState(key);
+  if (!dragging && bakedKey !== key) {
+    setBakedKey(key);
+  }
+  return bakedKey;
+}
+
 // ---------------------------------------------------------------------------
 // Table
 // ---------------------------------------------------------------------------
@@ -105,14 +116,21 @@ function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
 type TableProps = {
   palette: ScenePalette;
   onSurfaceClick: (x: number, z: number) => void;
-  onSurfaceDrag: (x: number, z: number, event: ThreeEvent<PointerEvent>) => void;
+  onSurfaceDrag: (
+    x: number,
+    z: number,
+    event: ThreeEvent<PointerEvent>,
+  ) => void;
 };
 
 function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
   const downAt = useRef<{ x: number; y: number } | null>(null);
 
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
-    downAt.current = { x: event.nativeEvent.clientX, y: event.nativeEvent.clientY };
+    downAt.current = {
+      x: event.nativeEvent.clientX,
+      y: event.nativeEvent.clientY,
+    };
   }, []);
 
   // A click is a press that didn't travel — so left-drag can pan the table
@@ -149,8 +167,14 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
       onPointerUp={handlePointerUp}
       onPointerMove={handlePointerMove}
     >
-      <boxGeometry args={[TABLE_WIDTH_MM, TABLE_THICKNESS_MM, TABLE_DEPTH_MM]} />
-      <meshStandardMaterial color={palette.table} roughness={0.95} metalness={0.05} />
+      <boxGeometry
+        args={[TABLE_WIDTH_MM, TABLE_THICKNESS_MM, TABLE_DEPTH_MM]}
+      />
+      <meshStandardMaterial
+        color={palette.table}
+        roughness={0.95}
+        metalness={0.05}
+      />
       <Edges color={palette.tableEdge} />
     </mesh>
   );
@@ -164,28 +188,43 @@ const UP = new Vector3(0, 1, 0);
 
 function BeamPath({ points, color }: { points: Vector3[]; color: string }) {
   const arrows = useMemo(() => {
-    const result: { position: [number, number, number]; quaternion: Quaternion }[] = [];
+    const result: {
+      position: [number, number, number];
+      quaternion: Quaternion;
+    }[] = [];
     for (let index = 1; index < points.length; index += 1) {
       const from = points[index - 1];
       const to = points[index];
       const direction = new Vector3().subVectors(to, from);
       if (direction.length() < 40) continue;
       const mid = new Vector3().addVectors(from, to).multiplyScalar(0.5);
-      const quaternion = new Quaternion().setFromUnitVectors(UP, direction.clone().normalize());
+      const quaternion = new Quaternion().setFromUnitVectors(
+        UP,
+        direction.clone().normalize(),
+      );
       result.push({ position: [mid.x, mid.y, mid.z], quaternion });
     }
     return result;
   }, [points]);
 
   const flat = useMemo(
-    () => points.map((point) => [point.x, point.y, point.z] as [number, number, number]),
+    () =>
+      points.map(
+        (point) => [point.x, point.y, point.z] as [number, number, number],
+      ),
     [points],
   );
 
   return (
     <group>
       {/* soft halo under a crisp core — a beam should glow, not just be a stroke */}
-      <Line points={flat} color={color} lineWidth={7} transparent opacity={0.18} />
+      <Line
+        points={flat}
+        color={color}
+        lineWidth={7}
+        transparent
+        opacity={0.18}
+      />
       <Line points={flat} color={color} lineWidth={2.4} />
       {arrows.map((arrow, index) => (
         <mesh
@@ -208,7 +247,11 @@ function beamPoints(components: BuilderComponent[], path: string[]): Vector3[] {
     .filter((component): component is BuilderComponent => Boolean(component))
     .map(
       (component) =>
-        new Vector3(component.position[0], OPTICAL_AXIS_MM, component.position[2]),
+        new Vector3(
+          component.position[0],
+          OPTICAL_AXIS_MM,
+          component.position[2],
+        ),
     );
 }
 
@@ -229,13 +272,21 @@ export type BuilderCanvasProps = {
   fitToken: number;
   dragging: boolean;
   onSurfaceClick: (x: number, z: number) => void;
-  onSurfaceDrag: (x: number, z: number, event: ThreeEvent<PointerEvent>) => void;
+  onSurfaceDrag: (
+    x: number,
+    z: number,
+    event: ThreeEvent<PointerEvent>,
+  ) => void;
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
 };
 
-function CanvasHandle({ onReady }: { onReady: (canvas: HTMLCanvasElement) => void }) {
+function CanvasHandle({
+  onReady,
+}: {
+  onReady: (canvas: HTMLCanvasElement) => void;
+}) {
   const gl = useThree((state) => state.gl);
   useEffect(() => {
     onReady(gl.domElement);
@@ -266,21 +317,57 @@ export default function BuilderCanvas({
     beamDraft.forEach((id, index) => map.set(id, index + 1));
     return map;
   }, [beamDraft]);
-
+  const shadowKey = useMemo(
+    () =>
+      components
+        .map((c) => `${c.id}:${c.position[0]}:${c.position[2]}`)
+        .join("|"),
+    [components],
+  );
+  const bakedKey = useDeferredBake(shadowKey, dragging);
   return (
     <Canvas
       orthographic
+      frameloop="demand"
       camera={{ position: [1400, 1150, 1400], near: -4000, far: 8000, zoom: 1 }}
-      gl={{ alpha: false, antialias: true, preserveDrawingBuffer: true }}
+      gl={{
+        alpha: false,
+        antialias: true,
+        preserveDrawingBuffer: true,
+        toneMapping: NeutralToneMapping,
+      }}
       dpr={[1, 2]}
     >
       <CanvasHandle onReady={onCanvasReady} />
       <color attach="background" args={[palette.background]} />
       <ambientLight intensity={palette.ambient} />
-      <directionalLight position={[400, 700, 300]} intensity={palette.keyLight} />
-      <directionalLight position={[-350, 400, -400]} intensity={palette.fillLight} />
-      <hemisphereLight intensity={0.25} groundColor={palette.table} />
+      <directionalLight
+        position={[400, 700, 300]}
+        intensity={palette.keyLight}
+      />
+      <directionalLight
+        position={[-350, 400, -400]}
+        intensity={palette.fillLight}
+      />
+      <hemisphereLight
+        intensity={0.45}
+        color={palette.skyLight}
+        groundColor={palette.table}
+      />
 
+      <ContactShadows
+        key={bakedKey}
+        frames={1}
+        position={[0, 0.5, 0]}
+        scale={[TABLE_WIDTH_MM, TABLE_DEPTH_MM]}
+        width={TABLE_WIDTH_MM}
+        height={TABLE_DEPTH_MM}
+        far={140}
+        blur={2.5}
+        resolution={512}
+        opacity={palette.mode === "dark" ? 0.55 : 0.4}
+        color={palette.mode === "dark" ? "#000000" : "#4a4336"}
+      />
       <TableSurface
         palette={palette}
         onSurfaceClick={onSurfaceClick}
@@ -331,7 +418,10 @@ export default function BuilderCanvas({
       })}
 
       {beamDraft.length >= 2 ? (
-        <BeamPath points={beamPoints(components, beamDraft)} color={palette.accent} />
+        <BeamPath
+          points={beamPoints(components, beamDraft)}
+          color={palette.accent}
+        />
       ) : null}
 
       <OrbitControls
@@ -343,7 +433,11 @@ export default function BuilderCanvas({
         zoomSpeed={0.9}
         minZoom={0.2}
         maxZoom={14}
-        mouseButtons={{ LEFT: MOUSE.PAN, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.PAN }}
+        mouseButtons={{
+          LEFT: MOUSE.PAN,
+          MIDDLE: MOUSE.DOLLY,
+          RIGHT: MOUSE.PAN,
+        }}
         touches={{ ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN }}
       />
       <CameraRig view={view} fitToken={fitToken} />

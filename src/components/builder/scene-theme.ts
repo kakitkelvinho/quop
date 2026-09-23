@@ -22,6 +22,7 @@ export type ScenePalette = {
   fillLight: number;
   metal: string;
   body: string;
+  skyLight: string;
 };
 
 export const LIGHT_PALETTE: ScenePalette = {
@@ -33,11 +34,12 @@ export const LIGHT_PALETTE: ScenePalette = {
   gridSection: "#a3977f",
   accent: "#8b1e3f",
   hover: "#b4506c",
-  ambient: 0.85,
-  keyLight: 1,
-  fillLight: 0.4,
+  ambient: 0.35,
+  keyLight: 1.15,
+  fillLight: 0.45,
   metal: "#c9ced6",
   body: "#3a3f47",
+  skyLight: "#f2ece0",
 };
 
 export const DARK_PALETTE: ScenePalette = {
@@ -49,11 +51,12 @@ export const DARK_PALETTE: ScenePalette = {
   gridSection: "#48536e",
   accent: "#f4b942",
   hover: "#ffd67c",
-  ambient: 0.55,
-  keyLight: 0.95,
-  fillLight: 0.35,
+  ambient: 0.25,
+  keyLight: 1.05,
+  fillLight: 0.4,
   metal: "#aeb5bf",
   body: "#2b2f36",
+  skyLight: "#2a3344",
 };
 
 /** The site writes its theme to `data-theme`; treat that attribute as the store. */

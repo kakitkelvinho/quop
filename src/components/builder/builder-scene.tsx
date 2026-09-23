@@ -1,9 +1,18 @@
 "use client";
 
 import type { ThreeEvent } from "@react-three/fiber";
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 
-import BuilderCanvas, { type CameraView } from "@/components/builder/builder-canvas";
+import BuilderCanvas, {
+  type CameraView,
+} from "@/components/builder/builder-canvas";
 import BuilderPanel from "@/components/builder/builder-panel";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
@@ -40,7 +49,12 @@ type DragState = {
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+  return (
+    tag === "INPUT" ||
+    tag === "TEXTAREA" ||
+    tag === "SELECT" ||
+    target.isContentEditable
+  );
 }
 
 export default function BuilderScene() {
@@ -73,7 +87,8 @@ export default function BuilderScene() {
   }, [scene]);
 
   const selected = useMemo(
-    () => (selectedId ? componentById(scene.components, selectedId) ?? null : null),
+    () =>
+      selectedId ? (componentById(scene.components, selectedId) ?? null) : null,
     [scene.components, selectedId],
   );
   const selectedBeam = useMemo(
@@ -85,7 +100,10 @@ export default function BuilderScene() {
   // things (export, load, clear) whose only evidence would otherwise be off-screen.
   const announce = useCallback((message: string) => {
     setStatus(message);
-    window.setTimeout(() => setStatus((current) => (current === message ? null : current)), 4000);
+    window.setTimeout(
+      () => setStatus((current) => (current === message ? null : current)),
+      4000,
+    );
   }, []);
 
   // ---- placing & selection -------------------------------------------------
@@ -94,7 +112,11 @@ export default function BuilderScene() {
     (x: number, z: number) => {
       if (beamMode) return;
       if (placingType) {
-        const id = api.addComponent(placingType, [snapToGrid(x), 0, snapToGrid(z)]);
+        const id = api.addComponent(placingType, [
+          snapToGrid(x),
+          0,
+          snapToGrid(z),
+        ]);
         setSelectedId(id);
         setPlacingType(null);
         return;
@@ -142,7 +164,8 @@ export default function BuilderScene() {
 
       const component = componentById(sceneRef.current.components, drag.id);
       if (!component) return;
-      if (component.position[0] === nextX && component.position[2] === nextZ) return;
+      if (component.position[0] === nextX && component.position[2] === nextZ)
+        return;
 
       // First real movement is what earns an undo entry — a plain click shouldn't.
       if (!drag.started) {
@@ -175,7 +198,9 @@ export default function BuilderScene() {
     setBeamDraft([]);
     setPlacingType(null);
     setSelectedId(null);
-    setBeamColor(BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length]);
+    setBeamColor(
+      BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length],
+    );
   }, []);
 
   const cancelBeam = useCallback(() => {
@@ -186,9 +211,14 @@ export default function BuilderScene() {
   const finishBeam = useCallback(() => {
     if (beamDraft.length >= 2) {
       const first = componentById(sceneRef.current.components, beamDraft[0]);
-      const last = componentById(sceneRef.current.components, beamDraft[beamDraft.length - 1]);
+      const last = componentById(
+        sceneRef.current.components,
+        beamDraft[beamDraft.length - 1],
+      );
       const label =
-        first && last ? `${componentDisplayName(first)} → ${componentDisplayName(last)}` : undefined;
+        first && last
+          ? `${componentDisplayName(first)} → ${componentDisplayName(last)}`
+          : undefined;
       api.addBeam(beamDraft, beamColor, label);
       announce("Beam added.");
     }
@@ -196,12 +226,17 @@ export default function BuilderScene() {
     setBeamDraft([]);
   }, [announce, api, beamColor, beamDraft]);
 
-  const undoBeamStep = useCallback(() => setBeamDraft((current) => current.slice(0, -1)), []);
+  const undoBeamStep = useCallback(
+    () => setBeamDraft((current) => current.slice(0, -1)),
+    [],
+  );
 
   // ---- file & image --------------------------------------------------------
 
   const handleSave = useCallback(() => {
-    const blob = new Blob([serializeScene(sceneRef.current)], { type: "application/json" });
+    const blob = new Blob([serializeScene(sceneRef.current)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -229,7 +264,9 @@ export default function BuilderScene() {
           setSelectedId(null);
           setSelectedBeamId(null);
           cancelBeam();
-          announce(`Loaded ${parsed.components.length} parts from ${file.name}.`);
+          announce(
+            `Loaded ${parsed.components.length} parts from ${file.name}.`,
+          );
         } catch {
           announce("Couldn't read that file — it isn't valid JSON.");
         }
@@ -398,7 +435,9 @@ export default function BuilderScene() {
           canRedo={api.canRedo}
           onPickType={setPlacingType}
           onUpdateSelected={updateSelected}
-          onRotateSelected={(direction) => selectedId && api.rotateComponent(selectedId, direction)}
+          onRotateSelected={(direction) =>
+            selectedId && api.rotateComponent(selectedId, direction)
+          }
           onDuplicateSelected={() => {
             if (!selectedId) return;
             const copyId = api.duplicateComponent(selectedId);
@@ -442,7 +481,9 @@ export default function BuilderScene() {
         />
       </div>
 
-      <div className={`builderCanvasHost${placingType || beamMode ? " is-picking" : ""}`}>
+      <div
+        className={`builderCanvasHost${placingType || beamMode ? " is-picking" : ""}`}
+      >
         <BuilderCanvas
           components={scene.components}
           beams={scene.beams}
@@ -463,11 +504,14 @@ export default function BuilderScene() {
         />
         <p className="builderReadoutBadge">{readout}</p>
         {beamMode ? (
-          <p className="builderModeBadge">Beam mode — click parts in order, Enter to finish</p>
+          <p className="builderModeBadge">
+            Beam mode — click parts in order, Enter to finish
+          </p>
         ) : null}
         {placingType ? (
           <p className="builderModeBadge">
-            Placing {COMPONENT_SPECS[placingType].label.toLowerCase()} — click the table
+            Placing {COMPONENT_SPECS[placingType].label.toLowerCase()} — click
+            the table
           </p>
         ) : null}
         <p className="builderStatus" role="status" aria-live="polite">
