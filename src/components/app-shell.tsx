@@ -61,31 +61,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40">
-        <nav
-          className="grid h-16 w-full grid-cols-[1fr_auto_1fr] items-stretch gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-10 backdrop-blur-[14px]"
-          aria-label="Primary"
-        >
-          <div className="flex items-stretch gap-1">
-            <NavItem href="/experiment" label="experiment" />
-            <NavItem href="/theory" label="theory" />
-          </div>
-
-          <Link
-            className="inline-flex h-full items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.2em] text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
-            href="/"
+      {/* The builder is a full-window workspace with its own way back. */}
+      {isBuilderRoute ? null : (
+        <header className="sticky top-0 z-40">
+          <nav
+            className="grid h-16 w-full grid-cols-[1fr_auto_1fr] items-stretch gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-10 backdrop-blur-[14px]"
+            aria-label="Primary"
           >
-            QUOP
-          </Link>
+            <div className="flex items-stretch gap-1">
+              <NavItem href="/experiment" label="experiment" />
+              <NavItem href="/theory" label="theory" />
+            </div>
 
-          <div className="flex items-stretch justify-end gap-1">
-            <NavItem href="/plotters" label="plotter" />
-            <NavItem href="/calculators" label="calculator" />
-          </div>
-        </nav>
-      </header>
+            <Link
+              className="inline-flex h-full items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.2em] text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+              href="/"
+            >
+              QUOP
+            </Link>
 
-      <ThemeToggle />
+            <div className="flex items-stretch justify-end gap-1">
+              <NavItem href="/plotters" label="plotter" />
+              <NavItem href="/calculators" label="calculator" />
+            </div>
+          </nav>
+        </header>
+      )}
+
+      {isBuilderRoute ? null : <ThemeToggle />}
 
       <main
         className={

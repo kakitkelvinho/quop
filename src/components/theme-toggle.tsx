@@ -2,12 +2,12 @@
 
 type Theme = "light" | "dark";
 
-function setTheme(theme: Theme) {
+export function setTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem("theme-preference", theme);
 }
 
-function getTheme(): Theme {
+export function getTheme(): Theme {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 

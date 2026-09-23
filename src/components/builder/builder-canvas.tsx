@@ -56,9 +56,13 @@ type ControlsLike = { target: Vector3; update: () => void };
 /**
  * Frames the whole breadboard. Rather than guessing a zoom constant, the rig
  * projects the table's bounding box into camera space and solves for the zoom
- * that fits it — so the table fills the panel at any viewport size, in both
+ * that fits it — so the table fills the canvas at any viewport size, in both
  * the isometric and the top-down view.
  */
+/** Screen margins the fit keeps clear for the floating HUD (see builder-hud.tsx). */
+const FIT_INSET_X_PX = 24;
+const FIT_INSET_Y_PX = 64;
+
 function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
   // `get()` reaches the live camera imperatively; the size selector is here so
   // the fit re-runs when the panel is resized.
@@ -103,7 +107,10 @@ function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
 
     const spanX = Math.max(maxX - minX, 1);
     const spanY = Math.max(maxY - minY, 1);
-    cam.zoom = Math.min(size.width / spanX, size.height / spanY) * 0.96;
+    // The HUD islands float over the canvas edges; fit into what they leave.
+    const usableWidth = Math.max(size.width - 2 * FIT_INSET_X_PX, 1);
+    const usableHeight = Math.max(size.height - 2 * FIT_INSET_Y_PX, 1);
+    cam.zoom = Math.min(usableWidth / spanX, usableHeight / spanY) * 0.96;
     cam.updateProjectionMatrix();
 
     if (controls) {
@@ -464,7 +471,8 @@ export default function BuilderCanvas({
   return (
     <Canvas
       orthographic
-      shadows="soft"
+      // PCF: three r18x dropped PCFSoftShadowMap (R3F's "soft"); PCF is now the soft one.
+      shadows="percentage"
       frameloop="demand"
       camera={{ position: [1400, 1150, 1400], near: -4000, far: 8000, zoom: 1 }}
       gl={{

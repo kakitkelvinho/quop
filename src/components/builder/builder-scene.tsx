@@ -13,10 +13,10 @@ import {
 import BuilderCanvas, {
   type CameraView,
 } from "@/components/builder/builder-canvas";
-import BuilderPanel from "@/components/builder/builder-panel";
+import BuilderHud from "@/components/builder/builder-hud";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
-import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
+import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
   BEAM_COLORS,
   COMPONENT_SPECS,
@@ -31,7 +31,6 @@ import {
   parseScene,
   serializeScene,
   snapToGrid,
-  type Beam,
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
@@ -75,7 +74,7 @@ export default function BuilderScene() {
   const [fitToken, setFitToken] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -197,6 +196,7 @@ export default function BuilderScene() {
     setBeamMode(true);
     setBeamDraft([]);
     setPlacingType(null);
+    setTrayOpen(false);
     setSelectedId(null);
     setBeamColor(
       BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length],
@@ -309,7 +309,8 @@ export default function BuilderScene() {
       }
 
       if (event.key === "Escape") {
-        if (beamMode) cancelBeam();
+        if (trayOpen) setTrayOpen(false);
+        else if (beamMode) cancelBeam();
         else if (placingType) setPlacingType(null);
         else {
           setSelectedId(null);
@@ -368,7 +369,7 @@ export default function BuilderScene() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [api, beamMode, cancelBeam, finishBeam, placingType, selectedId]);
+  }, [api, beamMode, cancelBeam, finishBeam, placingType, selectedId, trayOpen]);
 
   // ---- readout -------------------------------------------------------------
 
@@ -405,82 +406,13 @@ export default function BuilderScene() {
     [api, selectedId],
   );
 
-  const handleSelectBeam = useCallback((beam: Beam) => {
-    setSelectedBeamId((current) => (current === beam.id ? null : beam.id));
+  const handleSelectBeam = useCallback((id: string) => {
+    setSelectedBeamId((current) => (current === id ? null : id));
     setSelectedId(null);
   }, []);
 
   return (
-    <div
-      className={`builderLayout${sidebarCollapsed ? " builderLayout--sidebarCollapsed" : ""}`}
-    >
-      <div className="builderSidebar">
-        <SidebarCollapseToggle
-          collapsed={sidebarCollapsed}
-          label="toolbar"
-          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-        />
-        <BuilderPanel
-          components={scene.components}
-          beams={scene.beams}
-          selected={selected}
-          placingType={placingType}
-          beamMode={beamMode}
-          beamDraft={beamDraft}
-          beamColor={beamColor}
-          showLabels={showLabels}
-          showGrid={showGrid}
-          view={view}
-          canUndo={api.canUndo}
-          canRedo={api.canRedo}
-          onPickType={setPlacingType}
-          onUpdateSelected={updateSelected}
-          onRotateSelected={(direction) =>
-            selectedId && api.rotateComponent(selectedId, direction)
-          }
-          onDuplicateSelected={() => {
-            if (!selectedId) return;
-            const copyId = api.duplicateComponent(selectedId);
-            if (copyId) setSelectedId(copyId);
-          }}
-          onDeleteSelected={() => {
-            if (!selectedId) return;
-            api.deleteComponent(selectedId);
-            setSelectedId(null);
-          }}
-          onStartBeam={startBeam}
-          onFinishBeam={finishBeam}
-          onCancelBeam={cancelBeam}
-          onUndoBeamStep={undoBeamStep}
-          onBeamColorChange={setBeamColor}
-          onSelectBeam={handleSelectBeam}
-          onDeleteBeam={(id) => {
-            api.deleteBeam(id);
-            setSelectedBeamId((current) => (current === id ? null : current));
-          }}
-          onToggleLabels={() => setShowLabels((current) => !current)}
-          onToggleGrid={() => setShowGrid((current) => !current)}
-          onViewChange={setView}
-          onFit={() => setFitToken((token) => token + 1)}
-          onUndo={api.undo}
-          onRedo={api.redo}
-          onSave={handleSave}
-          onLoad={handleLoad}
-          onExportPng={handleExportPng}
-          onResetExample={() => {
-            api.resetToExample();
-            setSelectedId(null);
-            announce("Loaded the example pump + reference layout.");
-          }}
-          onClear={() => {
-            api.clearScene();
-            setSelectedId(null);
-            setSelectedBeamId(null);
-            cancelBeam();
-          }}
-        />
-      </div>
-
+    <div className="builderWorkspace">
       <div
         className={`builderCanvasHost${placingType || beamMode ? " is-picking" : ""}`}
       >
@@ -503,22 +435,87 @@ export default function BuilderScene() {
           onCanvasReady={handleCanvasReady}
           placing={placingType !== null}
         />
-        <p className="builderReadoutBadge">{readout}</p>
-        {beamMode ? (
-          <p className="builderModeBadge">
-            Beam mode — click parts in order, Enter to finish
-          </p>
-        ) : null}
-        {placingType ? (
-          <p className="builderModeBadge">
-            Placing {COMPONENT_SPECS[placingType].label.toLowerCase()} — click
-            the table
-          </p>
-        ) : null}
-        <p className="builderStatus" role="status" aria-live="polite">
-          {status}
-        </p>
       </div>
+
+      <BuilderHud
+        components={scene.components}
+        beams={scene.beams}
+        selected={selected}
+        selectedBeam={selectedBeam}
+        placingType={placingType}
+        trayOpen={trayOpen}
+        beamMode={beamMode}
+        beamDraft={beamDraft}
+        beamColor={beamColor}
+        showLabels={showLabels}
+        showGrid={showGrid}
+        view={view}
+        canUndo={api.canUndo}
+        canRedo={api.canRedo}
+        readout={readout}
+        status={status}
+        onToggleTray={() => setTrayOpen((open) => !open)}
+        onPickType={(type) => {
+          cancelBeam();
+          setPlacingType(type);
+          setTrayOpen(false);
+        }}
+        onSelectTool={() => {
+          cancelBeam();
+          setPlacingType(null);
+          setTrayOpen(false);
+        }}
+        onDeselect={() => {
+          setSelectedId(null);
+          setSelectedBeamId(null);
+        }}
+        onUpdateSelected={updateSelected}
+        onRotateSelected={(direction) =>
+          selectedId && api.rotateComponent(selectedId, direction)
+        }
+        onDuplicateSelected={() => {
+          if (!selectedId) return;
+          const copyId = api.duplicateComponent(selectedId);
+          if (copyId) setSelectedId(copyId);
+        }}
+        onDeleteSelected={() => {
+          if (!selectedId) return;
+          api.deleteComponent(selectedId);
+          setSelectedId(null);
+        }}
+        onStartBeam={startBeam}
+        onFinishBeam={finishBeam}
+        onCancelBeam={cancelBeam}
+        onUndoBeamStep={undoBeamStep}
+        onBeamColorChange={setBeamColor}
+        onSelectBeam={handleSelectBeam}
+        onUpdateBeam={api.updateBeam}
+        onDeleteBeam={(id) => {
+          api.deleteBeam(id);
+          setSelectedBeamId((current) => (current === id ? null : current));
+        }}
+        onToggleLabels={() => setShowLabels((current) => !current)}
+        onToggleGrid={() => setShowGrid((current) => !current)}
+        onViewChange={setView}
+        onFit={() => setFitToken((token) => token + 1)}
+        onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}
+        onUndo={api.undo}
+        onRedo={api.redo}
+        onSave={handleSave}
+        onLoad={handleLoad}
+        onExportPng={handleExportPng}
+        onResetExample={() => {
+          api.resetToExample();
+          setSelectedId(null);
+          announce("Loaded the example pump + reference layout.");
+        }}
+        onClear={() => {
+          api.clearScene();
+          setSelectedId(null);
+          setSelectedBeamId(null);
+          cancelBeam();
+        }}
+      />
     </div>
   );
 }

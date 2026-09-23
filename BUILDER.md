@@ -52,15 +52,33 @@ the view exports as a PNG for a lab log.
 
 ## Interaction model
 
+The builder is a full-window workspace: the site nav steps aside and the canvas
+fills the viewport. A few small islands float over its edges, and nothing else
+is on screen until it is needed:
+
+- **Top left**: "‹ QUOP" back to the site, and the File menu (save/open JSON,
+  export PNG, load the example, clear the table).
+- **Top centre**: the tool pill (Select, Add, Draw a beam, Undo, Redo). Add
+  drops a tray of parts grouped as a bench walk-through. While placing or
+  drawing, a mode badge under the pill carries that mode's key hints.
+- **Right**: the inspector, shown only while something is selected: a
+  component, a beam, or a beam being drawn.
+- **Bottom**: the readout (left), one chip per beam with its path length
+  (centre; click to select), and the view controls (right).
+
 | Action | How |
 | --- | --- |
-| Add a part | Pick it in the palette, click the table |
+| Add a part | Add (＋) in the tool pill, pick it in the tray, click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
-| Rotate | `R` / `Shift R`, the ±15° buttons, or type a yaw |
-| Duplicate / delete | `D` / `Delete` |
-| Draw a beam | "Draw a beam path", click parts in order, `Enter` |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw |
+| Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
+| Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
+| Select a beam | Click its chip along the bottom |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Cancel anything | `Esc` |
+| Cancel anything | `Esc` (closes the tray, then cancels a mode, then deselects) |
+
+Shortcuts live in button tooltips and in the mode badge, not in a panel of
+their own.
 
 Left-drag pans the table and the wheel zooms; a press that travels more than a
 few pixels is a pan, not a click, so panning never drops a component by
@@ -70,10 +88,12 @@ compare with the real thing.
 
 ## Visual language
 
-The panel stays in the site's notebook language: parchment card, uppercase
-kickers, lifted surfaces, the oxblood/amber ink accent. The canvas switches into
-instrument language, the same way the FITS viewers do — the coordinate readout
-is mono and phosphor green, mode badges use the toolbar amber.
+The floating islands, the readout included, stay in the site's notebook
+language: surface cards with a hairline border, lifted shadows, the
+oxblood/amber ink accent, measured values in mono. Only the transient mode badge
+borrows the instrument toolbar amber. An earlier phosphor-green readout was
+dropped as jarring against the notebook. A darker, instrument-console look for the islands was tried and
+rejected (see the `prototype/builder-panels` branch).
 
 The scene itself is lit like a *2001* interior shot as a miniature (think
 Hitman GO): glossy white enamel hardware and saturated enamel mounts under
@@ -108,7 +128,9 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
-| `src/components/builder/builder-panel.tsx` | Palette, inspector, beam list, table controls |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill and parts tray, mode badge, readout, beam chips, view controls |
+| `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
+| `src/components/builder/builder-icons.tsx` | The builder's icon set and icon button |
 | `src/components/builder/builder-scene.tsx` | Orchestration: selection, drag, keyboard, files |
 
 ## Known gaps
