@@ -13,7 +13,7 @@ const ibmPlexSans = IBM_Plex_Sans({
 
 // The chalkboard hero sets its equations in italic Garamond.
 const ebGaramond = EB_Garamond({
-  subsets: ["latin"],
+  subsets: ["latin", "greek"],
   style: ["normal", "italic"],
   weight: ["400", "500"],
   variable: "--font-eb-garamond",
