@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans } from "next/font/google";
+import { EB_Garamond, IBM_Plex_Sans } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell";
 
@@ -9,6 +9,14 @@ const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-ibm-plex-sans",
+});
+
+// The chalkboard hero sets its equations in italic Garamond.
+const ebGaramond = EB_Garamond({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  weight: ["400", "500"],
+  variable: "--font-eb-garamond",
 });
 
 export const metadata: Metadata = {
@@ -35,7 +43,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html className={ibmPlexSans.variable} lang="en" suppressHydrationWarning>
+    <html
+      className={`${ibmPlexSans.variable} ${ebGaramond.variable}`}
+      lang="en"
+      suppressHydrationWarning
+    >
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <AppShell>{children}</AppShell>
