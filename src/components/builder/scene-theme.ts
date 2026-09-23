@@ -3,15 +3,21 @@
 import { useSyncExternalStore } from "react";
 
 /**
- * The canvas can't read CSS custom properties, so the day/night ink swap has
- * to be mirrored here as literal colours. Day is a warm bench under room
- * light; night is the same bench under a desk lamp, with the amber accent.
+ * The canvas can't read CSS custom properties, so the day/night swap has to be
+ * mirrored here as literal colours.
+ *
+ * The bench is lit like a 2001 interior photographed as a miniature: glossy
+ * white enamel hardware under overhead ring lights, on a soft studio sweep
+ * with no table in shot. Day is a white room; night is the same parts floating
+ * in a dark void, with a cool rim light to lift them off it.
  */
 export type ScenePalette = {
   mode: "light" | "dark";
-  background: string;
-  table: string;
-  tableEdge: string;
+  /** radial studio sweep behind the parts: centre, middle, edge */
+  backdrop: [string, string, string];
+  /** the invisible table only catches shadows; this is their ink */
+  shadow: string;
+  shadowOpacity: number;
   gridCell: string;
   gridSection: string;
   /** the ink accent — selection rings, the beam being drawn */
@@ -19,44 +25,51 @@ export type ScenePalette = {
   hover: string;
   ambient: number;
   keyLight: number;
-  fillLight: number;
-  metal: string;
+  rimLight: number;
+  rimColor: string;
+  occlusion: number;
+  vignette: number;
+  /** enamel instrument bodies */
   body: string;
-  skyLight: string;
+  metal: string;
 };
 
 export const LIGHT_PALETTE: ScenePalette = {
   mode: "light",
-  background: "#ece7dc",
-  table: "#ded7c9",
-  tableEdge: "#b9ad97",
-  gridCell: "#c6bca8",
-  gridSection: "#a3977f",
+  backdrop: ["#f7f6f2", "#e4e6ea", "#c3c7cf"],
+  shadow: "#1c2230",
+  shadowOpacity: 0.16,
+  gridCell: "#c7cbd2",
+  gridSection: "#a9aeb8",
   accent: "#8b1e3f",
   hover: "#b4506c",
-  ambient: 0.35,
-  keyLight: 1.15,
-  fillLight: 0.45,
-  metal: "#c9ced6",
-  body: "#3a3f47",
-  skyLight: "#f2ece0",
+  ambient: 0.2,
+  keyLight: 1.6,
+  rimLight: 1.1,
+  rimColor: "#ffffff",
+  occlusion: 3.2,
+  vignette: 0.3,
+  body: "#fbfbf8",
+  metal: "#d8dce2",
 };
 
 export const DARK_PALETTE: ScenePalette = {
   mode: "dark",
-  background: "#0c0f16",
-  table: "#171c27",
-  tableEdge: "#2b3345",
-  gridCell: "#2f3850",
-  gridSection: "#48536e",
+  backdrop: ["#2a2c33", "#101114", "#020203"],
+  shadow: "#000000",
+  shadowOpacity: 0.5,
+  gridCell: "#2c2c2c",
+  gridSection: "#4a4a4a",
   accent: "#f4b942",
   hover: "#ffd67c",
-  ambient: 0.25,
-  keyLight: 1.05,
-  fillLight: 0.4,
-  metal: "#aeb5bf",
-  body: "#2b2f36",
-  skyLight: "#2a3344",
+  ambient: 0.1,
+  keyLight: 2.2,
+  rimLight: 2.2,
+  rimColor: "#b9ccff",
+  occlusion: 3,
+  vignette: 0.55,
+  body: "#ecebe7",
+  metal: "#c9ced6",
 };
 
 /** The site writes its theme to `data-theme`; treat that attribute as the store. */

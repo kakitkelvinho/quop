@@ -73,8 +73,31 @@ compare with the real thing.
 The panel stays in the site's notebook language: parchment card, uppercase
 kickers, lifted surfaces, the oxblood/amber ink accent. The canvas switches into
 instrument language, the same way the FITS viewers do — the coordinate readout
-is mono and phosphor green, mode badges use the toolbar amber, and the whole
-scene swaps from a warm daylit bench to a midnight one with the theme.
+is mono and phosphor green, mode badges use the toolbar amber.
+
+The scene itself is lit like a *2001* interior shot as a miniature (think
+Hitman GO): glossy white enamel hardware and saturated enamel mounts under
+overhead ring lights, on a soft studio sweep. Day is a white room; night is the
+same parts in a dark void with a cool rim light. It was chosen over a PBR bench,
+a technical-drawing look and a plain studio render because it reads cleanly in
+print — posters, slides and paper figures are mostly white pages.
+
+- **No table in shot.** The breadboard is still there — it is what you click
+  and drag on, and it catches the key light's shadow — but it is never drawn.
+  Parts are grounded by that shadow and by ambient occlusion instead.
+- **Grid on demand.** With no table, the grid is a working aid, not scenery:
+  it appears only while a part is being placed or dragged (and the grid toggle
+  is on).
+- **Enamel, not anodised metal.** Mount plates and bodies are dielectric so
+  their colour stays saturated; only posts, screws and mirrors are metal.
+- **Real glass.** Optics use physical transmission — refraction, Fresnel
+  edges, thickness tint — rather than alpha. One glass part won't show another
+  glass part behind it; on a bench that rarely matters.
+- **No outlines, no tilt-shift.** Edge lines read as ink on a render, and blur
+  hides the parts you are trying to edit.
+
+The render-style exploration that led here is kept on the
+`prototype/builder-shading` branch.
 
 ## Files
 
@@ -82,9 +105,9 @@ scene swaps from a warm daylit bench to a midnight one with the theme.
 | --- | --- |
 | `src/components/builder/types.ts` | Data model, component specs, table geometry, JSON parsing |
 | `src/components/builder/use-builder-scene.ts` | Scene state, undo/redo, autosave |
-| `src/components/builder/scene-theme.ts` | Day/night scene palettes, bound to `data-theme` |
+| `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
-| `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, table, beams |
+| `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/builder-panel.tsx` | Palette, inspector, beam list, table controls |
 | `src/components/builder/builder-scene.tsx` | Orchestration: selection, drag, keyboard, files |
 

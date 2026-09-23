@@ -501,6 +501,7 @@ export default function BuilderScene() {
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={setHoveredId}
           onCanvasReady={handleCanvasReady}
+          placing={placingType !== null}
         />
         <p className="builderReadoutBadge">{readout}</p>
         {beamMode ? (

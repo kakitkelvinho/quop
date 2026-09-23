@@ -1,16 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { Edges, Grid, Line, OrbitControls } from "@react-three/drei";
-import { Canvas, useThree, type ThreeEvent } from "@react-three/fiber";
-import { NeutralToneMapping } from "three";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { ContactShadows } from "@react-three/drei";
 import {
+  Environment,
+  Grid,
+  Lightformer,
+  Line,
+  OrbitControls,
+} from "@react-three/drei";
+import {
+  Canvas,
+  useFrame,
+  useThree,
+  type ThreeEvent,
+} from "@react-three/fiber";
+import { EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  BackSide,
+  CanvasTexture,
   MOUSE,
   Matrix4,
+  Mesh,
+  NeutralToneMapping,
   OrthographicCamera,
   Quaternion,
+  SRGBColorSpace,
   TOUCH,
   Vector3,
 } from "three";
@@ -101,14 +115,6 @@ function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
   return null;
 }
 
-function useDeferredBake<T>(key: T, dragging: boolean): T {
-  const [bakedKey, setBakedKey] = useState(key);
-  if (!dragging && bakedKey !== key) {
-    setBakedKey(key);
-  }
-  return bakedKey;
-}
-
 // ---------------------------------------------------------------------------
 // Table
 // ---------------------------------------------------------------------------
@@ -157,11 +163,14 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
     [onSurfaceDrag],
   );
 
-  // One solid slab rather than a plane plus a rim: two coplanar faces at y = 0
-  // z-fight, and the grid drops out over half the board on some GPUs. The top
-  // face sits exactly at y = 0, which is what the drag maths assumes.
+  // The table is never drawn — parts stand on the studio sweep — but it is
+  // still the click/drag target, and it catches the key light's shadow so
+  // parts stay grounded. One solid slab rather than a plane: a plane at y = 0
+  // z-fights the grid on some GPUs. The top face sits exactly at y = 0, which
+  // is what the drag maths assumes.
   return (
     <mesh
+      receiveShadow
       position={[0, -TABLE_THICKNESS_MM / 2, 0]}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -170,12 +179,144 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
       <boxGeometry
         args={[TABLE_WIDTH_MM, TABLE_THICKNESS_MM, TABLE_DEPTH_MM]}
       />
-      <meshStandardMaterial
-        color={palette.table}
-        roughness={0.95}
-        metalness={0.05}
+      <shadowMaterial
+        color={palette.shadow}
+        opacity={palette.shadowOpacity}
       />
-      <Edges color={palette.tableEdge} />
+    </mesh>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Lighting
+// ---------------------------------------------------------------------------
+
+/**
+ * One high key light casts the only real shadows — short and crisp, like a
+ * ceiling fixture. A rim from behind the view lifts white parts off the
+ * backdrop. Its shadow camera spans the board plus a margin.
+ */
+function Lights({ palette }: { palette: ScenePalette }) {
+  return (
+    <>
+      <ambientLight intensity={palette.ambient} />
+      <directionalLight
+        castShadow
+        position={[420, 1000, 520]}
+        intensity={palette.keyLight}
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-650}
+        shadow-camera-right={650}
+        shadow-camera-top={650}
+        shadow-camera-bottom={-650}
+        shadow-camera-near={1}
+        shadow-camera-far={3000}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.8}
+      />
+      <directionalLight
+        position={[-700, 380, -600]}
+        intensity={palette.rimLight}
+        color={palette.rimColor}
+      />
+    </>
+  );
+}
+
+/**
+ * What the enamel and glass reflect: the Discovery corridor — concentric
+ * ring lights overhead, one bright wall and one dim so every part keeps a lit
+ * side and a shaded side. Built from Lightformers, so there is no HDR to
+ * download. The surround is a back-faced sphere rather than a
+ * `<color attach="background">`, which would leak onto the main scene.
+ */
+function RingRoom({ dark }: { dark: boolean }) {
+  return (
+    <Environment resolution={256} frames={1}>
+      <mesh scale={100}>
+        <sphereGeometry />
+        <meshBasicMaterial
+          color={dark ? "#000000" : "#8d9096"}
+          side={BackSide}
+        />
+      </mesh>
+      <Lightformer
+        form="ring"
+        intensity={dark ? 2.5 : 2.4}
+        position={[0, 6, 0]}
+        rotation-x={Math.PI / 2}
+        scale={6}
+      />
+      <Lightformer
+        form="ring"
+        intensity={dark ? 1.5 : 1.6}
+        position={[0, 6, 0]}
+        rotation-x={Math.PI / 2}
+        scale={10}
+      />
+      <Lightformer
+        intensity={dark ? 0.4 : 1.2}
+        rotation-y={Math.PI / 2}
+        position={[-6, 1, 0]}
+        scale={[20, 6, 1]}
+      />
+      <Lightformer
+        intensity={dark ? 0.2 : 0.35}
+        rotation-y={-Math.PI / 2}
+        position={[6, 1, 0]}
+        scale={[20, 6, 1]}
+      />
+    </Environment>
+  );
+}
+
+/**
+ * The studio sweep behind the parts: a radial gradient on a plane pinned
+ * behind the camera. Not `scene.background`, which the post pipeline tone
+ * maps into a flat grey; this plane opts out of tone mapping so the gradient
+ * lands exactly. It ignores the pointer, so clicks reach the table.
+ */
+function Backdrop({ stops }: { stops: ScenePalette["backdrop"] }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const context = canvas.getContext("2d");
+    if (context) {
+      const gradient = context.createRadialGradient(512, 460, 40, 512, 512, 760);
+      gradient.addColorStop(0, stops[0]);
+      gradient.addColorStop(0.58, stops[1]);
+      gradient.addColorStop(1, stops[2]);
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, 1024, 1024);
+    }
+    const result = new CanvasTexture(canvas);
+    result.colorSpace = SRGBColorSpace;
+    return result;
+  }, [stops]);
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  const plane = useRef<Mesh>(null);
+  const forward = useMemo(() => new Vector3(), []);
+  useFrame(({ camera }) => {
+    const mesh = plane.current;
+    if (!mesh || !(camera instanceof OrthographicCamera)) return;
+    camera.getWorldDirection(forward);
+    mesh.position
+      .copy(camera.position)
+      .addScaledVector(forward, camera.far * 0.9);
+    mesh.quaternion.copy(camera.quaternion);
+    mesh.scale.set(
+      (camera.right - camera.left) / camera.zoom,
+      (camera.top - camera.bottom) / camera.zoom,
+      1,
+    );
+  });
+
+  return (
+    <mesh ref={plane} raycast={() => {}} renderOrder={-1}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} />
     </mesh>
   );
 }
@@ -280,6 +421,8 @@ export type BuilderCanvasProps = {
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
+  /** a part is armed in the palette, waiting to be dropped */
+  placing: boolean;
 };
 
 function CanvasHandle({
@@ -306,6 +449,7 @@ export default function BuilderCanvas({
   view,
   fitToken,
   dragging,
+  placing,
   onSurfaceClick,
   onSurfaceDrag,
   onComponentPointerDown,
@@ -317,17 +461,10 @@ export default function BuilderCanvas({
     beamDraft.forEach((id, index) => map.set(id, index + 1));
     return map;
   }, [beamDraft]);
-  const shadowKey = useMemo(
-    () =>
-      components
-        .map((c) => `${c.id}:${c.position[0]}:${c.position[2]}`)
-        .join("|"),
-    [components],
-  );
-  const bakedKey = useDeferredBake(shadowKey, dragging);
   return (
     <Canvas
       orthographic
+      shadows="soft"
       frameloop="demand"
       camera={{ position: [1400, 1150, 1400], near: -4000, far: 8000, zoom: 1 }}
       gl={{
@@ -339,42 +476,21 @@ export default function BuilderCanvas({
       dpr={[1, 2]}
     >
       <CanvasHandle onReady={onCanvasReady} />
-      <color attach="background" args={[palette.background]} />
-      <ambientLight intensity={palette.ambient} />
-      <directionalLight
-        position={[400, 700, 300]}
-        intensity={palette.keyLight}
-      />
-      <directionalLight
-        position={[-350, 400, -400]}
-        intensity={palette.fillLight}
-      />
-      <hemisphereLight
-        intensity={0.45}
-        color={palette.skyLight}
-        groundColor={palette.table}
-      />
+      {/* the edge colour, for the instant before the backdrop plane is placed */}
+      <color attach="background" args={[palette.backdrop[2]]} />
+      <Lights palette={palette} />
+      <RingRoom dark={palette.mode === "dark"} />
+      <Backdrop stops={palette.backdrop} />
 
-      <ContactShadows
-        key={bakedKey}
-        frames={1}
-        position={[0, 0.5, 0]}
-        scale={[TABLE_WIDTH_MM, TABLE_DEPTH_MM]}
-        width={TABLE_WIDTH_MM}
-        height={TABLE_DEPTH_MM}
-        far={140}
-        blur={2.5}
-        resolution={512}
-        opacity={palette.mode === "dark" ? 0.55 : 0.4}
-        color={palette.mode === "dark" ? "#000000" : "#4a4336"}
-      />
       <TableSurface
         palette={palette}
         onSurfaceClick={onSurfaceClick}
         onSurfaceDrag={onSurfaceDrag}
       />
 
-      {showGrid ? (
+      {/* with no table drawn, the grid is a working aid, not scenery: it shows
+          only while a part is being placed or dragged */}
+      {showGrid && (placing || dragging) ? (
         <Grid
           args={[TABLE_WIDTH_MM, TABLE_DEPTH_MM]}
           cellSize={GRID_CELL_MM}
@@ -441,6 +557,19 @@ export default function BuilderCanvas({
         touches={{ ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN }}
       />
       <CameraRig view={view} fitToken={fitToken} />
+
+      {/* the miniature finish: contact occlusion grounds every part, the
+          vignette pulls the eye to the middle of the board */}
+      <EffectComposer multisampling={4}>
+        <N8AO
+          aoRadius={30}
+          distanceFalloff={1}
+          intensity={palette.occlusion}
+          color="#000000"
+          halfRes
+        />
+        <Vignette offset={0.35} darkness={palette.vignette} />
+      </EffectComposer>
     </Canvas>
   );
 }

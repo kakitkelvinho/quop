@@ -1,8 +1,17 @@
 "use client";
 
-import { Edges, Html, RoundedBox } from "@react-three/drei";
-import { DoubleSide, ExtrudeGeometry, Path, Shape } from "three";
-import { useMemo, type ReactNode } from "react";
+import { Html, RoundedBox } from "@react-three/drei";
+import {
+  DoubleSide,
+  ExtrudeGeometry,
+  Mesh,
+  MeshPhysicalMaterial,
+  Path,
+  Shape,
+  type Group,
+  type Side,
+} from "three";
+import { useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
@@ -88,9 +97,54 @@ const FRONT_PLATE_GEOMETRY = boredPlate(PLATE, PLATE_CORNER, OPTIC_D, 8);
 /** Filter holder: smaller plate, square window cut by a generous bore. */
 const FILTER_PLATE_GEOMETRY = boredPlate(38, 5, 22, 6);
 
-function Anodised({ color }: { color: string }) {
-  // Anodised aluminium reads matte and slightly soft — not chrome.
-  return <meshStandardMaterial color={color} roughness={0.5} metalness={0.3} />;
+/**
+ * Everything that isn't bare steel or glass is drawn as glossy enamel: a
+ * dielectric, so its colour stays saturated instead of being darkened by a
+ * metallic term, with a tight highlight from the overhead ring lights.
+ */
+const ENAMEL_ROUGHNESS = 0.18;
+const ENAMEL_METALNESS = 0.04;
+
+function Enamel({ color, side }: { color: string; side?: Side }) {
+  return (
+    <meshStandardMaterial
+      color={color}
+      roughness={ENAMEL_ROUGHNESS}
+      metalness={ENAMEL_METALNESS}
+      side={side}
+    />
+  );
+}
+
+/** Mount plates: the anodised colour, carried in enamel. */
+function Anodised({ color, side }: { color: string; side?: Side }) {
+  return <Enamel color={color} side={side} />;
+}
+
+/**
+ * Real transmission rather than alpha: the glass refracts what's behind it,
+ * its edges pick up the ring lights, and its tint deepens with thickness
+ * (attenuation). Coloured optics — waveplates, filters — are dense glass that
+ * tints strongly; plain optics carry a faint body tint and a strong clearcoat
+ * so a clear cube still reads as a block in front of a dark void.
+ */
+function Glass({ tint, dense = false }: { tint: string; dense?: boolean }) {
+  return (
+    <meshPhysicalMaterial
+      color={tint}
+      metalness={0}
+      roughness={0.03}
+      transmission={0.96}
+      ior={1.5}
+      thickness={12}
+      attenuationColor={tint}
+      attenuationDistance={dense ? 8 : 18}
+      specularIntensity={1}
+      clearcoat={1}
+      clearcoatRoughness={0.02}
+      envMapIntensity={2}
+    />
+  );
 }
 
 function Stainless({ palette }: { palette: ScenePalette }) {
@@ -142,7 +196,6 @@ function Adjuster({
           roughness={0.55}
           metalness={0.8}
         />
-        <Edges color={palette.mode === "dark" ? "#6d7686" : "#8d94a1"} />
       </mesh>
     </group>
   );
@@ -168,11 +221,7 @@ function Post({
       </mesh>
       <mesh position={[0, 9.6, 0]}>
         <cylinderGeometry args={[10, 10, 3, 24]} />
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.7}
-          metalness={0.3}
-        />
+        <Enamel color={palette.body} />
       </mesh>
       {/* the post itself */}
       <mesh position={[0, top / 2 + 8, 0]}>
@@ -184,11 +233,7 @@ function Post({
         <cylinderGeometry
           args={[radius + 3.4, radius + 3.4, holderTop - 12, 20]}
         />
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.6}
-          metalness={0.35}
-        />
+        <Enamel color={palette.body} />
       </mesh>
       <mesh
         position={[radius + 4.5, holderTop - 5, 0]}
@@ -265,19 +310,11 @@ function LaserSource({ palette }: ModelProps) {
       {/* head sits on two feet, aperture on the shared axis */}
       <mesh position={[-24, (AXIS - 20) / 2 + 6, 0]}>
         <boxGeometry args={[22, AXIS - 20, 34]} />
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.7}
-          metalness={0.3}
-        />
+        <Enamel color={palette.body} />
       </mesh>
       <mesh position={[26, (AXIS - 20) / 2 + 6, 0]}>
         <boxGeometry args={[22, AXIS - 20, 34]} />
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.7}
-          metalness={0.3}
-        />
+        <Enamel color={palette.body} />
       </mesh>
       <RoundedBox
         args={[96, 40, 40]}
@@ -285,11 +322,7 @@ function LaserSource({ palette }: ModelProps) {
         smoothness={3}
         position={[0, AXIS, 0]}
       >
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.5}
-          metalness={0.4}
-        />
+        <Enamel color={palette.body} />
       </RoundedBox>
       <mesh position={[50, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[7, 7, 12, 22]} />
@@ -297,6 +330,7 @@ function LaserSource({ palette }: ModelProps) {
           color={EMITTER_RED}
           emissive={EMITTER_RED}
           emissiveIntensity={0.6}
+          roughness={ENAMEL_ROUGHNESS}
         />
       </mesh>
       {/* the +x arrow: which way this source fires */}
@@ -306,6 +340,7 @@ function LaserSource({ palette }: ModelProps) {
           color={EMITTER_RED}
           emissive={EMITTER_RED}
           emissiveIntensity={0.35}
+          roughness={ENAMEL_ROUGHNESS}
         />
       </mesh>
     </group>
@@ -333,13 +368,7 @@ function Beamsplitter({ palette, color }: ModelProps) {
     <KinematicMount palette={palette} color={color} screws={2}>
       <mesh position={[3, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 3, 36]} />
-        <meshStandardMaterial
-          color={GLASS_BLUE}
-          transparent
-          opacity={0.45}
-          roughness={0.08}
-        />
-        <Edges color="#4d7fa0" />
+        <Glass tint={GLASS_BLUE} />
       </mesh>
     </KinematicMount>
   );
@@ -362,13 +391,7 @@ function PbsCube({ palette, color }: ModelProps) {
       </RoundedBox>
       <mesh position={[0, AXIS, 0]}>
         <boxGeometry args={[cube, cube, cube]} />
-        <meshStandardMaterial
-          color={GLASS_CYAN}
-          transparent
-          opacity={0.42}
-          roughness={0.08}
-        />
-        <Edges color="#3d6a70" />
+        <Glass tint={GLASS_CYAN} />
       </mesh>
       {/* the internal 45 degree coating plane — the tell that says "splits by polarisation" */}
       <mesh position={[0, AXIS, 0]} rotation={[0, Math.PI / 4, 0]}>
@@ -393,12 +416,7 @@ function Lens({ palette, color }: ModelProps) {
       {/* lens tube ring on a post — no kinematics needed for a lens */}
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[20, 20, 16, 36, 1, true]} />
-        <meshStandardMaterial
-          color={mount}
-          roughness={0.5}
-          metalness={0.3}
-          side={DoubleSide}
-        />
+        <Anodised color={mount} side={DoubleSide} />
       </mesh>
       <mesh position={[0, AXIS - 18, 0]}>
         <boxGeometry args={[14, 8, 14]} />
@@ -406,12 +424,7 @@ function Lens({ palette, color }: ModelProps) {
       </mesh>
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <sphereGeometry args={[OPTIC_D / 2, 32, 20]} />
-        <meshStandardMaterial
-          color={GLASS_BLUE}
-          transparent
-          opacity={0.5}
-          roughness={0.05}
-        />
+        <Glass tint={GLASS_BLUE} />
       </mesh>
     </group>
   );
@@ -425,8 +438,7 @@ function Waveplate({ palette, color }: ModelProps) {
       {/* rotation mount: knurled outer ring with an index mark */}
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[22, 22, 12, 40]} />
-        <meshStandardMaterial color={mount} roughness={0.5} metalness={0.3} />
-        <Edges color={palette.mode === "dark" ? "#1a1d24" : "#5c6270"} />
+        <Anodised color={mount} />
       </mesh>
       <mesh position={[7, AXIS + 18, 0]}>
         <boxGeometry args={[3, 8, 3]} />
@@ -438,13 +450,7 @@ function Waveplate({ palette, color }: ModelProps) {
       </mesh>
       <mesh position={[7, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 3, 32]} />
-        <meshStandardMaterial
-          color={PLATE_AMBER}
-          transparent
-          opacity={0.72}
-          roughness={0.15}
-        />
-        <Edges color="#b08a3a" />
+        <Glass tint={PLATE_AMBER} dense />
       </mesh>
     </group>
   );
@@ -464,13 +470,7 @@ function Filter({ palette, color }: ModelProps) {
       </mesh>
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[12, 12, 3, 32]} />
-        <meshStandardMaterial
-          color={FILTER_TEAL}
-          transparent
-          opacity={0.7}
-          roughness={0.25}
-        />
-        <Edges color="#3f7a6c" />
+        <Glass tint={FILTER_TEAL} dense />
       </mesh>
     </group>
   );
@@ -483,7 +483,7 @@ function Iris({ palette, color }: ModelProps) {
       <Post palette={palette} top={AXIS - 21} />
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <torusGeometry args={[15, 5, 12, 36]} />
-        <meshStandardMaterial color={mount} roughness={0.5} metalness={0.3} />
+        <Anodised color={mount} />
       </mesh>
       {/* blade stack seen through the aperture */}
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -525,21 +525,12 @@ function Sample({ palette }: ModelProps) {
       </mesh>
       <mesh position={[0, AXIS + 34, 0]}>
         <cylinderGeometry args={[12, 16, 26, 24]} />
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.55}
-          metalness={0.4}
-        />
+        <Enamel color={palette.body} />
       </mesh>
       {/* optical access window, on the shared beam axis */}
       <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[11, 11, 44, 24]} />
-        <meshStandardMaterial
-          color={GLASS_BLUE}
-          transparent
-          opacity={0.3}
-          roughness={0.05}
-        />
+        <Glass tint={GLASS_BLUE} />
       </mesh>
     </group>
   );
@@ -555,11 +546,7 @@ function Photodiode({ palette }: ModelProps) {
         smoothness={3}
         position={[2, AXIS, 0]}
       >
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.55}
-          metalness={0.35}
-        />
+        <Enamel color={palette.body} />
       </RoundedBox>
       <mesh position={[-11.5, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[8, 8, 3, 24]} />
@@ -567,6 +554,7 @@ function Photodiode({ palette }: ModelProps) {
           color={SENSOR_GREEN}
           emissive={SENSOR_GREEN}
           emissiveIntensity={0.35}
+          roughness={ENAMEL_ROUGHNESS}
         />
       </mesh>
       {/* BNC stub out the back */}
@@ -588,11 +576,7 @@ function CameraBody({ palette }: ModelProps) {
         smoothness={3}
         position={[14, AXIS, 0]}
       >
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.5}
-          metalness={0.4}
-        />
+        <Enamel color={palette.body} />
       </RoundedBox>
       {/* C-mount barrel on the axis */}
       <mesh position={[-12, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -601,7 +585,7 @@ function CameraBody({ palette }: ModelProps) {
       </mesh>
       <mesh position={[-22, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[11, 11, 2, 28]} />
-        <meshStandardMaterial color="#12161d" roughness={0.9} />
+        <Enamel color="#12161d" />
       </mesh>
     </group>
   );
@@ -613,16 +597,12 @@ function Spectrometer({ palette }: ModelProps) {
     <group>
       <mesh position={[0, body / 2, 0]}>
         <boxGeometry args={[110, body, 80]} />
-        <meshStandardMaterial
-          color={palette.body}
-          roughness={0.6}
-          metalness={0.35}
-        />
+        <Enamel color={palette.body} />
       </mesh>
       {/* input slit / fibre port, on the shared axis */}
       <mesh position={[-57, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[7, 7, 10, 20]} />
-        <meshStandardMaterial color="#1b1f26" roughness={0.8} />
+        <Enamel color="#1b1f26" />
       </mesh>
       <mesh position={[0, body + 1, 0]}>
         <boxGeometry args={[100, 2, 70]} />
@@ -709,8 +689,24 @@ export function ComponentMesh({
     [palette, component.color],
   );
 
+  // Every solid part casts and catches the key light's shadow; glass and the
+  // flat selection rings don't (a transmissive optic throwing a solid shadow
+  // is exactly the fake look the glass is there to avoid).
+  const group = useRef<Group>(null);
+  useLayoutEffect(() => {
+    group.current?.traverse((object) => {
+      if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
+      const solid =
+        !(object.material instanceof MeshPhysicalMaterial) &&
+        !object.material.transparent;
+      object.castShadow = solid;
+      object.receiveShadow = solid;
+    });
+  }, [component.type]);
+
   return (
     <group
+      ref={group}
       position={component.position}
       rotation={[0, (component.rotation * Math.PI) / 180, 0]}
       onPointerDown={onPointerDown}
