@@ -32,3 +32,11 @@ Create a GitHub issue.
 ## When a skill says "fetch the relevant ticket"
 
 Run `gh issue view <number> --comments`.
+
+## Wayfinding operations
+
+- **Map**: an issue labelled `wayfinder:map`. Tickets carry `wayfinder:research|prototype|grilling|task`.
+- **Child tickets**: GitHub sub-issues. Attach with `gh api -X POST repos/kakitkelvinho/quop/issues/<map>/sub_issues -F sub_issue_id=<child database id>` (get the id with `gh api repos/kakitkelvinho/quop/issues/<n> --jq .id`, not the issue number). List with `gh api repos/kakitkelvinho/quop/issues/<map>/sub_issues`.
+- **Blocking**: native issue dependencies. `gh api -X POST repos/kakitkelvinho/quop/issues/<blocked>/dependencies/blocked_by -F issue_id=<blocker database id>`; read with `.../dependencies/blocked_by`.
+- **Claim**: `gh issue edit <n> --add-assignee @me`.
+- **Frontier**: open sub-issues of the map with no assignee whose `blocked_by` list has no open issues.
