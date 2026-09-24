@@ -818,20 +818,15 @@ function Particle() {
   return (
     <group position={[0, AXIS, 0]}>
       <mesh>
-        <sphereGeometry args={[1.6, 20, 14]} />
-        <meshStandardMaterial
-          color={MODE_COLOR}
-          emissive={MODE_COLOR}
-          emissiveIntensity={1.2}
-          toneMapped={false}
-        />
+        <sphereGeometry args={[2.2, 20, 14]} />
+        <meshBasicMaterial color={MODE_COLOR} toneMapped={false} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[4.5, 20, 14]} />
+        <sphereGeometry args={[5, 20, 14]} />
         <meshBasicMaterial
           color={MODE_COLOR}
           transparent
-          opacity={0.18}
+          opacity={0.3}
           depthWrite={false}
           toneMapped={false}
         />
@@ -1065,7 +1060,7 @@ export function ComponentMesh({
         <BeamOrderBadge order={beamOrder} height={spec.height} />
       ) : null}
 
-      {showLabel ? (
+      {showLabel && !component.host ? (
         <Html
           position={[0, spec.height + 12, 0]}
           center
