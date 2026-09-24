@@ -43,6 +43,13 @@ const ICONS = {
   ),
   fit: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,
   grid: <path d="M4 4h16v16H4zM4 9.33h16M4 14.67h16M9.33 4v16M14.67 4v16" />,
+  /** a beam's crisp core with its direction arrow */
+  centreLine: (
+    <>
+      <path d="M3 12h18" />
+      <path d="m10 8 4 4-4 4" />
+    </>
+  ),
   labels: (
     <>
       <path d="M3 12V4h8l10 10-8 8L3 12Z" />

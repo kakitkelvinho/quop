@@ -81,6 +81,7 @@ export default function BuilderScene() {
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  const [showCentreLines, setShowCentreLines] = useState(true);
   const [view, setView] = useState<CameraView>("iso");
   const [fitToken, setFitToken] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -465,6 +466,7 @@ export default function BuilderScene() {
           beamDraft={beamDraft}
           showLabels={showLabels}
           showGrid={showGrid}
+          showCentreLines={showCentreLines}
           view={view}
           fitToken={fitToken}
           dragging={dragging}
@@ -489,6 +491,7 @@ export default function BuilderScene() {
         beamColor={beamColor}
         showLabels={showLabels}
         showGrid={showGrid}
+        showCentreLines={showCentreLines}
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
@@ -538,6 +541,7 @@ export default function BuilderScene() {
         }}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
+        onToggleCentreLines={() => setShowCentreLines((current) => !current)}
         onViewChange={setView}
         onFit={() => setFitToken((token) => token + 1)}
         onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}

@@ -31,6 +31,7 @@ export type BuilderHudProps = {
   beamColor: string;
   showLabels: boolean;
   showGrid: boolean;
+  showCentreLines: boolean;
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
@@ -57,6 +58,7 @@ export type BuilderHudProps = {
   onDeleteBeam: (id: string) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
+  onToggleCentreLines: () => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -329,6 +331,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton icon="fit" label="Fit the table" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="grid" label="Grid while placing" active={props.showGrid} onClick={props.onToggleGrid} />
+        <IconButton icon="centreLine" label="Beam centre lines" active={props.showCentreLines} onClick={props.onToggleCentreLines} />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
       </div>

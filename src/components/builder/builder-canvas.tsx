@@ -422,12 +422,15 @@ function BeamPath({
   width = BEAM_WIDTH_MM,
   opacity = 1,
   selected = false,
+  centreLine = true,
 }: {
   points: Vector3[];
   color: string;
   width?: number;
   opacity?: number;
   selected?: boolean;
+  /** off leaves only the halo: no crisp core, no arrows */
+  centreLine?: boolean;
 }) {
   const alpha = selected ? 1 : opacity;
   const arrowRadius = Math.max(3.5, width * 1.9);
@@ -469,30 +472,34 @@ function BeamPath({
         opacity={(selected ? 0.34 : 0.18) * alpha}
         transparent
       />
-      <BeamLine
-        points={flat}
-        color={color}
-        width={width}
-        opacity={alpha}
-        transparent={alpha < 1}
-      />
-      {arrows.map((arrow, index) => (
-        <mesh
-          key={index}
-          position={arrow.position}
-          quaternion={arrow.quaternion}
-          renderOrder={2}
-        >
-          <coneGeometry args={[arrowRadius, arrowRadius * 2.7, 14]} />
-          {/* keyed so a fade rebuilds the material; see BeamLine on `transparent` */}
-          <meshBasicMaterial
-            key={alpha < 1 ? "faded" : "solid"}
+      {centreLine ? (
+        <>
+          <BeamLine
+            points={flat}
             color={color}
-            transparent={alpha < 1}
+            width={width}
             opacity={alpha}
+            transparent={alpha < 1}
           />
-        </mesh>
-      ))}
+          {arrows.map((arrow, index) => (
+            <mesh
+              key={index}
+              position={arrow.position}
+              quaternion={arrow.quaternion}
+              renderOrder={2}
+            >
+              <coneGeometry args={[arrowRadius, arrowRadius * 2.7, 14]} />
+              {/* keyed so a fade rebuilds the material; see BeamLine on `transparent` */}
+              <meshBasicMaterial
+                key={alpha < 1 ? "faded" : "solid"}
+                color={color}
+                transparent={alpha < 1}
+                opacity={alpha}
+              />
+            </mesh>
+          ))}
+        </>
+      ) : null}
     </group>
   );
 }
@@ -521,6 +528,7 @@ export type BuilderCanvasProps = {
   beamDraft: string[];
   showLabels: boolean;
   showGrid: boolean;
+  showCentreLines: boolean;
   view: CameraView;
   fitToken: number;
   dragging: boolean;
@@ -559,6 +567,7 @@ export default function BuilderCanvas({
   beamDraft,
   showLabels,
   showGrid,
+  showCentreLines,
   view,
   fitToken,
   dragging,
@@ -652,6 +661,7 @@ export default function BuilderCanvas({
             width={beam.width}
             opacity={beam.opacity}
             selected={beam.id === selectedBeamId}
+            centreLine={showCentreLines}
           />
         );
       })}
