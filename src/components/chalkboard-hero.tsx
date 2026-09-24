@@ -9,60 +9,128 @@ import { useEffect, useRef, type ReactNode } from "react";
  * ------------------------------------------------------------------------- */
 
 /** How many equations may share the board at once. */
-const ON_SCREEN_AT_ONCE = 2;
+const ON_SCREEN_AT_ONCE = 4;
 
 /** 0 = a board wiped clean. Raise for eraser sweeps and ghosts of earlier working. */
 const BOARD_HISTORY = 0;
 
 /** How long a finished equation sits before it is wiped, in ms. */
-const HOLD_MS: [number, number] = [8000, 13000];
+const HOLD_MS: [number, number] = [8000, 14000];
 
 /** Pause between a wipe and the next equation going up, in ms. */
 const RESPAWN_MS: [number, number] = [400, 2600];
 
+/** How long the eraser takes to cross an equation, in ms. */
+const SWEEP_MS = 1250;
+
+/** How long the streaks an eraser leaves behind take to fade, in ms. */
+const RESIDUE_FADE_MS = 2600;
+
 /** Seeds the grain and the hand-drawn card frames. Any integer. */
 const SEED = 4;
+
+/** wide: one long line; narrow: a short line; tall: a stacked block. */
+type Shape = "narrow" | "tall" | "wide";
 
 type Equation = {
   accent?: boolean;
   html: string;
   id: string;
+  shape: Shape;
+  /** Relative to --eq-size, which scales with the viewport. */
   size: number;
-  wide: boolean;
 };
 
-/** One per domain. Hand-set HTML rather than KaTeX — none of these need a
- *  fraction or an integral, so a 280 KB dependency would buy nothing. */
+/** A hat placed by hand: the font has no precomposed σ̂, and the combining
+ *  circumflex it falls back on drifts off the letter. */
+const hat = (base: string) => `<span class="chalkHat">${base}</span>`;
+
+const root = (body: string) =>
+  `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.4 14.6 L2.6 13 L6.2 23.6 L11.4 0.3 L12 0.3"/></svg><span class="chalkRoot__body">${body}</span></span>`;
+
+/** Hand-set HTML rather than KaTeX: a square root and an integral sign are the
+ *  hardest things here, and a little CSS and SVG covers both. */
 const EQUATIONS: Equation[] = [
   {
-    html: "ℒ = −¼ F<sub>μν</sub>F<sup>μν</sup> − J<sup>μ</sup>A<sub>μ</sub>",
-    id: "em",
-    size: 1.55,
-    wide: true,
+    html: [
+      "∇ · <b>E</b> = ρ / ε<sub>0</sub>",
+      "∇ · <b>B</b> = 0",
+      "∇ × <b>E</b> = −∂<b>B</b> / ∂t",
+      "∇ × <b>B</b> = μ<sub>0</sub><b>J</b> + μ<sub>0</sub>ε<sub>0</sub> ∂<b>E</b> / ∂t",
+    ]
+      .map((line) => `<span class="chalkEq__line">${line}</span>`)
+      .join(""),
+    id: "maxwell",
+    shape: "tall",
+    size: 0.8,
   },
   {
-    html: "ℒ = ½ m q̇<sup>2</sup> − ½ m ω<sup>2</sup> q<sup>2</sup>",
-    id: "cm",
-    size: 1.5,
-    wide: true,
+    html: "Ĥ = ħω (â<sup>†</sup>â + ½)",
+    id: "qho",
+    shape: "narrow",
+    size: 1.15,
   },
-  { html: "S = k<sub>B</sub> ln Ω", id: "sm", size: 1.75, wide: false },
-  { accent: true, html: "Ĥ |ψ⟩ = E |ψ⟩", id: "qm", size: 1.8, wide: false },
+  {
+    html: `w(z) = w<sub>0</sub> ${root("1 + (z / z<sub>R</sub>)<sup>2</sup>")}`,
+    id: "waist",
+    shape: "wide",
+    size: 1.05,
+  },
+  { accent: true, html: "Ĥ |ψ⟩ = E |ψ⟩", id: "schrodinger", shape: "narrow", size: 1.3 },
+  {
+    html: `Ĥ = ħω<sub>c</sub> â<sup>†</sup>â + ½ħω<sub>a</sub> ${hat("σ")}<sub>z</sub> + ħg (â ${hat("σ")}<sub>+</sub> + â<sup>†</sup> ${hat("σ")}<sub>−</sub>)`,
+    id: "jaynes-cummings",
+    shape: "wide",
+    size: 0.9,
+  },
+  {
+    html: "iħ ∂<sub>t</sub>ψ = (−ħ<sup>2</sup>∇<sup>2</sup> / 2m + V + g|ψ|<sup>2</sup>) ψ",
+    id: "gross-pitaevskii",
+    shape: "wide",
+    size: 0.95,
+  },
+  {
+    html: `|α⟩ = e<sup>−|α|<sup>2</sup>/2</sup> Σ<sub>n</sub> α<sup>n</sup> / ${root("n!")} |n⟩`,
+    id: "coherent",
+    shape: "wide",
+    size: 1,
+  },
+  { html: "[â, â<sup>†</sup>] = 1", id: "commutator", shape: "narrow", size: 1.25 },
+  { html: "E = ħω = hc / λ", id: "photon", shape: "narrow", size: 1.2 },
+  {
+    html: `f̃(ω) = <span class="chalkEq__big">∫</span> f(t) e<sup>−iωt</sup> dt`,
+    id: "fourier",
+    shape: "wide",
+    size: 1.05,
+  },
+  {
+    html: "n̄ = 1 / (e<sup>ħω/k<sub>B</sub>T</sup> − 1)",
+    id: "bose-einstein",
+    shape: "narrow",
+    size: 1.05,
+  },
+  { html: "Δx Δp ≥ ħ / 2", id: "heisenberg", shape: "narrow", size: 1.2 },
 ];
 
-/** Positions as a percentage of the board. Wide equations only get the bands
- *  along the top and bottom, where there is room for them. */
-const SLOTS: { wide: boolean; x: number; y: number }[] = [
-  { wide: true, x: 24, y: 13 },
-  { wide: true, x: 52, y: 8 },
-  { wide: true, x: 77, y: 15 },
-  { wide: false, x: 12, y: 47 },
-  { wide: false, x: 88, y: 44 },
-  { wide: false, x: 14, y: 72 },
-  { wide: true, x: 26, y: 89 },
-  { wide: true, x: 55, y: 92 },
-  { wide: true, x: 80, y: 84 },
-  { wide: false, x: 87, y: 68 },
+/** Candidate positions as a percentage of the board. Wide lines only get the
+ *  bands along the top and bottom, tall blocks only the corners (the flanks
+ *  beside the welcome text are too narrow for them); a candidate that
+ *  would overlap the welcome text or another equation is skipped. */
+const SLOTS: { shapes: Shape[]; x: number; y: number }[] = [
+  { shapes: ["tall"], x: 20, y: 20 },
+  { shapes: ["tall"], x: 80, y: 21 },
+  { shapes: ["tall"], x: 21, y: 80 },
+  { shapes: ["tall"], x: 79, y: 79 },
+  { shapes: ["wide", "narrow"], x: 24, y: 12 },
+  { shapes: ["wide", "narrow"], x: 52, y: 8 },
+  { shapes: ["wide", "narrow"], x: 78, y: 14 },
+  { shapes: ["narrow"], x: 13, y: 36 },
+  { shapes: ["narrow"], x: 87, y: 33 },
+  { shapes: ["narrow"], x: 12, y: 64 },
+  { shapes: ["narrow"], x: 88, y: 66 },
+  { shapes: ["wide", "narrow"], x: 25, y: 88 },
+  { shapes: ["wide", "narrow"], x: 54, y: 92 },
+  { shapes: ["wide", "narrow"], x: 79, y: 86 },
 ];
 
 /* ------------------------------- mechanism ------------------------------- */
@@ -97,13 +165,15 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
   const grainRef = useRef<HTMLCanvasElement>(null);
   const ghostRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
+  const welcomeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const board = boardRef.current;
     const grainCanvas = grainRef.current;
     const ghostCanvas = ghostRef.current;
     const layer = layerRef.current;
-    if (!board || !grainCanvas || !ghostCanvas || !layer) return;
+    const welcome = welcomeRef.current;
+    if (!board || !grainCanvas || !ghostCanvas || !layer || !welcome) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const active = new Map<number, { el: HTMLDivElement; item: Equation }>();
@@ -259,16 +329,42 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       ctx.restore();
     }
 
-    function freeSlots(wide: boolean) {
-      return SLOTS.map((slot, index) => ({ index, slot })).filter(
-        ({ index, slot }) => !active.has(index) && (wide ? slot.wide : true),
-      );
+    function shuffled<T>(items: T[]) {
+      return [...items].sort(() => Math.random() - 0.5);
     }
 
     function unusedEquations() {
       const onBoard = new Set([...active.values()].map((entry) => entry.item.id));
-      const free = EQUATIONS.filter((item) => !onBoard.has(item.id));
-      return free.length ? free : EQUATIONS;
+      return EQUATIONS.filter((item) => !onBoard.has(item.id));
+    }
+
+    function freeSlots(shape: Shape) {
+      return SLOTS.map((slot, index) => ({ index, slot })).filter(
+        ({ index, slot }) => !active.has(index) && slot.shapes.includes(shape),
+      );
+    }
+
+    /** Whether a freshly placed equation sits inside the board, clear of the
+     *  welcome text and of everything else already written up. */
+    function fits(el: HTMLDivElement) {
+      const boardRect = board!.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      const pad = 12;
+      if (
+        rect.left < boardRect.left + pad ||
+        rect.right > boardRect.right - pad ||
+        rect.top < boardRect.top + pad ||
+        rect.bottom > boardRect.bottom - pad
+      ) {
+        return false;
+      }
+      const overlaps = (other: DOMRect, margin: number) =>
+        rect.left < other.right + margin &&
+        rect.right > other.left - margin &&
+        rect.top < other.bottom + margin &&
+        rect.bottom > other.top - margin;
+      if (overlaps(welcome!.getBoundingClientRect(), 14)) return false;
+      return [...active.values()].every((entry) => !overlaps(entry.el.getBoundingClientRect(), 18));
     }
 
     function place(item: Equation, slotIndex: number, animate: boolean) {
@@ -277,7 +373,7 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       el.className = "chalkEq";
       const ink = document.createElement("div");
       ink.className = `chalkEq__ink${item.accent ? " chalkEq__ink--accent" : ""}`;
-      ink.style.fontSize = `${item.size}rem`;
+      ink.style.fontSize = `calc(var(--eq-size) * ${item.size})`;
       ink.innerHTML = item.html;
       el.append(ink);
       el.style.left = `${slot.x}%`;
@@ -293,6 +389,11 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       if (left + half > boardRect.width - pad) left = boardRect.width - pad - half;
       el.style.left = `${left}px`;
 
+      if (!fits(el)) {
+        el.remove();
+        return false;
+      }
+
       active.set(slotIndex, { el, item });
 
       if (animate && !reduce.matches) {
@@ -306,28 +407,137 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       if (!reduce.matches) {
         later(() => erase(slotIndex), 1600 + between(HOLD_MS));
       }
+      return true;
+    }
+
+    /** Stripes of random strength running along the eraser's strokes: what a
+     *  felt eraser leaves of chalk on the first pass. */
+    function streaks(length: number, direction: string, colour: (alpha: number) => string) {
+      const stops: string[] = [];
+      let at = 0;
+      while (at < length) {
+        const alpha = Math.random() < 0.45 ? 0 : 0.06 + Math.random() * 0.26;
+        stops.push(`${colour(alpha)} ${at.toFixed(1)}px`);
+        at += 2 + Math.random() * 6;
+      }
+      return `linear-gradient(${direction}, ${stops.join(", ")})`;
+    }
+
+    function setMask(el: HTMLElement, image: string, size: string, position: string) {
+      for (const prefix of ["", "-webkit-"]) {
+        el.style.setProperty(`${prefix}mask-image`, image);
+        el.style.setProperty(`${prefix}mask-size`, size);
+        el.style.setProperty(`${prefix}mask-position`, position);
+        el.style.setProperty(`${prefix}mask-repeat`, "no-repeat");
+      }
+    }
+
+    /** A felt eraser worked across the equation in short back-and-forth
+     *  strokes. Strokes run across the short side and the eraser advances
+     *  along the long one, so a line is cleared end to end and a block top to
+     *  bottom. The mask is three layers added together: the streaky residue,
+     *  everything the eraser has not reached yet, and what is left of the band
+     *  it is working now. */
+    function sweep(el: HTMLDivElement, done: () => void) {
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const alongX = w >= h;
+      const long = alongX ? w : h;
+      const short = alongX ? h : w;
+      const band = Math.min(64, Math.max(26, short * 0.5));
+      const strokes = Math.ceil(long / band);
+      const forward = Math.random() < 0.7;
+      const soft = 10;
+
+      // gradient directions in the box's own terms, flipped for a reverse sweep
+      const advance = alongX ? (forward ? "to right" : "to left") : forward ? "to bottom" : "to top";
+      const down = alongX ? "to bottom" : "to right";
+      const up = alongX ? "to top" : "to left";
+      const residue = streaks(long, advance, (a) => `rgb(0 0 0 / ${a})`);
+
+      const dust = document.createElement("div");
+      dust.className = "chalkDust";
+      dust.style.left = el.style.left;
+      dust.style.top = el.style.top;
+      dust.style.width = `${w}px`;
+      dust.style.height = `${h}px`;
+      dust.style.backgroundImage = streaks(long, advance, (a) => `rgb(var(--mark) / ${a * 0.07})`);
+      layer!.insertBefore(dust, el);
+
+      const bandPosition = (offset: number) => {
+        const from = forward ? offset : long - offset - band;
+        return alongX ? `${from}px 0` : `0 ${from}px`;
+      };
+      const bandSize = alongX ? `${band}px 100%` : `100% ${band}px`;
+
+      const started = performance.now();
+      const frame = (now: number) => {
+        if (disposed) return;
+        const t = Math.min(1, (now - started) / SWEEP_MS);
+        const f = t * strokes;
+        const k = Math.min(strokes - 1, Math.floor(f));
+        const within = t === 1 ? 1 : f - k;
+        const cleared = k * band;
+        const edge = cleared + band;
+        const reach = within * short;
+
+        const rest = `linear-gradient(${advance}, transparent ${edge - soft}px, #000 ${edge}px)`;
+        const current = `linear-gradient(${k % 2 ? up : down}, transparent ${reach}px, #000 ${reach + soft}px)`;
+        setMask(
+          el,
+          t === 1 ? residue : `${residue}, ${rest}, ${current}`,
+          t === 1 ? "100% 100%" : `100% 100%, 100% 100%, ${bandSize}`,
+          t === 1 ? "0 0" : `0 0, 0 0, ${bandPosition(cleared)}`,
+        );
+
+        const shown = Math.min(long, cleared + (within > 0 ? band : 0));
+        const hidden = long - shown;
+        dust.style.clipPath = alongX
+          ? forward
+            ? `inset(0 ${hidden}px 0 0)`
+            : `inset(0 0 0 ${hidden}px)`
+          : forward
+            ? `inset(0 0 ${hidden}px 0)`
+            : `inset(${hidden}px 0 0 0)`;
+
+        if (t < 1) {
+          requestAnimationFrame(frame);
+          return;
+        }
+        for (const node of [el, dust]) {
+          node.style.transitionDuration = `${RESIDUE_FADE_MS}ms`;
+          node.classList.add("is-fading");
+        }
+        later(() => {
+          dust.remove();
+          done();
+        }, RESIDUE_FADE_MS);
+      };
+      requestAnimationFrame(frame);
     }
 
     function erase(slotIndex: number) {
       const entry = active.get(slotIndex);
       if (!entry) return;
       smudge(entry.el.getBoundingClientRect());
-      entry.el.classList.remove("is-writing", "is-on");
+      entry.el.classList.remove("is-writing");
       entry.el.classList.add("is-erasing");
-      later(() => {
+      sweep(entry.el, () => {
         entry.el.remove();
         active.delete(slotIndex);
-        later(spawn, between(RESPAWN_MS));
-      }, 1150);
+        later(() => spawn(true), between(RESPAWN_MS));
+      });
     }
 
-    function spawn() {
+    function spawn(animate: boolean) {
       if (disposed || active.size >= ON_SCREEN_AT_ONCE) return;
-      const candidates = unusedEquations();
-      const item = candidates[Math.floor(Math.random() * candidates.length)];
-      const slots = freeSlots(item.wide);
-      if (!slots.length) return;
-      place(item, slots[Math.floor(Math.random() * slots.length)].index, true);
+      for (const item of shuffled(unusedEquations())) {
+        for (const { index } of shuffled(freeSlots(item.shape))) {
+          if (place(item, index, animate)) return;
+        }
+      }
+      // nothing fits around what is up there now; look again once more of it is wiped
+      if (!reduce.matches) later(() => spawn(true), 1500);
     }
 
     function resetBoard(animate: boolean) {
@@ -337,19 +547,10 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       drawGrain();
       drawGhosts();
 
-      const opening = [...EQUATIONS]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, Math.min(ON_SCREEN_AT_ONCE, SLOTS.length));
-
-      opening.forEach((item, k) => {
-        const put = () => {
-          const slots = freeSlots(item.wide);
-          if (!slots.length) return;
-          place(item, slots[Math.floor(Math.random() * slots.length)].index, animate);
-        };
-        if (animate && !reduce.matches) later(put, k * 420);
-        else put();
-      });
+      for (let k = 0; k < ON_SCREEN_AT_ONCE; k++) {
+        if (animate && !reduce.matches) later(() => spawn(true), k * 420);
+        else spawn(false);
+      }
     }
 
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -389,7 +590,9 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       <canvas aria-hidden="true" className="chalkboard__grain" ref={grainRef} />
       <canvas aria-hidden="true" className="chalkboard__ghosts" ref={ghostRef} />
       <div aria-hidden="true" className="chalkLayer" ref={layerRef} />
-      <div className="chalkboard__welcome">{children}</div>
+      <div className="chalkboard__welcome" ref={welcomeRef}>
+        {children}
+      </div>
     </section>
   );
 }

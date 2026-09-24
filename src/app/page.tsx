@@ -6,8 +6,12 @@ export default function Home() {
     <>
       <ChalkFilters />
       <ChalkboardHero>
-        <h1>Welcome!</h1>
-        <p className="lead">QUOP is short for quantum optics. Have fun!</p>
+        <h1>Quantum optics, in the browser.</h1>
+        <p className="lead">
+          Plot lab data, run quick optics calculations and lay out an optical table. Nothing to
+          install, free for anyone to try.
+        </p>
+        <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
       </ChalkboardHero>
       <SectionCards />
     </>
