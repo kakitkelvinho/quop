@@ -2738,6 +2738,284 @@ html[data-theme="dark"] .builderOrderBadge {
   outline-offset: 4px;
 }
 
+/* ------------------------------ home chapters ----------------------------- */
+
+/* Each chapter is taller than the screen by (length - 1) viewports; its stage
+   sticks under the header for that distance while --p runs 0 → 1. */
+.chapters {
+  display: grid;
+  margin-top: 2rem;
+}
+
+.chapter {
+  --p: 0;
+  position: relative;
+  height: calc(var(--length) * (100svh - 4rem));
+}
+
+.chapter__stage {
+  position: sticky;
+  top: 4rem;
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: center;
+  height: calc(100svh - 4rem);
+  padding: 2rem 0;
+}
+
+.chapter--flip .chapter__stage {
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+}
+
+.chapter--flip .chapter__text {
+  order: 2;
+}
+
+/* a chapter that plays rather than scrubs has nothing to pin for */
+.chapter--play {
+  height: auto;
+}
+
+.chapter--play .chapter__stage {
+  position: static;
+  height: auto;
+  padding: 4rem 0 2rem;
+}
+
+/* shared: how far through its own span a mark is, 0 → 1 */
+.chapter__stroke,
+.chapter__fade {
+  --k: clamp(0, (var(--p) - var(--from)) / (var(--to) - var(--from)), 1);
+}
+
+.chapter__fade {
+  opacity: var(--k);
+}
+
+.chapter__text > .chapter__fade {
+  transform: translateY(calc((1 - var(--k)) * 14px));
+}
+
+.chapter__text {
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  max-width: 30rem;
+}
+
+.chapter__eyebrow {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chapter__eyebrow span {
+  color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.chapter__status {
+  padding: 0.1rem 0.45rem;
+  color: var(--accent);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+}
+
+.chapter__heading {
+  font-size: clamp(1.9rem, 3.6vw, 3rem);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.chapter__body {
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.chapter__cta {
+  margin-top: 0.5rem;
+  padding-bottom: 0.15rem;
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1.5px solid currentColor;
+}
+
+.chapter__cta:hover {
+  color: var(--accent-strong);
+}
+
+.chapter__links {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chapter__links a {
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.chapter__links a::before {
+  content: "— ";
+  color: var(--muted);
+}
+
+.chapter__links a:hover {
+  color: var(--accent-strong);
+}
+
+.chapter__drawing {
+  display: grid;
+  gap: 0.75rem;
+  justify-items: center;
+  min-width: 0;
+}
+
+.chapter__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100svh - 12rem);
+  overflow: visible;
+}
+
+.chapter__chalk {
+  color: rgb(var(--mark) / 0.62);
+  filter: var(--chalk-filter);
+}
+
+.chapter__chalk text {
+  fill: currentColor;
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-style: italic;
+}
+
+.chapter__stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - var(--k));
+}
+
+.chapter__trace {
+  stroke-width: 1.8;
+}
+
+.chapter__faint {
+  opacity: 0.4;
+}
+
+.chapter__holes {
+  opacity: calc(var(--k) * 0.45);
+}
+
+.chapter__holes circle {
+  fill: currentColor;
+}
+
+.chapter__beam,
+.chapter__accent {
+  stroke: color-mix(in srgb, var(--accent) 80%, rgb(var(--mark)));
+  stroke-width: 2.8;
+}
+
+.chapter__chalk .chapter__accentText {
+  fill: color-mix(in srgb, var(--accent) 80%, rgb(var(--mark)));
+}
+
+.chapter__wave {
+  stroke: color-mix(in srgb, var(--wave, currentColor) 58%, rgb(var(--mark) / 0.7));
+  stroke-width: 3;
+}
+
+.chapter__chalk .chapter__equation {
+  font-size: 46px;
+}
+
+.chapter__readout {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* phones, and anyone who asked for less motion: no pinning, one chapter after
+   another; the hook plays or completes each drawing instead */
+@media (max-width: 699px) {
+  .chapter {
+    height: auto;
+  }
+
+  .chapter__stage {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+    padding: 3rem 0;
+  }
+
+  .chapter--flip .chapter__stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chapter--flip .chapter__text {
+    order: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter {
+    height: auto;
+  }
+
+  .chapter__stage {
+    position: static;
+    height: auto;
+    padding: 4rem 0;
+  }
+}
+
+/* ------------------------------- end index ------------------------------- */
+
+.homeIndex {
+  display: grid;
+  gap: 1rem;
+  margin-top: 4rem;
+}
+
+.homeIndex__label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.homeIndex .chalkCards {
+  margin-top: 0;
+}
+
+.homeIndex .chalkCard {
+  min-height: 7.5rem;
+  padding: 1.1rem 1.1rem 1rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chalkEq.is-writing,
   .chalkEq.is-erasing,
