@@ -34,7 +34,6 @@ export type BuilderHudProps = {
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
-  readout: string;
   status: string | null;
   onToggleTray: () => void;
   onPickType: (type: ComponentType) => void;
@@ -301,8 +300,6 @@ export default function BuilderHud(props: BuilderHudProps) {
         </aside>
       ) : null}
 
-      <p className="builderReadoutBadge">{props.readout}</p>
-
       {beams.length ? (
         <div className="builderHud__beams" aria-label="Beams">
           {beams.map((beam) => (
@@ -326,7 +323,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           <IconButton icon="iso" label="Isometric view" active={view === "iso"} onClick={() => props.onViewChange("iso")} />
           <IconButton icon="top" label="Top-down view" active={view === "top"} onClick={() => props.onViewChange("top")} />
         </span>
-        <IconButton icon="fit" label="Fit the table" onClick={props.onFit} />
+        <IconButton icon="fit" label="Fit the layout" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="grid" label="Grid while placing" active={props.showGrid} onClick={props.onToggleGrid} />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />

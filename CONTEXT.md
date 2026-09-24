@@ -5,6 +5,10 @@ layout notebook for an optical table (see `BUILDER.md`).
 
 ## Experiment Builder
 
+**Table**:
+The working plane components stand on: the breadboard's surface, at height 0. It has no edges; a layout is as large as its components make it.
+_Avoid_: board, bench, grid
+
 **Component**:
 One piece of bench hardware placed on the table: a laser, a mirror mount, a lens, a detector.
 _Avoid_: part, element, object

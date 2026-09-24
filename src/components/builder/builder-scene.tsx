@@ -19,17 +19,12 @@ import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
   BEAM_COLORS,
-  COMPONENT_SPECS,
   FINE_GRID_MM,
   GRID_SIZE_MM,
-  TABLE_DEPTH_MM,
-  TABLE_WIDTH_MM,
-  beamLengthMm,
   clampToTable,
   componentById,
   componentDisplayName,
   findHost,
-  lengthToPicoseconds,
   parseScene,
   serializeScene,
   snapToGrid,
@@ -298,6 +293,7 @@ export default function BuilderScene() {
             return;
           }
           api.replaceScene(parsed);
+          setFitToken((token) => token + 1);
           setSelectedId(null);
           setSelectedBeamId(null);
           cancelBeam();
@@ -409,34 +405,6 @@ export default function BuilderScene() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [api, beamMode, cancelBeam, finishBeam, placingType, selectedId, trayOpen]);
 
-  // ---- readout -------------------------------------------------------------
-
-  const readout = useMemo(() => {
-    if (selected) {
-      return [
-        COMPONENT_SPECS[selected.type].tag.toUpperCase(),
-        `x ${Math.round(selected.position[0])}`,
-        `z ${Math.round(selected.position[2])}`,
-        `h ${Math.round(selected.position[1])}`,
-        `yaw ${Math.round(selected.rotation)}°`,
-      ].join("   ");
-    }
-    if (selectedBeam) {
-      const length = beamLengthMm(scene.components, selectedBeam);
-      return [
-        "BEAM",
-        `${selectedBeam.path.length} stops`,
-        `${Math.round(length)} mm`,
-        `${lengthToPicoseconds(length).toFixed(1)} ps`,
-      ].join("   ");
-    }
-    return [
-      `${scene.components.length} parts`,
-      `${scene.beams.length} beams`,
-      `table ${TABLE_WIDTH_MM}×${TABLE_DEPTH_MM} mm`,
-    ].join("   ");
-  }, [scene.beams.length, scene.components, selected, selectedBeam]);
-
   const updateSelected = useCallback(
     (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => {
       if (!selectedId) return;
@@ -492,7 +460,6 @@ export default function BuilderScene() {
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
-        readout={readout}
         status={status}
         onToggleTray={() => setTrayOpen((open) => !open)}
         onPickType={(type) => {

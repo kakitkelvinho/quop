@@ -18,9 +18,10 @@ Both of QUOP's audiences at once (see `PRODUCT.md`):
 ## Decisions
 
 **Real millimetres, everywhere.** The table plane is XZ, +Y is height, one unit
-is one millimetre. The board is 800 × 600 mm. Positions snap to a 25 mm grid
+is one millimetre. The table has no edge: a layout is as large as its parts
+make it. A guard 5 m out from the origin only stops a runaway drag. Positions snap to a 25 mm grid
 (Shift for 5 mm) because that is what a breadboard's hole pattern gives you,
-and rotation snaps to 15°. The numbers in the inspector and the readout are the
+and rotation snaps to 15°. The numbers in the inspector are the
 numbers you would set on a real bench.
 
 **Height per component, 100 mm by default.** Every component has its own
@@ -91,8 +92,10 @@ is on screen until it is needed:
   hints.
 - **Right**: the inspector, shown only while something is selected: a
   component, a beam, or a beam being drawn.
-- **Bottom**: the readout (left), one chip per beam with its path length
-  (centre; click to select), and the view controls (right).
+- **Bottom**: one chip per beam with its path length (centre; click to
+  select), and the view controls (right). There is no readout: the inspector
+  and the chips already carry every number worth reading, and the corner box
+  that repeated them was dropped.
 
 | Action | How |
 | --- | --- |
@@ -117,11 +120,10 @@ compare with the real thing.
 
 ## Visual language
 
-The floating islands, the readout included, stay in the site's notebook
+The floating islands stay in the site's notebook
 language: surface cards with a hairline border, lifted shadows, the
 oxblood/amber ink accent, measured values in mono. Only the transient mode badge
-borrows the instrument toolbar amber. An earlier phosphor-green readout was
-dropped as jarring against the notebook. A darker, instrument-console look for the islands was tried and
+borrows the instrument toolbar amber. A darker, instrument-console look for the islands was tried and
 rejected (see the `prototype/builder-panels` branch).
 
 The scene itself is lit like a *2001* interior shot as a miniature (think
@@ -136,7 +138,10 @@ print — posters, slides and paper figures are mostly white pages.
   Parts are grounded by that shadow and by ambient occlusion instead.
 - **Grid on demand.** With no table, the grid is a working aid, not scenery:
   it appears only while a part is being placed or dragged (and the grid toggle
-  is on).
+  is on), follows the view and fades with distance.
+- **Fit frames the parts.** Fit, a change of view and loading a scene frame the
+  parts themselves, tall ones and their tags included; an empty table frames an
+  800 × 600 mm board. The key light's shadows follow the layout too.
 - **Enamel, not anodised metal.** Mount plates and bodies are dielectric so
   their colour stays saturated; only posts, screws and mirrors are metal.
 - **Real glass.** Optics use physical transmission — refraction, Fresnel
@@ -157,7 +162,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, readout, beam chips, view controls |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beam chips, view controls |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
 | `src/components/builder/builder-icons.tsx` | The builder's icon set, icon button, and one glyph per part |
