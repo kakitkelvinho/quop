@@ -489,11 +489,12 @@ export default function BuilderScene() {
         readout={readout}
         status={status}
         onToggleTray={() => setTrayOpen((open) => !open)}
-        onPickType={(type) => {
+        onPickType={(type, keepOpen) => {
           cancelBeam();
           setPlacingType(type);
-          setTrayOpen(false);
+          if (!keepOpen) setTrayOpen(false);
         }}
+        onCloseTray={() => setTrayOpen(false)}
         onSelectTool={() => {
           cancelBeam();
           setPlacingType(null);
