@@ -112,11 +112,12 @@ is on screen until it is needed:
 Shortcuts live in button tooltips and in the mode badge, not in a panel of
 their own.
 
-Left-drag pans the table and the wheel zooms; a press that travels more than a
-few pixels is a pan, not a click, so panning never drops a component by
-accident. The camera is orthographic, locked to an isometric or a top-down
-view — a bench is read from above, and free orbit only makes a layout harder to
-compare with the real thing.
+Left-drag pans the table, right-drag orbits it and the wheel zooms; a press
+that travels more than a few pixels is a pan, not a click, so panning never
+drops a component by accident. The camera is orthographic. It orbits a full
+turn around the table but never dips below it, and Iso / Top jump straight back
+to the isometric or top-down view (no animation). Placing and dragging still
+work from any angle: they land on the table plane.
 
 ## Visual language
 

@@ -505,7 +505,11 @@ export default function BuilderScene() {
         }}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
-        onViewChange={setView}
+        onViewChange={(next) => {
+          // pressing the view you are already on still snaps back from an orbit
+          setView(next);
+          setFitToken((token) => token + 1);
+        }}
         onFit={() => setFitToken((token) => token + 1)}
         onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}
         onUndo={api.undo}

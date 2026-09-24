@@ -776,7 +776,9 @@ export default function BuilderCanvas({
       <OrbitControls
         makeDefault
         enabled={!dragging}
-        enableRotate={false}
+        enableRotate
+        // right-drag orbits all the way round, but never under the table
+        maxPolarAngle={Math.PI / 2 - 0.05}
         enableZoom
         enablePan
         zoomSpeed={0.9}
@@ -785,7 +787,7 @@ export default function BuilderCanvas({
         mouseButtons={{
           LEFT: MOUSE.PAN,
           MIDDLE: MOUSE.DOLLY,
-          RIGHT: MOUSE.PAN,
+          RIGHT: MOUSE.ROTATE,
         }}
         touches={{ ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN }}
       />
