@@ -8,7 +8,7 @@ import { useSyncExternalStore } from "react";
  *
  * The bench is lit like a 2001 interior photographed as a miniature: glossy
  * white enamel hardware under overhead ring lights, on a soft studio sweep
- * with no table in shot. Day is a white room; night is the same parts floating
+ * with no table in shot. Day is a bright room; night is the same parts floating
  * in a dark void, with a cool rim light to lift them off it.
  */
 export type ScenePalette = {
@@ -31,25 +31,38 @@ export type ScenePalette = {
   vignette: number;
   /** enamel instrument bodies */
   body: string;
+  /**
+   * posts, pedestals and risers: one mid-grey (L* ~62) in both themes, below
+   * the light sweep and above the dark one, so every post reads as a stroke
+   * (see SHADING.md, "Posts are grey")
+   */
+  post: string;
   metal: string;
 };
 
+/** the same in both themes — see `ScenePalette.post` */
+const POST_GREY = "#9a9ea3";
+
 export const LIGHT_PALETTE: ScenePalette = {
   mode: "light",
-  backdrop: ["#f7f6f2", "#e4e6ea", "#c3c7cf"],
-  shadow: "#1c2230",
-  shadowOpacity: 0.16,
+  // ~8 L* below the enamel at the centre, so a white part keeps a silhouette
+  backdrop: ["#e2dfd8", "#cfccc4", "#a8aaae"],
+  // warm ink on a warm sweep; in light mode the shadow carries the edges
+  shadow: "#3a352c",
+  shadowOpacity: 0.3,
   gridCell: "#c7cbd2",
   gridSection: "#a9aeb8",
   accent: "#8b1e3f",
   hover: "#b4506c",
   ambient: 0.2,
   keyLight: 1.6,
-  rimLight: 1.1,
-  rimColor: "#ffffff",
+  // a white rim on white parts is a no-op; a faint cool one at least does work
+  rimLight: 0.5,
+  rimColor: "#b9ccff",
   occlusion: 3.2,
   vignette: 0.3,
   body: "#fbfbf8",
+  post: POST_GREY,
   metal: "#d8dce2",
 };
 
@@ -69,6 +82,7 @@ export const DARK_PALETTE: ScenePalette = {
   occlusion: 3,
   vignette: 0.55,
   body: "#ecebe7",
+  post: POST_GREY,
   metal: "#c9ced6",
 };
 

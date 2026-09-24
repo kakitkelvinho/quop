@@ -144,7 +144,10 @@ print — posters, slides and paper figures are mostly white pages.
   parts themselves, tall ones and their tags included; an empty table frames an
   800 × 600 mm board. The key light's shadows follow the layout too.
 - **Enamel, not anodised metal.** Mount plates and bodies are dielectric so
-  their colour stays saturated; only posts, screws and mirrors are metal.
+  their colour stays saturated; only screws, rods and mirrors are metal.
+- **Grey posts.** Pillars, pedestals and risers are one mid-grey in both
+  themes, so each post reads as a stroke against the sweep instead of vanishing
+  into it. Why, and the rest of the value structure: `SHADING.md`.
 - **Real glass.** Optics use physical transmission — refraction, Fresnel
   edges, thickness tint — rather than alpha. One glass part won't show another
   glass part behind it; on a bench that rarely matters.

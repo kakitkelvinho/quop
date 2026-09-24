@@ -300,8 +300,9 @@ function Adjuster({
 
 /**
  * A 1-inch pedestal pillar: a flanged base clamped to the breadboard and a
- * plain pillar up to `top`, in the same white enamel as the instrument bodies. Raising a component lengthens the pillar
- * only; the base never changes. The clamping fork and tapped hole are left out.
+ * plain pillar up to `top`, in the post grey rather than the body enamel: a
+ * thin stroke needs more contrast than a plate. Raising a component lengthens
+ * the pillar only; the base never changes. The clamping fork and tapped hole are left out.
  */
 const PILLAR_RADIUS = 12.7;
 const PILLAR_BASE_HEIGHT = 6;
@@ -312,11 +313,11 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
     <group>
       <mesh position={[0, PILLAR_BASE_HEIGHT / 2, 0]}>
         <cylinderGeometry args={[18, 19.5, PILLAR_BASE_HEIGHT, 36]} />
-        <Enamel color={palette.body} />
+        <Enamel color={palette.post} />
       </mesh>
       <mesh position={[0, PILLAR_BASE_HEIGHT + length / 2, 0]}>
         <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
-        <Enamel color={palette.body} />
+        <Enamel color={palette.post} />
       </mesh>
     </group>
   );
@@ -357,11 +358,11 @@ function LaserSource({ palette, axis }: ModelProps) {
       {/* head sits on two feet; raising the laser lengthens them, like risers */}
       <mesh position={[-24, feet / 2, 0]}>
         <boxGeometry args={[22, feet, 34]} />
-        <Enamel color={palette.body} />
+        <Enamel color={palette.post} />
       </mesh>
       <mesh position={[26, feet / 2, 0]}>
         <boxGeometry args={[22, feet, 34]} />
-        <Enamel color={palette.body} />
+        <Enamel color={palette.post} />
       </mesh>
       <RoundedBox
         args={[96, 40, 40]}
