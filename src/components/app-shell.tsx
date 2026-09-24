@@ -18,9 +18,12 @@ function isActive(pathname: string, href: string) {
 function NavItem({
   href,
   label,
+  align = "left",
 }: {
   href: string;
   label: string;
+  /** which edge the hover menu lines up with; right-hand items open leftward */
+  align?: "left" | "right";
 }) {
   const section = navSections.find((entry) => entry.href === href);
   const pathname = usePathname();
@@ -40,7 +43,7 @@ function NavItem({
         {label}
       </Link>
       {links.length ? (
-        <div className="pointer-events-none absolute left-0 top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100">
+        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100`}>
           {links.map((link) => (
             <Link
               className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
@@ -200,8 +203,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
 
             <div className="flex items-stretch justify-end gap-1">
-              <NavItem href="/plotters" label="plotter" />
-              <NavItem href="/calculators" label="calculator" />
+              <NavItem href="/plotters" label="plotter" align="right" />
+              <NavItem href="/calculators" label="calculator" align="right" />
             </div>
           </nav>
         </header>
