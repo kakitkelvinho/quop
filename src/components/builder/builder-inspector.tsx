@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { IconButton } from "@/components/builder/builder-icons";
 import {
   BEAM_COLORS,
+  BEAM_OPACITY_RANGE,
+  BEAM_WIDTH_MM,
+  BEAM_WIDTH_RANGE_MM,
   COMPONENT_SPECS,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
@@ -107,6 +110,59 @@ function HeightField({
         />
         <span className="builderField__unit">mm</span>
       </span>
+    </label>
+  );
+}
+
+/**
+ * A slider that previews as it moves and records one undo step per gesture:
+ * the first change of a drag (or a run of arrow keys) takes the snapshot.
+ */
+function SliderField({
+  label,
+  value,
+  display,
+  range,
+  step,
+  onBegin,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  display: string;
+  range: [number, number];
+  step: number;
+  onBegin: () => void;
+  onChange: (value: number) => void;
+}) {
+  const editing = useRef(false);
+  const end = () => {
+    editing.current = false;
+  };
+  return (
+    <label className="builderField">
+      <span className="builderField__label">
+        {label}
+        <span className="builderReadout">{display}</span>
+      </span>
+      <input
+        className="builderSlider"
+        type="range"
+        min={range[0]}
+        max={range[1]}
+        step={step}
+        value={value}
+        onChange={(event) => {
+          if (!editing.current) {
+            editing.current = true;
+            onBegin();
+          }
+          onChange(Number(event.target.value));
+        }}
+        onPointerUp={end}
+        onKeyUp={end}
+        onBlur={end}
+      />
     </label>
   );
 }
@@ -277,14 +333,18 @@ export function BeamInspector({
   beam,
   components,
   onUpdate,
+  onCheckpoint,
   onDelete,
 }: {
   beam: Beam;
   components: BuilderComponent[];
-  onUpdate: (patch: Partial<Omit<Beam, "id">>) => void;
+  onUpdate: (patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
+  onCheckpoint: () => void;
   onDelete: () => void;
 }) {
   const length = beamLengthMm(components, beam);
+  const width = beam.width ?? BEAM_WIDTH_MM;
+  const opacity = beam.opacity ?? 1;
 
   return (
     <div className="builderInspector">
@@ -304,6 +364,24 @@ export function BeamInspector({
         </span>
       </label>
       <BeamSwatches value={beam.color} onChange={(color) => onUpdate({ color })} />
+      <SliderField
+        label="Width"
+        value={width}
+        display={`${width.toFixed(1)} mm`}
+        range={BEAM_WIDTH_RANGE_MM}
+        step={0.5}
+        onBegin={onCheckpoint}
+        onChange={(next) => onUpdate({ width: next }, false)}
+      />
+      <SliderField
+        label="Opacity"
+        value={opacity}
+        display={`${Math.round(opacity * 100)}%`}
+        range={BEAM_OPACITY_RANGE}
+        step={0.05}
+        onBegin={onCheckpoint}
+        onChange={(next) => onUpdate({ opacity: next }, false)}
+      />
       <dl className="builderMetrics">
         <div>
           <dt>Path length</dt>

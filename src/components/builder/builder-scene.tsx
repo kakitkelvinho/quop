@@ -55,6 +55,10 @@ function clampXZ(x: number, y: number, z: number): [number, number, number] {
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
+  // a slider or colour picker has no text to edit, so builder keys still apply
+  if (target instanceof HTMLInputElement && ["range", "color", "checkbox"].includes(target.type)) {
+    return false;
+  }
   return (
     tag === "INPUT" ||
     tag === "TEXTAREA" ||
@@ -456,6 +460,7 @@ export default function BuilderScene() {
           beams={scene.beams}
           palette={palette}
           selectedId={selectedId}
+          selectedBeamId={selectedBeamId}
           hoveredId={hoveredId}
           beamDraft={beamDraft}
           showLabels={showLabels}
@@ -526,6 +531,7 @@ export default function BuilderScene() {
         onBeamColorChange={setBeamColor}
         onSelectBeam={handleSelectBeam}
         onUpdateBeam={api.updateBeam}
+        onCheckpoint={() => api.commitCheckpoint(sceneRef.current)}
         onDeleteBeam={(id) => {
           api.deleteBeam(id);
           setSelectedBeamId((current) => (current === id ? null : current));

@@ -2057,6 +2057,17 @@ html[data-theme="dark"] .builderIsland {
   font-weight: 600;
 }
 
+/* a slider's label carries its value on the right */
+.builderField__label:has(.builderReadout) {
+  display: flex;
+  justify-content: space-between;
+}
+
+.builderSlider {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
 .builderField__control {
   display: flex;
   align-items: center;

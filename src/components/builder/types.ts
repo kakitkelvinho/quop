@@ -57,6 +57,10 @@ export type Beam = {
   path: string[];
   color: string;
   label?: string;
+  /** drawn diameter, mm; missing means BEAM_WIDTH_MM */
+  width?: number;
+  /** 0.1–1; missing means fully opaque */
+  opacity?: number;
 };
 
 export const SCENE_VERSION = 2 as const;
@@ -243,6 +247,11 @@ export const ROTATION_STEP_DEG = 15;
 export const BEAM_HEIGHT_MM = 100;
 export const MAX_HEIGHT_MM = 300;
 export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
+
+/** A beam's drawn width, mm, and its range — wide enough to tell overlapping beams apart. */
+export const BEAM_WIDTH_MM = 2;
+export const BEAM_WIDTH_RANGE_MM: [number, number] = [0.5, 10];
+export const BEAM_OPACITY_RANGE: [number, number] = [0.1, 1];
 
 export const DEFAULT_FOCAL_LENGTH_MM = 100;
 export const FOCAL_LENGTH_RANGE_MM: [number, number] = [10, 2000];
@@ -470,6 +479,12 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
     path,
     color: typeof raw.color === "string" ? raw.color : BEAM_COLORS[0],
     label: typeof raw.label === "string" ? raw.label : undefined,
+    ...(finiteNumber(raw.width) !== undefined
+      ? { width: clamp(finiteNumber(raw.width)!, BEAM_WIDTH_RANGE_MM) }
+      : {}),
+    ...(finiteNumber(raw.opacity) !== undefined
+      ? { opacity: clamp(finiteNumber(raw.opacity)!, BEAM_OPACITY_RANGE) }
+      : {}),
   };
 }
 

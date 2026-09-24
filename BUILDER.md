@@ -45,6 +45,12 @@ millimetres, its length and vacuum time of flight fall out for free. Both are
 shown per beam, which is the number a pump–probe delay line is actually built
 around.
 
+**Beams can be told apart.** Each beam has its own width (a drawn diameter in
+millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the
+parts) and opacity (10–100%), set with the sliders in its inspector. A
+selected beam is drawn fully opaque with a stronger halo, however faint it
+is, so clicking its chip always finds it.
+
 **Mount colour marks the beam line.** A mirror mount can be tinted; the
 convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system

@@ -51,7 +51,9 @@ export type BuilderHudProps = {
   onUndoBeamStep: () => void;
   onBeamColorChange: (color: string) => void;
   onSelectBeam: (id: string) => void;
-  onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>) => void;
+  onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
+  /** snapshot the scene before a run of unrecorded edits (a slider drag) */
+  onCheckpoint: () => void;
   onDeleteBeam: (id: string) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
@@ -210,7 +212,8 @@ export default function BuilderHud(props: BuilderHudProps) {
       <BeamInspector
         beam={selectedBeam}
         components={components}
-        onUpdate={(patch) => props.onUpdateBeam(selectedBeam.id, patch)}
+        onUpdate={(patch, record) => props.onUpdateBeam(selectedBeam.id, patch, record)}
+        onCheckpoint={props.onCheckpoint}
         onDelete={() => props.onDeleteBeam(selectedBeam.id)}
       />
     );

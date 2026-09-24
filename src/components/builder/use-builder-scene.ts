@@ -299,13 +299,15 @@ export function useBuilderScene() {
   );
 
   const updateBeam = useCallback(
-    (id: string, patch: Partial<Omit<Beam, "id">>) => {
-      commit((current) => ({
+    (id: string, patch: Partial<Omit<Beam, "id">>, record = true) => {
+      const apply: Mutation = (current) => ({
         ...current,
         beams: current.beams.map((beam) => (beam.id === id ? { ...beam, ...patch } : beam)),
-      }));
+      });
+      if (record) commit(apply);
+      else preview(apply);
     },
-    [commit],
+    [commit, preview],
   );
 
   const deleteBeam = useCallback(
