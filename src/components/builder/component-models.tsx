@@ -1065,7 +1065,7 @@ export function ComponentMesh({
         <BeamOrderBadge order={beamOrder} height={spec.height} />
       ) : null}
 
-      {showLabel ? (
+      {showLabel && !component.host ? (
         <Html
           position={[0, spec.height + 12, 0]}
           center
