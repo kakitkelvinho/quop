@@ -238,8 +238,12 @@ export const COMPONENT_LIBRARY = (
 
 export const GRID_SIZE_MM = 25;
 export const FINE_GRID_MM = 5;
-export const TABLE_WIDTH_MM = 800;
-export const TABLE_DEPTH_MM = 600;
+/**
+ * The table has no edge. This guard, mm either side of the origin in X and Z,
+ * only stops a runaway drag or a hand-edited file flinging a component off to
+ * infinity; no real layout comes near it.
+ */
+export const TABLE_GUARD_MM = 5000;
 export const ROTATION_STEP_DEG = 15;
 /**
  * The beam height, mm: the height a component gets when it is placed. The
@@ -301,12 +305,8 @@ export function snapToGrid(value: number, step = GRID_SIZE_MM): number {
 }
 
 export function clampToTable(x: number, z: number): [number, number] {
-  const halfW = TABLE_WIDTH_MM / 2;
-  const halfD = TABLE_DEPTH_MM / 2;
-  return [
-    Math.min(halfW, Math.max(-halfW, x)),
-    Math.min(halfD, Math.max(-halfD, z)),
-  ];
+  const guard: [number, number] = [-TABLE_GUARD_MM, TABLE_GUARD_MM];
+  return [clamp(x, guard), clamp(z, guard)];
 }
 
 export function createComponentId(type: ComponentType): string {
@@ -442,14 +442,15 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   const type = LEGACY_TYPES[raw.type] ?? raw.type;
   if (!KNOWN_TYPES.has(type)) return null;
   if (!isVec3(raw.position)) return null;
+  const [x, z] = clampToTable(raw.position[0], raw.position[2]);
 
   const component: BuilderComponent = {
     id: raw.id,
     type: type as ComponentType,
     position: [
-      raw.position[0],
+      x,
       version >= 2 ? clampHeight(type as ComponentType, raw.position[1]) : defaultHeight(type as ComponentType),
-      raw.position[2],
+      z,
     ],
     rotation: finiteNumber(raw.rotation) ?? 0,
     color: typeof raw.color === "string" ? raw.color : undefined,

@@ -26,7 +26,9 @@ import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import {
   BackSide,
+  Box3,
   CanvasTexture,
+  DirectionalLight,
   MOUSE,
   Matrix4,
   Mesh,
@@ -43,9 +45,10 @@ import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
-  TABLE_DEPTH_MM,
-  TABLE_WIDTH_MM,
+  COMPONENT_SPECS,
+  TABLE_GUARD_MM,
   componentById,
+  componentRadius,
   type Beam,
   type BuilderComponent,
 } from "@/components/builder/types";
@@ -54,8 +57,15 @@ export type CameraView = "iso" | "top";
 
 const GRID_CELL_MM = 25;
 const GRID_SECTION_MM = 100;
+/** how far from under the camera the grid fades out, mm: past the edge of the widest zoom */
+const GRID_FADE_MM = 9000;
 const CLICK_SLOP_PX = 4;
 const TABLE_THICKNESS_MM = 14;
+/**
+ * The surface reaches far past the guard: its edge must stay off-screen even
+ * when a part at the guard is seen at the widest zoom.
+ */
+const TABLE_SPAN_MM = 2 * (TABLE_GUARD_MM + 10000);
 
 // ---------------------------------------------------------------------------
 // Camera
@@ -64,49 +74,91 @@ const TABLE_THICKNESS_MM = 14;
 type ControlsLike = { target: Vector3; update: () => void };
 
 /**
- * Frames the whole breadboard. Rather than guessing a zoom constant, the rig
- * projects the table's bounding box into camera space and solves for the zoom
- * that fits it — so the table fills the canvas at any viewport size, in both
- * the isometric and the top-down view.
+ * The box the components fill: their footprints on the table, from the table
+ * up to the top of the tallest part. An empty table frames the 800 × 600 mm
+ * breadboard the builder used to be bounded by, so a fresh scene looks the
+ * same as it always has.
+ */
+function layoutBox(components: BuilderComponent[]): Box3 {
+  if (components.length === 0) {
+    return new Box3(
+      new Vector3(-420, 0, -320),
+      new Vector3(420, BEAM_HEIGHT_MM + 30, 320),
+    );
+  }
+  const box = new Box3();
+  for (const component of components) {
+    const [x, y, z] = component.position;
+    const radius = componentRadius(component);
+    box.expandByPoint(new Vector3(x - radius, 0, z - radius));
+    box.expandByPoint(
+      new Vector3(x + radius, y + COMPONENT_SPECS[component.type].top, z + radius),
+    );
+  }
+  return box;
+}
+
+/**
+ * Frames the layout. Rather than guessing a zoom constant, the rig projects
+ * the layout's box into camera space, solves for the zoom that fits it and
+ * centres it on screen — so the components fill the canvas at any viewport
+ * size, in both the isometric and the top-down view, however tall they
+ * stand. It fits on mount, on Fit, on a change of view or panel size, and
+ * when a scene is loaded; never as components move.
  */
 /** Screen margins the fit keeps clear for the floating HUD (see builder-hud.tsx). */
 const FIT_INSET_X_PX = 24;
 const FIT_INSET_Y_PX = 64;
+/** the name tags stand above the parts in screen pixels, not millimetres */
+const FIT_LABEL_PX = 28;
 
-function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
+function CameraRig({
+  view,
+  fitToken,
+  components,
+}: {
+  view: CameraView;
+  fitToken: number;
+  components: BuilderComponent[];
+}) {
   // `get()` reaches the live camera imperatively; the size selector is here so
   // the fit re-runs when the panel is resized.
   const get = useThree((state) => state.get);
   const size = useThree((state) => state.size);
+  // read at fit time, not a dependency: a drag must not reframe the view
+  const latest = useRef(components);
+  useLayoutEffect(() => {
+    latest.current = components;
+  }, [components]);
 
   useEffect(() => {
     const store = get();
     const cam = store.camera as OrthographicCamera;
     const controls = store.controls as ControlsLike | null;
     const distance = 1400;
+    const box = layoutBox(latest.current);
+    const centre = box.getCenter(new Vector3()).setY(0);
 
     if (view === "top") {
-      cam.position.set(0, distance, 0.001);
+      cam.position.set(centre.x, distance, centre.z + 0.001);
     } else {
-      cam.position.set(distance, distance * 0.82, distance);
+      cam.position.set(centre.x + distance, distance * 0.82, centre.z + distance);
     }
     cam.up.set(0, 1, 0);
-    cam.lookAt(0, 0, 0);
+    cam.lookAt(centre);
     cam.updateMatrixWorld();
 
     const inverse = new Matrix4().copy(cam.matrixWorld).invert();
-    const halfWidth = TABLE_WIDTH_MM / 2 + 20;
-    const halfDepth = TABLE_DEPTH_MM / 2 + 20;
+    const margin = 20;
 
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
     let maxY = -Infinity;
 
-    for (const x of [-halfWidth, halfWidth]) {
-      for (const z of [-halfDepth, halfDepth]) {
-        // up to just above the beam height, where most parts top out
-        for (const y of [0, BEAM_HEIGHT_MM + 30]) {
+    for (const x of [box.min.x - margin, box.max.x + margin]) {
+      for (const z of [box.min.z - margin, box.max.z + margin]) {
+        for (const y of [box.min.y, box.max.y]) {
           const point = new Vector3(x, y, z).applyMatrix4(inverse);
           minX = Math.min(minX, point.x);
           maxX = Math.max(maxX, point.x);
@@ -120,12 +172,27 @@ function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
     const spanY = Math.max(maxY - minY, 1);
     // The HUD islands float over the canvas edges; fit into what they leave.
     const usableWidth = Math.max(size.width - 2 * FIT_INSET_X_PX, 1);
-    const usableHeight = Math.max(size.height - 2 * FIT_INSET_Y_PX, 1);
+    const usableHeight = Math.max(size.height - 2 * FIT_INSET_Y_PX - FIT_LABEL_PX, 1);
     cam.zoom = Math.min(usableWidth / spanX, usableHeight / spanY) * 0.96;
     cam.updateProjectionMatrix();
 
+    // Slide the view so the box sits mid-screen (a little low, leaving the
+    // tags room above), then back along the line of sight so the orbit
+    // target stays on the table.
+    const right = new Vector3().setFromMatrixColumn(cam.matrixWorld, 0);
+    const up = new Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
+    const forward = cam.getWorldDirection(new Vector3());
+    const target = centre
+      .clone()
+      .addScaledVector(right, (minX + maxX) / 2)
+      .addScaledVector(up, (minY + maxY) / 2 + FIT_LABEL_PX / 2 / cam.zoom);
+    target.addScaledVector(forward, -target.y / forward.y);
+    cam.position.add(target).sub(centre);
+    cam.lookAt(target);
+    cam.updateMatrixWorld();
+
     if (controls) {
-      controls.target.set(0, 0, 0);
+      controls.target.copy(target);
       controls.update();
     }
   }, [get, size.width, size.height, view, fitToken]);
@@ -183,9 +250,10 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
 
   // The table is never drawn — parts stand on the studio sweep — but it is
   // still the click/drag target, and it catches the key light's shadow so
-  // parts stay grounded. One solid slab rather than a plane: a plane at y = 0
-  // z-fights the grid on some GPUs. The top face sits exactly at y = 0, which
-  // is what the drag maths assumes.
+  // parts stay grounded. It spans the whole guard, so there is no edge to
+  // find. One solid slab rather than a plane: a plane at y = 0 z-fights the
+  // grid on some GPUs. The top face sits exactly at y = 0, which is what the
+  // drag maths assumes.
   return (
     <mesh
       receiveShadow
@@ -195,7 +263,7 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
       onPointerMove={handlePointerMove}
     >
       <boxGeometry
-        args={[TABLE_WIDTH_MM, TABLE_THICKNESS_MM, TABLE_DEPTH_MM]}
+        args={[TABLE_SPAN_MM, TABLE_THICKNESS_MM, TABLE_SPAN_MM]}
       />
       <shadowMaterial
         color={palette.shadow}
@@ -209,26 +277,63 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
 // Lighting
 // ---------------------------------------------------------------------------
 
+const KEY_LIGHT_OFFSET = new Vector3(420, 1000, 520);
+/** the shadow camera's smallest half-width, mm: a small layout keeps crisp shadows */
+const MIN_SHADOW_REACH_MM = 650;
+/** past the footprints: a 300 mm part's shadow falls about 200 mm from its base */
+const SHADOW_MARGIN_MM = 250;
+
 /**
  * One high key light casts the only real shadows — short and crisp, like a
  * ceiling fixture. A rim from behind the view lifts white parts off the
- * backdrop. Its shadow camera spans the board plus a margin.
+ * backdrop. The key light's shadow camera follows the layout, live while a
+ * part is dragged: sharp on a small layout, softer on a sprawling one.
  */
-function Lights({ palette }: { palette: ScenePalette }) {
+function Lights({
+  palette,
+  components,
+}: {
+  palette: ScenePalette;
+  components: BuilderComponent[];
+}) {
+  const invalidate = useThree((state) => state.invalidate);
+  // mutated in place; the ref is how the effect reaches it
+  const keyRef = useRef<DirectionalLight>(null);
+
+  useLayoutEffect(() => {
+    const key = keyRef.current;
+    if (!key) return;
+    const box = layoutBox(components);
+    const centre = box.getCenter(new Vector3()).setY(0);
+    const size = box.getSize(new Vector3());
+    const reach = Math.max(
+      MIN_SHADOW_REACH_MM,
+      Math.hypot(size.x, size.z) / 2 + SHADOW_MARGIN_MM,
+    );
+
+    key.position.copy(centre).add(KEY_LIGHT_OFFSET);
+    key.target.position.copy(centre);
+    key.target.updateMatrixWorld();
+    const camera = key.shadow.camera;
+    camera.left = -reach;
+    camera.right = reach;
+    camera.top = reach;
+    camera.bottom = -reach;
+    // the tilted frustum sees ground up to `reach` nearer or further than the target
+    camera.near = -reach;
+    camera.far = KEY_LIGHT_OFFSET.length() + reach + 500;
+    camera.updateProjectionMatrix();
+    invalidate();
+  }, [components, invalidate]);
+
   return (
     <>
       <ambientLight intensity={palette.ambient} />
       <directionalLight
+        ref={keyRef}
         castShadow
-        position={[420, 1000, 520]}
         intensity={palette.keyLight}
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-650}
-        shadow-camera-right={650}
-        shadow-camera-top={650}
-        shadow-camera-bottom={-650}
-        shadow-camera-near={1}
-        shadow-camera-far={3000}
         shadow-bias={-0.0004}
         shadow-normalBias={0.8}
       />
@@ -580,7 +685,8 @@ export default function BuilderCanvas({
       // PCF: three r18x dropped PCFSoftShadowMap (R3F's "soft"); PCF is now the soft one.
       shadows="percentage"
       frameloop="demand"
-      camera={{ position: [1400, 1150, 1400], near: -4000, far: 8000, zoom: 1 }}
+      // deep enough for a layout reaching the guard, in any view
+      camera={{ position: [1400, 1150, 1400], near: -16000, far: 20000, zoom: 1 }}
       gl={{
         alpha: false,
         antialias: true,
@@ -592,7 +698,7 @@ export default function BuilderCanvas({
       <CanvasHandle onReady={onCanvasReady} />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights palette={palette} />
+      <Lights palette={palette} components={components} />
       <RingRoom dark={palette.mode === "dark"} />
       <Backdrop stops={palette.backdrop} />
 
@@ -603,19 +709,20 @@ export default function BuilderCanvas({
       />
 
       {/* with no table drawn, the grid is a working aid, not scenery: it shows
-          only while a part is being placed or dragged */}
+          only while a part is being placed or dragged, follows the view, and
+          fades out away from it */}
       {showGrid && (placing || dragging) ? (
         <Grid
-          args={[TABLE_WIDTH_MM, TABLE_DEPTH_MM]}
           cellSize={GRID_CELL_MM}
           cellThickness={0.8}
           cellColor={palette.gridCell}
           sectionSize={GRID_SECTION_MM}
           sectionThickness={1}
           sectionColor={palette.gridSection}
-          fadeDistance={6000}
-          fadeStrength={0}
-          infiniteGrid={false}
+          fadeDistance={GRID_FADE_MM}
+          fadeStrength={1}
+          infiniteGrid
+          followCamera
           position={[0, 0.4, 0]}
         />
       ) : null}
@@ -679,10 +786,10 @@ export default function BuilderCanvas({
         }}
         touches={{ ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN }}
       />
-      <CameraRig view={view} fitToken={fitToken} />
+      <CameraRig view={view} fitToken={fitToken} components={components} />
 
       {/* the miniature finish: contact occlusion grounds every part, the
-          vignette pulls the eye to the middle of the board */}
+          vignette pulls the eye to the middle of the layout */}
       <EffectComposer multisampling={4}>
         <N8AO
           aoRadius={30}

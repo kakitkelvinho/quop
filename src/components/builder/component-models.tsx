@@ -9,7 +9,7 @@ import {
   MeshPhysicalMaterial,
   Path,
   Shape,
-    Vector2,
+  Vector2,
   Vector3,
   type Group,
   type Side,
@@ -51,7 +51,6 @@ type ModelProps = { palette: ScenePalette; color?: string; axis: number };
 
 /** Glow and the parts inside a host must not catch the pointer. */
 const NO_RAYCAST = () => null;
-
 
 /**
  * Each model is drawn around its component's height (`axis`): a base, a post
@@ -115,7 +114,12 @@ const FILTER_PLATE_GEOMETRY = boredPlate(38, 5, 22, 6);
  * The MARS front plate: the bore opens out into a notch over its top quarter,
  * so the plate holds the mirror round only three quarters of its rim.
  */
-function openBorePlate(size: number, corner: number, bore: number, depth: number) {
+function openBorePlate(
+  size: number,
+  corner: number,
+  bore: number,
+  depth: number,
+) {
   const half = size / 2;
   const r = bore / 2;
   const outer = r + 7;
@@ -137,7 +141,11 @@ function openBorePlate(size: number, corner: number, bore: number, depth: number
   hole.absarc(0, 0, outer, start, end, false);
   hole.closePath();
   shape.holes.push(hole);
-  return new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 32 });
+  return new ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: false,
+    curveSegments: 32,
+  });
 }
 
 /** A flat ring, extruded along +z: mount bodies, dials, trap holders. */
@@ -147,7 +155,11 @@ function annulus(outerRadius: number, innerRadius: number, depth: number) {
   const hole = new Path();
   hole.absarc(0, 0, innerRadius, 0, Math.PI * 2, true);
   shape.holes.push(hole);
-  return new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 48 });
+  return new ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: false,
+    curveSegments: 48,
+  });
 }
 
 const MARS_FRONT_GEOMETRY = openBorePlate(PLATE, PLATE_CORNER, OPTIC_D, 8);
@@ -495,7 +507,10 @@ function Lens({
   shape,
   focalLength,
 }: ModelProps & { shape: LensShape; focalLength: number }) {
-  const profile = useMemo(() => lensProfile(shape, focalLength), [shape, focalLength]);
+  const profile = useMemo(
+    () => lensProfile(shape, focalLength),
+    [shape, focalLength],
+  );
   return (
     <group>
       <SlimRod palette={palette} top={axis - OPTIC_D / 2 + 1} />
@@ -601,6 +616,11 @@ function Filter({ palette, color, axis }: ModelProps) {
   );
 }
 
+/** from the ring's tube (radius 15–20) out to 28 mm, clear of the name tag at 32 */
+const IRIS_LEVER_LENGTH = 11;
+const IRIS_LEVER_MID = 17 + IRIS_LEVER_LENGTH / 2;
+const IRIS_LEVER_TILT = Math.PI / 6;
+
 function Iris({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   return (
@@ -610,9 +630,10 @@ function Iris({ palette, color, axis }: ModelProps) {
         <torusGeometry args={[15, 5, 12, 36]} />
         <Anodised color={mount} />
       </mesh>
-      {/* blade stack seen through the aperture */}
+      {/* blade stack seen through the aperture: six segments make the hole a
+          hexagon, as closing blades leave it; the outer edge hides in the ring */}
       <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <ringGeometry args={[4, 15, 32]} />
+        <ringGeometry args={[5, 15, 6]} />
         <meshStandardMaterial
           color={palette.mode === "dark" ? "#7b828e" : "#b3b9c3"}
           roughness={0.45}
@@ -620,9 +641,18 @@ function Iris({ palette, color, axis }: ModelProps) {
           side={DoubleSide}
         />
       </mesh>
-      {/* the closing lever — every iris on the bench has one sticking out */}
-      <mesh position={[0, axis + 13, 13]} rotation={[-Math.PI / 4, 0, 0]}>
-        <boxGeometry args={[3, 18, 3]} />
+      {/* the closing lever — every iris on the bench has one sticking out. It
+          leaves the rim radially, in the ring's plane, 30° off the top; its
+          root is buried in the ring's tube */}
+      <mesh
+        position={[
+          IRIS_LEVER_MID * Math.sin(IRIS_LEVER_TILT),
+          axis + IRIS_LEVER_MID * Math.cos(IRIS_LEVER_TILT),
+          0,
+        ]}
+        rotation={[0, 0, -IRIS_LEVER_TILT]}
+      >
+        <cylinderGeometry args={[1.5, 1.5, IRIS_LEVER_LENGTH, 16]} />
         <Stainless palette={palette} />
       </mesh>
       <mesh position={[0, axis - 19, 0]}>
@@ -808,7 +838,11 @@ function Cavity({ color, axis, length }: ModelProps & { length: number }) {
           </mesh>
         </group>
       ))}
-      <mesh position={[0, axis, 0]} rotation={[0, 0, -Math.PI / 2]} raycast={NO_RAYCAST}>
+      <mesh
+        position={[0, axis, 0]}
+        rotation={[0, 0, -Math.PI / 2]}
+        raycast={NO_RAYCAST}
+      >
         <latheGeometry args={[halo, 32]} />
         <meshBasicMaterial
           color={MODE_COLOR}
@@ -818,7 +852,11 @@ function Cavity({ color, axis, length }: ModelProps & { length: number }) {
           toneMapped={false}
         />
       </mesh>
-      <mesh position={[0, axis, 0]} rotation={[0, 0, -Math.PI / 2]} raycast={NO_RAYCAST}>
+      <mesh
+        position={[0, axis, 0]}
+        rotation={[0, 0, -Math.PI / 2]}
+        raycast={NO_RAYCAST}
+      >
         <latheGeometry args={[core, 24]} />
         <meshBasicMaterial
           color={MODE_COLOR}
