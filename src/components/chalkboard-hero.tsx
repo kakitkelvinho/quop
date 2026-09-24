@@ -41,6 +41,10 @@ type Equation = {
   size: number;
 };
 
+/** A hat placed by hand: the font has no precomposed σ̂, and the combining
+ *  circumflex it falls back on drifts off the letter. */
+const hat = (base: string) => `<span class="chalkHat">${base}</span>`;
+
 const root = (body: string) =>
   `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.4 14.6 L2.6 13 L6.2 23.6 L11.4 0.3 L12 0.3"/></svg><span class="chalkRoot__body">${body}</span></span>`;
 
@@ -74,7 +78,7 @@ const EQUATIONS: Equation[] = [
   },
   { accent: true, html: "Ĥ |ψ⟩ = E |ψ⟩", id: "schrodinger", shape: "narrow", size: 1.3 },
   {
-    html: "Ĥ = ħω<sub>c</sub> â<sup>†</sup>â + ½ħω<sub>a</sub> σ̂<sub>z</sub> + ħg (â σ̂<sub>+</sub> + â<sup>†</sup> σ̂<sub>−</sub>)",
+    html: `Ĥ = ħω<sub>c</sub> â<sup>†</sup>â + ½ħω<sub>a</sub> ${hat("σ")}<sub>z</sub> + ħg (â ${hat("σ")}<sub>+</sub> + â<sup>†</sup> ${hat("σ")}<sub>−</sub>)`,
     id: "jaynes-cummings",
     shape: "wide",
     size: 0.9,

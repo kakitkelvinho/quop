@@ -2537,6 +2537,20 @@ html[data-theme="dark"] .builderOrderBadge {
   border-top: 0.055em solid currentColor;
 }
 
+.chalkHat {
+  position: relative;
+  display: inline-block;
+}
+
+/* nudged right of centre to follow the italic slant */
+.chalkHat::after {
+  position: absolute;
+  top: 0.02em;
+  left: 50%;
+  content: "ˆ";
+  transform: translateX(-38%);
+}
+
 /* sizes and shifts after TeX: scripts at 70% (50% nested), raised about
    0.36em and lowered about 0.18em of the base size */
 .chalkEq sub,
