@@ -73,11 +73,16 @@ The builder is a full-window workspace: the site nav steps aside and the canvas
 fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
-- **Top left**: "‹ QUOP" back to the site, and the File menu (save/open JSON,
-  export PNG, load the example, clear the table).
-- **Top centre**: the tool pill (Select, Add, Draw a beam, Undo, Redo). Add
-  drops a tray of parts grouped as a bench walk-through. While placing or
-  drawing, a mode badge under the pill carries that mode's key hints.
+- **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel,
+  and the File menu (save/open JSON, export PNG, load the example, clear the
+  table).
+- **Left**: the parts panel, shown while the + is on: every part with its
+  icon and one-line hint, grouped as a bench walk-through, with a search box
+  on top. It stays open while placing, so a run of parts goes down without
+  reopening it.
+- **Top centre**: the tool pill (Select, Draw a beam, Undo, Redo). While
+  placing or drawing, a mode badge under the pill carries that mode's key
+  hints.
 - **Right**: the inspector, shown only while something is selected: a
   component, a beam, or a beam being drawn.
 - **Bottom**: the readout (left), one chip per beam with its path length
@@ -85,7 +90,7 @@ is on screen until it is needed:
 
 | Action | How |
 | --- | --- |
-| Add a part | Add (＋) in the tool pill, pick it in the tray, click the table |
+| Add a part | ＋ at the top left, pick it in the panel (or search, then `Enter`), click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
 | Raise / lower | Type a height in the inspector (Enter or leaving the field applies it) |
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw |
@@ -93,7 +98,7 @@ is on screen until it is needed:
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its chip along the bottom |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Cancel anything | `Esc` (closes the tray, then cancels a mode, then deselects) |
+| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge, not in a panel of
 their own.
@@ -146,9 +151,10 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill and parts tray, mode badge, readout, beam chips, view controls |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, readout, beam chips, view controls |
+| `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
-| `src/components/builder/builder-icons.tsx` | The builder's icon set and icon button |
+| `src/components/builder/builder-icons.tsx` | The builder's icon set, icon button, and one glyph per part |
 | `src/components/builder/builder-scene.tsx` | Orchestration: selection, drag, keyboard, files |
 
 ## Known gaps

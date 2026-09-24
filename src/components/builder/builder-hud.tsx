@@ -5,13 +5,13 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
+import PartsPanel from "@/components/builder/builder-parts-panel";
 import {
   BeamDraftInspector,
   BeamInspector,
   ComponentInspector,
 } from "@/components/builder/builder-inspector";
 import {
-  COMPONENT_GROUPS,
   COMPONENT_SPECS,
   beamLengthMm,
   type Beam,
@@ -37,7 +37,8 @@ export type BuilderHudProps = {
   readout: string;
   status: string | null;
   onToggleTray: () => void;
-  onPickType: (type: ComponentType | null) => void;
+  onPickType: (type: ComponentType) => void;
+  onCloseTray: () => void;
   onSelectTool: () => void;
   onDeselect: () => void;
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>) => void;
@@ -225,6 +226,13 @@ export default function BuilderHud(props: BuilderHudProps) {
           QUOP
         </Link>
         <span className="builderIsland__sep" />
+        <IconButton
+          icon="add"
+          label="Add a part"
+          active={trayOpen}
+          onClick={props.onToggleTray}
+        />
+        <span className="builderIsland__sep" />
         <FileMenu
           onSave={props.onSave}
           onLoad={props.onLoad}
@@ -238,12 +246,6 @@ export default function BuilderHud(props: BuilderHudProps) {
         <div className="builderIsland" role="toolbar" aria-label="Tools">
           <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
           <IconButton
-            icon="add"
-            label="Add a part"
-            active={trayOpen || placingType !== null}
-            onClick={props.onToggleTray}
-          />
-          <IconButton
             icon="beam"
             label="Draw a beam"
             active={beamMode}
@@ -255,27 +257,6 @@ export default function BuilderHud(props: BuilderHudProps) {
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
         </div>
 
-        {trayOpen ? (
-          <div className="builderIsland builderTray" role="menu" aria-label="Parts">
-            {COMPONENT_GROUPS.map((group) => (
-              <div key={group.name} className="builderTray__group">
-                <p className="builderTray__name">{group.name}</p>
-                {group.types.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    role="menuitem"
-                    className={`builderTray__item${placingType === type ? " is-active" : ""}`}
-                    title={COMPONENT_SPECS[type].hint}
-                    onClick={() => props.onPickType(type)}
-                  >
-                    {COMPONENT_SPECS[type].label}
-                  </button>
-                ))}
-              </div>
-            ))}
-          </div>
-        ) : null}
 
         {mode ? (
           <p className="builderModeBadge">
@@ -290,6 +271,14 @@ export default function BuilderHud(props: BuilderHudProps) {
           </p>
         ) : null}
       </div>
+
+      {trayOpen ? (
+        <PartsPanel
+          placingType={placingType}
+          onPick={props.onPickType}
+          onClose={props.onCloseTray}
+        />
+      ) : null}
 
       {inspector ? (
         <aside className="builderIsland builderHud__inspector" key={inspectorKey} aria-label="Inspector">
