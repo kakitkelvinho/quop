@@ -12,6 +12,9 @@ import {
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
+  DEFAULT_SAMPLE_COLOR,
+  SAMPLE_OPACITY,
+  SAMPLE_OPACITY_RANGE,
   clampHeight,
   heightRange,
   beamLengthMm,
@@ -213,13 +216,15 @@ export function ComponentInspector({
   component,
   components,
   onUpdate,
+  onCheckpoint,
   onRotate,
   onDuplicate,
   onDelete,
 }: {
   component: BuilderComponent;
   components: BuilderComponent[];
-  onUpdate: (patch: ComponentPatch) => void;
+  onUpdate: (patch: ComponentPatch, record?: boolean) => void;
+  onCheckpoint: () => void;
   onRotate: (direction: 1 | -1) => void;
   onDuplicate: () => void;
   onDelete: () => void;
@@ -323,6 +328,30 @@ export function ComponentInspector({
             <span className="builderReadout">{component.color ?? DEFAULT_MOUNT_COLOR}</span>
           </span>
         </label>
+      ) : null}
+      {component.type === "sample" ? (
+        <>
+          <label className="builderField">
+            <span className="builderField__label">Colour</span>
+            <span className="builderField__control builderField__control--color">
+              <input
+                type="color"
+                value={component.color ?? DEFAULT_SAMPLE_COLOR}
+                onChange={(event) => onUpdate({ color: event.target.value })}
+              />
+              <span className="builderReadout">{component.color ?? DEFAULT_SAMPLE_COLOR}</span>
+            </span>
+          </label>
+          <SliderField
+            label="Opacity"
+            value={component.opacity ?? SAMPLE_OPACITY}
+            display={`${Math.round((component.opacity ?? SAMPLE_OPACITY) * 100)}%`}
+            range={SAMPLE_OPACITY_RANGE}
+            step={0.05}
+            onBegin={onCheckpoint}
+            onChange={(next) => onUpdate({ opacity: next }, false)}
+          />
+        </>
       ) : null}
       <p className="builderInspector__hint">{spec.hint}</p>
     </div>

@@ -438,9 +438,9 @@ export default function BuilderScene() {
   }, [scene.beams.length, scene.components, selected, selectedBeam]);
 
   const updateSelected = useCallback(
-    (patch: Partial<Omit<BuilderComponent, "id" | "type">>) => {
+    (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => {
       if (!selectedId) return;
-      api.updateComponent(selectedId, patch);
+      api.updateComponent(selectedId, patch, record);
     },
     [api, selectedId],
   );

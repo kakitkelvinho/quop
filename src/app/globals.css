@@ -1713,6 +1713,12 @@ html[data-theme="dark"] .builderIsland {
   left: 0.9rem;
 }
 
+/* under it, on its own: the + that opens the parts panel */
+.builderHud__add {
+  top: 4.1rem;
+  left: 0.9rem;
+}
+
 .builderBack {
   display: inline-flex;
   align-items: center;
@@ -1813,9 +1819,9 @@ html[data-theme="dark"] .builderIsland {
   position: static;
 }
 
-/* left: the parts panel, opened from the + in the top-left island */
+/* left: the parts panel, opened from the + below the top-left island */
 .builderParts {
-  top: 4.2rem;
+  top: 7.3rem;
   bottom: 3.8rem;
   left: 0.9rem;
   z-index: 6;
@@ -2400,7 +2406,7 @@ html[data-theme="dark"] .builderReadoutBadge {
   }
 
   .builderParts {
-    top: 6.9rem;
+    top: 7.3rem;
     right: 0.9rem;
     bottom: 7.2rem;
     width: auto;

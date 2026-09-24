@@ -354,50 +354,57 @@ const UP = new Vector3(0, 1, 0);
  * material whenever its points change, so every drag step threw the compiled
  * shader away and the next frame recompiled it — about a second per step.
  * Here the material lives as long as the line; only the geometry is swapped.
+ *
+ * A fully opaque line must not be marked `transparent`: glass (transmission)
+ * only refracts opaque objects, so a transparent beam vanishes inside a cube.
  */
 function BeamLine({
   points,
   color,
   width,
   opacity,
-  depthWrite,
+  transparent,
 }: {
   points: [number, number, number][];
   color: string;
   width: number;
   opacity: number;
-  depthWrite: boolean;
+  transparent: boolean;
 }) {
   const size = useThree((state) => state.size);
   const line = useMemo(() => new Line2(), []);
-  const material = useMemo(
-    () => new LineMaterial({ worldUnits: true, transparent: true }),
-    [],
-  );
+  const material = useMemo(() => new LineMaterial({ worldUnits: true }), []);
   const geometry = useMemo(() => {
     const next = new LineGeometry();
     next.setPositions(points.flat());
     return next;
   }, [points]);
-  // three objects are mutated in place; the ref is how the effect reaches this one
+  // three objects are mutated in place; the refs are how the effects reach them
   const ref = useRef<Line2>(null);
+  const materialRef = useRef<LineMaterial>(null);
 
   useLayoutEffect(() => {
     ref.current?.computeLineDistances();
     return () => geometry.dispose();
   }, [geometry]);
   useEffect(() => () => material.dispose(), [material]);
+  // three.js ignores a flip of `transparent` on a compiled material unless told
+  useLayoutEffect(() => {
+    if (materialRef.current) materialRef.current.needsUpdate = true;
+  }, [transparent]);
 
   return (
     <primitive ref={ref} object={line}>
       <primitive object={geometry} attach="geometry" />
       <primitive
+        ref={materialRef}
         object={material}
         attach="material"
+        transparent={transparent}
+        depthWrite={!transparent}
         color={color}
         linewidth={width}
         opacity={opacity}
-        depthWrite={depthWrite}
         resolution={[size.width, size.height]}
       />
     </primitive>
@@ -460,16 +467,14 @@ function BeamPath({
         color={color}
         width={width * (selected ? 4 : 2.9)}
         opacity={(selected ? 0.34 : 0.18) * alpha}
-        depthWrite={false}
+        transparent
       />
-      {/* always transparent: three.js ignores a later flip of `transparent`
-          on a compiled material, so a beam faded after drawing would stay solid */}
       <BeamLine
         points={flat}
         color={color}
         width={width}
         opacity={alpha}
-        depthWrite={alpha === 1}
+        transparent={alpha < 1}
       />
       {arrows.map((arrow, index) => (
         <mesh
@@ -479,7 +484,13 @@ function BeamPath({
           renderOrder={2}
         >
           <coneGeometry args={[arrowRadius, arrowRadius * 2.7, 14]} />
-          <meshBasicMaterial color={color} transparent opacity={alpha} depthWrite={alpha === 1} />
+          {/* keyed so a fade rebuilds the material; see BeamLine on `transparent` */}
+          <meshBasicMaterial
+            key={alpha < 1 ? "faded" : "solid"}
+            color={color}
+            transparent={alpha < 1}
+            opacity={alpha}
+          />
         </mesh>
       ))}
     </group>

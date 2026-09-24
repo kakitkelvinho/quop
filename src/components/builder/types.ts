@@ -40,6 +40,8 @@ export type BuilderComponent = {
   rotation: number;
   /** hex colour — body tint; on a mirror mount it marks which beam line it serves */
   color?: string;
+  /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
+  opacity?: number;
   label?: string;
   /** lens only */
   lensShape?: LensShape;
@@ -162,7 +164,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 13,
     radius: 24,
-    hint: "The thing under study, here a thin acrylic slab. Drawn larger than life.",
+    hint: "The thing under study, here a thin film on a slab. Drawn larger than life.",
   },
   "paul-trap": {
     label: "Paul trap",
@@ -247,6 +249,9 @@ export const ROTATION_STEP_DEG = 15;
 export const BEAM_HEIGHT_MM = 100;
 export const MAX_HEIGHT_MM = 300;
 export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
+export const DEFAULT_SAMPLE_COLOR = "#f2c94c";
+export const SAMPLE_OPACITY = 0.8;
+export const SAMPLE_OPACITY_RANGE: [number, number] = [0.1, 1];
 
 /** A beam's drawn width, mm, and its range — wide enough to tell overlapping beams apart. */
 export const BEAM_WIDTH_MM = 2;
@@ -458,6 +463,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   if (type === "cavity") {
     const length = finiteNumber(raw.cavityLength);
     if (length !== undefined) component.cavityLength = clamp(length, CAVITY_LENGTH_RANGE_MM);
+  }
+  if (type === "sample") {
+    const opacity = finiteNumber(raw.opacity);
+    if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
   }
   if (type === "particle" && typeof raw.host === "string") component.host = raw.host;
   return component;
