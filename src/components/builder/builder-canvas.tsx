@@ -4,7 +4,6 @@ import {
   Environment,
   Grid,
   Lightformer,
-  Line,
   OrbitControls,
 } from "@react-three/drei";
 import {
@@ -14,7 +13,17 @@ import {
   type ThreeEvent,
 } from "@react-three/fiber";
 import { EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import {
   BackSide,
   CanvasTexture,
@@ -33,6 +42,7 @@ import { ComponentMesh } from "@/components/builder/component-models";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
+  BEAM_WIDTH_MM,
   TABLE_DEPTH_MM,
   TABLE_WIDTH_MM,
   componentById,
@@ -237,8 +247,12 @@ function Lights({ palette }: { palette: ScenePalette }) {
  * side and a shaded side. Built from Lightformers, so there is no HDR to
  * download. The surround is a back-faced sphere rather than a
  * `<color attach="background">`, which would leak onto the main scene.
+ *
+ * Memoised: drei's Environment re-renders its cube map whenever its children
+ * change identity, so without this every drag step, hover and selection
+ * re-rendered six faces of the room.
  */
-function RingRoom({ dark }: { dark: boolean }) {
+const RingRoom = memo(function RingRoom({ dark }: { dark: boolean }) {
   return (
     <Environment resolution={256} frames={1}>
       <mesh scale={100}>
@@ -276,7 +290,7 @@ function RingRoom({ dark }: { dark: boolean }) {
       />
     </Environment>
   );
-}
+});
 
 /**
  * The studio sweep behind the parts: a radial gradient on a plane pinned
@@ -335,7 +349,88 @@ function Backdrop({ stops }: { stops: ScenePalette["backdrop"] }) {
 
 const UP = new Vector3(0, 1, 0);
 
-function BeamPath({ points, color }: { points: Vector3[]; color: string }) {
+/**
+ * A fat line in millimetres. Not drei's <Line>: that one disposes its
+ * material whenever its points change, so every drag step threw the compiled
+ * shader away and the next frame recompiled it — about a second per step.
+ * Here the material lives as long as the line; only the geometry is swapped.
+ *
+ * A fully opaque line must not be marked `transparent`: glass (transmission)
+ * only refracts opaque objects, so a transparent beam vanishes inside a cube.
+ */
+function BeamLine({
+  points,
+  color,
+  width,
+  opacity,
+  transparent,
+}: {
+  points: [number, number, number][];
+  color: string;
+  width: number;
+  opacity: number;
+  transparent: boolean;
+}) {
+  const size = useThree((state) => state.size);
+  const line = useMemo(() => new Line2(), []);
+  const material = useMemo(() => new LineMaterial({ worldUnits: true }), []);
+  const geometry = useMemo(() => {
+    const next = new LineGeometry();
+    next.setPositions(points.flat());
+    return next;
+  }, [points]);
+  // three objects are mutated in place; the refs are how the effects reach them
+  const ref = useRef<Line2>(null);
+  const materialRef = useRef<LineMaterial>(null);
+
+  useLayoutEffect(() => {
+    ref.current?.computeLineDistances();
+    return () => geometry.dispose();
+  }, [geometry]);
+  useEffect(() => () => material.dispose(), [material]);
+  // three.js ignores a flip of `transparent` on a compiled material unless told
+  useLayoutEffect(() => {
+    if (materialRef.current) materialRef.current.needsUpdate = true;
+  }, [transparent]);
+
+  return (
+    <primitive ref={ref} object={line}>
+      <primitive object={geometry} attach="geometry" />
+      <primitive
+        ref={materialRef}
+        object={material}
+        attach="material"
+        transparent={transparent}
+        depthWrite={!transparent}
+        color={color}
+        linewidth={width}
+        opacity={opacity}
+        resolution={[size.width, size.height]}
+      />
+    </primitive>
+  );
+}
+
+/**
+ * A beam, drawn in millimetres on the table: its width scales with the zoom
+ * like the parts do. A selected beam draws fully opaque with a stronger halo,
+ * so even a faint one can be found by clicking its chip.
+ */
+function BeamPath({
+  points,
+  color,
+  width = BEAM_WIDTH_MM,
+  opacity = 1,
+  selected = false,
+}: {
+  points: Vector3[];
+  color: string;
+  width?: number;
+  opacity?: number;
+  selected?: boolean;
+}) {
+  const alpha = selected ? 1 : opacity;
+  const arrowRadius = Math.max(3.5, width * 1.9);
   const arrows = useMemo(() => {
     const result: {
       position: [number, number, number];
@@ -367,14 +462,20 @@ function BeamPath({ points, color }: { points: Vector3[]; color: string }) {
   return (
     <group>
       {/* soft halo under a crisp core — a beam should glow, not just be a stroke */}
-      <Line
+      <BeamLine
         points={flat}
         color={color}
-        lineWidth={7}
+        width={width * (selected ? 4 : 2.9)}
+        opacity={(selected ? 0.34 : 0.18) * alpha}
         transparent
-        opacity={0.18}
       />
-      <Line points={flat} color={color} lineWidth={2.4} />
+      <BeamLine
+        points={flat}
+        color={color}
+        width={width}
+        opacity={alpha}
+        transparent={alpha < 1}
+      />
       {arrows.map((arrow, index) => (
         <mesh
           key={index}
@@ -382,8 +483,14 @@ function BeamPath({ points, color }: { points: Vector3[]; color: string }) {
           quaternion={arrow.quaternion}
           renderOrder={2}
         >
-          <coneGeometry args={[4.5, 12, 14]} />
-          <meshBasicMaterial color={color} />
+          <coneGeometry args={[arrowRadius, arrowRadius * 2.7, 14]} />
+          {/* keyed so a fade rebuilds the material; see BeamLine on `transparent` */}
+          <meshBasicMaterial
+            key={alpha < 1 ? "faded" : "solid"}
+            color={color}
+            transparent={alpha < 1}
+            opacity={alpha}
+          />
         </mesh>
       ))}
     </group>
@@ -409,6 +516,7 @@ export type BuilderCanvasProps = {
   beams: Beam[];
   palette: ScenePalette;
   selectedId: string | null;
+  selectedBeamId: string | null;
   hoveredId: string | null;
   beamDraft: string[];
   showLabels: boolean;
@@ -446,6 +554,7 @@ export default function BuilderCanvas({
   beams,
   palette,
   selectedId,
+  selectedBeamId,
   hoveredId,
   beamDraft,
   showLabels,
@@ -535,7 +644,16 @@ export default function BuilderCanvas({
       {beams.map((beam) => {
         const points = beamPoints(components, beam.path);
         if (points.length < 2) return null;
-        return <BeamPath key={beam.id} points={points} color={beam.color} />;
+        return (
+          <BeamPath
+            key={beam.id}
+            points={points}
+            color={beam.color}
+            width={beam.width}
+            opacity={beam.opacity}
+            selected={beam.id === selectedBeamId}
+          />
+        );
       })}
 
       {beamDraft.length >= 2 ? (

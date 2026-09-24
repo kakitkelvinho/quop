@@ -24,7 +24,9 @@ import {
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
+  DEFAULT_SAMPLE_COLOR,
   FOCAL_LENGTH_RANGE_MM,
+  SAMPLE_OPACITY,
   clamp,
   componentDisplayName,
   componentRadius,
@@ -39,7 +41,6 @@ const FILTER_TEAL = "#79b5a4";
 const SENSOR_GREEN = "#7be08a";
 const EMITTER_RED = "#ff5c5c";
 const SAMPLE_COPPER = "#c98a53";
-const ACRYLIC = "#f3efe4";
 const CERAMIC = "#f2eee6";
 const FIBER_JACKET = "#f2c200";
 /** Light held in place — a cavity's mode and a trapped particle share it. */
@@ -199,8 +200,20 @@ function Anodised({ color, side }: { color: string; side?: Side }) {
  * (attenuation). Coloured optics — waveplates, filters — are dense glass that
  * tints strongly; plain optics carry a faint body tint and a strong clearcoat
  * so a clear cube still reads as a block in front of a dark void.
+ *
+ * `thickness` sets how far the view behind is shifted, so it should match the
+ * part: at the default a 2 mm plate refracts like a cube and pulls the parts
+ * around it (a mount's dial ticks) into view as ghosts.
  */
-function Glass({ tint, dense = false }: { tint: string; dense?: boolean }) {
+function Glass({
+  tint,
+  dense = false,
+  thickness = 12,
+}: {
+  tint: string;
+  dense?: boolean;
+  thickness?: number;
+}) {
   return (
     <meshPhysicalMaterial
       color={tint}
@@ -208,7 +221,7 @@ function Glass({ tint, dense = false }: { tint: string; dense?: boolean }) {
       roughness={0.03}
       transmission={0.96}
       ior={1.5}
-      thickness={12}
+      thickness={thickness}
       attenuationColor={tint}
       attenuationDistance={dense ? 8 : 18}
       specularIntensity={1}
@@ -275,7 +288,7 @@ function Adjuster({
 
 /**
  * A 1-inch pedestal pillar: a flanged base clamped to the breadboard and a
- * plain stainless pillar up to `top`. Raising a component lengthens the pillar
+ * plain pillar up to `top`, in the same white enamel as the instrument bodies. Raising a component lengthens the pillar
  * only; the base never changes. The clamping fork and tapped hole are left out.
  */
 const PILLAR_RADIUS = 12.7;
@@ -287,11 +300,11 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
     <group>
       <mesh position={[0, PILLAR_BASE_HEIGHT / 2, 0]}>
         <cylinderGeometry args={[18, 19.5, PILLAR_BASE_HEIGHT, 36]} />
-        <Hardware palette={palette} />
+        <Enamel color={palette.body} />
       </mesh>
       <mesh position={[0, PILLAR_BASE_HEIGHT + length / 2, 0]}>
         <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
-        <Hardware palette={palette} />
+        <Enamel color={palette.body} />
       </mesh>
     </group>
   );
@@ -554,7 +567,15 @@ function Waveplate({ palette, color, axis }: ModelProps) {
       </mesh>
       <mesh position={[2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 2, 32]} />
-        <Glass tint={PLATE_AMBER} dense />
+        {/* plain tint, not Glass: at this size refraction only drew a ghost rim */}
+        <meshStandardMaterial
+          color={PLATE_AMBER}
+          roughness={0.2}
+          metalness={0}
+          transparent
+          opacity={0.55}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );
@@ -574,7 +595,7 @@ function Filter({ palette, color, axis }: ModelProps) {
       </mesh>
       <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[12, 12, 3, 32]} />
-        <Glass tint={FILTER_TEAL} dense />
+        <Glass tint={FILTER_TEAL} dense thickness={3} />
       </mesh>
     </group>
   );
@@ -613,23 +634,32 @@ function Iris({ palette, color, axis }: ModelProps) {
 }
 
 /**
- * The sample: a thin, semi-transparent acrylic slab, floating on the axis and
- * facing the beam like a lens. The real one is 10 x 10 x 1 mm, too small to
- * see, so it is drawn at beam-splitter size.
+ * The sample: a thin, tinted slab, floating on the axis and facing the beam
+ * like a lens. The real one is 10 x 10 x 1 mm, too small to see, so it is
+ * drawn at beam-splitter size. Its colour and opacity are the user's: plain
+ * alpha rather than transmission, so the opacity slider means what it says.
  */
-function Sample({ axis }: { axis: number }) {
+function Sample({
+  axis,
+  color,
+  opacity,
+}: {
+  axis: number;
+  color: string;
+  opacity: number;
+}) {
   return (
     <mesh position={[0, axis, 0]}>
       <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
       <meshPhysicalMaterial
-        color={ACRYLIC}
+        color={color}
         metalness={0}
         roughness={0.35}
-        transmission={0.6}
-        ior={1.49}
-        thickness={3}
         clearcoat={0.6}
         clearcoatRoughness={0.2}
+        transparent={opacity < 1}
+        opacity={opacity}
+        depthWrite={opacity >= 1}
       />
     </mesh>
   );
@@ -1030,7 +1060,13 @@ export function ComponentMesh({
       {component.type === "waveplate" ? <Waveplate {...modelProps} /> : null}
       {component.type === "filter" ? <Filter {...modelProps} /> : null}
       {component.type === "iris" ? <Iris {...modelProps} /> : null}
-      {component.type === "sample" ? <Sample axis={axis} /> : null}
+      {component.type === "sample" ? (
+        <Sample
+          axis={axis}
+          color={component.color ?? DEFAULT_SAMPLE_COLOR}
+          opacity={component.opacity ?? SAMPLE_OPACITY}
+        />
+      ) : null}
       {component.type === "paul-trap" ? <PaulTrap {...modelProps} /> : null}
       {component.type === "cavity" ? (
         <Cavity

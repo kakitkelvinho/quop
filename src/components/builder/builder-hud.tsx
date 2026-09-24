@@ -41,7 +41,7 @@ export type BuilderHudProps = {
   onCloseTray: () => void;
   onSelectTool: () => void;
   onDeselect: () => void;
-  onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>) => void;
+  onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   onRotateSelected: (direction: 1 | -1) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
@@ -51,7 +51,9 @@ export type BuilderHudProps = {
   onUndoBeamStep: () => void;
   onBeamColorChange: (color: string) => void;
   onSelectBeam: (id: string) => void;
-  onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>) => void;
+  onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
+  /** snapshot the scene before a run of unrecorded edits (a slider drag) */
+  onCheckpoint: () => void;
   onDeleteBeam: (id: string) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
@@ -200,6 +202,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         component={selected}
         components={components}
         onUpdate={props.onUpdateSelected}
+        onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
@@ -210,7 +213,8 @@ export default function BuilderHud(props: BuilderHudProps) {
       <BeamInspector
         beam={selectedBeam}
         components={components}
-        onUpdate={(patch) => props.onUpdateBeam(selectedBeam.id, patch)}
+        onUpdate={(patch, record) => props.onUpdateBeam(selectedBeam.id, patch, record)}
+        onCheckpoint={props.onCheckpoint}
         onDelete={() => props.onDeleteBeam(selectedBeam.id)}
       />
     );
@@ -226,19 +230,21 @@ export default function BuilderHud(props: BuilderHudProps) {
           QUOP
         </Link>
         <span className="builderIsland__sep" />
-        <IconButton
-          icon="add"
-          label="Add a part"
-          active={trayOpen}
-          onClick={props.onToggleTray}
-        />
-        <span className="builderIsland__sep" />
         <FileMenu
           onSave={props.onSave}
           onLoad={props.onLoad}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
+        />
+      </div>
+
+      <div className="builderIsland builderHud__add">
+        <IconButton
+          icon="add"
+          label="Add a part"
+          active={trayOpen}
+          onClick={props.onToggleTray}
         />
       </div>
 

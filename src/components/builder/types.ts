@@ -40,6 +40,8 @@ export type BuilderComponent = {
   rotation: number;
   /** hex colour — body tint; on a mirror mount it marks which beam line it serves */
   color?: string;
+  /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
+  opacity?: number;
   label?: string;
   /** lens only */
   lensShape?: LensShape;
@@ -57,6 +59,10 @@ export type Beam = {
   path: string[];
   color: string;
   label?: string;
+  /** drawn diameter, mm; missing means BEAM_WIDTH_MM */
+  width?: number;
+  /** 0.1–1; missing means fully opaque */
+  opacity?: number;
 };
 
 export const SCENE_VERSION = 2 as const;
@@ -158,7 +164,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 13,
     radius: 24,
-    hint: "The thing under study, here a thin acrylic slab. Drawn larger than life.",
+    hint: "The thing under study, here a thin film on a slab. Drawn larger than life.",
   },
   "paul-trap": {
     label: "Paul trap",
@@ -243,6 +249,14 @@ export const ROTATION_STEP_DEG = 15;
 export const BEAM_HEIGHT_MM = 100;
 export const MAX_HEIGHT_MM = 300;
 export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
+export const DEFAULT_SAMPLE_COLOR = "#f2c94c";
+export const SAMPLE_OPACITY = 0.8;
+export const SAMPLE_OPACITY_RANGE: [number, number] = [0.1, 1];
+
+/** A beam's drawn width, mm, and its range — wide enough to tell overlapping beams apart. */
+export const BEAM_WIDTH_MM = 2;
+export const BEAM_WIDTH_RANGE_MM: [number, number] = [0.5, 10];
+export const BEAM_OPACITY_RANGE: [number, number] = [0.1, 1];
 
 export const DEFAULT_FOCAL_LENGTH_MM = 100;
 export const FOCAL_LENGTH_RANGE_MM: [number, number] = [10, 2000];
@@ -450,6 +464,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     const length = finiteNumber(raw.cavityLength);
     if (length !== undefined) component.cavityLength = clamp(length, CAVITY_LENGTH_RANGE_MM);
   }
+  if (type === "sample") {
+    const opacity = finiteNumber(raw.opacity);
+    if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
+  }
   if (type === "particle" && typeof raw.host === "string") component.host = raw.host;
   return component;
 }
@@ -470,6 +488,12 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
     path,
     color: typeof raw.color === "string" ? raw.color : BEAM_COLORS[0],
     label: typeof raw.label === "string" ? raw.label : undefined,
+    ...(finiteNumber(raw.width) !== undefined
+      ? { width: clamp(finiteNumber(raw.width)!, BEAM_WIDTH_RANGE_MM) }
+      : {}),
+    ...(finiteNumber(raw.opacity) !== undefined
+      ? { opacity: clamp(finiteNumber(raw.opacity)!, BEAM_OPACITY_RANGE) }
+      : {}),
   };
 }
 
