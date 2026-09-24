@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 
-import type { Equation, Shape } from "@/components/chalkboard-equations";
-
 /* ---------------------------------------------------------------------------
  * Taste knobs. Everything below this block is mechanism; these are the values
  * worth judging by eye. Chalk opacity and the mark colour live in globals.css
@@ -31,15 +29,94 @@ const RESIDUE_FADE_MS = 2600;
 /** Seeds the grain and the hand-drawn card frames. Any integer. */
 const SEED = 4;
 
+/** wide: one long line; narrow: a short line; tall: a stacked block. */
+type Shape = "narrow" | "tall" | "wide";
+
+type Equation = {
+  accent?: boolean;
+  html: string;
+  id: string;
+  shape: Shape;
+  /** Relative to --eq-size, which scales with the viewport. */
+  size: number;
+};
+
+const root = (body: string) =>
+  `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.4 14.6 L2.6 13 L6.2 23.6 L11.4 0.3 L12 0.3"/></svg><span class="chalkRoot__body">${body}</span></span>`;
+
+/** Hand-set HTML rather than KaTeX: a square root and an integral sign are the
+ *  hardest things here, and a little CSS and SVG covers both. */
+const EQUATIONS: Equation[] = [
+  {
+    html: [
+      "∇ · <b>E</b> = ρ / ε<sub>0</sub>",
+      "∇ · <b>B</b> = 0",
+      "∇ × <b>E</b> = −∂<b>B</b> / ∂t",
+      "∇ × <b>B</b> = μ<sub>0</sub><b>J</b> + μ<sub>0</sub>ε<sub>0</sub> ∂<b>E</b> / ∂t",
+    ]
+      .map((line) => `<span class="chalkEq__line">${line}</span>`)
+      .join(""),
+    id: "maxwell",
+    shape: "tall",
+    size: 0.8,
+  },
+  {
+    html: "Ĥ = ħω (â<sup>†</sup>â + ½)",
+    id: "qho",
+    shape: "narrow",
+    size: 1.15,
+  },
+  {
+    html: `w(z) = w<sub>0</sub> ${root("1 + (z / z<sub>R</sub>)<sup>2</sup>")}`,
+    id: "waist",
+    shape: "wide",
+    size: 1.05,
+  },
+  { accent: true, html: "Ĥ |ψ⟩ = E |ψ⟩", id: "schrodinger", shape: "narrow", size: 1.3 },
+  {
+    html: "Ĥ = ħω<sub>c</sub> â<sup>†</sup>â + ½ħω<sub>a</sub> σ̂<sub>z</sub> + ħg (â σ̂<sub>+</sub> + â<sup>†</sup> σ̂<sub>−</sub>)",
+    id: "jaynes-cummings",
+    shape: "wide",
+    size: 0.9,
+  },
+  {
+    html: "iħ ∂<sub>t</sub>ψ = (−ħ<sup>2</sup>∇<sup>2</sup> / 2m + V + g|ψ|<sup>2</sup>) ψ",
+    id: "gross-pitaevskii",
+    shape: "wide",
+    size: 0.95,
+  },
+  {
+    html: `|α⟩ = e<sup>−|α|<sup>2</sup>/2</sup> Σ<sub>n</sub> α<sup>n</sup> / ${root("n!")} |n⟩`,
+    id: "coherent",
+    shape: "wide",
+    size: 1,
+  },
+  { html: "[â, â<sup>†</sup>] = 1", id: "commutator", shape: "narrow", size: 1.25 },
+  { html: "E = ħω = hc / λ", id: "photon", shape: "narrow", size: 1.2 },
+  {
+    html: `f̃(ω) = <span class="chalkEq__big">∫</span> f(t) e<sup>−iωt</sup> dt`,
+    id: "fourier",
+    shape: "wide",
+    size: 1.05,
+  },
+  {
+    html: "n̄ = 1 / (e<sup>ħω/k<sub>B</sub>T</sup> − 1)",
+    id: "bose-einstein",
+    shape: "narrow",
+    size: 1.05,
+  },
+  { html: "Δx Δp ≥ ħ / 2", id: "heisenberg", shape: "narrow", size: 1.2 },
+];
+
 /** Candidate positions as a percentage of the board. Wide lines only get the
  *  bands along the top and bottom, tall blocks only the corners (the flanks
  *  beside the welcome text are too narrow for them); a candidate that
  *  would overlap the welcome text or another equation is skipped. */
 const SLOTS: { shapes: Shape[]; x: number; y: number }[] = [
-  { shapes: ["tall"], x: 20, y: 16 },
-  { shapes: ["tall"], x: 80, y: 16 },
-  { shapes: ["tall"], x: 21, y: 84 },
-  { shapes: ["tall"], x: 79, y: 84 },
+  { shapes: ["tall"], x: 20, y: 20 },
+  { shapes: ["tall"], x: 80, y: 21 },
+  { shapes: ["tall"], x: 21, y: 80 },
+  { shapes: ["tall"], x: 79, y: 79 },
   { shapes: ["wide", "narrow"], x: 24, y: 12 },
   { shapes: ["wide", "narrow"], x: 52, y: 8 },
   { shapes: ["wide", "narrow"], x: 78, y: 14 },
@@ -79,14 +156,7 @@ function ghostScale() {
   return document.documentElement.dataset.theme === "dark" ? 1 : 0.42;
 }
 
-export function ChalkboardHero({
-  children,
-  equations,
-}: {
-  children: ReactNode;
-  /** Typeset ahead of time; see renderEquations. */
-  equations: Equation[];
-}) {
+export function ChalkboardHero({ children }: { children: ReactNode }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const grainRef = useRef<HTMLCanvasElement>(null);
   const ghostRef = useRef<HTMLCanvasElement>(null);
@@ -261,7 +331,7 @@ export function ChalkboardHero({
 
     function unusedEquations() {
       const onBoard = new Set([...active.values()].map((entry) => entry.item.id));
-      return equations.filter((item) => !onBoard.has(item.id));
+      return EQUATIONS.filter((item) => !onBoard.has(item.id));
     }
 
     function freeSlots(shape: Shape) {
@@ -509,7 +579,7 @@ export function ChalkboardHero({
       window.removeEventListener("resize", onResize);
       themeObserver.disconnect();
     };
-  }, [equations]);
+  }, []);
 
   return (
     <section className="chalkboard" ref={boardRef}>
