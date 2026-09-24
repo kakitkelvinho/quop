@@ -46,6 +46,19 @@ convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system
 colour — see `DESIGN.md` on keeping the section wayfinding colours out of it.
 
+**Real hardware where it can be seen, schematic where it can't.** Mounts
+follow the lab's own catalogues: LIOP-TEC for most parts, Radiant Dyes for the
+open-back MARS mirror mount and the rotation mount a waveplate drops into.
+Everything on a post stands on one kind of post, a 1-inch pedestal pillar;
+a lens stands on a slim rod instead, because a holder would hide the glass.
+Parts too small to see at true scale (the sample slab, the Paul trap, a
+particle) are drawn larger than life and float at their height.
+
+**A particle lives in a host.** Dropped on a Paul trap or a cavity, a particle
+snaps to its centre and moves with it; dragged or nudged clear, it lets go.
+The cavity's glowing mode is part of the cavity, not a beam: it counts toward
+no path length.
+
 **Static, client-side only.** Like everything else on the site, the builder runs
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
