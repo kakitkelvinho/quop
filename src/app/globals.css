@@ -2502,38 +2502,68 @@ html[data-theme="dark"] .builderOrderBadge {
   vertical-align: -0.3em;
 }
 
+/* A TeX-style radical: the surd is drawn to the full height of the radicand
+   and its last stroke runs into the rule over it, which clears any
+   superscript underneath by a small gap. */
 .chalkRoot {
-  display: inline-flex;
-  align-items: baseline;
+  position: relative;
+  display: inline-block;
+  margin-left: 0.06em;
+  padding-left: 0.56em;
+  line-height: 0;
 }
 
-/* stretched so its top stroke meets the rule over the radicand */
 .chalkRoot__sign {
-  display: inline-block;
-  margin-right: -0.04em;
-  transform: scale(1.05, 1.22);
-  transform-origin: 0 100%;
+  position: absolute;
+  top: 0;
+  bottom: -0.1em;
+  left: 0;
+  width: 0.6em;
+  overflow: visible;
+}
+
+.chalkRoot__sign path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 0.055em;
+  vector-effect: non-scaling-stroke;
 }
 
 .chalkRoot__body {
   display: inline-block;
-  padding: 0.04em 0.12em 0;
-  line-height: 1.05;
+  padding: 0.1em 0.08em 0 0.06em;
+  line-height: 1.15;
   border-top: 0.055em solid currentColor;
 }
 
+/* sizes and shifts after TeX: scripts at 70% (50% nested), raised about
+   0.36em and lowered about 0.18em of the base size */
 .chalkEq sub,
 .chalkEq sup {
-  font-size: 0.62em;
+  position: relative;
+  font-size: 0.7em;
   font-style: italic;
+  line-height: 0;
+  vertical-align: baseline;
 }
 
+/* offsets via top rather than vertical-align, so they replace Tailwind's
+   preflight shift instead of adding to it */
 .chalkEq sub {
-  vertical-align: -0.28em;
+  top: 0.26em;
+  bottom: auto;
+  margin-left: -0.02em;
 }
 
 .chalkEq sup {
-  vertical-align: 0.52em;
+  top: -0.52em;
+  margin-left: 0.05em;
+}
+
+.chalkEq sup sup,
+.chalkEq sup sub {
+  font-size: 0.72em;
 }
 
 .chalkboard__welcome {

@@ -42,10 +42,10 @@ type Equation = {
 };
 
 const root = (body: string) =>
-  `<span class="chalkRoot"><span class="chalkRoot__sign">√</span><span class="chalkRoot__body">${body}</span></span>`;
+  `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.4 14.6 L2.6 13 L6.2 23.6 L11.4 0.3 L12 0.3"/></svg><span class="chalkRoot__body">${body}</span></span>`;
 
 /** Hand-set HTML rather than KaTeX: a square root and an integral sign are the
- *  hardest things here, and CSS covers both. */
+ *  hardest things here, and a little CSS and SVG covers both. */
 const EQUATIONS: Equation[] = [
   {
     html: [
