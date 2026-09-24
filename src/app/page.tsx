@@ -1,4 +1,6 @@
 import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
+import { HomeChapters } from "@/components/home-chapters";
+import { loadPowerTrace } from "@/components/home-trace";
 import { SectionCards } from "@/components/section-cards";
 
 export default function Home() {
@@ -13,7 +15,13 @@ export default function Home() {
         </p>
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
       </ChalkboardHero>
-      <SectionCards />
+      <HomeChapters trace={loadPowerTrace()} />
+      <nav aria-labelledby="home-index" className="homeIndex">
+        <h2 className="homeIndex__label" id="home-index">
+          Jump to
+        </h2>
+        <SectionCards />
+      </nav>
     </>
   );
 }

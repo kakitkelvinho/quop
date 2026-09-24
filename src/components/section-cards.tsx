@@ -22,12 +22,12 @@ const CARDS: SectionCard[] = [
     name: "Calculator",
     tag: "quick maths for experiments",
   },
-  { glyph: "integral", href: "/theory", name: "Theory", tag: "notes on physics" },
+  { glyph: "integral", href: "/theory", name: "Theory", tag: "notes on physics, coming soon" },
   {
     glyph: "beam",
     href: "/experiment",
     name: "Experiment",
-    tag: "notes on experimental techniques",
+    tag: "an optical table builder",
   },
 ];
 
