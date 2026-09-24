@@ -197,6 +197,7 @@ export default function BuilderHud(props: BuilderHudProps) {
     inspector = (
       <ComponentInspector
         component={selected}
+        components={components}
         onUpdate={props.onUpdateSelected}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}

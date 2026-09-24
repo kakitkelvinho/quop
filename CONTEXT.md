@@ -10,7 +10,7 @@ One piece of bench hardware placed on the table: a laser, a mirror mount, a lens
 _Avoid_: part, element, object
 
 **Height**:
-How far a component's optical centre sits above the breadboard, in mm. Each component has its own, set by the length of its post; the default is the standard beam height.
+How far a component's optical centre sits above the breadboard, in mm. Each component has its own; for a component on a post, the post's length sets it, and a floating component simply sits there. The default is the standard beam height.
 _Avoid_: z, elevation, lift, stretch
 
 **Beam height**:
@@ -26,3 +26,15 @@ The 3D length of a beam through its components' optical centres, in mm; the basi
 
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.
+
+**Beam splitter**:
+A cube that divides a beam in two. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
+_Avoid_: PBS, PBS cube, beamsplitter plate
+
+**Mode**:
+The light standing inside a cavity, drawn as a Gaussian envelope between its mirrors. Part of the cavity, not a beam: it is not drawn by the author and adds nothing to any path length.
+_Avoid_: cavity beam
+
+**Host**:
+A trap or cavity that a particle has been placed in. A particle with a host sits at the host's centre and moves with it.
+_Avoid_: parent, container

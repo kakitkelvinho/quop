@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useReducer } from "react";
 
 import {
   BEAM_COLORS,
+  DEFAULT_CAVITY_LENGTH_MM,
+  DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SCENE,
   EMPTY_SCENE,
@@ -13,6 +15,7 @@ import {
   createBeamId,
   createComponentId,
   parseScene,
+  settleHosts,
   snapToGrid,
   type Beam,
   type BuilderComponent,
@@ -25,6 +28,14 @@ const STORAGE_KEY = "quop.builder.scene.v1";
 const HISTORY_LIMIT = 60;
 
 type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
+
+/** Every edit ends with hosted particles back at their host's centre. */
+function settled(mutate: Mutation): Mutation {
+  return (scene) => {
+    const next = mutate(scene);
+    return next === scene ? scene : settleHosts(next);
+  };
+}
 
 type HistoryState = {
   scene: BuilderSceneData;
@@ -120,8 +131,14 @@ export function useBuilderScene() {
     }
   }, [scene]);
 
-  const commit = useCallback((mutate: Mutation) => dispatch({ kind: "commit", mutate }), []);
-  const preview = useCallback((mutate: Mutation) => dispatch({ kind: "preview", mutate }), []);
+  const commit = useCallback(
+    (mutate: Mutation) => dispatch({ kind: "commit", mutate: settled(mutate) }),
+    [],
+  );
+  const preview = useCallback(
+    (mutate: Mutation) => dispatch({ kind: "preview", mutate: settled(mutate) }),
+    [],
+  );
   const commitCheckpoint = useCallback(
     (snapshot: BuilderSceneData) => dispatch({ kind: "checkpoint", snapshot }),
     [],
@@ -132,7 +149,7 @@ export function useBuilderScene() {
   // ---- component edits -----------------------------------------------------
 
   const addComponent = useCallback(
-    (type: ComponentType, position: Vec3, label?: string): string => {
+    (type: ComponentType, position: Vec3, extra?: { label?: string; host?: string }): string => {
       const id = createComponentId(type);
       commit((current) => ({
         ...current,
@@ -144,7 +161,12 @@ export function useBuilderScene() {
             position,
             rotation: 0,
             color: type === "mirror-mount" ? DEFAULT_MOUNT_COLOR : undefined,
-            label,
+            label: extra?.label,
+            ...(type === "lens"
+              ? { lensShape: "plano-convex" as const, focalLength: DEFAULT_FOCAL_LENGTH_MM }
+              : {}),
+            ...(type === "cavity" ? { cavityLength: DEFAULT_CAVITY_LENGTH_MM } : {}),
+            ...(extra?.host ? { host: extra.host } : {}),
           },
         ],
       }));
@@ -182,7 +204,8 @@ export function useBuilderScene() {
         components: current.components.map((component) => {
           if (component.id !== id) return component;
           const [x, z] = clampToTable(component.position[0] + dx, component.position[2] + dz);
-          return { ...component, position: [x, 0, z] as Vec3 };
+          // nudging a particle out of its host lets go of it
+          return { ...component, position: [x, 0, z] as Vec3, host: undefined };
         }),
       }));
     },
@@ -231,7 +254,11 @@ export function useBuilderScene() {
       );
       commit((current) => ({
         ...current,
-        components: [...current.components, { ...source, id: newId, position: [x, 0, z] }],
+        // a copy of a hosted particle lands beside the host, not inside it
+        components: [
+          ...current.components,
+          { ...source, id: newId, position: [x, 0, z], host: undefined },
+        ],
       }));
       return newId;
     },

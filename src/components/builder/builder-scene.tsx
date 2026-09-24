@@ -25,8 +25,10 @@ import {
   TABLE_DEPTH_MM,
   TABLE_WIDTH_MM,
   beamLengthMm,
+  clampToTable,
   componentById,
   componentDisplayName,
+  findHost,
   lengthToPicoseconds,
   parseScene,
   serializeScene,
@@ -44,6 +46,11 @@ type DragState = {
   snapshot: BuilderSceneData;
   started: boolean;
 };
+
+function clampXZ(x: number, z: number): [number, number, number] {
+  const [clampedX, clampedZ] = clampToTable(x, z);
+  return [clampedX, 0, clampedZ];
+}
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -111,11 +118,16 @@ export default function BuilderScene() {
     (x: number, z: number) => {
       if (beamMode) return;
       if (placingType) {
-        const id = api.addComponent(placingType, [
-          snapToGrid(x),
-          0,
-          snapToGrid(z),
-        ]);
+        // a particle clicked onto a trap or cavity goes inside it
+        const host =
+          placingType === "particle"
+            ? findHost(sceneRef.current.components, x, z)
+            : undefined;
+        const id = api.addComponent(
+          placingType,
+          [snapToGrid(x), 0, snapToGrid(z)],
+          host ? { host: host.id } : undefined,
+        );
         setSelectedId(id);
         setPlacingType(null);
         return;
@@ -163,15 +175,36 @@ export default function BuilderScene() {
 
       const component = componentById(sceneRef.current.components, drag.id);
       if (!component) return;
-      if (component.position[0] === nextX && component.position[2] === nextZ)
-        return;
+
+      // A particle dragged over a trap or cavity snaps into it; dragged clear,
+      // it lets go.
+      const host =
+        component.type === "particle"
+          ? findHost(sceneRef.current.components, nextX, nextZ)
+          : undefined;
+      const unchanged = host
+        ? component.host === host.id
+        : !component.host &&
+          component.position[0] === nextX &&
+          component.position[2] === nextZ;
+      if (unchanged) return;
 
       // First real movement is what earns an undo entry — a plain click shouldn't.
       if (!drag.started) {
         drag.started = true;
         api.commitCheckpoint(drag.snapshot);
       }
-      api.moveComponent(drag.id, nextX, nextZ, false);
+      if (component.type === "particle") {
+        api.updateComponent(
+          drag.id,
+          host
+            ? { host: host.id }
+            : { host: undefined, position: clampXZ(nextX, nextZ) },
+          false,
+        );
+      } else {
+        api.moveComponent(drag.id, nextX, nextZ, false);
+      }
     },
     [api],
   );

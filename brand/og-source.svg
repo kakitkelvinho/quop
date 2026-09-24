@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <filter id="chalk" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" seed="11" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="5" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.14 0.9" numOctaves="4" seed="5" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" result="grainA"
+        values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.1 0.6 0 0 -0.15"/>
+      <feComposite in="rough" in2="grainA" operator="in"/>
+    </filter>
+    <filter id="dust" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="4" seed="3" result="warp"/>
+      <feDisplacementMap in="SourceGraphic" in2="warp" scale="3" xChannelSelector="R" yChannelSelector="G" result="rough"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.2 0.8" numOctaves="3" seed="9" result="grain"/>
+      <feColorMatrix in="grain" type="matrix" result="grainA"
+        values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.0 0.6 0 0 -0.05"/>
+      <feComposite in="rough" in2="grainA" operator="in"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="#111111"/>
+  <rect x="30" y="30" width="1140" height="570" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="2" filter="url(#dust)"/>
+  <g filter="url(#chalk)">
+    <text x="600" y="300" text-anchor="middle" fill="#ffffff"
+          font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="700"
+          font-size="200" letter-spacing="-4">quop</text>
+    <text x="600" y="300" text-anchor="middle" fill="#ffffff" opacity="0.5"
+          font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="700"
+          font-size="200" letter-spacing="-4" transform="translate(4 -4)">quop</text>
+  </g>
+  <g filter="url(#dust)">
+    <text x="600" y="420" text-anchor="middle" fill="#ffffff" opacity="0.8"
+          font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="46"
+          letter-spacing="1">a working board for quantum optics</text>
+    <text x="600" y="505" text-anchor="middle" fill="#ffffff" opacity="0.45"
+          font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="40">E = &#8463;&#969;</text>
+  </g>
+</svg>

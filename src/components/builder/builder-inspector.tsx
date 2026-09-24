@@ -4,14 +4,23 @@ import { IconButton } from "@/components/builder/builder-icons";
 import {
   BEAM_COLORS,
   COMPONENT_SPECS,
+  DEFAULT_CAVITY_LENGTH_MM,
+  DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   beamLengthMm,
   componentById,
   componentDisplayName,
+  componentTag,
   lengthToPicoseconds,
   type Beam,
   type BuilderComponent,
+  type LensShape,
 } from "@/components/builder/types";
+
+const LENS_SHAPES: { value: LensShape; label: string }[] = [
+  { value: "plano-convex", label: "Plano-convex" },
+  { value: "biconvex", label: "Biconvex" },
+];
 
 type ComponentPatch = Partial<Omit<BuilderComponent, "id" | "type">>;
 
@@ -20,12 +29,14 @@ function NumberField({
   unit,
   value,
   step,
+  disabled,
   onChange,
 }: {
   label: string;
   unit: string;
   value: number;
   step: number;
+  disabled?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
@@ -36,6 +47,7 @@ function NumberField({
           type="number"
           step={step}
           value={value}
+          disabled={disabled}
           onChange={(event) => onChange(Number(event.target.value) || 0)}
         />
         <span className="builderField__unit">{unit}</span>
@@ -88,12 +100,14 @@ export function BeamSwatches({
 
 export function ComponentInspector({
   component,
+  components,
   onUpdate,
   onRotate,
   onDuplicate,
   onDelete,
 }: {
   component: BuilderComponent;
+  components: BuilderComponent[];
   onUpdate: (patch: ComponentPatch) => void;
   onRotate: (direction: 1 | -1) => void;
   onDuplicate: () => void;
@@ -101,6 +115,7 @@ export function ComponentInspector({
 }) {
   const spec = COMPONENT_SPECS[component.type];
   const [x, , z] = component.position;
+  const host = component.host ? componentById(components, component.host) : undefined;
 
   return (
     <div className="builderInspector">
@@ -115,15 +130,25 @@ export function ComponentInspector({
           <input
             type="text"
             value={component.label ?? ""}
-            placeholder={spec.tag}
+            placeholder={componentTag(component)}
             onChange={(event) => onUpdate({ label: event.target.value })}
           />
         </span>
       </label>
       <div className="builderFieldRow">
-        <NumberField label="x" unit="mm" step={5} value={Math.round(x)} onChange={(next) => onUpdate({ position: [next, 0, z] })} />
-        <NumberField label="z" unit="mm" step={5} value={Math.round(z)} onChange={(next) => onUpdate({ position: [x, 0, next] })} />
+        <NumberField label="x" unit="mm" step={5} value={Math.round(x)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [next, 0, z] })} />
+        <NumberField label="z" unit="mm" step={5} value={Math.round(z)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [x, 0, next] })} />
       </div>
+      {host ? (
+        <div className="builderInspector__host">
+          <span>
+            Inside <strong>{componentDisplayName(host)}</strong>
+          </span>
+          <button type="button" className="builderButton" onClick={() => onUpdate({ host: undefined })}>
+            Take out
+          </button>
+        </div>
+      ) : null}
       <div className="builderFieldRow">
         <NumberField
           label="Yaw"
@@ -137,6 +162,39 @@ export function ComponentInspector({
           <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
         </span>
       </div>
+      {component.type === "lens" ? (
+        <>
+          <div className="builderChoice" role="group" aria-label="Lens shape">
+            {LENS_SHAPES.map((shape) => (
+              <button
+                key={shape.value}
+                type="button"
+                className="builderButton"
+                aria-pressed={(component.lensShape ?? "plano-convex") === shape.value}
+                onClick={() => onUpdate({ lensShape: shape.value })}
+              >
+                {shape.label}
+              </button>
+            ))}
+          </div>
+          <NumberField
+            label="Focal length"
+            unit="mm"
+            step={5}
+            value={Math.round(component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM)}
+            onChange={(next) => onUpdate({ focalLength: next })}
+          />
+        </>
+      ) : null}
+      {component.type === "cavity" ? (
+        <NumberField
+          label="Length"
+          unit="mm"
+          step={5}
+          value={Math.round(component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM)}
+          onChange={(next) => onUpdate({ cavityLength: next })}
+        />
+      ) : null}
       {component.type === "mirror-mount" ? (
         <label className="builderField" title="Tint the mount the colour of the beam it serves">
           <span className="builderField__label">Mount colour</span>

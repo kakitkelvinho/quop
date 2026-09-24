@@ -19,9 +19,24 @@ const ebGaramond = EB_Garamond({
   variable: "--font-eb-garamond",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kakitkelvinho.github.io/quop";
+const description = "Quantum optics notes, calculators, theory, and plotters.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "quop",
-  description: "Quantum optics notes, calculators, theory, and plotters.",
+  description,
+  openGraph: {
+    title: "quop",
+    description,
+    siteName: "quop",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "quop",
+    description,
+  },
 };
 
 const themeScript = `

@@ -2128,6 +2128,26 @@ html[data-theme="dark"] .builderButton--primary {
   color: #1a1d26;
 }
 
+.builderButton[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* a pair of mutually exclusive options, e.g. a lens's shape */
+.builderChoice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+}
+
+.builderInspector__host {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
 .builderButton:disabled {
   opacity: 0.4;
   cursor: default;
