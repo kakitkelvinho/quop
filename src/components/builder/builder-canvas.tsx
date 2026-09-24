@@ -526,12 +526,14 @@ function BeamPath({
   color,
   width = BEAM_WIDTH_MM,
   opacity = 1,
+  showArrows = true,
   selected = false,
 }: {
   points: Vector3[];
   color: string;
   width?: number;
   opacity?: number;
+  showArrows?: boolean;
   selected?: boolean;
 }) {
   const alpha = selected ? 1 : opacity;
@@ -581,7 +583,7 @@ function BeamPath({
         opacity={alpha}
         transparent={alpha < 1}
       />
-      {arrows.map((arrow, index) => (
+      {(showArrows ? arrows : []).map((arrow, index) => (
         <mesh
           key={index}
           position={arrow.position}
@@ -758,6 +760,7 @@ export default function BuilderCanvas({
             color={beam.color}
             width={beam.width}
             opacity={beam.opacity}
+            showArrows={beam.arrows !== false}
             selected={beam.id === selectedBeamId}
           />
         );
@@ -773,7 +776,9 @@ export default function BuilderCanvas({
       <OrbitControls
         makeDefault
         enabled={!dragging}
-        enableRotate={false}
+        enableRotate
+        // right-drag orbits all the way round, but never under the table
+        maxPolarAngle={Math.PI / 2 - 0.05}
         enableZoom
         enablePan
         zoomSpeed={0.9}
@@ -782,7 +787,7 @@ export default function BuilderCanvas({
         mouseButtons={{
           LEFT: MOUSE.PAN,
           MIDDLE: MOUSE.DOLLY,
-          RIGHT: MOUSE.PAN,
+          RIGHT: MOUSE.ROTATE,
         }}
         touches={{ ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN }}
       />
