@@ -342,9 +342,10 @@ export default function BuilderScene() {
       }
 
       if (event.key === "Escape") {
-        if (trayOpen) setTrayOpen(false);
+        // stop placing first, so Esc mid-run keeps the panel for the next part
+        if (placingType) setPlacingType(null);
+        else if (trayOpen) setTrayOpen(false);
         else if (beamMode) cancelBeam();
-        else if (placingType) setPlacingType(null);
         else {
           setSelectedId(null);
           setSelectedBeamId(null);
@@ -490,10 +491,11 @@ export default function BuilderScene() {
         status={status}
         onToggleTray={() => setTrayOpen((open) => !open)}
         onPickType={(type) => {
+          // the panel stays open, so a run of parts goes down without reopening it
           cancelBeam();
           setPlacingType(type);
-          setTrayOpen(false);
         }}
+        onCloseTray={() => setTrayOpen(false)}
         onSelectTool={() => {
           cancelBeam();
           setPlacingType(null);
