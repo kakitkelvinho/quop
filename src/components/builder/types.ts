@@ -34,7 +34,7 @@ export type Vec3 = [number, number, number];
 export type BuilderComponent = {
   id: string;
   type: ComponentType;
-  /** millimetres; table plane is XZ, Y is height above the breadboard */
+  /** millimetres; table plane is XZ, Y is the component's height (its optical centre above the breadboard) */
   position: Vec3;
   /** degrees, yaw around the vertical axis */
   rotation: number;
@@ -59,7 +59,7 @@ export type Beam = {
   label?: string;
 };
 
-export const SCENE_VERSION = 1 as const;
+export const SCENE_VERSION = 2 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -75,8 +75,12 @@ export type ComponentSpec = {
   label: string;
   /** short name drawn as the in-scene tag */
   tag: string;
-  /** height of the part above the table, mm — label offsets and beam height */
-  height: number;
+  /** how far the part reaches above its optical centre, mm — where its label sits */
+  top: number;
+  /** lowest height, mm: where its post runs out, or where a floating part meets the table */
+  minHeight: number;
+  /** set when the instrument fixes its own height and it cannot be raised */
+  fixedHeight?: number;
   /** radius of the selection ring, mm */
   radius: number;
   /** one line of plain-language help for a visitor who has never met a bench */
@@ -87,105 +91,121 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   "laser-source": {
     label: "Laser source",
     tag: "Laser",
-    height: 95,
+    top: 20,
+    minHeight: 20,
     radius: 60,
     hint: "Where a beam starts. Points along its own +x axis.",
   },
   "fiber-collimator": {
     label: "Fiber collimator",
     tag: "Fiber",
-    height: 95,
+    top: 20,
+    minHeight: 20,
     radius: 30,
     hint: "Where light enters or leaves a fiber: a beam can start or end here.",
   },
   "mirror-mount": {
     label: "Mirror + mount",
     tag: "Mirror",
-    height: 100,
+    top: 25,
+    minHeight: 27,
     radius: 34,
     hint: "Steers the beam. Colour the mount to mark which beam line it serves.",
   },
   "beam-splitter": {
     label: "Beam splitter",
     tag: "BS",
-    height: 88,
+    top: 13,
+    minHeight: 25,
     radius: 30,
     hint: "Splits one beam into two arms. Note in the label if it splits by polarisation.",
   },
   lens: {
     label: "Lens",
     tag: "Lens",
-    height: 95,
+    top: 20,
+    minHeight: 17,
     radius: 26,
     hint: "Focuses or collimates. Set its shape and focal length below.",
   },
   waveplate: {
     label: "Waveplate",
     tag: "λ/2",
-    height: 97,
+    top: 30,
+    minHeight: 36,
     radius: 26,
     hint: "Rotates polarisation — λ/2 for angle, λ/4 for circular.",
   },
   filter: {
     label: "Filter",
     tag: "Filter",
-    height: 94,
+    top: 19,
+    minHeight: 25,
     radius: 24,
     hint: "Blocks part of the spectrum, e.g. rejecting the pump before a detector.",
   },
   iris: {
     label: "Iris",
     tag: "Iris",
-    height: 95,
+    top: 20,
+    minHeight: 27,
     radius: 24,
     hint: "Clips the beam — an alignment reference and a stray-light cut.",
   },
   sample: {
     label: "Sample",
     tag: "Sample",
-    height: 95,
+    top: 18,
+    minHeight: 13,
     radius: 24,
     hint: "The thing under study, here a thin acrylic slab. Drawn larger than life.",
   },
   "paul-trap": {
     label: "Paul trap",
     tag: "Trap",
-    height: 106,
+    top: 31,
+    minHeight: 28,
     radius: 26,
     hint: "Holds a charged particle in oscillating fields: four rods along the trap axis, ring endcaps.",
   },
   cavity: {
     label: "Cavity",
     tag: "Cavity",
-    height: 95,
+    top: 20,
+    minHeight: 16,
     radius: 30,
     hint: "Two facing mirrors with light standing between them. The glow is its mode, not a beam.",
   },
   particle: {
     label: "Particle",
     tag: "Particle",
-    height: 85,
+    top: 10,
+    minHeight: 5,
     radius: 10,
     hint: "Drop it on a Paul trap or cavity to place it inside; it then moves with it.",
   },
   photodiode: {
     label: "Photodiode",
     tag: "PD",
-    height: 88,
+    top: 13,
+    minHeight: 20,
     radius: 22,
     hint: "Reads total power. Good for a reference arm.",
   },
   camera: {
     label: "Camera",
     tag: "Camera",
-    height: 97,
+    top: 22,
+    minHeight: 28,
     radius: 30,
     hint: "Images the beam or the sample plane — the source of FITS frames.",
   },
   spectrometer: {
     label: "Spectrometer",
     tag: "Spec",
-    height: 97,
+    top: 22,
+    minHeight: 100,
+    fixedHeight: 100,
     radius: 70,
     hint: "Disperses the light and records a spectrum.",
   },
@@ -216,11 +236,12 @@ export const TABLE_WIDTH_MM = 800;
 export const TABLE_DEPTH_MM = 600;
 export const ROTATION_STEP_DEG = 15;
 /**
- * Every optic on this bench shares one beam height above the breadboard, mm.
- * 75 mm (3") is the height a LIOP-TEC mount on a short 1/2" post actually sits
- * at — low enough to stay stiff, high enough to clear the plate corners.
+ * The beam height, mm: the height a component gets when it is placed. The
+ * lab's posts are cut so a mount's centre sits at 100 mm. A convention for
+ * straight beams, not a constraint: any component can be raised or lowered.
  */
-export const OPTICAL_AXIS_MM = 75;
+export const BEAM_HEIGHT_MM = 100;
+export const MAX_HEIGHT_MM = 300;
 export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
 
 export const DEFAULT_FOCAL_LENGTH_MM = 100;
@@ -232,6 +253,21 @@ export const HOST_CAPTURE_MM = 20;
 
 export function clamp(value: number, [min, max]: [number, number]): number {
   return Math.min(max, Math.max(min, value));
+}
+
+/** The heights a component can take, mm. */
+export function heightRange(type: ComponentType): [number, number] {
+  const spec = COMPONENT_SPECS[type];
+  if (spec.fixedHeight !== undefined) return [spec.fixedHeight, spec.fixedHeight];
+  return [spec.minHeight, MAX_HEIGHT_MM];
+}
+
+export function clampHeight(type: ComponentType, height: number): number {
+  return clamp(height, heightRange(type));
+}
+
+export function defaultHeight(type: ComponentType): number {
+  return clampHeight(type, BEAM_HEIGHT_MM);
 }
 
 /** mm per nanosecond in vacuum — beam path length doubles as an optical delay. */
@@ -274,7 +310,7 @@ export function componentById(
   return components.find((component) => component.id === id);
 }
 
-/** Straight-line length through the beam's waypoints, in mm. */
+/** Straight-line 3D length through the beam's waypoints (optical centres), in mm. */
 export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
   const points = beam.path
     .map((id) => componentById(components, id))
@@ -282,9 +318,9 @@ export function beamLengthMm(components: BuilderComponent[], beam: Beam): number
 
   let total = 0;
   for (let index = 1; index < points.length; index += 1) {
-    const [ax, , az] = points[index - 1].position;
-    const [bx, , bz] = points[index].position;
-    total += Math.hypot(bx - ax, bz - az);
+    const [ax, ay, az] = points[index - 1].position;
+    const [bx, by, bz] = points[index].position;
+    total += Math.hypot(bx - ax, by - ay, bz - az);
   }
   return total;
 }
@@ -381,7 +417,11 @@ function isVec3(value: unknown): value is Vec3 {
   );
 }
 
-function parseComponent(value: unknown): BuilderComponent | null {
+/**
+ * A version-1 scene predates per-component height (its Y was always 0), so
+ * every component in it loads at the default height.
+ */
+function parseComponent(value: unknown, version: number): BuilderComponent | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   if (typeof raw.id !== "string" || typeof raw.type !== "string") return null;
@@ -392,7 +432,11 @@ function parseComponent(value: unknown): BuilderComponent | null {
   const component: BuilderComponent = {
     id: raw.id,
     type: type as ComponentType,
-    position: [raw.position[0], 0, raw.position[2]],
+    position: [
+      raw.position[0],
+      version >= 2 ? clampHeight(type as ComponentType, raw.position[1]) : defaultHeight(type as ComponentType),
+      raw.position[2],
+    ],
     rotation: finiteNumber(raw.rotation) ?? 0,
     color: typeof raw.color === "string" ? raw.color : undefined,
     label: typeof raw.label === "string" ? raw.label : undefined,
@@ -439,8 +483,9 @@ export function parseScene(value: unknown): BuilderSceneData | null {
   const raw = value as Record<string, unknown>;
   if (!Array.isArray(raw.components)) return null;
 
+  const version = finiteNumber(raw.version) ?? 1;
   const components = raw.components
-    .map(parseComponent)
+    .map((component) => parseComponent(component, version))
     .filter((component): component is BuilderComponent => component !== null);
 
   const ids = new Set(components.map((component) => component.id));
@@ -466,9 +511,17 @@ export const EMPTY_SCENE: BuilderSceneData = {
 // A pump + reference-arm layout so the table isn't blank on first load. It
 // demonstrates the two conventions a newcomer needs: mount colour marks the
 // beam line, and a beam is a path you draw through the parts it passes.
+/** Stand hand-written components at their default height. */
+function atDefaultHeight(components: BuilderComponent[]): BuilderComponent[] {
+  return components.map((component) => ({
+    ...component,
+    position: [component.position[0], defaultHeight(component.type), component.position[2]],
+  }));
+}
+
 export const DEFAULT_SCENE: BuilderSceneData = {
   version: SCENE_VERSION,
-  components: [
+  components: atDefaultHeight([
     { id: "laser-pump", type: "laser-source", position: [-350, 0, -150], rotation: 0, label: "Pump 400 nm" },
     { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], rotation: 0, label: "λ/2" },
     { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], rotation: 0, label: "PBS" },
@@ -478,7 +531,7 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     { id: "spectrometer-1", type: "spectrometer", position: [325, 0, -150], rotation: 0 },
     { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 135, color: "#dc2626", label: "M1" },
     { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 180, label: "Reference PD" },
-  ],
+  ]),
   beams: [
     {
       id: "beam-pump",
