@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { IconButton } from "@/components/builder/builder-icons";
 import {
   BEAM_COLORS,
@@ -7,6 +9,8 @@ import {
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
+  clampHeight,
+  heightRange,
   beamLengthMm,
   componentById,
   componentDisplayName,
@@ -51,6 +55,57 @@ function NumberField({
           onChange={(event) => onChange(Number(event.target.value) || 0)}
         />
         <span className="builderField__unit">{unit}</span>
+      </span>
+    </label>
+  );
+}
+
+/**
+ * Height is clamped to what the part allows, so it commits on blur or Enter
+ * rather than per keystroke — typing "1" on the way to "150" must not snap the
+ * part to its lowest height first.
+ */
+function HeightField({
+  component,
+  onChange,
+}: {
+  component: BuilderComponent;
+  onChange: (height: number) => void;
+}) {
+  const height = Math.round(component.position[1]);
+  const [min, max] = heightRange(component.type);
+  const fixed = min === max;
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    const next = Number(draft);
+    setDraft(null);
+    if (draft.trim() !== "" && Number.isFinite(next)) onChange(clampHeight(component.type, next));
+  };
+
+  return (
+    <label
+      className="builderField"
+      title={fixed ? "Fixed by the instrument" : `Optical centre above the breadboard, ${min}–${max} mm`}
+    >
+      <span className="builderField__label">Height</span>
+      <span className="builderField__control">
+        <input
+          type="number"
+          step={5}
+          min={min}
+          max={max}
+          value={draft ?? height}
+          disabled={fixed || Boolean(component.host)}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") commit();
+            if (event.key === "Escape") setDraft(null);
+          }}
+        />
+        <span className="builderField__unit">mm</span>
       </span>
     </label>
   );
@@ -114,7 +169,7 @@ export function ComponentInspector({
   onDelete: () => void;
 }) {
   const spec = COMPONENT_SPECS[component.type];
-  const [x, , z] = component.position;
+  const [x, y, z] = component.position;
   const host = component.host ? componentById(components, component.host) : undefined;
 
   return (
@@ -136,9 +191,14 @@ export function ComponentInspector({
         </span>
       </label>
       <div className="builderFieldRow">
-        <NumberField label="x" unit="mm" step={5} value={Math.round(x)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [next, 0, z] })} />
-        <NumberField label="z" unit="mm" step={5} value={Math.round(z)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [x, 0, next] })} />
+        <NumberField label="x" unit="mm" step={5} value={Math.round(x)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [next, y, z] })} />
+        <NumberField label="z" unit="mm" step={5} value={Math.round(z)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [x, y, next] })} />
       </div>
+      <HeightField
+        key={component.id}
+        component={component}
+        onChange={(height) => onUpdate({ position: [x, height, z] })}
+      />
       {host ? (
         <div className="builderInspector__host">
           <span>

@@ -14,7 +14,7 @@ How far a component's optical centre sits above the breadboard, in mm. Each comp
 _Avoid_: z, elevation, lift, stretch
 
 **Beam height**:
-The default height, 75 mm, that a component gets when first placed. A convention for straight beams, not a constraint.
+The default height, 100 mm, that a component gets when first placed: the height the lab's posts are cut for. A convention for straight beams, not a constraint.
 _Avoid_: optical axis
 
 **Beam**:

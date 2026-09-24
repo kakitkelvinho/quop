@@ -23,10 +23,14 @@ is one millimetre. The board is 800 × 600 mm. Positions snap to a 25 mm grid
 and rotation snaps to 15°. The numbers in the inspector and the readout are the
 numbers you would set on a real bench.
 
-**One shared beam height.** Every optic sits at `OPTICAL_AXIS_MM` (22 mm) on a
-post. That is how a table actually works — a straight beam has to hit each
-element at the same height — and it keeps the drawn beams from zig-zagging in
-elevation.
+**Height per component, 100 mm by default.** Every component has its own
+height: its optical centre above the breadboard, in mm. A new part lands at
+the lab's beam height, 100 mm, the height its posts are cut for. Raising or
+lowering a part changes the length of its post (or a laser's feet); the part
+itself never scales. The lowest height is where the post runs out, or where a
+floating part meets the table; the ceiling is 300 mm. The spectrometer is the
+exception: its input port is fixed by the instrument. A beam between parts at
+different heights slopes, and its path length and time of flight are 3D.
 
 **Beams are drawn, not traced.** A beam is an ordered list of the components it
 visits. The builder does not compute reflection or refraction, and deliberately
@@ -83,6 +87,7 @@ is on screen until it is needed:
 | --- | --- |
 | Add a part | Add (＋) in the tool pill, pick it in the tray, click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
+| Raise / lower | Type a height in the inspector (Enter or leaving the field applies it) |
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |

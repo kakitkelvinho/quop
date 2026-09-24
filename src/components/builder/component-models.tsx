@@ -9,8 +9,7 @@ import {
   MeshPhysicalMaterial,
   Path,
   Shape,
-  TubeGeometry,
-  Vector2,
+    Vector2,
   Vector3,
   type Group,
   type Side,
@@ -26,7 +25,6 @@ import {
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   FOCAL_LENGTH_RANGE_MM,
-  OPTICAL_AXIS_MM,
   clamp,
   componentDisplayName,
   componentRadius,
@@ -47,21 +45,17 @@ const FIBER_JACKET = "#f2c200";
 /** Light held in place — a cavity's mode and a trapped particle share it. */
 const MODE_COLOR = "#ff5a36";
 
-type ModelProps = { palette: ScenePalette; color?: string };
+/** `axis` is the component's height: the model draws its optical centre there. */
+type ModelProps = { palette: ScenePalette; color?: string; axis: number };
 
 /** Glow and the parts inside a host must not catch the pointer. */
 const NO_RAYCAST = () => null;
 
-/** Height of a part above the table, mm — label offsets and beam height. */
-export function componentHeight(type: BuilderComponent["type"]): number {
-  return COMPONENT_SPECS[type].height;
-}
 
 /**
- * Every optic on this bench shares one beam height (OPTICAL_AXIS_MM), the way
- * a real table does — posts lift each element to the same axis so a straight
- * beam actually hits them. Models are built around that: a base, a post, then
- * the optic centred on the axis.
+ * Each model is drawn around its component's height (`axis`): a base, a post
+ * cut to reach it, then the optic centred on it. Raising a component lengthens
+ * the post; the part itself never scales.
  *
  * The hardware drawn here is the lab's own: LIOP-TEC opto-mechanics (STAR /
  * PLANET series kinematic mounts, Optomechanics catalogue 2018). That means
@@ -72,7 +66,6 @@ export function componentHeight(type: BuilderComponent["type"]): number {
  * Radiant Dyes instead (the open-back MARS mount, their rotation mounts), and
  * everything on a post stands on a 1-inch pedestal pillar.
  */
-const AXIS = OPTICAL_AXIS_MM;
 
 /** Nominal optic size on this bench, mm — everything is drawn around 1 inch. */
 const OPTIC_D = 25.4;
@@ -166,20 +159,16 @@ const MIRROR_RING_GEOMETRY = annulus(15.5, OPTIC_D / 2, 8);
 const COLLIMATOR_PLATE_GEOMETRY = boredPlate(32, 4, 12, 8);
 
 /** The fiber jacket: out of the collimator's back and down to the table. */
-const FIBER_JACKET_GEOMETRY = new TubeGeometry(
-  new CatmullRomCurve3([
-    new Vector3(-44, OPTICAL_AXIS_MM, 0),
-    new Vector3(-60, OPTICAL_AXIS_MM - 4, 0),
-    new Vector3(-72, OPTICAL_AXIS_MM - 22, 6),
-    new Vector3(-78, OPTICAL_AXIS_MM - 50, 14),
+function fiberJacketCurve(axis: number) {
+  return new CatmullRomCurve3([
+    new Vector3(-44, axis, 0),
+    new Vector3(-60, axis - 4, 0),
+    new Vector3(-72, axis * 0.7, 6),
+    new Vector3(-78, axis * 0.33, 14),
     new Vector3(-86, 4, 26),
     new Vector3(-104, 1.8, 40),
-  ]),
-  48,
-  1.6,
-  10,
-);
-
+  ]);
+}
 /**
  * Everything that isn't bare steel or glass is drawn as glossy enamel: a
  * dielectric, so its colour stays saturated instead of being darkened by a
@@ -292,7 +281,7 @@ function Adjuster({
 const PILLAR_RADIUS = 12.7;
 const PILLAR_BASE_HEIGHT = 6;
 
-function Pillar({ palette, top = AXIS }: ModelProps & { top?: number }) {
+function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
   const length = Math.max(1, top - PILLAR_BASE_HEIGHT);
   return (
     <group>
@@ -312,7 +301,7 @@ function Pillar({ palette, top = AXIS }: ModelProps & { top?: number }) {
  * A lens stands on a slim rod with a small pedestal instead: a holder would
  * hide the glass, and the rod still makes the height read as a post.
  */
-function SlimRod({ palette, top }: ModelProps & { top: number }) {
+function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
   return (
     <group>
       <mesh position={[0, 2.5, 0]}>
@@ -336,27 +325,28 @@ function SlimRod({ palette, top }: ModelProps & { top: number }) {
 // Components
 // ---------------------------------------------------------------------------
 
-function LaserSource({ palette }: ModelProps) {
+function LaserSource({ palette, axis }: ModelProps) {
+  const feet = Math.max(1, axis - 18);
   return (
     <group>
-      {/* head sits on two feet, aperture on the shared axis */}
-      <mesh position={[-24, (AXIS - 20) / 2 + 6, 0]}>
-        <boxGeometry args={[22, AXIS - 20, 34]} />
+      {/* head sits on two feet; raising the laser lengthens them, like risers */}
+      <mesh position={[-24, feet / 2, 0]}>
+        <boxGeometry args={[22, feet, 34]} />
         <Enamel color={palette.body} />
       </mesh>
-      <mesh position={[26, (AXIS - 20) / 2 + 6, 0]}>
-        <boxGeometry args={[22, AXIS - 20, 34]} />
+      <mesh position={[26, feet / 2, 0]}>
+        <boxGeometry args={[22, feet, 34]} />
         <Enamel color={palette.body} />
       </mesh>
       <RoundedBox
         args={[96, 40, 40]}
         radius={0.8}
         smoothness={3}
-        position={[0, AXIS, 0]}
+        position={[0, axis, 0]}
       >
         <Enamel color={palette.body} />
       </RoundedBox>
-      <mesh position={[50, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[50, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[7, 7, 12, 22]} />
         <meshStandardMaterial
           color={EMITTER_RED}
@@ -366,7 +356,7 @@ function LaserSource({ palette }: ModelProps) {
         />
       </mesh>
       {/* the +x arrow: which way this source fires */}
-      <mesh position={[64, AXIS, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <mesh position={[64, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <coneGeometry args={[5, 12, 16]} />
         <meshStandardMaterial
           color={EMITTER_RED}
@@ -383,34 +373,34 @@ function LaserSource({ palette }: ModelProps) {
  * A Radiant Dyes MARS fine-adjustment mount: open at the back, and the front
  * plate holds the mirror round three quarters of its rim.
  */
-function MirrorMount({ palette, color }: ModelProps) {
+function MirrorMount({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const corner = PLATE / 2 - 8;
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - PLATE / 2 + 4} />
+      <Pillar palette={palette} top={axis - PLATE / 2 + 4} />
       <mesh
         geometry={MARS_FRONT_GEOMETRY}
-        position={[4, AXIS, 0]}
+        position={[4, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
         <Anodised color={mount} />
       </mesh>
       <mesh
         geometry={MARS_BACK_GEOMETRY}
-        position={[-8, AXIS, 0]}
+        position={[-8, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
         <Anodised color={mount} />
       </mesh>
-      <mesh position={[-18, AXIS + corner, -corner]}>
+      <mesh position={[-18, axis + corner, -corner]}>
         <sphereGeometry args={[3.2, 14, 12]} />
         <Stainless palette={palette} />
       </mesh>
-      <Adjuster palette={palette} position={[-22, AXIS - corner, -corner]} />
-      <Adjuster palette={palette} position={[-22, AXIS + corner, corner]} />
+      <Adjuster palette={palette} position={[-22, axis - corner, -corner]} />
+      <Adjuster palette={palette} position={[-22, axis + corner, corner]} />
       {/* the mirror, seen from behind through the open back */}
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 6, 36]} />
         <meshStandardMaterial
           color="#e8eef5"
@@ -422,27 +412,27 @@ function MirrorMount({ palette, color }: ModelProps) {
   );
 }
 
-function BeamSplitter({ palette, color }: ModelProps) {
+function BeamSplitter({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const cube = 25.4;
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - cube / 2 - 6} />
+      <Pillar palette={palette} top={axis - cube / 2 - 6} />
       {/* cube platform: a plain anodised plate, the way a PBS actually sits */}
       <RoundedBox
         args={[44, 8, 44]}
         radius={0.8}
         smoothness={3}
-        position={[0, AXIS - cube / 2 - 4, 0]}
+        position={[0, axis - cube / 2 - 4, 0]}
       >
         <Anodised color={mount} />
       </RoundedBox>
-      <mesh position={[0, AXIS, 0]}>
+      <mesh position={[0, axis, 0]}>
         <boxGeometry args={[cube, cube, cube]} />
         <Glass tint={GLASS_CYAN} />
       </mesh>
       {/* the internal 45 degree coating plane; polarizing or not, it looks the same */}
-      <mesh position={[0, AXIS, 0]} rotation={[0, Math.PI / 4, 0]}>
+      <mesh position={[0, axis, 0]} rotation={[0, Math.PI / 4, 0]}>
         <planeGeometry args={[cube * 1.41, cube]} />
         <meshStandardMaterial
           color="#5fd0e0"
@@ -488,14 +478,15 @@ function lensProfile(shape: LensShape, focalLength: number): Vector2[] {
 
 function Lens({
   palette,
+  axis,
   shape,
   focalLength,
 }: ModelProps & { shape: LensShape; focalLength: number }) {
   const profile = useMemo(() => lensProfile(shape, focalLength), [shape, focalLength]);
   return (
     <group>
-      <SlimRod palette={palette} top={AXIS - OPTIC_D / 2 + 1} />
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <SlimRod palette={palette} top={axis - OPTIC_D / 2 + 1} />
+      <mesh position={[0, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <latheGeometry args={[profile, 48]} />
         <Glass tint={GLASS_BLUE} />
       </mesh>
@@ -514,26 +505,26 @@ const DIAL_TICKS = Array.from({ length: 36 }, (_, index) => ({
  * graduated dial on its face, and the waveplate dropped in the 1-inch bore.
  * The dial is drawn, not a setting; note the angle in the label.
  */
-function Waveplate({ palette, color }: ModelProps) {
+function Waveplate({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const tickColor = palette.mode === "dark" ? "#e9e4d8" : "#1b1f26";
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - 30} />
-      <mesh position={[0, AXIS - 26, 0]}>
+      <Pillar palette={palette} top={axis - 30} />
+      <mesh position={[0, axis - 26, 0]}>
         <boxGeometry args={[12, 8, 20]} />
         <Anodised color={mount} />
       </mesh>
       <mesh
         geometry={ROTATION_BODY_GEOMETRY}
-        position={[5, AXIS, 0]}
+        position={[5, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
         <Anodised color={mount} />
       </mesh>
       <mesh
         geometry={ROTATION_DIAL_GEOMETRY}
-        position={[8, AXIS, 0]}
+        position={[8, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
         <Enamel color={palette.body} />
@@ -544,7 +535,7 @@ function Waveplate({ palette, color }: ModelProps) {
         return (
           <mesh
             key={angle}
-            position={[8.2, AXIS + r * Math.sin(angle), r * Math.cos(angle)]}
+            position={[8.2, axis + r * Math.sin(angle), r * Math.cos(angle)]}
             rotation={[-angle, 0, 0]}
           >
             <boxGeometry args={[0.4, 0.6, length]} />
@@ -553,15 +544,15 @@ function Waveplate({ palette, color }: ModelProps) {
         );
       })}
       {/* index mark on the body, and the locking screw on top */}
-      <mesh position={[5.5, AXIS + 22.5, 0]}>
+      <mesh position={[5.5, axis + 22.5, 0]}>
         <boxGeometry args={[1, 3, 1.2]} />
         <meshBasicMaterial color={tickColor} />
       </mesh>
-      <mesh position={[0, AXIS + 26, 0]}>
+      <mesh position={[0, axis + 26, 0]}>
         <cylinderGeometry args={[2.6, 2.6, 5, 14]} />
         <Stainless palette={palette} />
       </mesh>
-      <mesh position={[2, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 2, 32]} />
         <Glass tint={PLATE_AMBER} dense />
       </mesh>
@@ -569,19 +560,19 @@ function Waveplate({ palette, color }: ModelProps) {
   );
 }
 
-function Filter({ palette, color }: ModelProps) {
+function Filter({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - 19} />
+      <Pillar palette={palette} top={axis - 19} />
       <mesh
         geometry={FILTER_PLATE_GEOMETRY}
-        position={[3, AXIS, 0]}
+        position={[3, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
         <Anodised color={mount} />
       </mesh>
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[12, 12, 3, 32]} />
         <Glass tint={FILTER_TEAL} dense />
       </mesh>
@@ -589,17 +580,17 @@ function Filter({ palette, color }: ModelProps) {
   );
 }
 
-function Iris({ palette, color }: ModelProps) {
+function Iris({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - 21} />
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <Pillar palette={palette} top={axis - 21} />
+      <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <torusGeometry args={[15, 5, 12, 36]} />
         <Anodised color={mount} />
       </mesh>
       {/* blade stack seen through the aperture */}
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <ringGeometry args={[4, 15, 32]} />
         <meshStandardMaterial
           color={palette.mode === "dark" ? "#7b828e" : "#b3b9c3"}
@@ -609,11 +600,11 @@ function Iris({ palette, color }: ModelProps) {
         />
       </mesh>
       {/* the closing lever — every iris on the bench has one sticking out */}
-      <mesh position={[0, AXIS + 13, 13]} rotation={[-Math.PI / 4, 0, 0]}>
+      <mesh position={[0, axis + 13, 13]} rotation={[-Math.PI / 4, 0, 0]}>
         <boxGeometry args={[3, 18, 3]} />
         <Stainless palette={palette} />
       </mesh>
-      <mesh position={[0, AXIS - 19, 0]}>
+      <mesh position={[0, axis - 19, 0]}>
         <boxGeometry args={[14, 8, 14]} />
         <Anodised color={mount} />
       </mesh>
@@ -626,9 +617,9 @@ function Iris({ palette, color }: ModelProps) {
  * facing the beam like a lens. The real one is 10 x 10 x 1 mm, too small to
  * see, so it is drawn at beam-splitter size.
  */
-function Sample() {
+function Sample({ axis }: { axis: number }) {
   return (
-    <mesh position={[0, AXIS, 0]}>
+    <mesh position={[0, axis, 0]}>
       <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
       <meshPhysicalMaterial
         color={ACRYLIC}
@@ -649,35 +640,37 @@ function Sample() {
  * connector out the back and the jacket curling down to the table. A beam can
  * start here (fiber out) or end here (fiber in).
  */
-function FiberCollimator({ palette, color }: ModelProps) {
+function FiberCollimator({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
+  const jacket = useMemo(() => fiberJacketCurve(axis), [axis]);
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - 16 + 2} />
+      <Pillar palette={palette} top={axis - 16 + 2} />
       <mesh
         geometry={COLLIMATOR_PLATE_GEOMETRY}
-        position={[4, AXIS, 0]}
+        position={[4, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
         <Anodised color={mount} />
       </mesh>
-      <mesh position={[-6, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-6, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[6, 6, 32, 24]} />
         <Stainless palette={palette} />
       </mesh>
-      <mesh position={[10.2, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[10.2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[4.5, 4.5, 0.6, 24]} />
         <Enamel color="#1b1f26" />
       </mesh>
-      <mesh position={[-27, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-27, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[4, 4, 10, 18]} />
         <Hardware palette={palette} />
       </mesh>
-      <mesh position={[-38, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-38, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[2.2, 3, 12, 14]} />
         <Enamel color={FIBER_JACKET} />
       </mesh>
-      <mesh geometry={FIBER_JACKET_GEOMETRY}>
+      <mesh>
+        <tubeGeometry args={[jacket, 48, 1.6, 10]} />
         <Enamel color={FIBER_JACKET} />
       </mesh>
     </group>
@@ -695,7 +688,7 @@ const TRAP_ENDCAP_GAP = 12;
  * each end. Drawn about the size of a cryostat so it can be seen; the centre,
  * where a particle sits, is on the component's height.
  */
-function PaulTrap({ palette }: ModelProps) {
+function PaulTrap({ palette, axis }: ModelProps) {
   const holderY = TRAP_ROD_LENGTH / 2;
   return (
     <group>
@@ -703,7 +696,7 @@ function PaulTrap({ palette }: ModelProps) {
         [-1, 1].map((sz) => (
           <mesh
             key={`${sx}${sz}`}
-            position={[sx * TRAP_ROD_OFFSET, AXIS, sz * TRAP_ROD_OFFSET]}
+            position={[sx * TRAP_ROD_OFFSET, axis, sz * TRAP_ROD_OFFSET]}
           >
             <cylinderGeometry args={[1.6, 1.6, TRAP_ROD_LENGTH, 16]} />
             <Stainless palette={palette} />
@@ -713,7 +706,7 @@ function PaulTrap({ palette }: ModelProps) {
       {[-1, 1].map((side) => (
         <mesh
           key={`cap${side}`}
-          position={[0, AXIS + side * TRAP_ENDCAP_GAP, 0]}
+          position={[0, axis + side * TRAP_ENDCAP_GAP, 0]}
           rotation={[Math.PI / 2, 0, 0]}
           raycast={NO_RAYCAST}
         >
@@ -729,7 +722,7 @@ function PaulTrap({ palette }: ModelProps) {
         <mesh
           key={`holder${side}`}
           geometry={TRAP_HOLDER_GEOMETRY}
-          position={[0, AXIS + side * holderY + (side > 0 ? 0 : 3), 0]}
+          position={[0, axis + side * holderY + (side > 0 ? 0 : 3), 0]}
           rotation={[Math.PI / 2, 0, 0]}
         >
           <Enamel color={CERAMIC} />
@@ -759,7 +752,7 @@ function modeProfile(length: number, radius: number): Vector2[] {
 }
 
 /** Two facing mirrors along local x, floating, with the mode standing between. */
-function Cavity({ color, length }: ModelProps & { length: number }) {
+function Cavity({ color, axis, length }: ModelProps & { length: number }) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const span = clamp(length, CAVITY_LENGTH_RANGE_MM);
   const halo = useMemo(() => modeProfile(span, 1), [span]);
@@ -767,7 +760,7 @@ function Cavity({ color, length }: ModelProps & { length: number }) {
   return (
     <group>
       {[-1, 1].map((side) => (
-        <group key={side} position={[(side * span) / 2, AXIS, 0]}>
+        <group key={side} position={[(side * span) / 2, axis, 0]}>
           <mesh rotation={[0, 0, Math.PI / 2]}>
             <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 6, 36]} />
             <meshStandardMaterial
@@ -785,7 +778,7 @@ function Cavity({ color, length }: ModelProps & { length: number }) {
           </mesh>
         </group>
       ))}
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, -Math.PI / 2]} raycast={NO_RAYCAST}>
+      <mesh position={[0, axis, 0]} rotation={[0, 0, -Math.PI / 2]} raycast={NO_RAYCAST}>
         <latheGeometry args={[halo, 32]} />
         <meshBasicMaterial
           color={MODE_COLOR}
@@ -795,7 +788,7 @@ function Cavity({ color, length }: ModelProps & { length: number }) {
           toneMapped={false}
         />
       </mesh>
-      <mesh position={[0, AXIS, 0]} rotation={[0, 0, -Math.PI / 2]} raycast={NO_RAYCAST}>
+      <mesh position={[0, axis, 0]} rotation={[0, 0, -Math.PI / 2]} raycast={NO_RAYCAST}>
         <latheGeometry args={[core, 24]} />
         <meshBasicMaterial
           color={MODE_COLOR}
@@ -814,9 +807,9 @@ function Cavity({ color, length }: ModelProps & { length: number }) {
  * that makes it big enough to see and to click. In a host it sits at the
  * host's centre; alone it floats on the axis.
  */
-function Particle() {
+function Particle({ axis }: { axis: number }) {
   return (
-    <group position={[0, AXIS, 0]}>
+    <group position={[0, axis, 0]}>
       <mesh>
         <sphereGeometry args={[2.2, 20, 14]} />
         <meshBasicMaterial color={MODE_COLOR} toneMapped={false} />
@@ -835,19 +828,19 @@ function Particle() {
   );
 }
 
-function Photodiode({ palette }: ModelProps) {
+function Photodiode({ palette, axis }: ModelProps) {
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - 14} />
+      <Pillar palette={palette} top={axis - 14} />
       <RoundedBox
         args={[26, 26, 22]}
         radius={0.8}
         smoothness={3}
-        position={[2, AXIS, 0]}
+        position={[2, axis, 0]}
       >
         <Enamel color={palette.body} />
       </RoundedBox>
-      <mesh position={[-11.5, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-11.5, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[8, 8, 3, 24]} />
         <meshStandardMaterial
           color={SENSOR_GREEN}
@@ -857,7 +850,7 @@ function Photodiode({ palette }: ModelProps) {
         />
       </mesh>
       {/* BNC stub out the back */}
-      <mesh position={[17, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[17, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[4, 4, 8, 16]} />
         <Stainless palette={palette} />
       </mesh>
@@ -865,24 +858,24 @@ function Photodiode({ palette }: ModelProps) {
   );
 }
 
-function CameraBody({ palette }: ModelProps) {
+function CameraBody({ palette, axis }: ModelProps) {
   return (
     <group>
-      <Pillar palette={palette} top={AXIS - 22} />
+      <Pillar palette={palette} top={axis - 22} />
       <RoundedBox
         args={[46, 44, 44]}
         radius={0.8}
         smoothness={3}
-        position={[14, AXIS, 0]}
+        position={[14, axis, 0]}
       >
         <Enamel color={palette.body} />
       </RoundedBox>
       {/* C-mount barrel on the axis */}
-      <mesh position={[-12, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-12, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[13, 15, 20, 28]} />
         <Hardware palette={palette} />
       </mesh>
-      <mesh position={[-22, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-22, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[11, 11, 2, 28]} />
         <Enamel color="#12161d" />
       </mesh>
@@ -890,8 +883,8 @@ function CameraBody({ palette }: ModelProps) {
   );
 }
 
-function Spectrometer({ palette }: ModelProps) {
-  const body = AXIS + 20;
+function Spectrometer({ palette, axis }: ModelProps) {
+  const body = axis + 20;
   return (
     <group>
       <mesh position={[0, body / 2, 0]}>
@@ -899,7 +892,7 @@ function Spectrometer({ palette }: ModelProps) {
         <Enamel color={palette.body} />
       </mesh>
       {/* input slit / fibre port, on the shared axis */}
-      <mesh position={[-57, AXIS, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[-57, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[7, 7, 10, 20]} />
         <Enamel color="#1b1f26" />
       </mesh>
@@ -984,9 +977,10 @@ export function ComponentMesh({
 }: ComponentMeshProps) {
   const spec = COMPONENT_SPECS[component.type];
   const radius = componentRadius(component);
+  const [x, axis, z] = component.position;
   const modelProps = useMemo<ModelProps>(
-    () => ({ palette, color: component.color }),
-    [palette, component.color],
+    () => ({ palette, color: component.color, axis }),
+    [palette, component.color, axis],
   );
 
   // Every solid part casts and catches the key light's shadow; glass and the
@@ -1007,7 +1001,8 @@ export function ComponentMesh({
   return (
     <group
       ref={group}
-      position={component.position}
+      // the group stands on the table; the model reaches up to its height
+      position={[x, 0, z]}
       rotation={[0, (component.rotation * Math.PI) / 180, 0]}
       onPointerDown={onPointerDown}
       onPointerOver={onPointerOver}
@@ -1035,7 +1030,7 @@ export function ComponentMesh({
       {component.type === "waveplate" ? <Waveplate {...modelProps} /> : null}
       {component.type === "filter" ? <Filter {...modelProps} /> : null}
       {component.type === "iris" ? <Iris {...modelProps} /> : null}
-      {component.type === "sample" ? <Sample /> : null}
+      {component.type === "sample" ? <Sample axis={axis} /> : null}
       {component.type === "paul-trap" ? <PaulTrap {...modelProps} /> : null}
       {component.type === "cavity" ? (
         <Cavity
@@ -1043,7 +1038,7 @@ export function ComponentMesh({
           length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
         />
       ) : null}
-      {component.type === "particle" ? <Particle /> : null}
+      {component.type === "particle" ? <Particle axis={axis} /> : null}
       {component.type === "photodiode" ? <Photodiode {...modelProps} /> : null}
       {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
       {component.type === "spectrometer" ? (
@@ -1057,12 +1052,12 @@ export function ComponentMesh({
         <SelectionRing radius={radius} color={palette.accent} />
       ) : null}
       {beamOrder ? (
-        <BeamOrderBadge order={beamOrder} height={spec.height} />
+        <BeamOrderBadge order={beamOrder} height={axis + spec.top} />
       ) : null}
 
       {showLabel && !component.host ? (
         <Html
-          position={[0, spec.height + 12, 0]}
+          position={[0, axis + spec.top + 12, 0]}
           center
           zIndexRange={[0, 0]}
           className="builderHtmlLayer"

@@ -47,9 +47,9 @@ type DragState = {
   started: boolean;
 };
 
-function clampXZ(x: number, z: number): [number, number, number] {
+function clampXZ(x: number, y: number, z: number): [number, number, number] {
   const [clampedX, clampedZ] = clampToTable(x, z);
-  return [clampedX, 0, clampedZ];
+  return [clampedX, y, clampedZ];
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -199,7 +199,7 @@ export default function BuilderScene() {
           drag.id,
           host
             ? { host: host.id }
-            : { host: undefined, position: clampXZ(nextX, nextZ) },
+            : { host: undefined, position: clampXZ(nextX, component.position[1], nextZ) },
           false,
         );
       } else {
@@ -412,6 +412,7 @@ export default function BuilderScene() {
         COMPONENT_SPECS[selected.type].tag.toUpperCase(),
         `x ${Math.round(selected.position[0])}`,
         `z ${Math.round(selected.position[2])}`,
+        `h ${Math.round(selected.position[1])}`,
         `yaw ${Math.round(selected.rotation)}°`,
       ].join("   ");
     }

@@ -14,6 +14,7 @@ import {
   clampToTable,
   createBeamId,
   createComponentId,
+  defaultHeight,
   parseScene,
   settleHosts,
   snapToGrid,
@@ -24,6 +25,7 @@ import {
   type Vec3,
 } from "@/components/builder/types";
 
+// The key predates scene version 2; parseScene reads either version.
 const STORAGE_KEY = "quop.builder.scene.v1";
 const HISTORY_LIMIT = 60;
 
@@ -149,7 +151,8 @@ export function useBuilderScene() {
   // ---- component edits -----------------------------------------------------
 
   const addComponent = useCallback(
-    (type: ComponentType, position: Vec3, extra?: { label?: string; host?: string }): string => {
+    /** `x` and `z` place it; it always starts at its default height. */
+    (type: ComponentType, [x, , z]: Vec3, extra?: { label?: string; host?: string }): string => {
       const id = createComponentId(type);
       commit((current) => ({
         ...current,
@@ -158,7 +161,7 @@ export function useBuilderScene() {
           {
             id,
             type,
-            position,
+            position: [x, defaultHeight(type), z],
             rotation: 0,
             color: type === "mirror-mount" ? DEFAULT_MOUNT_COLOR : undefined,
             label: extra?.label,
@@ -192,9 +195,18 @@ export function useBuilderScene() {
   const moveComponent = useCallback(
     (id: string, x: number, z: number, record = false) => {
       const [clampedX, clampedZ] = clampToTable(x, z);
-      updateComponent(id, { position: [clampedX, 0, clampedZ] }, record);
+      const apply: Mutation = (current) => ({
+        ...current,
+        components: current.components.map((component) =>
+          component.id === id
+            ? { ...component, position: [clampedX, component.position[1], clampedZ] as Vec3 }
+            : component,
+        ),
+      });
+      if (record) commit(apply);
+      else preview(apply);
     },
-    [updateComponent],
+    [commit, preview],
   );
 
   const nudgeComponent = useCallback(
@@ -205,7 +217,7 @@ export function useBuilderScene() {
           if (component.id !== id) return component;
           const [x, z] = clampToTable(component.position[0] + dx, component.position[2] + dz);
           // nudging a particle out of its host lets go of it
-          return { ...component, position: [x, 0, z] as Vec3, host: undefined };
+          return { ...component, position: [x, component.position[1], z] as Vec3, host: undefined };
         }),
       }));
     },
@@ -257,7 +269,7 @@ export function useBuilderScene() {
         // a copy of a hosted particle lands beside the host, not inside it
         components: [
           ...current.components,
-          { ...source, id: newId, position: [x, 0, z], host: undefined },
+          { ...source, id: newId, position: [x, source.position[1], z], host: undefined },
         ],
       }));
       return newId;

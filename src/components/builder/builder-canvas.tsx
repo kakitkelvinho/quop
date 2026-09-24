@@ -32,7 +32,7 @@ import {
 import { ComponentMesh } from "@/components/builder/component-models";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
-  OPTICAL_AXIS_MM,
+  BEAM_HEIGHT_MM,
   TABLE_DEPTH_MM,
   TABLE_WIDTH_MM,
   componentById,
@@ -95,7 +95,8 @@ function CameraRig({ view, fitToken }: { view: CameraView; fitToken: number }) {
 
     for (const x of [-halfWidth, halfWidth]) {
       for (const z of [-halfDepth, halfDepth]) {
-        for (const y of [0, 70]) {
+        // up to just above the beam height, where most parts top out
+        for (const y of [0, BEAM_HEIGHT_MM + 30]) {
           const point = new Vector3(x, y, z).applyMatrix4(inverse);
           minX = Math.min(minX, point.x);
           maxX = Math.max(maxX, point.x);
@@ -395,11 +396,7 @@ function beamPoints(components: BuilderComponent[], path: string[]): Vector3[] {
     .filter((component): component is BuilderComponent => Boolean(component))
     .map(
       (component) =>
-        new Vector3(
-          component.position[0],
-          OPTICAL_AXIS_MM,
-          component.position[2],
-        ),
+        new Vector3(...component.position),
     );
 }
 
