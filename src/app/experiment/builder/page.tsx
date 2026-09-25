@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import BuilderSceneLoader from "@/components/builder/builder-scene-loader";
+import PrototypeSwitcher from "@/components/prototype-switcher";
 
 export const metadata: Metadata = {
   title: "Experiment builder · quop",
@@ -12,6 +13,8 @@ export default function BuilderPage() {
   return (
     <section className="builderPage">
       <BuilderSceneLoader />
+      {/* PROTOTYPE — remove with the branch */}
+      <PrototypeSwitcher />
     </section>
   );
 }
