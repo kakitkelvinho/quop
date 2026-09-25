@@ -8,7 +8,7 @@
  * frame, black knurled knobs, silvered mirror with a green substrate edge)
  * read better than the current MARS drawing?
  *
- * Five variants on the existing /experiment/builder route, via `?variant=`.
+ * Six variants on the existing /experiment/builder route, via `?variant=`.
  * A plain external store over the URL rather than Next's router, because the
  * models render inside the R3F canvas.
  */
@@ -20,6 +20,7 @@ export const PROTOTYPE_VARIANTS = [
   { key: "C", name: "No posts, base puck on the table" },
   { key: "D", name: "Real mount, stainless posts" },
   { key: "E", name: "Real mount, no posts" },
+  { key: "F", name: "Real mount, thin grey posts" },
 ] as const;
 
 export type PrototypeVariant = (typeof PROTOTYPE_VARIANTS)[number]["key"];
@@ -55,9 +56,10 @@ export function usePrototypeVariant(): PrototypeVariant {
 export function usePrototypeFlags() {
   const v = usePrototypeVariant();
   return {
-    posts: v === "A" || v === "D",
+    posts: v === "A" || v === "D" || v === "F",
     basePuck: v === "C",
     stainlessPosts: v === "D",
-    realMount: v === "D" || v === "E",
+    realMount: v === "D" || v === "E" || v === "F",
+    thinPosts: v === "F",
   };
 }

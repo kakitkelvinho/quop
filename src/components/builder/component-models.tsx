@@ -313,6 +313,8 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
   const flags = usePrototypeFlags();
   const length = Math.max(1, top - PILLAR_BASE_HEIGHT);
   if (!flags.posts && !flags.basePuck) return null;
+  // PROTOTYPE F: ~3/4 of a 1-inch pillar, so the post reads as a stroke
+  const radius = flags.thinPosts ? 9 : PILLAR_RADIUS;
   const material = flags.stainlessPosts ? (
     <PolishedSteel />
   ) : (
@@ -321,12 +323,18 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
   return (
     <group>
       <mesh position={[0, PILLAR_BASE_HEIGHT / 2, 0]}>
-        <cylinderGeometry args={[18, 19.5, PILLAR_BASE_HEIGHT, 36]} />
+        <cylinderGeometry
+          args={
+            flags.thinPosts
+              ? [13, 14.5, PILLAR_BASE_HEIGHT, 36]
+              : [18, 19.5, PILLAR_BASE_HEIGHT, 36]
+          }
+        />
         {material}
       </mesh>
       {flags.posts ? (
         <mesh position={[0, PILLAR_BASE_HEIGHT + length / 2, 0]}>
-          <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
+          <cylinderGeometry args={[radius, radius, length, 32]} />
           {material}
         </mesh>
       ) : null}
@@ -600,12 +608,23 @@ function LioptecMirrorMount({ palette, color, axis }: ModelProps) {
           its width instead of reflecting one flat grey */}
       <mesh position={[0.2, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 5, 48]} />
+        {/* side and front: the green substrate; back: plain ground glass */}
+        {[0, 1].map((slot) => (
+          <meshStandardMaterial
+            key={slot}
+            attach={`material-${slot}`}
+            color="#9fe6b4"
+            emissive="#3fbf6a"
+            emissiveIntensity={0.6}
+            roughness={0.15}
+            metalness={0}
+          />
+        ))}
         <meshStandardMaterial
-          color="#9fe6b4"
-          emissive="#3fbf6a"
-          emissiveIntensity={0.6}
-          roughness={0.15}
-          metalness={0}
+          attach="material-2"
+          color="#c9ced6"
+          roughness={0.6}
+          metalness={0.2}
         />
       </mesh>
       <mesh
