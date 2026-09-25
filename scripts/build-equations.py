@@ -20,7 +20,8 @@ OUT = Path(__file__).resolve().parent.parent / "public" / "equations"
 
 # EB Garamond, to match the site's serif (--font-serif), set up the way
 # ebgaramond-maths recommends: newtxmath for the symbols, Garamond for the
-# letters. Garamond has no \partial, so it comes from Computer Modern.
+# letters. Garamond has no \partial and no \mu (it sets a blank box), so
+# those come from Computer Modern.
 PREAMBLE = r"""
 \usepackage[T1]{fontenc}
 \usepackage{amsmath}
@@ -29,17 +30,20 @@ PREAMBLE = r"""
 \DeclareSymbolFont{cmletters}{OML}{cmm}{m}{it}
 \let\partial\relax
 \DeclareMathSymbol{\partial}{\mathord}{cmletters}{"40}
+\DeclareMathSymbol{\mu}{\mathalpha}{cmletters}{"16}
 \usepackage{braket}
 """
 
 EQUATIONS = {
+    # set like eqnarray: the = in a column of its own, with room either side
     "maxwell": r"""
-\begin{aligned}
-\nabla \cdot \mathbf{E} &= \rho / \varepsilon_0 \\
-\nabla \cdot \mathbf{B} &= 0 \\
-\nabla \times \mathbf{E} &= -\partial \mathbf{B} / \partial t \\
-\nabla \times \mathbf{B} &= \mu_0 \mathbf{J} + \mu_0 \varepsilon_0 \, \partial \mathbf{E} / \partial t
-\end{aligned}
+\renewcommand{\arraystretch}{1.6}
+\begin{array}{r@{\quad}c@{\quad}l}
+\nabla \cdot \mathbf{E} & = & \dfrac{\rho}{\varepsilon_0} \\
+\nabla \cdot \mathbf{B} & = & 0 \\
+\nabla \times \mathbf{E} & = & -\dfrac{\partial \mathbf{B}}{\partial t} \\
+\nabla \times \mathbf{B} & = & \mu_0 \left(\mathbf{J} + \varepsilon_0 \dfrac{\partial \mathbf{E}}{\partial t}\right)
+\end{array}
 """,
     "qho": r"\hat{H} = \hbar\omega \left(\hat{a}^\dagger \hat{a} + \tfrac{1}{2}\right)",
     "waist": r"w(z) = w_0 \sqrt{1 + \left(z / z_R\right)^2}",
@@ -66,6 +70,14 @@ def polish(svg: str, eq_id: str, width_em: float, height_em: float) -> str:
         lambda m: f"<svg {m.group(1)}width='{width_em:.3f}em' height='{height_em:.3f}em' fill='currentColor'",
         svg,
         count=1,
+    )
+    # dvisvgm writes the glyph defs in no fixed order; sort them so a rebuild
+    # only changes the files whose equations changed
+    svg = re.sub(
+        r"<defs>\n(.*?)</defs>",
+        lambda m: "<defs>\n" + "".join(sorted(m.group(1).splitlines(keepends=True))) + "</defs>",
+        svg,
+        flags=re.S,
     )
     # dvisvgm's XML declaration and comment are noise once inlined
     svg = re.sub(r"<\?xml[^>]*\?>\s*", "", svg)

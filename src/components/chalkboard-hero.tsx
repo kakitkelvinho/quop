@@ -15,7 +15,7 @@ const ON_SCREEN_AT_ONCE = 4;
 const BOARD_HISTORY = 0;
 
 /** How long a finished equation sits before it is wiped, in ms. */
-const HOLD_MS: [number, number] = [8000, 14000];
+const HOLD_MS: [number, number] = [1500, 1500];
 
 /** Pause between a wipe and the next equation going up, in ms. */
 const RESPAWN_MS: [number, number] = [400, 2600];
