@@ -44,7 +44,6 @@ type ChapterProps = {
   /** Section height in viewport heights; the pin lasts for all but one. */
   length: number;
   mode: "play" | "scrub";
-  name: string;
   onProgress?: (p: number) => void;
   status?: string;
 };
@@ -59,7 +58,6 @@ function Chapter({
   index,
   length,
   mode,
-  name,
   onProgress,
   status,
 }: ChapterProps) {
@@ -76,10 +74,7 @@ function Chapter({
     >
       <div className="chapter__stage" ref={stageRef}>
         <div className="chapter__text">
-          <p {...fade([0, 0.12], "chapter__eyebrow")}>
-            <span>{String(index).padStart(2, "0")}</span> {name}
-            {status ? <em className="chapter__status">{status}</em> : null}
-          </p>
+          {status ? <p {...fade([0, 0.12], "chapter__status")}>{status}</p> : null}
           <h2 {...fade([0.03, 0.16], "chapter__heading")} id={`chapter-${index}`}>
             {heading}
           </h2>
@@ -118,7 +113,6 @@ function PlotterChapter({ trace }: { trace: TraceSketch }) {
       index={1}
       length={2.5}
       mode="scrub"
-      name="Plotter"
     >
       <svg className="chapter__svg" viewBox="0 0 600 380">
         <g className="chapter__chalk">
@@ -185,7 +179,6 @@ function BuilderChapter() {
       index={2}
       length={2.5}
       mode="scrub"
-      name="Builder"
       onProgress={onProgress}
     >
       <svg className="chapter__svg" viewBox="0 0 600 380">
@@ -289,7 +282,6 @@ function CalculatorChapter() {
       index={3}
       length={2.5}
       mode="scrub"
-      name="Calculator"
       onProgress={onProgress}
     >
       <svg className="chapter__svg" viewBox="0 0 600 380">
@@ -319,7 +311,6 @@ function TheoryChapter() {
       index={4}
       length={1}
       mode="play"
-      name="Theory"
       status="coming soon"
     >
       <svg className="chapter__svg" viewBox="0 0 600 380">
