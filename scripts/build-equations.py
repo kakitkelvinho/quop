@@ -3,8 +3,7 @@
 
     python3 scripts/build-equations.py
 
-Needs a TeX distribution with `latex`, `dvisvgm` and the EB Garamond fonts
-(`ebgaramond`, `ebgaramond-maths`). The SVGs are committed, so this only has
+Needs a TeX distribution with `latex` and `dvisvgm`. The SVGs are committed, so this only has
 to be run after an equation here changes. The ids must match EQUATIONS in
 src/components/chalkboard-hero.tsx.
 """
@@ -18,19 +17,13 @@ from latex2svg import default_params, latex2svg
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "equations"
 
-# EB Garamond, to match the site's serif (--font-serif), set up the way
-# ebgaramond-maths recommends: newtxmath for the symbols, Garamond for the
-# letters. Garamond has no \partial and no \mu (it sets a blank box), so
-# those come from Computer Modern.
+# Plain Computer Modern: TeX's own font, the one every paper (and Wikipedia)
+# sets these in. EB Garamond was tried to match the site's serif, but its
+# maths support is patched together from three fonts and the accents and
+# spacing show it.
 PREAMBLE = r"""
-\usepackage[T1]{fontenc}
 \usepackage{amsmath}
-\usepackage[cmintegrals,cmbraces]{newtxmath}
-\usepackage{ebgaramond-maths}
-\DeclareSymbolFont{cmletters}{OML}{cmm}{m}{it}
-\let\partial\relax
-\DeclareMathSymbol{\partial}{\mathord}{cmletters}{"40}
-\DeclareMathSymbol{\mu}{\mathalpha}{cmletters}{"16}
+\usepackage{amssymb}
 \usepackage{braket}
 """
 
