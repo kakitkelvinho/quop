@@ -2586,25 +2586,22 @@ html[data-theme="dark"] .builderOrderBadge {
   position: relative;
   display: inline-block;
   margin-left: 0.06em;
-  padding-left: 0.56em;
+  /* a hair short of the sign's width, so the rule tucks under its top end */
+  padding-left: 0.72em;
   line-height: 0;
 }
 
 .chalkRoot__sign {
   position: absolute;
   top: 0;
-  bottom: -0.1em;
+  bottom: -0.06em;
   left: 0;
-  width: 0.6em;
+  width: 0.75em;
   overflow: visible;
 }
 
 .chalkRoot__sign path {
-  fill: none;
-  stroke: currentColor;
-  stroke-linejoin: round;
-  stroke-width: 0.055em;
-  vector-effect: non-scaling-stroke;
+  fill: currentColor;
 }
 
 .chalkRoot__body {

@@ -45,8 +45,14 @@ type Equation = {
  *  circumflex it falls back on drifts off the letter. */
 const hat = (base: string) => `<span class="chalkHat">${base}</span>`;
 
+/** The surd is a filled outline, not a stroke, so it can carry TeX's weights:
+ *  a thin lead-in, a heavy down-stroke, and a thin up-stroke that lands on
+ *  the rule at the rule's own thickness. */
+const SURD_PATH =
+  "M0 13.9 L3.4 11.8 L8 21 L15.3 0 L16 0 L16 0.9 L15.9 0.9 L8.1 23.8 L7.1 23.8 L2.6 13.6 L0.4 14.6 Z";
+
 const root = (body: string) =>
-  `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.4 14.6 L2.6 13 L6.2 23.6 L11.4 0.3 L12 0.3"/></svg><span class="chalkRoot__body">${body}</span></span>`;
+  `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 16 24" preserveAspectRatio="none" aria-hidden="true"><path d="${SURD_PATH}"/></svg><span class="chalkRoot__body">${body}</span></span>`;
 
 /** Hand-set HTML rather than KaTeX: a square root and an integral sign are the
  *  hardest things here, and a little CSS and SVG covers both. */
