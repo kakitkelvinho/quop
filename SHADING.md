@@ -88,16 +88,17 @@ exact numbers:
 | band | target L\* | approx. | note |
 |---|---|---|---|
 | enamel bodies | 93 | `#ecebe7` | unchanged |
-| pillars / posts | 58–60 | `#8d9095` | the same value as light |
+| pillars / posts | 48–50 | `#6f7378` | a step below light |
 | backdrop centre | 18 | `#2a2c33` | unchanged |
 | backdrop edge | 2 | `#020203` | unchanged |
 
 Dark mode is already close to right and needs little beyond the pillar change.
 
-**One pillar value serves both themes.** At L\* ~59 a post sits below the light
-backdrop and above the dark one, so it reads as a distinct mid-value vertical
-stroke either way. Unlike the enamel bodies — which are near-white in both
-themes and therefore only work in one — the posts do not need a light/dark pair.
+**Night runs the posts a step darker.** At L\* ~59 a post sits below the light
+backdrop and above the dark one, so in principle one value serves both themes.
+In practice the dark scene's stronger key and rim lights lift a post toward
+the white bodies, so it lost its place as a separate mid-value stroke; night
+uses L\* ~49 instead, still well above the dark backdrop.
 
 ## Posts are grey, and that is a decision
 
