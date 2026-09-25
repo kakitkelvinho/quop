@@ -80,7 +80,7 @@ exact numbers:
 | enamel bodies | 96 | `#f5f4f1` | the identity; stays the brightest thing |
 | backdrop centre | 88–90 | `#e2dfd8` | ~8 points below the enamel |
 | backdrop edge | 68–72 | `#a8aaae` | |
-| pillars / posts | 60–64 | `#9a9ea3` | clearly the darkest neutral |
+| pillars / posts | 58–60 | `#8d9095` | clearly the darkest neutral |
 | contact shadow | — | `#3a352c` @ 0.30 | warm ink on a warm sweep |
 
 **Dark mode**
@@ -88,13 +88,13 @@ exact numbers:
 | band | target L\* | approx. | note |
 |---|---|---|---|
 | enamel bodies | 93 | `#ecebe7` | unchanged |
-| pillars / posts | 60–64 | `#9a9ea3` | the same value as light |
+| pillars / posts | 58–60 | `#8d9095` | the same value as light |
 | backdrop centre | 18 | `#2a2c33` | unchanged |
 | backdrop edge | 2 | `#020203` | unchanged |
 
 Dark mode is already close to right and needs little beyond the pillar change.
 
-**One pillar value serves both themes.** At L\* ~62 a post sits below the light
+**One pillar value serves both themes.** At L\* ~59 a post sits below the light
 backdrop and above the dark one, so it reads as a distinct mid-value vertical
 stroke either way. Unlike the enamel bodies — which are near-white in both
 themes and therefore only work in one — the posts do not need a light/dark pair.

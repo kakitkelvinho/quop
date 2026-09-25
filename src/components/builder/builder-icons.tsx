@@ -49,6 +49,13 @@ const ICONS = {
       <circle cx="7.5" cy="8.5" r="1.2" />
     </>
   ),
+  // a part on a post, standing on its base
+  posts: (
+    <>
+      <rect x="7" y="3" width="10" height="7" rx="1.5" />
+      <path d="M12 10v8M7 21h10" />
+    </>
+  ),
   theme: (
     <>
       <circle cx="12" cy="12" r="8" />

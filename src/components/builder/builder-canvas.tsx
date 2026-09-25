@@ -628,6 +628,8 @@ export type BuilderCanvasProps = {
   beamDraft: string[];
   showLabels: boolean;
   showGrid: boolean;
+  /** draw posts; off, the parts float at their heights over their shadows */
+  showPosts: boolean;
   view: CameraView;
   fitToken: number;
   dragging: boolean;
@@ -666,6 +668,7 @@ export default function BuilderCanvas({
   beamDraft,
   showLabels,
   showGrid,
+  showPosts,
   view,
   fitToken,
   dragging,
@@ -737,6 +740,7 @@ export default function BuilderCanvas({
           selected={component.id === selectedId}
           hovered={component.id === hoveredId}
           showLabel={showLabels}
+          showPosts={showPosts}
           beamOrder={draftOrder.get(component.id)}
           onPointerDown={(event) => {
             event.stopPropagation();

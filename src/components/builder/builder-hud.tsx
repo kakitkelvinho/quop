@@ -31,6 +31,7 @@ export type BuilderHudProps = {
   beamColor: string;
   showLabels: boolean;
   showGrid: boolean;
+  showPosts: boolean;
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
@@ -56,6 +57,7 @@ export type BuilderHudProps = {
   onDeleteBeam: (id: string) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
+  onTogglePosts: () => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -260,6 +262,8 @@ export default function BuilderHud(props: BuilderHudProps) {
           <span className="builderIsland__sep" />
           <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
+          <span className="builderIsland__sep" />
+          <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
         </div>
 
 

@@ -76,6 +76,7 @@ export default function BuilderScene() {
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
+  const [showPosts, setShowPosts] = useState(true);
   const [view, setView] = useState<CameraView>("iso");
   const [fitToken, setFitToken] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -433,6 +434,7 @@ export default function BuilderScene() {
           beamDraft={beamDraft}
           showLabels={showLabels}
           showGrid={showGrid}
+          showPosts={showPosts}
           view={view}
           fitToken={fitToken}
           dragging={dragging}
@@ -457,6 +459,7 @@ export default function BuilderScene() {
         beamColor={beamColor}
         showLabels={showLabels}
         showGrid={showGrid}
+        showPosts={showPosts}
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
@@ -505,6 +508,7 @@ export default function BuilderScene() {
         }}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
+        onTogglePosts={() => setShowPosts((current) => !current)}
         onViewChange={(next) => {
           // pressing the view you are already on still snaps back from an orbit
           setView(next);

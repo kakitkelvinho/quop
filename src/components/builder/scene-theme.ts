@@ -32,7 +32,7 @@ export type ScenePalette = {
   /** enamel instrument bodies */
   body: string;
   /**
-   * posts, pedestals and risers: one mid-grey (L* ~62) in both themes, below
+   * posts, pedestals and risers: one mid-grey (L* ~59) in both themes, below
    * the light sweep and above the dark one, so every post reads as a stroke
    * (see SHADING.md, "Posts are grey")
    */
@@ -41,7 +41,7 @@ export type ScenePalette = {
 };
 
 /** the same in both themes — see `ScenePalette.post` */
-const POST_GREY = "#9a9ea3";
+const POST_GREY = "#8d9095";
 
 export const LIGHT_PALETTE: ScenePalette = {
   mode: "light",
