@@ -15,7 +15,7 @@ const ON_SCREEN_AT_ONCE = 4;
 const BOARD_HISTORY = 0;
 
 /** How long a finished equation sits before it is wiped, in ms. */
-const HOLD_MS: [number, number] = [8000, 14000];
+const HOLD_MS: [number, number] = [1500, 1500];
 
 /** Pause between a wipe and the next equation going up, in ms. */
 const RESPAWN_MS: [number, number] = [400, 2600];
@@ -34,83 +34,44 @@ type Shape = "narrow" | "tall" | "wide";
 
 type Equation = {
   accent?: boolean;
-  html: string;
+  /** Also the file name: public/equations/<id>.svg, rendered from TeX by
+   *  scripts/build-equations.py. */
   id: string;
   shape: Shape;
   /** Relative to --eq-size, which scales with the viewport. */
   size: number;
 };
 
-/** A hat placed by hand: the font has no precomposed σ̂, and the combining
- *  circumflex it falls back on drifts off the letter. */
-const hat = (base: string) => `<span class="chalkHat">${base}</span>`;
-
-const root = (body: string) =>
-  `<span class="chalkRoot"><svg class="chalkRoot__sign" viewBox="0 0 12 24" preserveAspectRatio="none" aria-hidden="true"><path d="M0.4 14.6 L2.6 13 L6.2 23.6 L11.4 0.3 L12 0.3"/></svg><span class="chalkRoot__body">${body}</span></span>`;
-
-/** Hand-set HTML rather than KaTeX: a square root and an integral sign are the
- *  hardest things here, and a little CSS and SVG covers both. */
 const EQUATIONS: Equation[] = [
-  {
-    html: [
-      "∇ · <b>E</b> = ρ / ε<sub>0</sub>",
-      "∇ · <b>B</b> = 0",
-      "∇ × <b>E</b> = −∂<b>B</b> / ∂t",
-      "∇ × <b>B</b> = μ<sub>0</sub><b>J</b> + μ<sub>0</sub>ε<sub>0</sub> ∂<b>E</b> / ∂t",
-    ]
-      .map((line) => `<span class="chalkEq__line">${line}</span>`)
-      .join(""),
-    id: "maxwell",
-    shape: "tall",
-    size: 0.8,
-  },
-  {
-    html: "Ĥ = ħω (â<sup>†</sup>â + ½)",
-    id: "qho",
-    shape: "narrow",
-    size: 1.15,
-  },
-  {
-    html: `w(z) = w<sub>0</sub> ${root("1 + (z / z<sub>R</sub>)<sup>2</sup>")}`,
-    id: "waist",
-    shape: "wide",
-    size: 1.05,
-  },
-  { accent: true, html: "Ĥ |ψ⟩ = E |ψ⟩", id: "schrodinger", shape: "narrow", size: 1.3 },
-  {
-    html: `Ĥ = ħω<sub>c</sub> â<sup>†</sup>â + ½ħω<sub>a</sub> ${hat("σ")}<sub>z</sub> + ħg (â ${hat("σ")}<sub>+</sub> + â<sup>†</sup> ${hat("σ")}<sub>−</sub>)`,
-    id: "jaynes-cummings",
-    shape: "wide",
-    size: 0.9,
-  },
-  {
-    html: "iħ ∂<sub>t</sub>ψ = (−ħ<sup>2</sup>∇<sup>2</sup> / 2m + V + g|ψ|<sup>2</sup>) ψ",
-    id: "gross-pitaevskii",
-    shape: "wide",
-    size: 0.95,
-  },
-  {
-    html: `|α⟩ = e<sup>−|α|<sup>2</sup>/2</sup> Σ<sub>n</sub> α<sup>n</sup> / ${root("n!")} |n⟩`,
-    id: "coherent",
-    shape: "wide",
-    size: 1,
-  },
-  { html: "[â, â<sup>†</sup>] = 1", id: "commutator", shape: "narrow", size: 1.25 },
-  { html: "E = ħω = hc / λ", id: "photon", shape: "narrow", size: 1.2 },
-  {
-    html: `f̃(ω) = <span class="chalkEq__big">∫</span> f(t) e<sup>−iωt</sup> dt`,
-    id: "fourier",
-    shape: "wide",
-    size: 1.05,
-  },
-  {
-    html: "n̄ = 1 / (e<sup>ħω/k<sub>B</sub>T</sup> − 1)",
-    id: "bose-einstein",
-    shape: "narrow",
-    size: 1.05,
-  },
-  { html: "Δx Δp ≥ ħ / 2", id: "heisenberg", shape: "narrow", size: 1.2 },
+  { id: "maxwell", shape: "tall", size: 0.8 },
+  { id: "qho", shape: "narrow", size: 1.15 },
+  { id: "waist", shape: "wide", size: 1.05 },
+  { accent: true, id: "schrodinger", shape: "narrow", size: 1.3 },
+  { id: "jaynes-cummings", shape: "wide", size: 0.9 },
+  { id: "gross-pitaevskii", shape: "wide", size: 0.95 },
+  { id: "coherent", shape: "wide", size: 1 },
+  { id: "commutator", shape: "narrow", size: 1.25 },
+  { id: "photon", shape: "narrow", size: 1.2 },
+  { id: "fourier", shape: "wide", size: 1.05 },
+  { id: "bose-einstein", shape: "narrow", size: 1.05 },
+  { id: "heisenberg", shape: "narrow", size: 1.2 },
 ];
+
+/** Fetched once and inlined, so the SVG takes the chalk colour and filter.
+ *  An equation whose file fails to load is simply never written up. */
+async function loadEquationSvgs() {
+  const entries = await Promise.all(
+    EQUATIONS.map(async ({ id }) => {
+      try {
+        const response = await fetch(`/equations/${id}.svg`);
+        return response.ok ? ([id, await response.text()] as const) : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return new Map(entries.filter((entry) => entry !== null));
+}
 
 /** Candidate positions as a percentage of the board. Wide lines only get the
  *  bands along the top and bottom, tall blocks only the corners (the flanks
@@ -179,6 +140,7 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
     const active = new Map<number, { el: HTMLDivElement; item: Equation }>();
     let timers: ReturnType<typeof setTimeout>[] = [];
     let disposed = false;
+    let svgs = new Map<string, string>();
 
     const later = (fn: () => void, ms: number) => {
       const t = setTimeout(fn, ms);
@@ -335,7 +297,7 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
 
     function unusedEquations() {
       const onBoard = new Set([...active.values()].map((entry) => entry.item.id));
-      return EQUATIONS.filter((item) => !onBoard.has(item.id));
+      return EQUATIONS.filter((item) => svgs.has(item.id) && !onBoard.has(item.id));
     }
 
     function freeSlots(shape: Shape) {
@@ -374,7 +336,7 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       const ink = document.createElement("div");
       ink.className = `chalkEq__ink${item.accent ? " chalkEq__ink--accent" : ""}`;
       ink.style.fontSize = `calc(var(--eq-size) * ${item.size})`;
-      ink.innerHTML = item.html;
+      ink.innerHTML = svgs.get(item.id) ?? "";
       el.append(ink);
       el.style.left = `${slot.x}%`;
       el.style.top = `${slot.y}%`;
@@ -570,11 +532,11 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       attributes: true,
     });
 
-    const boot = () => {
+    // the welcome text has to be in its final font before anything is placed round it
+    void Promise.all([loadEquationSvgs(), document.fonts?.ready]).then(([loaded]) => {
+      svgs = loaded;
       if (!disposed) resetBoard(true);
-    };
-    if (document.fonts?.ready) void document.fonts.ready.then(boot);
-    else boot();
+    });
 
     return () => {
       disposed = true;
