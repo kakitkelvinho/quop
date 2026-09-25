@@ -2546,112 +2546,25 @@ html[data-theme="dark"] .builderOrderBadge {
   -webkit-mask-image: radial-gradient(closest-side, #000 35%, transparent);
 }
 
+/* The equations are TeX, rendered to SVG ahead of time
+   (scripts/build-equations.py) and inlined; their glyphs fill with the text
+   colour, and the SVG is sized in em so this font-size scales it. */
 .chalkEq__ink {
   color: rgb(var(--mark) / var(--chalk-alpha));
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: 0.012em;
-  text-shadow: 0 0 6px rgb(var(--mark) / var(--chalk-dust));
+  line-height: 0;
   filter: var(--chalk-filter);
+}
+
+/* text-shadow doesn't reach SVG glyphs; this is the same dusty halo */
+.chalkEq__ink svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 6px rgb(var(--mark) / var(--chalk-dust)));
 }
 
 .chalkEq__ink--accent {
   color: color-mix(in srgb, var(--accent) 72%, rgb(var(--mark)));
   opacity: 0.86;
-}
-
-.chalkEq__line {
-  display: block;
-  line-height: 1.25;
-}
-
-.chalkEq b {
-  font-style: normal;
-  font-weight: 500;
-}
-
-.chalkEq__big {
-  display: inline-block;
-  margin: 0 0.06em;
-  font-size: 1.55em;
-  line-height: 0;
-  vertical-align: -0.3em;
-}
-
-/* A TeX-style radical: the surd is drawn to the full height of the radicand
-   and its last stroke runs into the rule over it, which clears any
-   superscript underneath by a small gap. */
-.chalkRoot {
-  position: relative;
-  display: inline-block;
-  margin-left: 0.06em;
-  /* a hair short of the sign's width, so the rule tucks under its top end */
-  padding-left: 0.72em;
-  line-height: 0;
-}
-
-.chalkRoot__sign {
-  position: absolute;
-  top: 0;
-  bottom: -0.06em;
-  left: 0;
-  width: 0.75em;
-  overflow: visible;
-}
-
-.chalkRoot__sign path {
-  fill: currentColor;
-}
-
-.chalkRoot__body {
-  display: inline-block;
-  padding: 0.1em 0.08em 0 0.06em;
-  line-height: 1.15;
-  border-top: 0.055em solid currentColor;
-}
-
-.chalkHat {
-  position: relative;
-  display: inline-block;
-}
-
-/* nudged right of centre to follow the italic slant */
-.chalkHat::after {
-  position: absolute;
-  top: 0.02em;
-  left: 50%;
-  content: "ˆ";
-  transform: translateX(-38%);
-}
-
-/* sizes and shifts after TeX: scripts at 70% (50% nested), raised about
-   0.36em and lowered about 0.18em of the base size */
-.chalkEq sub,
-.chalkEq sup {
-  position: relative;
-  font-size: 0.7em;
-  font-style: italic;
-  line-height: 0;
-  vertical-align: baseline;
-}
-
-/* offsets via top rather than vertical-align, so they replace Tailwind's
-   preflight shift instead of adding to it */
-.chalkEq sub {
-  top: 0.26em;
-  bottom: auto;
-  margin-left: -0.02em;
-}
-
-.chalkEq sup {
-  top: -0.52em;
-  margin-left: 0.05em;
-}
-
-.chalkEq sup sup,
-.chalkEq sup sub {
-  font-size: 0.72em;
 }
 
 .chalkboard__welcome {
