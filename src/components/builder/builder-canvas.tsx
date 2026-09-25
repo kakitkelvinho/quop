@@ -642,8 +642,6 @@ export type BuilderCanvasProps = {
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onCanvasReady: (canvas: HTMLCanvasElement) => void;
-  /** a part is armed in the palette, waiting to be dropped */
-  placing: boolean;
 };
 
 function CanvasHandle({
@@ -672,7 +670,6 @@ export default function BuilderCanvas({
   view,
   fitToken,
   dragging,
-  placing,
   onSurfaceClick,
   onSurfaceDrag,
   onComponentPointerDown,
@@ -713,10 +710,10 @@ export default function BuilderCanvas({
         onSurfaceDrag={onSurfaceDrag}
       />
 
-      {/* with no table drawn, the grid is a working aid, not scenery: it shows
-          only while a part is being placed or dragged, follows the view, and
+      {/* with no table drawn, the grid is the one sign of the breadboard: it
+          shows while the toolbar's grid toggle is on, follows the view, and
           fades out away from it */}
-      {showGrid && (placing || dragging) ? (
+      {showGrid ? (
         <Grid
           cellSize={GRID_CELL_MM}
           cellThickness={0.8}

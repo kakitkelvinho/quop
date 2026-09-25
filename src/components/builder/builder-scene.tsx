@@ -75,7 +75,7 @@ export default function BuilderScene() {
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [showPosts, setShowPosts] = useState(true);
   const [view, setView] = useState<CameraView>("iso");
   const [fitToken, setFitToken] = useState(0);
@@ -443,7 +443,6 @@ export default function BuilderScene() {
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={setHoveredId}
           onCanvasReady={handleCanvasReady}
-          placing={placingType !== null}
         />
       </div>
 

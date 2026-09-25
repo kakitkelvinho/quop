@@ -882,17 +882,47 @@ function modeProfile(length: number, radius: number): Vector2[] {
   return points;
 }
 
-/** Two facing mirrors along local x, floating, with the mode standing between. */
+/**
+ * A cavity mirror, revolved: flat back, concave face. The cavity is drawn
+ * concentric, so each face's radius is half the cavity length and its centre
+ * of curvature sits on the other mirror's side of the waist. That is clamped
+ * to keep the dip visible: below a 44 mm cavity a 1-inch mirror would be
+ * deeper than it is thick, and past ~110 mm the sag drops under 1.5 mm.
+ */
+const CAVITY_MIRROR_THICKNESS = 7;
+const CAVITY_SAG_RANGE_MM: [number, number] = [1.5, 4];
+
+function cavityMirrorProfile(length: number): Vector2[] {
+  const a = OPTIC_D / 2;
+  const radiusFor = (sag: number) => (a * a + sag * sag) / (2 * sag);
+  const [minSag, maxSag] = CAVITY_SAG_RANGE_MM;
+  const radius = clamp(length / 2, [radiusFor(maxSag), radiusFor(minSag)]);
+  const sag = radius - Math.sqrt(radius * radius - a * a);
+  const half = CAVITY_MIRROR_THICKNESS / 2;
+  const steps = 16;
+  const face = Array.from({ length: steps + 1 }, (_, index) => {
+    const r = a * (1 - index / steps);
+    const depth = sag - (radius - Math.sqrt(radius * radius - r * r));
+    return new Vector2(r, half - depth);
+  });
+  // back (bottom) out to the rim, up the edge, then the face in to the axis:
+  // the lathe's normals come out pointing outward
+  return [new Vector2(0, -half), new Vector2(a, -half), ...face];
+}
+
+/** Two facing concave mirrors along local x, floating, with the mode between. */
 function Cavity({ color, axis, length }: ModelProps & { length: number }) {
   const span = clamp(length, CAVITY_LENGTH_RANGE_MM);
   const halo = useMemo(() => modeProfile(span, 1), [span]);
   const core = useMemo(() => modeProfile(span, 0.45), [span]);
+  const mirror = useMemo(() => cavityMirrorProfile(span), [span]);
   return (
     <group>
       {[-1, 1].map((side) => (
         <group key={side} position={[(side * span) / 2, axis, 0]}>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 6, 36]} />
+          {/* the concave face turned in, toward the waist */}
+          <mesh rotation={[0, 0, (side * Math.PI) / 2]}>
+            <latheGeometry args={[mirror, 48]} />
             <meshStandardMaterial
               color="#e8eef5"
               roughness={0.05}

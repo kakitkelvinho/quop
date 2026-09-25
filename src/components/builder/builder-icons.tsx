@@ -21,12 +21,14 @@ const ICONS = {
   ),
   select: <path d="m5 3 14 7-6 2-2 6-6-15Z" />,
   add: <path d="M12 5v14M5 12h14" />,
+  // a laser spot: a starburst of rays round a bright dot, the beam coming in
+  // on the diagonal where the lower-left ray would be
   beam: (
     <>
-      <circle cx="5" cy="17" r="2" />
-      <circle cx="12" cy="7" r="2" />
-      <circle cx="19" cy="15" r="2" />
-      <path d="m6.2 15.4 4.6-6.8M13.4 8.4l4.2 5.2" />
+      <circle cx="14" cy="10" r="2" fill="currentColor" />
+      <path d="M17.5 10H21M14 13.5V17M10.5 10H7M14 6.5V3" />
+      <path d="m16.5 12.5 1.4 1.4M11.5 7.5l-1.4-1.4M16.5 7.5l1.4-1.4" />
+      <path d="M3 21l8.5-8.5" />
     </>
   ),
   iso: (
@@ -49,11 +51,13 @@ const ICONS = {
       <circle cx="7.5" cy="8.5" r="1.2" />
     </>
   ),
-  // a part on a post, standing on its base
+  // a fluted classical column: abacus and echinus, three flutes, base and plinth
   posts: (
     <>
-      <rect x="7" y="3" width="10" height="7" rx="1.5" />
-      <path d="M12 10v8M7 21h10" />
+      <path d="M4 4h16" />
+      <path d="M6 4.5c0 1.4.9 2 2 2h8c1.1 0 2-.6 2-2" />
+      <path d="M7.5 6.5v11M12 6.5v11M16.5 6.5v11" />
+      <path d="M6.5 17.5h11M4.5 20.5h15" />
     </>
   ),
   theme: (
