@@ -779,16 +779,6 @@ function PaulTrap({ palette, axis }: ModelProps) {
           />
         </mesh>
       ))}
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`holder${side}`}
-          geometry={TRAP_HOLDER_GEOMETRY}
-          position={[0, axis + side * holderY + (side > 0 ? 0 : 3), 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-        >
-          <Enamel color={CERAMIC} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -814,7 +804,6 @@ function modeProfile(length: number, radius: number): Vector2[] {
 
 /** Two facing mirrors along local x, floating, with the mode standing between. */
 function Cavity({ color, axis, length }: ModelProps & { length: number }) {
-  const mount = color ?? DEFAULT_MOUNT_COLOR;
   const span = clamp(length, CAVITY_LENGTH_RANGE_MM);
   const halo = useMemo(() => modeProfile(span, 1), [span]);
   const core = useMemo(() => modeProfile(span, 0.45), [span]);
@@ -829,13 +818,6 @@ function Cavity({ color, axis, length }: ModelProps & { length: number }) {
               roughness={0.05}
               metalness={0.95}
             />
-          </mesh>
-          <mesh
-            geometry={MIRROR_RING_GEOMETRY}
-            position={[-side * 4, 0, 0]}
-            rotation={[0, (side * Math.PI) / 2, 0]}
-          >
-            <Anodised color={mount} />
           </mesh>
         </group>
       ))}
