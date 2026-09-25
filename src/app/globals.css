@@ -2791,24 +2791,11 @@ html[data-theme="dark"] .builderOrderBadge {
   max-width: 30rem;
 }
 
-.chapter__eyebrow {
-  display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.chapter__eyebrow span {
-  color: var(--accent);
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-}
-
 .chapter__status {
   padding: 0.1rem 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
   color: var(--accent);
   font-style: normal;
   letter-spacing: 0.06em;
