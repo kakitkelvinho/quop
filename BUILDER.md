@@ -58,8 +58,9 @@ still be read at a glance. This is a user-facing convention, not a design-system
 colour — see `DESIGN.md` on keeping the section wayfinding colours out of it.
 
 **Real hardware where it can be seen, schematic where it can't.** Mounts
-follow the lab's own catalogues: LIOP-TEC for most parts, Radiant Dyes for the
-open-back MARS mirror mount and the rotation mount a waveplate drops into.
+follow the lab's own catalogues: LIOP-TEC for most parts (the mirror mount is
+drawn from the lab's own LIOP-TEC kinematic mount), Radiant Dyes for the
+rotation mount a waveplate drops into.
 Everything on a post stands on one kind of post, a 1-inch pedestal pillar;
 a lens stands on a slim rod instead, because a holder would hide the glass.
 Parts too small to see at true scale (the sample slab, the Paul trap, a

@@ -14,7 +14,13 @@ import {
   type Group,
   type Side,
 } from "three";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
@@ -49,6 +55,13 @@ const MODE_COLOR = "#ff5a36";
 /** `axis` is the component's height: the model draws its optical centre there. */
 type ModelProps = { palette: ScenePalette; color?: string; axis: number };
 
+/**
+ * Whether posts are drawn: the view's toggle, read by every post, riser and
+ * post adapter. A context rather than a prop so the models don't each thread
+ * it through to their `Pillar`.
+ */
+const PostsVisible = createContext(true);
+
 /** Glow and the parts inside a host must not catch the pointer. */
 const NO_RAYCAST = () => null;
 
@@ -62,16 +75,15 @@ const NO_RAYCAST = () => null;
  * rounded-square anodised plates roughly twice the optic across, a bored front
  * plate, and 170-TPI fine-thread adjusters standing proud of the back plate.
  * Dimensions below follow the SR100 (1 inch optic) sample drawing: 49 mm
- * plate, 25.4 mm clear bore. The mirror mount and the rotation mount follow
- * Radiant Dyes instead (the open-back MARS mount, their rotation mounts), and
- * everything on a post stands on a 1-inch pedestal pillar.
+ * plate, 25.4 mm clear bore. The mirror mount is drawn from the lab's own
+ * LIOP-TEC kinematic mount (photographed on the bench); the rotation mount
+ * follows Radiant Dyes. Everything on a post stands on a pedestal pillar.
  */
 
 /** Nominal optic size on this bench, mm — everything is drawn around 1 inch. */
 const OPTIC_D = 25.4;
-/** SR100 plate footprint, mm. Roughly 2x the optic, with soft corners. */
+/** SR100 plate footprint, mm. Roughly 2x the optic. */
 const PLATE = 49;
-const PLATE_CORNER = 6;
 
 // ---------------------------------------------------------------------------
 // Shared hardware
@@ -110,44 +122,6 @@ function boredPlate(size: number, corner: number, bore: number, depth: number) {
 /** Filter holder: smaller plate, square window cut by a generous bore. */
 const FILTER_PLATE_GEOMETRY = boredPlate(38, 5, 22, 6);
 
-/**
- * The MARS front plate: the bore opens out into a notch over its top quarter,
- * so the plate holds the mirror round only three quarters of its rim.
- */
-function openBorePlate(
-  size: number,
-  corner: number,
-  bore: number,
-  depth: number,
-) {
-  const half = size / 2;
-  const r = bore / 2;
-  const outer = r + 7;
-  const shape = new Shape();
-  shape.moveTo(-half + corner, -half);
-  shape.lineTo(half - corner, -half);
-  shape.quadraticCurveTo(half, -half, half, -half + corner);
-  shape.lineTo(half, half - corner);
-  shape.quadraticCurveTo(half, half, half - corner, half);
-  shape.lineTo(-half + corner, half);
-  shape.quadraticCurveTo(-half, half, -half, half - corner);
-  shape.lineTo(-half, -half + corner);
-  shape.quadraticCurveTo(-half, -half, -half + corner, -half);
-  const start = Math.PI / 4;
-  const end = (3 * Math.PI) / 4;
-  const hole = new Path();
-  hole.absarc(0, 0, r, end, start + 2 * Math.PI, false);
-  hole.lineTo(outer * Math.cos(start), outer * Math.sin(start));
-  hole.absarc(0, 0, outer, start, end, false);
-  hole.closePath();
-  shape.holes.push(hole);
-  return new ExtrudeGeometry(shape, {
-    depth,
-    bevelEnabled: false,
-    curveSegments: 32,
-  });
-}
-
 /** A flat ring, extruded along +z: mount bodies, dials, trap holders. */
 function annulus(outerRadius: number, innerRadius: number, depth: number) {
   const shape = new Shape();
@@ -162,9 +136,6 @@ function annulus(outerRadius: number, innerRadius: number, depth: number) {
   });
 }
 
-const MARS_FRONT_GEOMETRY = openBorePlate(PLATE, PLATE_CORNER, OPTIC_D, 8);
-/** The open back: a frame with a window behind the mirror. */
-const MARS_BACK_GEOMETRY = boredPlate(PLATE, PLATE_CORNER, 30, 10);
 const ROTATION_BODY_GEOMETRY = annulus(24, OPTIC_D / 2 + 0.6, 10);
 const ROTATION_DIAL_GEOMETRY = annulus(21, OPTIC_D / 2 + 1.2, 3);
 const TRAP_HOLDER_GEOMETRY = annulus(15, 5, 3);
@@ -270,49 +241,23 @@ function Hardware({ palette }: { palette: ScenePalette }) {
 }
 
 /**
- * A 170-TPI fine-thread adjuster: knurled head standing proud of the back
- * plate on a slim shaft. These are the tell that a mount is kinematic.
+ * A pedestal pillar: a flanged base clamped to the breadboard and a plain
+ * pillar up to `top`, in the post grey rather than the body enamel: a thin
+ * stroke needs more contrast than a plate. Drawn at about 3/4 of a real
+ * 1-inch pillar, so the posts read as strokes under the parts rather than
+ * columns as wide as them. Raising a component lengthens the pillar only; the
+ * base never changes. The clamping fork and tapped hole are left out.
  */
-function Adjuster({
-  palette,
-  position,
-}: {
-  palette: ScenePalette;
-  position: [number, number, number];
-}) {
-  return (
-    <group position={position}>
-      <mesh rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[2.2, 2.2, 10, 12]} />
-        <Stainless palette={palette} />
-      </mesh>
-      <mesh position={[-7, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[4.6, 4.6, 6, 18]} />
-        <meshStandardMaterial
-          color={palette.metal}
-          roughness={0.55}
-          metalness={0.8}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-/**
- * A 1-inch pedestal pillar: a flanged base clamped to the breadboard and a
- * plain pillar up to `top`, in the post grey rather than the body enamel: a
- * thin stroke needs more contrast than a plate. Raising a component lengthens
- * the pillar only; the base never changes. The clamping fork and tapped hole are left out.
- */
-const PILLAR_RADIUS = 12.7;
+const PILLAR_RADIUS = 9;
 const PILLAR_BASE_HEIGHT = 6;
 
 function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
   const length = Math.max(1, top - PILLAR_BASE_HEIGHT);
+  if (!useContext(PostsVisible)) return null;
   return (
     <group>
       <mesh position={[0, PILLAR_BASE_HEIGHT / 2, 0]}>
-        <cylinderGeometry args={[18, 19.5, PILLAR_BASE_HEIGHT, 36]} />
+        <cylinderGeometry args={[13, 14.5, PILLAR_BASE_HEIGHT, 36]} />
         <Enamel color={palette.post} />
       </mesh>
       <mesh position={[0, PILLAR_BASE_HEIGHT + length / 2, 0]}>
@@ -328,6 +273,7 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
  * hide the glass, and the rod still makes the height read as a post.
  */
 function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
+  if (!useContext(PostsVisible)) return null;
   return (
     <group>
       <mesh position={[0, 2.5, 0]}>
@@ -352,18 +298,19 @@ function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
 // ---------------------------------------------------------------------------
 
 function LaserSource({ palette, axis }: ModelProps) {
+  const posts = useContext(PostsVisible);
   const feet = Math.max(1, axis - 18);
   return (
     <group>
       {/* head sits on two feet; raising the laser lengthens them, like risers */}
-      <mesh position={[-24, feet / 2, 0]}>
-        <boxGeometry args={[22, feet, 34]} />
-        <Enamel color={palette.post} />
-      </mesh>
-      <mesh position={[26, feet / 2, 0]}>
-        <boxGeometry args={[22, feet, 34]} />
-        <Enamel color={palette.post} />
-      </mesh>
+      {posts
+        ? [-24, 26].map((x) => (
+            <mesh key={x} position={[x, feet / 2, 0]}>
+              <boxGeometry args={[22, feet, 34]} />
+              <Enamel color={palette.post} />
+            </mesh>
+          ))
+        : null}
       <RoundedBox
         args={[96, 40, 40]}
         radius={0.8}
@@ -396,43 +343,169 @@ function LaserSource({ palette, axis }: ModelProps) {
 }
 
 /**
- * A Radiant Dyes MARS fine-adjustment mount: open at the back, and the front
- * plate holds the mirror round three quarters of its rim.
+ * Front plate: black anodised, 49 mm square with two opposite corners cut
+ * off, and a plain 1-inch bore the mirror sits in.
+ */
+function chamferedPlate(size: number, chamfer: number, bore: number, depth: number) {
+  const half = size / 2;
+  const r = 2;
+  const shape = new Shape();
+  shape.moveTo(-half + chamfer, -half);
+  shape.lineTo(half - r, -half);
+  shape.quadraticCurveTo(half, -half, half, -half + r);
+  shape.lineTo(half, half - chamfer);
+  shape.lineTo(half - chamfer, half);
+  shape.lineTo(-half + r, half);
+  shape.quadraticCurveTo(-half, half, -half, half - r);
+  shape.lineTo(-half, -half + chamfer);
+  shape.closePath();
+  const hole = new Path();
+  hole.absarc(0, 0, bore / 2, 0, Math.PI * 2, true);
+  shape.holes.push(hole);
+  return new ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: 0.8,
+    bevelSize: 0.8,
+    bevelSegments: 2,
+    curveSegments: 32,
+  });
+}
+
+/** Back frame: an L of anodised aluminium down one side and along the bottom. */
+function lFrame(size: number, arm: number, depth: number) {
+  const half = size / 2;
+  const shape = new Shape();
+  shape.moveTo(-half, -half);
+  shape.lineTo(half, -half);
+  shape.lineTo(half, half);
+  shape.lineTo(half - arm, half);
+  shape.lineTo(half - arm, -half + arm);
+  shape.lineTo(-half, -half + arm);
+  shape.closePath();
+  return new ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: LIOP_FRAME_BEVEL,
+    bevelSize: LIOP_FRAME_BEVEL,
+    bevelSegments: 3,
+  });
+}
+
+const LIOP_FRONT_GEOMETRY = chamferedPlate(PLATE - 2, 7, OPTIC_D + 1, 7);
+const LIOP_FRAME_ARM = 14;
+const LIOP_FRAME_HALF = (PLATE - 3) / 2;
+const LIOP_FRAME_BEVEL = 1.4;
+const LIOP_FRAME_GEOMETRY = lFrame(PLATE - 3, LIOP_FRAME_ARM, 11);
+const BLACK_ANODISE = "#1b1c1f";
+const MIRROR_BOW = 60;
+const MIRROR_CAP = Math.asin((OPTIC_D / 2 - 1.1) / MIRROR_BOW);
+
+/** A black knurled knob on a stainless shaft, pointing out the back (-x). */
+function KnurledKnob({
+  palette,
+  position,
+}: {
+  palette: ScenePalette;
+  position: [number, number, number];
+}) {
+  return (
+    <group position={position}>
+      <mesh position={[-3, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[2.4, 2.4, 6, 12]} />
+        <Stainless palette={palette} />
+      </mesh>
+      {/* 28 flat-shaded facets read as knurling from bench distance */}
+      <mesh position={[-10, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[6, 6, 8, 28]} />
+        <meshStandardMaterial
+          color={BLACK_ANODISE}
+          roughness={0.55}
+          metalness={0.3}
+          flatShading
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * The lab's LIOP-TEC kinematic mirror mount, as photographed on the bench: a
+ * black front plate holding the mirror, an L-shaped frame behind it in the
+ * mount colour, and two black knurled adjusters out the back.
  */
 function MirrorMount({ palette, color, axis }: ModelProps) {
-  const mount = color ?? DEFAULT_MOUNT_COLOR;
-  const corner = PLATE / 2 - 8;
+  const frame = color ?? DEFAULT_MOUNT_COLOR;
+  const corner = LIOP_FRAME_HALF - LIOP_FRAME_ARM / 2;
   return (
     <group>
-      <Pillar palette={palette} top={axis - PLATE / 2 + 4} />
+      {/* flush with the underside of the frame, not sunk into it */}
+      <Pillar palette={palette} top={axis - LIOP_FRAME_HALF - LIOP_FRAME_BEVEL} />
+      {/* front plate, x = +4 .. -3 */}
       <mesh
-        geometry={MARS_FRONT_GEOMETRY}
+        geometry={LIOP_FRONT_GEOMETRY}
         position={[4, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
-        <Anodised color={mount} />
+        <meshStandardMaterial
+          color={BLACK_ANODISE}
+          roughness={0.5}
+          metalness={0.35}
+        />
       </mesh>
+      {/* the L frame behind it, in the mount colour, satin anodised */}
       <mesh
-        geometry={MARS_BACK_GEOMETRY}
-        position={[-8, axis, 0]}
+        geometry={LIOP_FRAME_GEOMETRY}
+        position={[-5, axis, 0]}
         rotation={[0, -Math.PI / 2, 0]}
       >
-        <Anodised color={mount} />
+        <meshStandardMaterial color={frame} roughness={0.36} metalness={0.4} />
       </mesh>
-      <mesh position={[-18, axis + corner, -corner]}>
-        <sphereGeometry args={[3.2, 14, 12]} />
-        <Stainless palette={palette} />
-      </mesh>
-      <Adjuster palette={palette} position={[-22, axis - corner, -corner]} />
-      <Adjuster palette={palette} position={[-22, axis + corner, corner]} />
-      {/* the mirror, seen from behind through the open back */}
-      <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 6, 36]} />
+      {/* the two adjusters: top of the upright arm, far end of the bottom arm */}
+      <KnurledKnob palette={palette} position={[-17, axis + corner, corner]} />
+      <KnurledKnob palette={palette} position={[-17, axis - corner, -corner]} />
+      {/* the mirror: a green-edged substrate in the bore, and a silvered face
+          bowed very slightly (R = 60 mm) so it catches the ring lights across
+          its width instead of reflecting one flat grey */}
+      <mesh position={[0.2, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 5, 48]} />
+        {/* side and front: the green substrate; back: plain ground glass */}
+        {[0, 1].map((slot) => (
+          <meshStandardMaterial
+            key={slot}
+            attach={`material-${slot}`}
+            color="#9fe6b4"
+            emissive="#3fbf6a"
+            emissiveIntensity={0.6}
+            roughness={0.15}
+            metalness={0}
+          />
+        ))}
         <meshStandardMaterial
-          color="#e8eef5"
-          roughness={0.05}
-          metalness={0.95}
+          attach="material-2"
+          color="#c9ced6"
+          roughness={0.6}
+          metalness={0.2}
         />
+      </mesh>
+      <mesh
+        position={[4 - MIRROR_BOW, axis, 0]}
+        rotation={[0, 0, -Math.PI / 2]}
+      >
+        <sphereGeometry
+          args={[MIRROR_BOW, 48, 8, 0, Math.PI * 2, 0, MIRROR_CAP]}
+        />
+        <meshStandardMaterial
+          color="#ffffff"
+          roughness={0.04}
+          metalness={1}
+          envMapIntensity={3.2}
+        />
+      </mesh>
+      {/* the substrate's edge, lit through the glass: a thin green ring */}
+      <mesh position={[3.6, axis, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <ringGeometry args={[OPTIC_D / 2 - 1.1, OPTIC_D / 2, 48]} />
+        <meshBasicMaterial color="#7de8a0" toneMapped={false} />
       </mesh>
     </group>
   );
@@ -537,13 +610,16 @@ const DIAL_TICKS = Array.from({ length: 36 }, (_, index) => ({
 function Waveplate({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const tickColor = palette.mode === "dark" ? "#e9e4d8" : "#1b1f26";
+  const posts = useContext(PostsVisible);
   return (
     <group>
       <Pillar palette={palette} top={axis - 30} />
-      <mesh position={[0, axis - 26, 0]}>
-        <boxGeometry args={[12, 8, 20]} />
-        <Anodised color={mount} />
-      </mesh>
+      {posts ? (
+        <mesh position={[0, axis - 26, 0]}>
+          <boxGeometry args={[12, 8, 20]} />
+          <Anodised color={mount} />
+        </mesh>
+      ) : null}
       <mesh
         geometry={ROTATION_BODY_GEOMETRY}
         position={[5, axis, 0]}
@@ -624,6 +700,7 @@ const IRIS_LEVER_TILT = Math.PI / 6;
 
 function Iris({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
+  const posts = useContext(PostsVisible);
   return (
     <group>
       <Pillar palette={palette} top={axis - 21} />
@@ -656,10 +733,13 @@ function Iris({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[1.5, 1.5, IRIS_LEVER_LENGTH, 16]} />
         <Stainless palette={palette} />
       </mesh>
-      <mesh position={[0, axis - 19, 0]}>
-        <boxGeometry args={[14, 8, 14]} />
-        <Anodised color={mount} />
-      </mesh>
+      {/* the post adapter under the ring */}
+      {posts ? (
+        <mesh position={[0, axis - 19, 0]}>
+          <boxGeometry args={[14, 8, 14]} />
+          <Anodised color={mount} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
@@ -779,16 +859,6 @@ function PaulTrap({ palette, axis }: ModelProps) {
           />
         </mesh>
       ))}
-      {[-1, 1].map((side) => (
-        <mesh
-          key={`holder${side}`}
-          geometry={TRAP_HOLDER_GEOMETRY}
-          position={[0, axis + side * holderY + (side > 0 ? 0 : 3), 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-        >
-          <Enamel color={CERAMIC} />
-        </mesh>
-      ))}
     </group>
   );
 }
@@ -812,30 +882,52 @@ function modeProfile(length: number, radius: number): Vector2[] {
   return points;
 }
 
-/** Two facing mirrors along local x, floating, with the mode standing between. */
+/**
+ * A cavity mirror, revolved: flat back, concave face. The cavity is drawn
+ * concentric, so each face's radius is half the cavity length and its centre
+ * of curvature sits on the other mirror's side of the waist. That is clamped
+ * to keep the dip visible: below a 44 mm cavity a 1-inch mirror would be
+ * deeper than it is thick, and past ~110 mm the sag drops under 1.5 mm.
+ */
+const CAVITY_MIRROR_THICKNESS = 7;
+const CAVITY_SAG_RANGE_MM: [number, number] = [1.5, 4];
+
+function cavityMirrorProfile(length: number): Vector2[] {
+  const a = OPTIC_D / 2;
+  const radiusFor = (sag: number) => (a * a + sag * sag) / (2 * sag);
+  const [minSag, maxSag] = CAVITY_SAG_RANGE_MM;
+  const radius = clamp(length / 2, [radiusFor(maxSag), radiusFor(minSag)]);
+  const sag = radius - Math.sqrt(radius * radius - a * a);
+  const half = CAVITY_MIRROR_THICKNESS / 2;
+  const steps = 16;
+  const face = Array.from({ length: steps + 1 }, (_, index) => {
+    const r = a * (1 - index / steps);
+    const depth = sag - (radius - Math.sqrt(radius * radius - r * r));
+    return new Vector2(r, half - depth);
+  });
+  // back (bottom) out to the rim, up the edge, then the face in to the axis:
+  // the lathe's normals come out pointing outward
+  return [new Vector2(0, -half), new Vector2(a, -half), ...face];
+}
+
+/** Two facing concave mirrors along local x, floating, with the mode between. */
 function Cavity({ color, axis, length }: ModelProps & { length: number }) {
-  const mount = color ?? DEFAULT_MOUNT_COLOR;
   const span = clamp(length, CAVITY_LENGTH_RANGE_MM);
   const halo = useMemo(() => modeProfile(span, 1), [span]);
   const core = useMemo(() => modeProfile(span, 0.45), [span]);
+  const mirror = useMemo(() => cavityMirrorProfile(span), [span]);
   return (
     <group>
       {[-1, 1].map((side) => (
         <group key={side} position={[(side * span) / 2, axis, 0]}>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[OPTIC_D / 2, OPTIC_D / 2, 6, 36]} />
+          {/* the concave face turned in, toward the waist */}
+          <mesh rotation={[0, 0, (side * Math.PI) / 2]}>
+            <latheGeometry args={[mirror, 48]} />
             <meshStandardMaterial
               color="#e8eef5"
               roughness={0.05}
               metalness={0.95}
             />
-          </mesh>
-          <mesh
-            geometry={MIRROR_RING_GEOMETRY}
-            position={[-side * 4, 0, 0]}
-            rotation={[0, (side * Math.PI) / 2, 0]}
-          >
-            <Anodised color={mount} />
           </mesh>
         </group>
       ))}
@@ -1026,6 +1118,8 @@ export type ComponentMeshProps = {
   selected: boolean;
   hovered: boolean;
   showLabel: boolean;
+  /** draw posts, risers and post adapters (the view's posts toggle) */
+  showPosts: boolean;
   /** 1-based position in the beam currently being drawn, if any */
   beamOrder?: number;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
@@ -1039,6 +1133,7 @@ export function ComponentMesh({
   selected,
   hovered,
   showLabel,
+  showPosts,
   beamOrder,
   onPointerDown,
   onPointerOver,
@@ -1065,9 +1160,10 @@ export function ComponentMesh({
       object.castShadow = solid;
       object.receiveShadow = solid;
     });
-  }, [component]);
+  }, [component, showPosts]);
 
   return (
+    <PostsVisible.Provider value={showPosts}>
     <group
       ref={group}
       // the group stands on the table; the model reaches up to its height
@@ -1143,5 +1239,6 @@ export function ComponentMesh({
         </Html>
       ) : null}
     </group>
+    </PostsVisible.Provider>
   );
 }

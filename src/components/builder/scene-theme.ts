@@ -32,16 +32,15 @@ export type ScenePalette = {
   /** enamel instrument bodies */
   body: string;
   /**
-   * posts, pedestals and risers: one mid-grey (L* ~62) in both themes, below
-   * the light sweep and above the dark one, so every post reads as a stroke
-   * (see SHADING.md, "Posts are grey")
+   * posts, pedestals and risers: a mid-grey below the light sweep and above
+   * the dark one, so every post reads as a stroke. Night runs a step darker,
+   * because the key and rim lights push a post there up toward the white
+   * bodies (see SHADING.md, "Posts are grey")
    */
   post: string;
   metal: string;
 };
 
-/** the same in both themes — see `ScenePalette.post` */
-const POST_GREY = "#9a9ea3";
 
 export const LIGHT_PALETTE: ScenePalette = {
   mode: "light",
@@ -62,7 +61,7 @@ export const LIGHT_PALETTE: ScenePalette = {
   occlusion: 3.2,
   vignette: 0.3,
   body: "#fbfbf8",
-  post: POST_GREY,
+  post: "#8d9095",
   metal: "#d8dce2",
 };
 
@@ -82,7 +81,7 @@ export const DARK_PALETTE: ScenePalette = {
   occlusion: 3,
   vignette: 0.55,
   body: "#ecebe7",
-  post: POST_GREY,
+  post: "#6f7378",
   metal: "#c9ced6",
 };
 

@@ -31,6 +31,7 @@ export type BuilderHudProps = {
   beamColor: string;
   showLabels: boolean;
   showGrid: boolean;
+  showPosts: boolean;
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
@@ -56,6 +57,7 @@ export type BuilderHudProps = {
   onDeleteBeam: (id: string) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
+  onTogglePosts: () => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -245,18 +247,20 @@ export default function BuilderHud(props: BuilderHudProps) {
           active={trayOpen}
           onClick={props.onToggleTray}
         />
+        <IconButton
+          icon="beam"
+          label="Draw a beam"
+          active={beamMode}
+          onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
+          disabled={components.length < 2}
+        />
       </div>
 
       <div className="builderHud__center">
         <div className="builderIsland" role="toolbar" aria-label="Tools">
           <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
-          <IconButton
-            icon="beam"
-            label="Draw a beam"
-            active={beamMode}
-            onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
-            disabled={components.length < 2}
-          />
+          <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
+          <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
           <span className="builderIsland__sep" />
           <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
@@ -325,7 +329,6 @@ export default function BuilderHud(props: BuilderHudProps) {
         </span>
         <IconButton icon="fit" label="Fit the layout" onClick={props.onFit} />
         <span className="builderIsland__sep" />
-        <IconButton icon="grid" label="Grid while placing" active={props.showGrid} onClick={props.onToggleGrid} />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
       </div>
