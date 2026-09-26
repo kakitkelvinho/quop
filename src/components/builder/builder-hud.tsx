@@ -13,7 +13,9 @@ import {
 } from "@/components/builder/builder-inspector";
 import {
   COMPONENT_SPECS,
+  beamDisplayName,
   beamLengthMm,
+  mirrorAngleBeam,
   type Beam,
   type BuilderComponent,
   type ComponentType,
@@ -202,6 +204,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       <ComponentInspector
         component={selected}
         components={components}
+        angleBeam={mirrorAngleBeam(beams, selected)}
         onUpdate={props.onUpdateSelected}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
@@ -324,7 +327,7 @@ export default function BuilderHud(props: BuilderHudProps) {
               onClick={() => props.onSelectBeam(beam.id)}
             >
               <span className="builderBeamChip__dot" style={{ background: beam.color }} />
-              <span className="builderBeamChip__name">{beam.label ?? `${beam.path.length}-stop beam`}</span>
+              <span className="builderBeamChip__name">{beamDisplayName(beam)}</span>
               <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
             </button>
           ))}

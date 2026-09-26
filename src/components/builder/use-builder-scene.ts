@@ -17,6 +17,7 @@ import {
   defaultHeight,
   parseScene,
   settleHosts,
+  settleMirrors,
   snapToGrid,
   type Beam,
   type BuilderComponent,
@@ -31,11 +32,14 @@ const HISTORY_LIMIT = 60;
 
 type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 
-/** Every edit ends with hosted particles back at their host's centre. */
+/**
+ * Every edit ends with hosted particles back at their host's centre, then
+ * mirrors in the middle of a beam turned to reflect it.
+ */
 function settled(mutate: Mutation): Mutation {
   return (scene) => {
     const next = mutate(scene);
-    return next === scene ? scene : settleHosts(next);
+    return next === scene ? scene : settleMirrors(settleHosts(next));
   };
 }
 

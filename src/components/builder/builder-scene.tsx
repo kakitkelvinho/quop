@@ -25,6 +25,7 @@ import {
   componentById,
   componentDisplayName,
   findHost,
+  mirrorAngleBeam,
   parseScene,
   serializeScene,
   snapToGrid,
@@ -332,6 +333,18 @@ export default function BuilderScene() {
 
   // ---- keyboard ------------------------------------------------------------
 
+  const rotateSelected = useCallback(
+    (direction: 1 | -1) => {
+      if (!selectedId) return;
+      const component = componentById(sceneRef.current.components, selectedId);
+      // a mirror in the middle of a beam takes its angle from the beam
+      if (!component || mirrorAngleBeam(sceneRef.current.beams, component)) return;
+      api.rotateComponent(selectedId, direction);
+    },
+    [api, selectedId],
+  );
+
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
@@ -390,7 +403,7 @@ export default function BuilderScene() {
           break;
         case "r":
         case "R":
-          api.rotateComponent(selectedId, event.shiftKey ? -1 : 1);
+          rotateSelected(event.shiftKey ? -1 : 1);
           break;
         case "d":
         case "D": {
@@ -406,7 +419,7 @@ export default function BuilderScene() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [api, beamMode, cancelBeam, finishBeam, placingType, selectedId, trayOpen]);
+  }, [api, beamMode, cancelBeam, finishBeam, placingType, rotateSelected, selectedId, trayOpen]);
 
   const updateSelected = useCallback(
     (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => {
@@ -482,9 +495,7 @@ export default function BuilderScene() {
           setSelectedBeamId(null);
         }}
         onUpdateSelected={updateSelected}
-        onRotateSelected={(direction) =>
-          selectedId && api.rotateComponent(selectedId, direction)
-        }
+        onRotateSelected={rotateSelected}
         onDuplicateSelected={() => {
           if (!selectedId) return;
           const copyId = api.duplicateComponent(selectedId);
