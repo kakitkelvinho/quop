@@ -281,6 +281,15 @@ export default function BuilderHud(props: BuilderHudProps) {
         ) : null}
       </div>
 
+      {/* always on and faint: the Shift orbit is the one nobody finds alone.
+          It sits above the inspector, which opens below it on the right. */}
+      <p className="builderControlsHint" aria-label="Camera controls">
+        <span>
+          <kbd>⇧</kbd> drag rotate · drag pan · scroll zoom
+        </span>
+        <span className="builderControlsHint__alt">or middle / right drag to rotate</span>
+      </p>
+
       {trayOpen ? (
         <PartsPanel
           placingType={placingType}

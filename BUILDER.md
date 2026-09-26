@@ -113,10 +113,14 @@ is on screen until it is needed:
 Shortcuts live in button tooltips and in the mode badge, not in a panel of
 their own.
 
-Left-drag pans the table, right-drag orbits it and the wheel zooms; a press
-that travels more than a few pixels is a pan, not a click, so panning never
-drops a component by accident. The camera is orthographic. It orbits a full
-turn around the table but never dips below it, and Iso / Top jump straight back
+Left-drag pans the table and the wheel zooms toward the cursor; a press that
+travels more than a few pixels is a pan, not a click, so panning never drops a
+component by accident. Middle-drag, right-drag or Shift + left-drag on empty
+table orbits, CAD-style, about the point under the cursor when the drag starts
+(the part there, or else the table), so a Magic Mouse can orbit too. Shift +
+drag on a part still moves it on the fine grid. A faint hint in the top-right
+corner lists these. The camera is orthographic. It orbits a full turn as a
+turntable (up stays up) but never dips below the table, and Iso / Top jump straight back
 to the isometric or top-down view (no animation). Placing and dragging still
 work from any angle: they land on the table plane.
 

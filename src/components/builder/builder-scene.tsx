@@ -140,6 +140,8 @@ export default function BuilderScene() {
 
   const handleComponentPointerDown = useCallback(
     (id: string, event: ThreeEvent<PointerEvent>) => {
+      // middle and right drags orbit the camera, even when they start on a part
+      if (event.nativeEvent.button !== 0) return;
       if (beamMode) {
         setBeamDraft((current) =>
           current[current.length - 1] === id ? current : [...current, id],
