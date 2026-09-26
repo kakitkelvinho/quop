@@ -297,16 +297,20 @@ function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
 // Components
 // ---------------------------------------------------------------------------
 
+/** thickness of the laser's mounting plates, along the laser */
+const LASER_FOOT_MM = 6;
+
 function LaserSource({ palette, axis }: ModelProps) {
   const posts = useContext(PostsVisible);
   const feet = Math.max(1, axis - 18);
   return (
     <group>
-      {/* head sits on two feet; raising the laser lengthens them, like risers */}
+      {/* head sits on two thin plates across its width, like mounting
+          brackets; raising the laser lengthens them */}
       {posts
-        ? [-24, 26].map((x) => (
+        ? [-34, 34].map((x) => (
             <mesh key={x} position={[x, feet / 2, 0]}>
-              <boxGeometry args={[22, feet, 34]} />
+              <boxGeometry args={[LASER_FOOT_MM, feet, 40]} />
               <Enamel color={palette.post} />
             </mesh>
           ))
@@ -397,7 +401,6 @@ const LIOP_FRAME_ARM = 14;
 const LIOP_FRAME_HALF = (PLATE - 3) / 2;
 const LIOP_FRAME_BEVEL = 1.4;
 const LIOP_FRAME_GEOMETRY = lFrame(PLATE - 3, LIOP_FRAME_ARM, 11);
-const BLACK_ANODISE = "#1b1c1f";
 const MIRROR_BOW = 60;
 const MIRROR_CAP = Math.asin((OPTIC_D / 2 - 1.1) / MIRROR_BOW);
 
@@ -419,7 +422,7 @@ function KnurledKnob({
       <mesh position={[-10, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[6, 6, 8, 28]} />
         <meshStandardMaterial
-          color={BLACK_ANODISE}
+          color={palette.anodise}
           roughness={0.55}
           metalness={0.3}
           flatShading
@@ -448,7 +451,7 @@ function MirrorMount({ palette, color, axis }: ModelProps) {
         rotation={[0, -Math.PI / 2, 0]}
       >
         <meshStandardMaterial
-          color={BLACK_ANODISE}
+          color={palette.anodise}
           roughness={0.5}
           metalness={0.35}
         />
@@ -1019,15 +1022,24 @@ function Photodiode({ palette, axis }: ModelProps) {
   );
 }
 
+/**
+ * A scientific CMOS camera: a flat box, shallow along the beam, with the
+ * C-mount on the axis in the middle of the front face (-x).
+ */
+const CAMERA_DEPTH_MM = 25;
+const CAMERA_HALF_MM = 25;
+const CAMERA_FRONT_X = -9;
+
 function CameraBody({ palette, axis }: ModelProps) {
   return (
     <group>
-      <Pillar palette={palette} top={axis - 22} />
+      {/* flush with the body's underside, not sunk into it */}
+      <Pillar palette={palette} top={axis - CAMERA_HALF_MM} />
       <RoundedBox
-        args={[46, 44, 44]}
+        args={[CAMERA_DEPTH_MM, 2 * CAMERA_HALF_MM, 2 * CAMERA_HALF_MM]}
         radius={0.8}
         smoothness={3}
-        position={[14, axis, 0]}
+        position={[CAMERA_FRONT_X + CAMERA_DEPTH_MM / 2, axis, 0]}
       >
         <Enamel color={palette.body} />
       </RoundedBox>

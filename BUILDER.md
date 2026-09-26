@@ -27,7 +27,7 @@ numbers you would set on a real bench.
 **Height per component, 100 mm by default.** Every component has its own
 height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or
-lowering a part changes the length of its post (or a laser's feet); the part
+lowering a part changes the length of its post (or the plates a laser stands on); the part
 itself never scales. The lowest height is where the post runs out, or where a
 floating part meets the table; the ceiling is 300 mm. The spectrometer is the
 exception: its input port is fixed by the instrument. A beam between parts at
