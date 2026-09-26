@@ -53,8 +53,9 @@ selected beam is drawn fully opaque with a stronger halo, however faint it
 is, so clicking its row in the beams box always finds it.
 
 **Round beams.** A beam's core is drawn as a lit tube along each leg, so it
-reads as light passing through the parts rather than a flat stroke, with its
-soft halo around it.
+reads as light passing through the parts rather than a flat stroke. Its halo
+is a wider translucent tube that is densest facing you and fades to nothing at
+its edge, so the glow has depth instead of being one flat band of colour.
 
 **Arrow or no arrow, per beam.** A beam's inspector switches it between
 *Arrow* and *No arrow*. No arrow draws that beam as its soft halo alone, with

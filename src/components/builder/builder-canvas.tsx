@@ -22,13 +22,11 @@ import {
   useRef,
   type RefObject,
 } from "react";
-import { Line2 } from "three/examples/jsm/lines/Line2.js";
-import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
-import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import {
   BackSide,
   Box3,
   CanvasTexture,
+  Color,
   DirectionalLight,
   MOUSE,
   Matrix4,
@@ -40,6 +38,7 @@ import {
   Quaternion,
   Raycaster,
   SRGBColorSpace,
+  ShaderMaterial,
   TOUCH,
   Vector2,
   Vector3,
@@ -573,64 +572,54 @@ function Backdrop({ stops }: { stops: ScenePalette["backdrop"] }) {
 const UP = new Vector3(0, 1, 0);
 
 /**
- * A fat line in millimetres. Not drei's <Line>: that one disposes its
- * material whenever its points change, so every drag step threw the compiled
- * shader away and the next frame recompiled it — about a second per step.
- * Here the material lives as long as the line; only the geometry is swapped.
- *
- * A fully opaque line must not be marked `transparent`: glass (transmission)
- * only refracts opaque objects, so a transparent beam vanishes inside a cube.
+ * The halo is a wider translucent tube around the core. It is densest where
+ * its surface faces the camera and fades to nothing at the silhouette, so it
+ * reads as a round glow with depth rather than a flat band of one colour.
  */
-function BeamLine({
-  points,
-  color,
-  width,
-  opacity,
-  transparent,
-}: {
-  points: [number, number, number][];
-  color: string;
-  width: number;
-  opacity: number;
-  transparent: boolean;
-}) {
-  const size = useThree((state) => state.size);
-  const line = useMemo(() => new Line2(), []);
-  const material = useMemo(() => new LineMaterial({ worldUnits: true }), []);
-  const geometry = useMemo(() => {
-    const next = new LineGeometry();
-    next.setPositions(points.flat());
-    return next;
-  }, [points]);
-  // three objects are mutated in place; the refs are how the effects reach them
-  const ref = useRef<Line2>(null);
-  const materialRef = useRef<LineMaterial>(null);
+const HALO_VERTEX = /* glsl */ `
+  varying float vFacing;
+  void main() {
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    vec3 viewNormal = normalize(normalMatrix * normal);
+    vec3 toCamera = isOrthographic ? vec3(0.0, 0.0, 1.0) : normalize(-mvPosition.xyz);
+    vFacing = abs(dot(viewNormal, toCamera));
+    gl_Position = projectionMatrix * mvPosition;
+  }
+`;
 
-  useLayoutEffect(() => {
-    ref.current?.computeLineDistances();
-    return () => geometry.dispose();
-  }, [geometry]);
+const HALO_FRAGMENT = /* glsl */ `
+  uniform vec3 color;
+  uniform float opacity;
+  varying float vFacing;
+  void main() {
+    gl_FragColor = vec4(color, opacity * vFacing * vFacing);
+    #include <tonemapping_fragment>
+    #include <colorspace_fragment>
+  }
+`;
+
+/** One per halo mesh; every copy shares the same compiled shader program. */
+function HaloMaterial({ color, opacity }: { color: string; opacity: number }) {
+  const material = useMemo(
+    () =>
+      new ShaderMaterial({
+        uniforms: { color: { value: new Color() }, opacity: { value: 1 } },
+        vertexShader: HALO_VERTEX,
+        fragmentShader: HALO_FRAGMENT,
+        transparent: true,
+        depthWrite: false,
+      }),
+    [],
+  );
+  const tint = useMemo(() => new Color(color), [color]);
   useEffect(() => () => material.dispose(), [material]);
-  // three.js ignores a flip of `transparent` on a compiled material unless told
-  useLayoutEffect(() => {
-    if (materialRef.current) materialRef.current.needsUpdate = true;
-  }, [transparent]);
-
   return (
-    <primitive ref={ref} object={line}>
-      <primitive object={geometry} attach="geometry" />
-      <primitive
-        ref={materialRef}
-        object={material}
-        attach="material"
-        transparent={transparent}
-        depthWrite={!transparent}
-        color={color}
-        linewidth={width}
-        opacity={opacity}
-        resolution={[size.width, size.height]}
-      />
-    </primitive>
+    <primitive
+      object={material}
+      attach="material"
+      uniforms-color-value={tint}
+      uniforms-opacity-value={opacity}
+    />
   );
 }
 
@@ -639,10 +628,10 @@ function BeamLine({
  * is a faint glow; alone it has to carry the beam, so it is stronger.
  */
 const HALO = {
-  underCore: { width: 1.8, opacity: 0.14 },
-  underCoreSelected: { width: 2.4, opacity: 0.3 },
-  alone: { width: 2.6, opacity: 0.5 },
-  aloneSelected: { width: 3.6, opacity: 0.8 },
+  underCore: { width: 3, opacity: 0.35 },
+  underCoreSelected: { width: 4, opacity: 0.55 },
+  alone: { width: 2.6, opacity: 0.8 },
+  aloneSelected: { width: 3.6, opacity: 1 },
 };
 
 /**
@@ -677,6 +666,8 @@ function BeamPath({
       ? HALO.aloneSelected
       : HALO.alone;
   const radius = width / 2;
+  const haloRadius = radius * halo.width;
+  const haloMaterial = <HaloMaterial color={color} opacity={halo.opacity * alpha} />;
   const arrowRadius = Math.max(3.5, width * 1.9);
   const legs = useMemo(() => {
     const result: {
@@ -702,15 +693,8 @@ function BeamPath({
   const arrows = legs.filter((leg) => leg.length >= 40);
   const turns = points.slice(1, -1);
 
-  const flat = useMemo(
-    () =>
-      points.map(
-        (point) => [point.x, point.y, point.z] as [number, number, number],
-      ),
-    [points],
-  );
 
-  // keyed so a fade rebuilds the material; see BeamLine on `transparent`
+  // keyed so a fade rebuilds the material: three.js ignores a flip of `transparent`
   const coreMaterial = (
     <meshStandardMaterial
       key={alpha < 1 ? "faded" : "solid"}
@@ -727,13 +711,22 @@ function BeamPath({
   return (
     <group>
       {/* soft halo around a round core — a beam should glow, not just be a stroke */}
-      <BeamLine
-        points={flat}
-        color={color}
-        width={width * halo.width}
-        opacity={halo.opacity * alpha}
-        transparent
-      />
+      {legs.map((leg, index) => (
+        <mesh
+          key={`halo-${index}`}
+          position={leg.position}
+          quaternion={leg.quaternion}
+        >
+          <cylinderGeometry args={[haloRadius, haloRadius, leg.length, 20, 1, true]} />
+          {haloMaterial}
+        </mesh>
+      ))}
+      {turns.map((point, index) => (
+        <mesh key={`halo-turn-${index}`} position={point}>
+          <sphereGeometry args={[haloRadius, 20, 14]} />
+          {haloMaterial}
+        </mesh>
+      ))}
       {core
         ? legs.map((leg, index) => (
             <mesh
