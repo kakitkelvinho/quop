@@ -1100,7 +1100,6 @@ function InteractiveScatterChartInner({
   // a font picked here wins over the style's, in either style
   const [pickedFontFamily, setPickedFontFamily] = useState(plotterFontFamily);
   const fontFamily = pickedFontFamily ?? CHART_STYLE_FONTS[chartStyle];
-  const [styleControlsOpen, setStyleControlsOpen] = useState(false);
   const [pointSizeControlsOpen, setPointSizeControlsOpen] = useState(false);
   const [pointSize, setPointSize] = useState(() => {
     const firstDataset = data.datasets[0];
@@ -1162,7 +1161,6 @@ function InteractiveScatterChartInner({
   const [saveWhiteBackground, setSaveWhiteBackground] = useState(true);
   const [customizeMenuOpen, setCustomizeMenuOpen] = useState(false);
   const anyCustomizeControlOpen =
-    styleControlsOpen ||
     pointSizeControlsOpen ||
     fontControlsOpen ||
     titleControlsOpen ||
@@ -1962,6 +1960,25 @@ function InteractiveScatterChartInner({
           <CustomizeIcon />
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        {/* one click flips every chart on the page between the two looks */}
+        <button
+          aria-label={
+            isMatplotlib
+              ? "Switch all charts to the Chart.js style"
+              : "Switch all charts to the matplotlib style"
+          }
+          aria-pressed={isMatplotlib}
+          className={`interactiveChart__iconButton ${isMatplotlib ? "is-active" : ""}`}
+          onClick={() => setChartStyle(isMatplotlib ? "chartjs" : "matplotlib")}
+          title={
+            isMatplotlib
+              ? `${CHART_STYLE_LABELS.matplotlib} style (all charts)`
+              : `${CHART_STYLE_LABELS.chartjs} style (all charts)`
+          }
+          type="button"
+        >
+          <StyleIcon />
+        </button>
         <button
           aria-label={
             colorMode === "dark"
@@ -1994,15 +2011,6 @@ function InteractiveScatterChartInner({
 
       {customizeMenuOpen ? (
         <div className="interactiveChart__customizeMenu">
-          <button
-            aria-pressed={styleControlsOpen}
-            className={`interactiveChart__customizeMenuItem ${styleControlsOpen ? "is-active" : ""}`}
-            onClick={() => setStyleControlsOpen((current) => !current)}
-            type="button"
-          >
-            <StyleIcon />
-            <span>Style</span>
-          </button>
           <button
             aria-pressed={pointSizeControlsOpen}
             className={`interactiveChart__customizeMenuItem ${pointSizeControlsOpen ? "is-active" : ""}`}
@@ -2094,25 +2102,6 @@ function InteractiveScatterChartInner({
         </div>
       </div>
 
-      {styleControlsOpen ? (
-        <div className="interactiveChart__editorBar">
-          <label className="interactiveChart__fieldRow">
-            <span>Style</span>
-            <select
-              className="interactiveChart__select"
-              onChange={(event) => setChartStyle(event.target.value as ChartStyle)}
-              title="Applies to every chart"
-              value={chartStyle}
-            >
-              {(Object.keys(CHART_STYLE_LABELS) as ChartStyle[]).map((style) => (
-                <option key={style} value={style}>
-                  {CHART_STYLE_LABELS[style]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      ) : null}
 
       {pointSizeControlsOpen ? (
         <div className="interactiveChart__sliderBar">
