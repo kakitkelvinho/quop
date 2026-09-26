@@ -639,8 +639,8 @@ function BeamLine({
  * is a faint glow; alone it has to carry the beam, so it is stronger.
  */
 const HALO = {
-  underCore: { width: 2.9, opacity: 0.18 },
-  underCoreSelected: { width: 4, opacity: 0.34 },
+  underCore: { width: 1.8, opacity: 0.14 },
+  underCoreSelected: { width: 2.4, opacity: 0.3 },
   alone: { width: 2.6, opacity: 0.5 },
   aloneSelected: { width: 3.6, opacity: 0.8 },
 };
@@ -716,8 +716,8 @@ function BeamPath({
       key={alpha < 1 ? "faded" : "solid"}
       color={color}
       emissive={color}
-      emissiveIntensity={0.45}
-      roughness={0.35}
+      emissiveIntensity={0.18}
+      roughness={0.15}
       metalness={0}
       transparent={alpha < 1}
       opacity={alpha}
