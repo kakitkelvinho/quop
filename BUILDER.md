@@ -52,6 +52,12 @@ parts) and opacity (10–100%), set with the sliders in its inspector. A
 selected beam is drawn fully opaque with a stronger halo, however faint it
 is, so clicking its chip always finds it.
 
+**Glow only.** A view toggle in the top toolbar draws every beam as its soft
+halo alone, with no crisp core line and no arrows, closer to how a laser
+really looks and quieter on a busy layout. The halo is stronger then, and
+still follows each beam's width and opacity. The beam being drawn keeps its
+core and arrows. Like Posts and Grid, it is not saved.
+
 **A mirror in a beam angles itself.** A mirror that is a stop in the middle
 of a beam (not its first or last) turns so its face bisects the directions to
 the stops before and after it, and re-angles live as any of the three moves.
