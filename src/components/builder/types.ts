@@ -203,8 +203,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   camera: {
     label: "Camera",
     tag: "Camera",
-    top: 22,
-    minHeight: 28,
+    top: 25,
+    minHeight: 31,
     radius: 30,
     hint: "Images the beam or the sample plane — the source of FITS frames.",
   },

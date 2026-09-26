@@ -39,6 +39,11 @@ export type ScenePalette = {
    */
   post: string;
   metal: string;
+  /**
+   * black anodised hardware: the mirror mount's front plate and knobs. Black
+   * by day; at night lifted to a charcoal, or it vanishes into the backdrop
+   */
+  anodise: string;
 };
 
 
@@ -63,6 +68,7 @@ export const LIGHT_PALETTE: ScenePalette = {
   body: "#fbfbf8",
   post: "#8d9095",
   metal: "#d8dce2",
+  anodise: "#1b1c1f",
 };
 
 export const DARK_PALETTE: ScenePalette = {
@@ -83,6 +89,7 @@ export const DARK_PALETTE: ScenePalette = {
   body: "#ecebe7",
   post: "#6f7378",
   metal: "#c9ced6",
+  anodise: "#4a4c52",
 };
 
 /** The site writes its theme to `data-theme`; treat that attribute as the store. */
