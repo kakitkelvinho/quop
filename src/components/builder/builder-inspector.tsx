@@ -23,6 +23,8 @@ import {
   componentDisplayName,
   componentTag,
   lengthToPicoseconds,
+  moveStop,
+  removeStop,
   type Beam,
   type BuilderComponent,
   type LensShape,
@@ -177,6 +179,47 @@ function StopList({ components, path }: { components: BuilderComponent[]; path: 
       {path.map((id, index) => {
         const component = componentById(components, id);
         return <li key={`${id}-${index}`}>{component ? componentDisplayName(component) : "—"}</li>;
+      })}
+    </ol>
+  );
+}
+
+/**
+ * A saved beam's stops, editable: each row moves up or down or goes away.
+ * A button is disabled when its edit isn't allowed (see removeStop).
+ */
+function EditableStopList({
+  components,
+  path,
+  onChange,
+}: {
+  components: BuilderComponent[];
+  path: string[];
+  onChange: (path: string[]) => void;
+}) {
+  return (
+    <ol className="builderStops builderStops--editable">
+      {path.map((id, index) => {
+        const component = componentById(components, id);
+        const name = component ? componentDisplayName(component) : "—";
+        const up = moveStop(path, index, -1);
+        const down = moveStop(path, index, 1);
+        const without = removeStop(path, index);
+        return (
+          <li key={`${id}-${index}`}>
+            <span className="builderStops__name">{name}</span>
+            <span className="builderStops__actions">
+              <IconButton icon="up" label={`Move ${name} earlier`} disabled={!up} onClick={() => up && onChange(up)} />
+              <IconButton icon="down" label={`Move ${name} later`} disabled={!down} onClick={() => down && onChange(down)} />
+              <IconButton
+                icon="close"
+                label={path.length <= 2 ? "A beam needs 2 stops" : `Remove ${name}`}
+                disabled={!without}
+                onClick={() => without && onChange(without)}
+              />
+            </span>
+          </li>
+        );
       })}
     </ol>
   );
@@ -374,12 +417,17 @@ export function BeamInspector({
   onUpdate,
   onCheckpoint,
   onDelete,
+  addingStops,
+  onToggleAddStops,
 }: {
   beam: Beam;
   components: BuilderComponent[];
   onUpdate: (patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
   onCheckpoint: () => void;
   onDelete: () => void;
+  /** clicking parts on the canvas inserts them into the beam */
+  addingStops: boolean;
+  onToggleAddStops: () => void;
 }) {
   const length = beamLengthMm(components, beam);
   const width = beam.width ?? BEAM_WIDTH_MM;
@@ -449,7 +497,18 @@ export function BeamInspector({
           <dd>{lengthToPicoseconds(length).toFixed(1)} ps</dd>
         </div>
       </dl>
-      <StopList components={components} path={beam.path} />
+      <EditableStopList components={components} path={beam.path} onChange={(path) => onUpdate({ path })} />
+      <button
+        type="button"
+        className="builderButton"
+        aria-pressed={addingStops}
+        onClick={onToggleAddStops}
+      >
+        {addingStops ? "Done adding stops" : "Add stops"}
+      </button>
+      {addingStops ? (
+        <p className="builderInspector__hint">Click a part to insert it into the segment it sits nearest.</p>
+      ) : null}
     </div>
   );
 }

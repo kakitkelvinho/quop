@@ -25,6 +25,8 @@ import {
   componentById,
   componentDisplayName,
   findHost,
+  insertStop,
+  insertionIndex,
   mirrorAngleBeam,
   parseScene,
   serializeScene,
@@ -74,6 +76,8 @@ export default function BuilderScene() {
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
+  // the beam "Add stops" is on for; it lapses as soon as another is selected
+  const [addingStopsTo, setAddingStopsTo] = useState<string | null>(null);
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
@@ -103,6 +107,7 @@ export default function BuilderScene() {
     () => scene.beams.find((beam) => beam.id === selectedBeamId) ?? null,
     [scene.beams, selectedBeamId],
   );
+  const addingStops = selectedBeam !== null && addingStopsTo === selectedBeam.id;
 
   // A transient line of feedback under the canvas — the builder does a lot of
   // things (export, load, clear) whose only evidence would otherwise be off-screen.
@@ -118,7 +123,7 @@ export default function BuilderScene() {
 
   const handleSurfaceClick = useCallback(
     (x: number, z: number) => {
-      if (beamMode) return;
+      if (beamMode || addingStops) return;
       if (placingType) {
         // a particle clicked onto a trap or cavity goes inside it
         const host =
@@ -137,7 +142,7 @@ export default function BuilderScene() {
       setSelectedId(null);
       setSelectedBeamId(null);
     },
-    [api, beamMode, placingType],
+    [addingStops, api, beamMode, placingType],
   );
 
   const handleComponentPointerDown = useCallback(
@@ -153,6 +158,17 @@ export default function BuilderScene() {
       const component = componentById(sceneRef.current.components, id);
       if (!component) return;
 
+      if (addingStops && selectedBeamId) {
+        // into the segment the part sits nearest, one undo step per insert
+        const beam = sceneRef.current.beams.find((entry) => entry.id === selectedBeamId);
+        if (!beam) return;
+        const [x, , z] = component.position;
+        const index = insertionIndex(sceneRef.current.components, beam.path, x, z);
+        const path = insertStop(beam.path, index, id);
+        if (path) api.updateBeam(beam.id, { path });
+        return;
+      }
+
       setPlacingType(null);
       setSelectedId(id);
       setSelectedBeamId(null);
@@ -165,7 +181,7 @@ export default function BuilderScene() {
       };
       setDragging(true);
     },
-    [beamMode],
+    [addingStops, api, beamMode, selectedBeamId],
   );
 
   const handleSurfaceDrag = useCallback(
@@ -363,6 +379,7 @@ export default function BuilderScene() {
         if (placingType) setPlacingType(null);
         else if (trayOpen) setTrayOpen(false);
         else if (beamMode) cancelBeam();
+        else if (addingStops) setAddingStopsTo(null);
         else {
           setSelectedId(null);
           setSelectedBeamId(null);
@@ -373,6 +390,12 @@ export default function BuilderScene() {
       if (beamMode && event.key === "Enter") {
         event.preventDefault();
         finishBeam();
+        return;
+      }
+
+      if (addingStops && event.key === "Enter") {
+        event.preventDefault();
+        setAddingStopsTo(null);
         return;
       }
 
@@ -420,7 +443,7 @@ export default function BuilderScene() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [api, beamMode, cancelBeam, finishBeam, placingType, rotateSelected, selectedId, trayOpen]);
+  }, [addingStops, api, beamMode, cancelBeam, finishBeam, placingType, rotateSelected, selectedId, trayOpen]);
 
   const updateSelected = useCallback(
     (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => {
@@ -438,7 +461,7 @@ export default function BuilderScene() {
   return (
     <div className="builderWorkspace">
       <div
-        className={`builderCanvasHost${placingType || beamMode ? " is-picking" : ""}`}
+        className={`builderCanvasHost${placingType || beamMode || addingStops ? " is-picking" : ""}`}
       >
         <BuilderCanvas
           components={scene.components}
@@ -471,6 +494,7 @@ export default function BuilderScene() {
         placingType={placingType}
         trayOpen={trayOpen}
         beamMode={beamMode}
+        addingStops={addingStops}
         beamDraft={beamDraft}
         beamColor={beamColor}
         showLabels={showLabels}
@@ -515,6 +539,11 @@ export default function BuilderScene() {
         onUndoBeamStep={undoBeamStep}
         onBeamColorChange={setBeamColor}
         onSelectBeam={handleSelectBeam}
+        onToggleAddStops={() =>
+          setAddingStopsTo((current) =>
+            current === selectedBeamId ? null : selectedBeamId,
+          )
+        }
         onUpdateBeam={api.updateBeam}
         onCheckpoint={() => api.commitCheckpoint(sceneRef.current)}
         onDeleteBeam={(id) => {
