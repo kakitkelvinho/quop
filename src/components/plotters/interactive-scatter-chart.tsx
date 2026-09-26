@@ -21,6 +21,16 @@ import {
   type ChartOptions,
 } from "chart.js";
 
+import {
+  DARK_SKIN,
+  LIGHT_SKIN,
+  MATPLOTLIB_FONT_FAMILY,
+  matplotlibFrame,
+  plainLabel,
+  type MatplotlibFrameOptions,
+  type SkinColors,
+} from "@/components/plotters/matplotlib-skin";
+
 ChartJS.register(
   LinearScale,
   PointElement,
@@ -37,9 +47,10 @@ type Bounds = {
   yMax: number;
 };
 
-const DEFAULT_CHART_FONT_FAMILY = '"Trebuchet MS", Helvetica, sans-serif';
+const DEFAULT_CHART_FONT_FAMILY = MATPLOTLIB_FONT_FAMILY;
 const FONT_OPTIONS = [
-  { label: "Trebuchet MS", value: DEFAULT_CHART_FONT_FAMILY },
+  { label: "Computer Modern", value: MATPLOTLIB_FONT_FAMILY },
+  { label: "Trebuchet MS", value: '"Trebuchet MS", Helvetica, sans-serif' },
   { label: "Times New Roman", value: '"Times New Roman", Times, serif' },
   { label: "Georgia", value: "Georgia, serif" },
   { label: "Garamond", value: 'Garamond, "Times New Roman", serif' },
@@ -208,10 +219,26 @@ function parseIntegerDraft(
   return parsed;
 }
 
+/**
+ * The fewest decimals that show every tick exactly, as matplotlib's default
+ * formatter does: 0, 5, 10 rather than 0.00, 5.00, 10.00.
+ */
+function autoDecimalPlaces(values: number[]) {
+  let places = 0;
+  for (const value of values) {
+    while (places < 8 && Math.abs(Number(value.toFixed(places)) - value) > Math.abs(value) * 1e-9 + 1e-12) {
+      places += 1;
+    }
+  }
+  return places;
+}
+
 function formatTickValue(
   value: unknown,
   multiplier: number,
-  decimalPlaces: number,
+  /** null picks them from the ticks on the axis */
+  decimalPlaces: number | null,
+  ticks: { value: number }[] = [],
 ) {
   const numeric = typeof value === "number" ? value : Number(value);
 
@@ -221,20 +248,64 @@ function formatTickValue(
 
   const scaled = numeric * multiplier;
 
+  if (decimalPlaces === null) {
+    const absolute = Math.abs(scaled);
+    // only the ticks written out in full decide the decimals, zero with them
+    const written = ticks
+      .map((tick) => tick.value * multiplier)
+      .filter((tickValue) => Math.abs(tickValue) >= 1e-3 && Math.abs(tickValue) < 1e5);
+    if (scaled === 0 && written.length === 0) return "0";
+    if (scaled !== 0 && (absolute >= 1e5 || absolute < 1e-3)) {
+      return scaled.toExponential().replace(/-/g, "\u2212");
+    }
+    decimalPlaces = autoDecimalPlaces(written);
+  }
+
   if (scaled === 0) {
     return decimalPlaces > 0 ? (0).toFixed(decimalPlaces) : "0";
   }
 
   const absolute = Math.abs(scaled);
 
+  // a true minus sign, as matplotlib draws it, not a hyphen
   if (absolute >= 1e5 || absolute < 1e-3) {
-    return scaled.toExponential(decimalPlaces);
+    return scaled.toExponential(decimalPlaces).replace(/-/g, "\u2212");
   }
 
-  return scaled.toLocaleString(undefined, {
-    minimumFractionDigits: decimalPlaces,
-    maximumFractionDigits: decimalPlaces,
-  });
+  return scaled
+    .toLocaleString(undefined, {
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces,
+    })
+    .replace(/-/g, "\u2212");
+}
+
+/**
+ * The matplotlib look for one axis: no grid and no Chart.js border or tick
+ * marks (the frame plugin draws the spines and inward ticks), labels close
+ * to the spine, and the title laid out as plain text but painted by the
+ * plugin, which draws its ^ / _ markup.
+ */
+function skinScale(
+  scale: NonNullable<ChartOptions<"scatter">["scales"]>[string],
+  label: string,
+  factor = 1,
+) {
+  return {
+    grid: { ...scale?.grid, display: false },
+    border: { ...scale?.border, display: false },
+    ticks: { padding: 6 * factor },
+    title: {
+      color: "transparent",
+      text: plainLabel(label),
+      padding: { top: 4 * factor, bottom: 4 * factor },
+    },
+  };
+}
+
+/** Tight margins round the figure, as matplotlib's constrained layout leaves. */
+function scaleLayoutPadding(factor: number) {
+  return { top: 6 * factor, right: 14 * factor, bottom: 4 * factor, left: 4 * factor };
 }
 
 function cloneScatterData(
@@ -927,6 +998,20 @@ function InteractiveScatterChartInner({
       observer.disconnect();
     };
   }, []);
+  // The canvas draws with whatever font is ready; once Computer Modern has
+  // loaded, draw again so the first paint's fallback serif doesn't stick.
+  useEffect(() => {
+    let cancelled = false;
+    document.fonts
+      ?.load(`16px ${MATPLOTLIB_FONT_FAMILY}`)
+      .then(() => {
+        if (!cancelled) chartRef.current?.update("none");
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [joinedPoints, setJoinedPoints] = useState(() =>
     data.datasets.some((dataset) => dataset.showLine),
   );
@@ -998,16 +1083,16 @@ function InteractiveScatterChartInner({
   const [yTickExponent, setYTickExponent] = useState(0);
   const [xTickExponentDraft, setXTickExponentDraft] = useState("0");
   const [yTickExponentDraft, setYTickExponentDraft] = useState("0");
-  const [xTickDecimalPlaces, setXTickDecimalPlaces] = useState(2);
-  const [yTickDecimalPlaces, setYTickDecimalPlaces] = useState(2);
-  const [xTickDecimalPlacesDraft, setXTickDecimalPlacesDraft] = useState("2");
-  const [yTickDecimalPlacesDraft, setYTickDecimalPlacesDraft] = useState("2");
+  // null: automatic, from the ticks on the axis
+  const [xTickDecimalPlaces, setXTickDecimalPlaces] = useState<number | null>(null);
+  const [yTickDecimalPlaces, setYTickDecimalPlaces] = useState<number | null>(null);
+  const [xTickDecimalPlacesDraft, setXTickDecimalPlacesDraft] = useState("");
+  const [yTickDecimalPlacesDraft, setYTickDecimalPlacesDraft] = useState("");
   const [xTickFontSize, setXTickFontSize] = useState(initialXTickFontSize);
   const [yTickFontSize, setYTickFontSize] = useState(initialYTickFontSize);
   const [saveControlsOpen, setSaveControlsOpen] = useState(false);
   const [saveHighQuality, setSaveHighQuality] = useState(true);
   const [saveWhiteBackground, setSaveWhiteBackground] = useState(true);
-  const [saveBlackText, setSaveBlackText] = useState(true);
   const [customizeMenuOpen, setCustomizeMenuOpen] = useState(false);
   const anyCustomizeControlOpen =
     pointSizeControlsOpen ||
@@ -1330,24 +1415,17 @@ function InteractiveScatterChartInner({
   function handleTickDecimalPlacesChange(axis: "x" | "y", draft: string) {
     if (axis === "x") {
       setXTickDecimalPlacesDraft(draft);
-
-      if (draft.trim() === "") {
-        return;
-      }
-
+      // an empty field goes back to automatic
       setXTickDecimalPlaces(
-        parseIntegerDraft(draft, xTickDecimalPlaces, 0, 12),
+        draft.trim() === "" ? null : parseIntegerDraft(draft, xTickDecimalPlaces ?? 2, 0, 12),
       );
       return;
     }
 
     setYTickDecimalPlacesDraft(draft);
-
-    if (draft.trim() === "") {
-      return;
-    }
-
-    setYTickDecimalPlaces(parseIntegerDraft(draft, yTickDecimalPlaces, 0, 12));
+    setYTickDecimalPlaces(
+      draft.trim() === "" ? null : parseIntegerDraft(draft, yTickDecimalPlaces ?? 2, 0, 12),
+    );
   }
 
   function getExportFileName() {
@@ -1374,16 +1452,22 @@ function InteractiveScatterChartInner({
     exportCanvas.width = exportWidth;
     exportCanvas.height = exportHeight;
 
-    const exportTextColor = saveBlackText ? "#111827" : chartTextColor;
-    const exportGridColor = saveBlackText
-      ? "rgba(107, 114, 128, 0.32)"
-      : chartGridColor;
+    // an export is always the light, paper-ready figure, whatever the screen shows
+    const exportTextColor = LIGHT_SKIN.text;
+    const exportFrame: MatplotlibFrameOptions = {
+      colors: LIGHT_SKIN,
+      labels: { x: xAxisLabel, y: yAxisLabel },
+      scale: scaleFactor,
+    };
+    const exportXSkin = skinScale(mergedOptions.scales?.x, xAxisLabel, scaleFactor);
+    const exportYSkin = skinScale(mergedOptions.scales?.y, yAxisLabel, scaleFactor);
     const exportData = cloneScatterData(chartData, scaleFactor);
     const exportOptions: ChartOptions<"scatter"> = {
       ...mergedOptions,
       responsive: false,
       animation: false,
       color: exportTextColor,
+      layout: { padding: scaleLayoutPadding(scaleFactor) },
       elements: {
         ...mergedOptions.elements,
         point: {
@@ -1427,17 +1511,16 @@ function InteractiveScatterChartInner({
               titleColor: exportTextColor,
             }
           : mergedOptions.plugins?.tooltip,
+        matplotlibFrame: exportFrame,
       },
       scales: {
         ...mergedOptions.scales,
         x: {
           ...mergedOptions.scales?.x,
-          grid: {
-            ...mergedOptions.scales?.x?.grid,
-            color: exportGridColor,
-          },
+          ...exportXSkin,
           ticks: {
             ...mergedOptions.scales?.x?.ticks,
+            ...exportXSkin.ticks,
             color: exportTextColor,
             font: {
               ...mergedOptions.scales?.x?.ticks?.font,
@@ -1447,7 +1530,7 @@ function InteractiveScatterChartInner({
           },
           title: {
             ...mergedOptions.scales?.x?.title,
-            color: exportTextColor,
+            ...exportXSkin.title,
             font: {
               ...mergedOptions.scales?.x?.title?.font,
               family: fontFamily,
@@ -1457,12 +1540,10 @@ function InteractiveScatterChartInner({
         },
         y: {
           ...mergedOptions.scales?.y,
-          grid: {
-            ...mergedOptions.scales?.y?.grid,
-            color: exportGridColor,
-          },
+          ...exportYSkin,
           ticks: {
             ...mergedOptions.scales?.y?.ticks,
+            ...exportYSkin.ticks,
             color: exportTextColor,
             font: {
               ...mergedOptions.scales?.y?.ticks?.font,
@@ -1472,7 +1553,7 @@ function InteractiveScatterChartInner({
           },
           title: {
             ...mergedOptions.scales?.y?.title,
-            color: exportTextColor,
+            ...exportYSkin.title,
             font: {
               ...mergedOptions.scales?.y?.title?.font,
               family: fontFamily,
@@ -1485,6 +1566,7 @@ function InteractiveScatterChartInner({
 
     const exportPlugins = saveWhiteBackground
       ? [
+          matplotlibFrame,
           {
             id: "exportBackground",
             beforeDraw(exportChart: ChartJS<"scatter">) {
@@ -1497,7 +1579,7 @@ function InteractiveScatterChartInner({
             },
           },
         ]
-      : [];
+      : [matplotlibFrame];
 
     const exportChart = new ChartJS(exportCanvas, {
       type: "scatter",
@@ -1540,15 +1622,17 @@ function InteractiveScatterChartInner({
         : null;
 
   const isDarkMode = colorMode === "dark";
-  const chartTextColor = isDarkMode ? "#ebf1f7" : "#243244";
-  const chartGridColor = isDarkMode
-    ? "rgba(167, 182, 201, 0.18)"
-    : "rgba(91, 102, 117, 0.18)";
+  const skin: SkinColors = isDarkMode ? DARK_SKIN : LIGHT_SKIN;
+  const chartTextColor = skin.text;
+  const xSkin = skinScale(options.scales?.x, xAxisLabel);
+  const ySkin = skinScale(options.scales?.y, yAxisLabel);
   const chartData = useMemo<ChartData<"scatter">>(
     () => ({
       ...data,
       datasets: data.datasets.map((dataset) => ({
         ...dataset,
+        // matplotlib's lines.linewidth
+        borderWidth: 1.5,
         pointHoverRadius: Math.max(pointSize + 1.5, pointSize * 1.5),
         pointRadius: pointSize,
         radius: pointSize,
@@ -1568,13 +1652,20 @@ function InteractiveScatterChartInner({
       ...options.font,
       family: fontFamily,
     },
+    layout: { padding: scaleLayoutPadding(1) },
     plugins: {
       ...options.plugins,
+      matplotlibFrame: {
+        colors: skin,
+        labels: { x: xAxisLabel, y: yAxisLabel },
+      },
       legend: options.plugins?.legend
         ? {
             ...options.plugins.legend,
             labels: {
               ...options.plugins.legend.labels,
+              usePointStyle: true,
+              boxHeight: 5,
               color: chartTextColor,
               font: {
                 ...options.plugins.legend.labels?.font,
@@ -1592,6 +1683,8 @@ function InteractiveScatterChartInner({
           ...options.plugins?.title?.font,
           family: fontFamily,
           size: chartTitleFontSize,
+          // matplotlib titles are set in the regular weight
+          weight: "normal",
         },
         text: chartTitle,
       },
@@ -1630,16 +1723,14 @@ function InteractiveScatterChartInner({
       ...options.scales,
       x: {
         ...options.scales?.x,
-        grid: {
-          ...options.scales?.x?.grid,
-          color: chartGridColor,
-        },
+        ...xSkin,
         max: viewport.xMax,
         min: viewport.xMin,
         ticks: {
           ...options.scales?.x?.ticks,
-          callback: (value) =>
-            formatTickValue(value, xTickMultiplier, xTickDecimalPlaces),
+          ...xSkin.ticks,
+          callback: (value, _index, ticks) =>
+            formatTickValue(value, xTickMultiplier, xTickDecimalPlaces, ticks),
           color: chartTextColor,
           font: {
             ...options.scales?.x?.ticks?.font,
@@ -1650,28 +1741,25 @@ function InteractiveScatterChartInner({
         },
         title: {
           ...options.scales?.x?.title,
-          color: chartTextColor,
+          ...xSkin.title,
           display: Boolean(xAxisLabel),
           font: {
             ...options.scales?.x?.title?.font,
             family: fontFamily,
             size: axisLabelFontSize,
           },
-          text: xAxisLabel,
         },
       },
       y: {
         ...options.scales?.y,
-        grid: {
-          ...options.scales?.y?.grid,
-          color: chartGridColor,
-        },
+        ...ySkin,
         max: viewport.yMax,
         min: viewport.yMin,
         ticks: {
           ...options.scales?.y?.ticks,
-          callback: (value) =>
-            formatTickValue(value, yTickMultiplier, yTickDecimalPlaces),
+          ...ySkin.ticks,
+          callback: (value, _index, ticks) =>
+            formatTickValue(value, yTickMultiplier, yTickDecimalPlaces, ticks),
           color: chartTextColor,
           font: {
             ...options.scales?.y?.ticks?.font,
@@ -1682,14 +1770,13 @@ function InteractiveScatterChartInner({
         },
         title: {
           ...options.scales?.y?.title,
-          color: chartTextColor,
+          ...ySkin.title,
           display: Boolean(yAxisLabel),
           font: {
             ...options.scales?.y?.title?.font,
             family: fontFamily,
             size: axisLabelFontSize,
           },
-          text: yAxisLabel,
         },
       },
     },
@@ -1705,7 +1792,12 @@ function InteractiveScatterChartInner({
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
       >
-        <Scatter data={chartData} options={mergedOptions} ref={chartRef} />
+        <Scatter
+          data={chartData}
+          options={mergedOptions}
+          plugins={[matplotlibFrame]}
+          ref={chartRef}
+        />
         {selectionStyle ? (
           <div
             className={`interactiveChart__selection interactiveChart__selection--${dragSelection?.axis}`}
@@ -1980,6 +2072,8 @@ function InteractiveScatterChartInner({
             <input
               className="interactiveChart__textInput"
               onChange={(event) => setXAxisLabel(event.target.value)}
+              placeholder="λ_0 (nm)"
+              title="^ for superscript, _ for subscript; braces group: x^{-1}"
               type="text"
               value={xAxisLabel}
             />
@@ -1989,6 +2083,8 @@ function InteractiveScatterChartInner({
             <input
               className="interactiveChart__textInput"
               onChange={(event) => setYAxisLabel(event.target.value)}
+              placeholder="|E|^2 (a.u.)"
+              title="^ for superscript, _ for subscript; braces group: x^{-1}"
               type="text"
               value={yAxisLabel}
             />
@@ -2058,6 +2154,7 @@ function InteractiveScatterChartInner({
               onChange={(event) =>
                 handleTickDecimalPlacesChange("x", event.target.value)
               }
+              placeholder="auto"
               step="1"
               type="number"
               value={xTickDecimalPlacesDraft}
@@ -2104,6 +2201,7 @@ function InteractiveScatterChartInner({
               onChange={(event) =>
                 handleTickDecimalPlacesChange("y", event.target.value)
               }
+              placeholder="auto"
               step="1"
               type="number"
               value={yTickDecimalPlacesDraft}
@@ -2145,14 +2243,6 @@ function InteractiveScatterChartInner({
               type="checkbox"
             />
             <span>White background</span>
-          </label>
-          <label className="interactiveChart__checkboxRow">
-            <input
-              checked={saveBlackText}
-              onChange={(event) => setSaveBlackText(event.target.checked)}
-              type="checkbox"
-            />
-            <span>Black text</span>
           </label>
           <button
             className="interactiveChart__applyButton"

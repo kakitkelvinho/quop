@@ -676,8 +676,8 @@ function FitsCompactPanel() {
               data: summary.points,
               showLine: true,
               borderWidth: 2,
-              borderColor: "#8b1e3f",
-              backgroundColor: "#8b1e3f",
+              borderColor: palette[0].border,
+              backgroundColor: palette[0].background,
             },
           ],
         }
