@@ -321,8 +321,6 @@ export default function FitsPlotter() {
               data: summary.points,
               showLine: true,
               borderWidth: 2,
-              borderColor: "#8b1e3f",
-              backgroundColor: "#8b1e3f",
             },
           ],
         }

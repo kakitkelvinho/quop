@@ -905,8 +905,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           pointRadius: 0,
           pointHoverRadius: 3,
           borderWidth: 2,
-          borderColor: "#8b1e3f",
-          backgroundColor: "rgba(139, 30, 63, 0.18)",
         },
       ],
     }),

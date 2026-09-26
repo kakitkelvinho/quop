@@ -502,11 +502,8 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
     rgb(255 252 247 / 0.98),
     rgb(246 239 227 / 0.98)
   );
-  --interactive-chart-stage-bg: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.82),
-    rgb(248 243 234 / 0.94)
-  );
+  /* the figure itself is plain white, like a matplotlib figure on paper */
+  --interactive-chart-stage-bg: #ffffff;
   --interactive-chart-stage-border: rgba(91, 102, 117, 0.16);
   --interactive-chart-text: #243244;
   display: grid;
@@ -535,13 +532,26 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
     rgb(19 25 36 / 0.98),
     rgb(11 15 24 / 0.98)
   );
+  --interactive-chart-stage-bg: #11161f;
+  --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
+  --interactive-chart-text: #ebf1f7;
+}
+
+/* the Chart.js style keeps the warm stage gradient it had before the matplotlib skin */
+.interactiveChart--chartjs {
+  --interactive-chart-stage-bg: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.82),
+    rgb(248 243 234 / 0.94)
+  );
+}
+
+.interactiveChart--dark.interactiveChart--chartjs {
   --interactive-chart-stage-bg: linear-gradient(
     180deg,
     rgb(17 23 33 / 0.96),
     rgb(10 14 22 / 0.98)
   );
-  --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
-  --interactive-chart-text: #ebf1f7;
 }
 
 .interactiveChart__toolbar {

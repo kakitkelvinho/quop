@@ -21,7 +21,6 @@ import {
   type Hdu,
 } from "@fits-js/core";
 
-import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
@@ -493,16 +492,12 @@ function CsvCompactPanel() {
 
   const chartData: ChartData<"scatter"> = {
     datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>(
-      (channel, index) => {
-        const color = palette[index % palette.length];
-
+      (channel) => {
         return {
           label: channel.label,
           data: channel.points,
           showLine: true,
           borderWidth: 2,
-          borderColor: color.border,
-          backgroundColor: color.background,
           pointRadius: 1.5,
           pointHoverRadius: 3,
         };
@@ -676,8 +671,6 @@ function FitsCompactPanel() {
               data: summary.points,
               showLine: true,
               borderWidth: 2,
-              borderColor: "#8b1e3f",
-              backgroundColor: "#8b1e3f",
             },
           ],
         }

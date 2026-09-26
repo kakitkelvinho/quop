@@ -14,7 +14,6 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -257,16 +256,12 @@ export default function ArrayPlotter() {
 
   const chartData: ChartData<"scatter"> = {
     datasets: usingCsvMode
-      ? csvDatasets.map<ChartDataset<"scatter", Point[]>>((dataset, index) => {
-          const color = palette[index % palette.length];
-
+      ? csvDatasets.map<ChartDataset<"scatter", Point[]>>((dataset) => {
           return {
             label: dataset.label,
             data: dataset.points,
             showLine: true,
             borderWidth: 2,
-            borderColor: color.border,
-            backgroundColor: color.background,
           };
         })
       : [
@@ -275,8 +270,6 @@ export default function ArrayPlotter() {
             data: series.points,
             showLine: true,
             borderWidth: 2,
-            borderColor: "#8b1e3f",
-            backgroundColor: "#8b1e3f",
           },
         ],
   };

@@ -14,7 +14,6 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
@@ -357,16 +356,12 @@ export default function CsvPlotter() {
   const parsed = parseTimeSeriesCsv(csvInput);
 
   const chartData: ChartData<"scatter"> = {
-    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel, index) => {
-      const color = palette[index % palette.length];
-
+    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel) => {
       return {
         label: channel.label,
         data: channel.points,
         showLine: true,
         borderWidth: 2,
-        borderColor: color.border,
-        backgroundColor: color.background,
         pointRadius: 1.5,
         pointHoverRadius: 3,
       };
