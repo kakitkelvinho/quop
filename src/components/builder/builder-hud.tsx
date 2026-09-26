@@ -331,7 +331,11 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length ? (
-        <div className="builderIsland builderHud__beams" role="group" aria-label="Beams">
+        <div
+          className={`builderIsland builderHud__beams${trayOpen ? " is-besideParts" : ""}`}
+          role="group"
+          aria-label="Beams"
+        >
           {beams.map((beam) => (
             <button
               key={beam.id}

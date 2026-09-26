@@ -114,7 +114,9 @@ is on screen until it is needed:
   component, a beam, or a beam being drawn.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
   name and path length; click a row to select that beam. It scrolls once there
-  are more beams than fit.
+  are more beams than fit. While the parts panel is open the box moves to sit
+  beside it; on a phone, where the panel spans the width, it hides until the
+  panel closes.
 - **Bottom right**: the view controls. There is no readout: the inspector and
   the beams box already carry every number worth reading.
 

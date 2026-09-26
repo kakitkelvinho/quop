@@ -2310,6 +2310,11 @@ html[data-theme="dark"] .builderButton--primary {
   scrollbar-width: thin;
 }
 
+/* the parts panel holds the left edge while it is open; the box steps out beside it */
+.builderHud__beams.is-besideParts {
+  left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
+}
+
 .builderBeamRow {
   display: flex;
   align-items: center;
@@ -2444,6 +2449,11 @@ html[data-theme="dark"] .builderButton--primary {
     right: 0.9rem;
     bottom: 7.2rem;
     width: auto;
+  }
+
+  /* no room beside a full-width parts panel: the box returns when it closes */
+  .builderHud__beams.is-besideParts {
+    display: none;
   }
 
   .builderHud__inspector {
