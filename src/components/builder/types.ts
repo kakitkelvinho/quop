@@ -358,6 +358,10 @@ export function componentDisplayName(component: BuilderComponent): string {
   return component.label?.trim() || componentTag(component);
 }
 
+export function beamDisplayName(beam: Beam): string {
+  return beam.label?.trim() || `${beam.path.length}-stop beam`;
+}
+
 /** Selection-ring radius: a cavity grows with its length. */
 export function componentRadius(component: BuilderComponent): number {
   if (component.type === "cavity") {
@@ -405,6 +409,86 @@ export function settleHosts(scene: BuilderSceneData): BuilderSceneData {
     }
     changed = true;
     return { ...component, position: [...host.position] as Vec3 };
+  });
+  return changed ? { ...scene, components } : scene;
+}
+
+// ---------------------------------------------------------------------------
+// Mirror angles
+// ---------------------------------------------------------------------------
+
+/**
+ * Where a mirror's angle comes from: its first interior stop (not a beam's
+ * first or last) in the first beam, in scene order, that has one.
+ */
+function mirrorAngleStop(
+  beams: Beam[],
+  component: BuilderComponent,
+): { beam: Beam; index: number } | undefined {
+  if (component.type !== "mirror-mount") return undefined;
+  for (const beam of beams) {
+    const index = beam.path.indexOf(component.id, 1);
+    if (index > 0 && index < beam.path.length - 1) return { beam, index };
+  }
+  return undefined;
+}
+
+/**
+ * The beam that sets a mirror's angle, or undefined when the mirror is
+ * turned by hand: on no beam, or only at a beam's ends. Beam splitters are
+ * never derived (they transmit and reflect, so need a different rule).
+ */
+export function mirrorAngleBeam(
+  beams: Beam[],
+  component: BuilderComponent,
+): Beam | undefined {
+  return mirrorAngleStop(beams, component)?.beam;
+}
+
+function unitXZ(from: Vec3, to: Vec3): [number, number] | undefined {
+  const dx = to[0] - from[0];
+  const dz = to[2] - from[2];
+  const length = Math.hypot(dx, dz);
+  return length < 1e-9 ? undefined : [dx / length, dz / length];
+}
+
+/**
+ * The yaw, degrees in [0, 360), that turns a mirror's face to bisect the
+ * directions to the stops before and after it, so the beam reflects off it.
+ * Heights don't affect the yaw. The face points along the model's local +x,
+ * which a yaw θ maps to world (cos θ, 0, −sin θ), so θ = atan2(−n.z, n.x).
+ * Undefined when the two directions are (anti)parallel or a neighbour sits
+ * on the mirror: there is no one answer, so the last angle stays.
+ */
+export function bisectingYaw(mirror: Vec3, previous: Vec3, next: Vec3): number | undefined {
+  const into = unitXZ(mirror, previous);
+  const out = unitXZ(mirror, next);
+  if (!into || !out) return undefined;
+  const nx = into[0] + out[0];
+  const nz = into[1] + out[1];
+  if (Math.hypot(nx, nz) < 1e-9) return undefined;
+  const degrees = (((Math.atan2(-nz, nx) * 180) / Math.PI) + 360) % 360;
+  // rounded, so a float wobble never reads as an edit
+  return (Math.round(degrees * 100) / 100) % 360;
+}
+
+/**
+ * Turn every mirror in the middle of a beam to its bisecting yaw. Run after
+ * every edit, like settleHosts, so the stored rotation is always the drawn
+ * one and moving a mirror or either neighbour re-angles it.
+ */
+export function settleMirrors(scene: BuilderSceneData): BuilderSceneData {
+  let changed = false;
+  const components = scene.components.map((component) => {
+    const stop = mirrorAngleStop(scene.beams, component);
+    if (!stop) return component;
+    const previous = componentById(scene.components, stop.beam.path[stop.index - 1]);
+    const next = componentById(scene.components, stop.beam.path[stop.index + 1]);
+    if (!previous || !next) return component;
+    const yaw = bisectingYaw(component.position, previous.position, next.position);
+    if (yaw === undefined || yaw === component.rotation) return component;
+    changed = true;
+    return { ...component, rotation: yaw };
   });
   return changed ? { ...scene, components } : scene;
 }
@@ -523,7 +607,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         .filter((beam): beam is Beam => beam !== null)
     : [];
 
-  return settleHosts({ version: SCENE_VERSION, components, beams });
+  return settleMirrors(settleHosts({ version: SCENE_VERSION, components, beams }));
 }
 
 export function serializeScene(scene: BuilderSceneData): string {
@@ -557,7 +641,7 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     { id: "sample-1", type: "sample", position: [100, 0, -150], rotation: 0, label: "MeLPPP film" },
     { id: "filter-1", type: "filter", position: [200, 0, -150], rotation: 0, label: "Pump block" },
     { id: "spectrometer-1", type: "spectrometer", position: [325, 0, -150], rotation: 0 },
-    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 135, color: "#dc2626", label: "M1" },
+    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 45, color: "#dc2626", label: "M1" },
     { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 180, label: "Reference PD" },
   ]),
   beams: [

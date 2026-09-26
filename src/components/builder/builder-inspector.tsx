@@ -17,6 +17,7 @@ import {
   SAMPLE_OPACITY_RANGE,
   clampHeight,
   heightRange,
+  beamDisplayName,
   beamLengthMm,
   componentById,
   componentDisplayName,
@@ -215,6 +216,7 @@ export function BeamSwatches({
 export function ComponentInspector({
   component,
   components,
+  angleBeam,
   onUpdate,
   onCheckpoint,
   onRotate,
@@ -223,6 +225,8 @@ export function ComponentInspector({
 }: {
   component: BuilderComponent;
   components: BuilderComponent[];
+  /** set when a beam turns this mirror; its yaw is then read-only */
+  angleBeam?: Beam;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
   onCheckpoint: () => void;
   onRotate: (direction: 1 | -1) => void;
@@ -275,14 +279,20 @@ export function ComponentInspector({
           label="Yaw"
           unit="°"
           step={15}
-          value={Math.round(component.rotation)}
+          value={Math.round(component.rotation * 10) / 10}
+          disabled={Boolean(angleBeam)}
           onChange={(yaw) => onUpdate({ rotation: ((yaw % 360) + 360) % 360 })}
         />
         <span className="builderInspector__rotate">
-          <IconButton icon="rotateLeft" label="Rotate −15° (Shift R)" onClick={() => onRotate(-1)} />
-          <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
+          <IconButton icon="rotateLeft" label="Rotate −15° (Shift R)" disabled={Boolean(angleBeam)} onClick={() => onRotate(-1)} />
+          <IconButton icon="rotateRight" label="Rotate +15° (R)" disabled={Boolean(angleBeam)} onClick={() => onRotate(1)} />
         </span>
       </div>
+      {angleBeam ? (
+        <p className="builderInspector__hint">
+          Angle set by <strong>{beamDisplayName(angleBeam)}</strong>
+        </p>
+      ) : null}
       {component.type === "lens" ? (
         <>
           <div className="builderChoice" role="group" aria-label="Lens shape">

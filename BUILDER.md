@@ -52,6 +52,14 @@ parts) and opacity (10–100%), set with the sliders in its inspector. A
 selected beam is drawn fully opaque with a stronger halo, however faint it
 is, so clicking its chip always finds it.
 
+**A mirror in a beam angles itself.** A mirror that is a stop in the middle
+of a beam (not its first or last) turns so its face bisects the directions to
+the stops before and after it, and re-angles live as any of the three moves.
+Its yaw is then read-only in the inspector, and `R` does nothing. If two beams
+pass through it, the first in the beam list wins, and the inspector names it
+("Angle set by …"). A mirror on no beam, or only at a beam's end, turns by
+hand. Beam splitters always turn by hand.
+
 **Mount colour marks the beam line.** A mirror mount can be tinted; the
 convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system
@@ -103,7 +111,7 @@ is on screen until it is needed:
 | Add a part | ＋ at the top left, pick it in the panel (or search, then `Enter`), click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
 | Raise / lower | Type a height in the inspector (Enter or leaving the field applies it) |
-| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam: it angles itself) |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its chip along the bottom |
