@@ -1,0 +1,96 @@
+/* PROTOTYPE — throwaway styles for chart-style-toggle.prototype.tsx */
+
+.styleProto__switcher {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  border: 2px solid #f5c542;
+  background: #111;
+  color: #fff;
+  font: 500 0.85rem/1 system-ui, sans-serif;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.35);
+  transform: translateX(-50%);
+}
+
+.styleProto__switcher button {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* shared segmented control */
+.styleProto__corner,
+.styleProto__stripSegment {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--interactive-chart-border, var(--border));
+  border-radius: 999px;
+  background: var(--interactive-chart-button-bg, var(--surface));
+}
+
+.styleProto__corner button,
+.styleProto__stripSegment button {
+  padding: 0.2rem 0.65rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  opacity: 0.65;
+}
+
+.styleProto__corner button.is-on,
+.styleProto__stripSegment button.is-on {
+  background: var(--interactive-chart-active-bg, var(--accent-soft));
+  color: var(--interactive-chart-active-text, var(--accent-strong));
+  opacity: 1;
+}
+
+/* C */
+.styleProto__corner {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  font-size: 0.72rem;
+  backdrop-filter: blur(8px);
+}
+
+/* B */
+.styleProto__footerGlyph {
+  font: 600 0.62rem/1 ui-monospace, monospace;
+  letter-spacing: -0.02em;
+}
+
+/* D */
+.styleProto__strip {
+  position: sticky;
+  top: 0.5rem;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  width: fit-content;
+  margin: 0 0 1rem auto;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface);
+  font-size: 0.85rem;
+}
+
+.styleProto__strip small {
+  color: var(--muted);
+}

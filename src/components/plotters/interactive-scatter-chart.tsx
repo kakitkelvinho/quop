@@ -43,6 +43,12 @@ import {
   type MatplotlibFrameOptions,
   type SkinColors,
 } from "@/components/plotters/matplotlib-skin";
+// PROTOTYPE: chart-style toggle variants
+import {
+  CornerStylePill,
+  FooterStyleButton,
+  useVariant,
+} from "@/components/plotters/chart-style-toggle.prototype";
 
 ChartJS.register(
   LinearScale,
@@ -1042,6 +1048,7 @@ function InteractiveScatterChartInner({
   const [scrollZoomEnabled, setScrollZoomEnabled] = useState(false);
   const [colorMode, setColorMode] = useState<"light" | "dark">("light");
   const chartStyle = useChartStyle();
+  const styleVariant = useVariant(); // PROTOTYPE
   const isMatplotlib = chartStyle === "matplotlib";
 
   useEffect(() => {
@@ -1887,6 +1894,7 @@ function InteractiveScatterChartInner({
           plugins={[matplotlibFrame]}
           ref={chartRef}
         />
+        {styleVariant === "C" ? <CornerStylePill /> : null}
         {selectionStyle ? (
           <div
             className={`interactiveChart__selection interactiveChart__selection--${dragSelection?.axis}`}
@@ -1962,6 +1970,7 @@ function InteractiveScatterChartInner({
           <CustomizeIcon />
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        {styleVariant === "B" ? <FooterStyleButton /> : null}
         <button
           aria-label={
             colorMode === "dark"
@@ -1994,6 +2003,7 @@ function InteractiveScatterChartInner({
 
       {customizeMenuOpen ? (
         <div className="interactiveChart__customizeMenu">
+          {styleVariant === "A" ? (
           <button
             aria-pressed={styleControlsOpen}
             className={`interactiveChart__customizeMenuItem ${styleControlsOpen ? "is-active" : ""}`}
@@ -2003,6 +2013,7 @@ function InteractiveScatterChartInner({
             <StyleIcon />
             <span>Style</span>
           </button>
+          ) : null}
           <button
             aria-pressed={pointSizeControlsOpen}
             className={`interactiveChart__customizeMenuItem ${pointSizeControlsOpen ? "is-active" : ""}`}
@@ -2094,7 +2105,7 @@ function InteractiveScatterChartInner({
         </div>
       </div>
 
-      {styleControlsOpen ? (
+      {styleControlsOpen && styleVariant === "A" ? (
         <div className="interactiveChart__editorBar">
           <label className="interactiveChart__fieldRow">
             <span>Style</span>
