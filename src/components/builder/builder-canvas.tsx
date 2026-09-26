@@ -20,6 +20,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  type RefObject,
 } from "react";
 import { Line2 } from "three/examples/jsm/lines/Line2.js";
 import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
@@ -33,12 +34,17 @@ import {
   Matrix4,
   Mesh,
   NeutralToneMapping,
+  type Object3D,
   OrthographicCamera,
+  Plane,
   Quaternion,
+  Raycaster,
   SRGBColorSpace,
   TOUCH,
+  Vector2,
   Vector3,
 } from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { ComponentMesh } from "@/components/builder/component-models";
 import type { ScenePalette } from "@/components/builder/scene-theme";
@@ -51,6 +57,7 @@ import {
   componentRadius,
   type Beam,
   type BuilderComponent,
+  type Vec3,
 } from "@/components/builder/types";
 
 export type CameraView = "iso" | "top";
@@ -116,10 +123,12 @@ function CameraRig({
   view,
   fitToken,
   components,
+  pivotRef,
 }: {
   view: CameraView;
   fitToken: number;
   components: BuilderComponent[];
+  pivotRef: RefObject<Vector3 | null>;
 }) {
   // `get()` reaches the live camera imperatively; the size selector is here so
   // the fit re-runs when the panel is resized.
@@ -191,11 +200,120 @@ function CameraRig({
     cam.lookAt(target);
     cam.updateMatrixWorld();
 
+    // a snap-back is not an orbit: let go of the last drag's pivot first
+    pivotRef.current = null;
     if (controls) {
       controls.target.copy(target);
       controls.update();
     }
-  }, [get, size.width, size.height, view, fitToken]);
+  }, [get, pivotRef, size.width, size.height, view, fitToken]);
+
+  return null;
+}
+
+/**
+ * Which presses the controls turn into an orbit (see OrbitControls'
+ * `onMouseDown`): middle or right, or Shift / Ctrl / ⌘ with the left button,
+ * which is otherwise a pan. A modifier on middle or right pans instead.
+ */
+function isOrbitPress(event: PointerEvent): boolean {
+  if (event.pointerType === "touch") return false;
+  const modified = event.shiftKey || event.ctrlKey || event.metaKey;
+  if (event.button === 1 || event.button === 2) return !modified;
+  return event.button === 0 && modified;
+}
+
+function isShown(object: Object3D | null): boolean {
+  for (let node = object; node; node = node.parent) {
+    if (!node.visible) return false;
+  }
+  return true;
+}
+
+const TABLE_PLANE = new Plane(new Vector3(0, 1, 0), 0);
+
+/**
+ * CAD-style orbit: a drag turns the view about the point under the cursor
+ * when it starts (a part, or else the table), not about the controls' target
+ * in the middle of the screen. OrbitControls can only turn about its target,
+ * and moving the target to the pivot would jump the view, so instead each
+ * step's rotation is re-centred: after the controls turn the camera about the
+ * target, camera and target shift together by `(q − I)(target − pivot)`,
+ * which is the same turn taken about the pivot. The pivot holds for the whole
+ * drag and its damped tail; a pan or a zoom has no rotation, so no shift.
+ */
+function OrbitPivot({
+  pivotRef,
+  selected,
+}: {
+  pivotRef: RefObject<Vector3 | null>;
+  selected: Vec3 | null;
+}) {
+  const controls = useThree((state) => state.controls) as OrbitControlsImpl | null;
+  const get = useThree((state) => state.get);
+  // read at press time, not a dependency: re-binding mid-drag would drop it
+  const latestSelected = useRef(selected);
+  useLayoutEffect(() => {
+    latestSelected.current = selected;
+  }, [selected]);
+
+  useEffect(() => {
+    const element = controls?.domElement;
+    if (!controls || !element) return;
+    const raycaster = new Raycaster();
+    const pointer = new Vector2();
+    const lastQuaternion = get().camera.quaternion.clone();
+    const step = new Quaternion();
+    const shift = new Vector3();
+
+    const pickPivot = (event: PointerEvent): Vector3 => {
+      const { camera, scene } = get();
+      const rect = element.getBoundingClientRect();
+      pointer.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster
+        .intersectObjects(scene.children, true)
+        .find((entry) => isShown(entry.object));
+      if (hit) return hit.point.clone();
+      const onTable = raycaster.ray.intersectPlane(TABLE_PLANE, new Vector3());
+      if (onTable) return onTable;
+      const part = latestSelected.current;
+      return part ? new Vector3(...part) : controls.target.clone();
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (isOrbitPress(event)) pivotRef.current = pickPivot(event);
+    };
+
+    const onChange = () => {
+      const camera = get().camera;
+      const centre = pivotRef.current;
+      step.copy(lastQuaternion).invert().premultiply(camera.quaternion);
+      if (centre && 1 - Math.abs(step.w) > 1e-10) {
+        shift
+          .copy(controls.target)
+          .sub(centre)
+          .applyQuaternion(step)
+          .add(centre)
+          .sub(controls.target);
+        controls.target.add(shift);
+        camera.position.add(shift);
+        camera.updateMatrixWorld();
+      }
+      lastQuaternion.copy(camera.quaternion);
+    };
+
+    // capture, so the pivot is set before the controls see the press
+    element.addEventListener("pointerdown", onPointerDown, true);
+    controls.addEventListener("change", onChange);
+    return () => {
+      element.removeEventListener("pointerdown", onPointerDown, true);
+      controls.removeEventListener("change", onChange);
+    };
+  }, [controls, get, pivotRef]);
 
   return null;
 }
@@ -676,6 +794,15 @@ export default function BuilderCanvas({
   onComponentHover,
   onCanvasReady,
 }: BuilderCanvasProps) {
+  // the orbit pivot: set when an orbit drag starts, cleared by a snap-back
+  const pivotRef = useRef<Vector3 | null>(null);
+  const selectedPosition = useMemo(
+    () =>
+      selectedId
+        ? (componentById(components, selectedId)?.position ?? null)
+        : null,
+    [components, selectedId],
+  );
   const draftOrder = useMemo(() => {
     const map = new Map<string, number>();
     beamDraft.forEach((id, index) => map.set(id, index + 1));
@@ -778,21 +905,31 @@ export default function BuilderCanvas({
         makeDefault
         enabled={!dragging}
         enableRotate
-        // right-drag orbits all the way round, but never under the table
+        // a turntable: it orbits all the way round, but never under the table
         maxPolarAngle={Math.PI / 2 - 0.05}
         enableZoom
+        // the wheel zooms toward the point under the cursor
+        zoomToCursor
         enablePan
         zoomSpeed={0.9}
         minZoom={0.2}
         maxZoom={14}
+        // left pans; Shift + left orbits (the controls' own modifier swap),
+        // which is the one orbit a Magic Mouse can make. Middle and right orbit.
         mouseButtons={{
           LEFT: MOUSE.PAN,
-          MIDDLE: MOUSE.DOLLY,
+          MIDDLE: MOUSE.ROTATE,
           RIGHT: MOUSE.ROTATE,
         }}
         touches={{ ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN }}
       />
-      <CameraRig view={view} fitToken={fitToken} components={components} />
+      <OrbitPivot pivotRef={pivotRef} selected={selectedPosition} />
+      <CameraRig
+        view={view}
+        fitToken={fitToken}
+        components={components}
+        pivotRef={pivotRef}
+      />
 
       {/* the miniature finish: contact occlusion grounds every part, the
           vignette pulls the eye to the middle of the layout */}

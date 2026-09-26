@@ -1973,6 +1973,40 @@ html[data-theme="dark"] .builderIsland {
   font-weight: 700;
 }
 
+/* top right, above the inspector: how to drive the camera */
+.builderControlsHint {
+  position: absolute;
+  z-index: 4;
+  top: 1.05rem;
+  right: 1.1rem;
+  display: grid;
+  justify-items: end;
+  gap: 0.1rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  opacity: 0.8;
+  pointer-events: none;
+  user-select: none;
+}
+
+.builderControlsHint__alt {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.builderControlsHint kbd {
+  padding: 0 0.22rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  font-family: inherit;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
 /* right: the inspector, only while something is selected */
 .builderHud__inspector {
   top: 4.2rem;
@@ -2351,6 +2385,13 @@ html[data-theme="dark"] .builderButton--primary {
 
 /* Narrow screens: the parts panel spans the width, the inspector becomes a bottom sheet and
    the beam chips ride above the bottom row. */
+/* the centred toolbar reaches the corner; touch has no Shift to explain */
+@media (max-width: 1100px), (pointer: coarse) {
+  .builderControlsHint {
+    display: none;
+  }
+}
+
 @media (max-width: 900px) {
   .builderHud__beams {
     bottom: 4.1rem;
