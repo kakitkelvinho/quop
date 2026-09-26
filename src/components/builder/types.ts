@@ -63,7 +63,7 @@ export type Beam = {
   width?: number;
   /** 0.1–1; missing means fully opaque */
   opacity?: number;
-  /** false hides the direction arrows; missing means shown */
+  /** false draws the beam as glow only: no core and no direction arrows; missing means shown */
   arrows?: boolean;
 };
 
