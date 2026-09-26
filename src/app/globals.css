@@ -2220,6 +2220,30 @@ html[data-theme="dark"] .builderIsland {
   font-size: 0.66rem;
 }
 
+.builderStops--editable li {
+  min-height: 1.6rem;
+  line-height: 1.6rem;
+}
+
+.builderStops__name {
+  color: var(--foreground);
+}
+
+.builderStops__actions {
+  float: right;
+  display: inline-flex;
+}
+
+.builderStops__actions .builderIconBtn {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.builderStops__actions .builderIconBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .builderButton {
   height: 1.95rem;
   padding: 0 0.7rem;

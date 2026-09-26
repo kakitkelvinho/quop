@@ -414,6 +414,71 @@ export function settleHosts(scene: BuilderSceneData): BuilderSceneData {
 }
 
 // ---------------------------------------------------------------------------
+// Beam path edits
+// ---------------------------------------------------------------------------
+//
+// Each returns the new path, or null when the edit isn't allowed: a beam
+// keeps at least 2 stops, and a part may appear more than once but never
+// twice in a row, the same rule as drawing.
+
+function repeatsInARow(path: string[]): boolean {
+  return path.some((id, index) => index > 0 && path[index - 1] === id);
+}
+
+export function removeStop(path: string[], index: number): string[] | null {
+  const next = path.filter((_, at) => at !== index);
+  return next.length < 2 || repeatsInARow(next) ? null : next;
+}
+
+/** Swap a stop with its neighbour: -1 moves it toward the start. */
+export function moveStop(path: string[], index: number, direction: 1 | -1): string[] | null {
+  const other = index + direction;
+  if (other < 0 || other >= path.length) return null;
+  const next = [...path];
+  [next[index], next[other]] = [next[other], next[index]];
+  return repeatsInARow(next) ? null : next;
+}
+
+export function insertStop(path: string[], index: number, id: string): string[] | null {
+  const next = [...path.slice(0, index), id, ...path.slice(index)];
+  return repeatsInARow(next) ? null : next;
+}
+
+/**
+ * Where a part at (x, z) joins a beam: between the two consecutive stops
+ * whose segment passes nearest it, measured in the table plane. A part past
+ * either end, whose nearest point is that end stop, is prepended (0) or
+ * appended (path.length) instead.
+ */
+export function insertionIndex(
+  components: BuilderComponent[],
+  path: string[],
+  x: number,
+  z: number,
+): number {
+  let best = path.length;
+  let bestDistance = Infinity;
+  for (let index = 1; index < path.length; index += 1) {
+    const a = componentById(components, path[index - 1]);
+    const b = componentById(components, path[index]);
+    if (!a || !b) continue;
+    const [ax, , az] = a.position;
+    const dx = b.position[0] - ax;
+    const dz = b.position[2] - az;
+    const lengthSq = dx * dx + dz * dz;
+    const t = lengthSq === 0 ? 0 : ((x - ax) * dx + (z - az) * dz) / lengthSq;
+    const clamped = Math.min(1, Math.max(0, t));
+    const distance = Math.hypot(ax + clamped * dx - x, az + clamped * dz - z);
+    if (distance >= bestDistance) continue;
+    bestDistance = distance;
+    if (index === 1 && t < 0) best = 0;
+    else if (index === path.length - 1 && t > 1) best = path.length;
+    else best = index;
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------------------
 // Mirror angles
 // ---------------------------------------------------------------------------
 

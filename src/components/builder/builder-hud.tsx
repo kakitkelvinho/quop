@@ -29,6 +29,8 @@ export type BuilderHudProps = {
   placingType: ComponentType | null;
   trayOpen: boolean;
   beamMode: boolean;
+  /** "Add stops" is on for the selected beam */
+  addingStops: boolean;
   beamDraft: string[];
   beamColor: string;
   showLabels: boolean;
@@ -54,6 +56,7 @@ export type BuilderHudProps = {
   onUndoBeamStep: () => void;
   onBeamColorChange: (color: string) => void;
   onSelectBeam: (id: string) => void;
+  onToggleAddStops: () => void;
   onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
   /** snapshot the scene before a run of unrecorded edits (a slider drag) */
   onCheckpoint: () => void;
@@ -85,6 +88,15 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
         ["Click", "add stop"],
         ["Enter", "finish"],
         ["Esc", "cancel"],
+      ],
+    };
+  if (props.addingStops)
+    return {
+      label: "Adding stops",
+      hints: [
+        ["Click", "insert"],
+        ["Enter", "done"],
+        ["Esc", "done"],
       ],
     };
   if (props.placingType)
@@ -222,6 +234,8 @@ export default function BuilderHud(props: BuilderHudProps) {
         onUpdate={(patch, record) => props.onUpdateBeam(selectedBeam.id, patch, record)}
         onCheckpoint={props.onCheckpoint}
         onDelete={() => props.onDeleteBeam(selectedBeam.id)}
+        addingStops={props.addingStops}
+        onToggleAddStops={props.onToggleAddStops}
       />
     );
   }

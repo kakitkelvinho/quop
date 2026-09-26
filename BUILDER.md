@@ -121,8 +121,9 @@ is on screen until it is needed:
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its chip along the bottom |
+| Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click a part to insert it into the segment it sits nearest, or past an end to extend the beam; `Enter` / `Esc` to finish |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then deselects) |
+| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge, not in a panel of
 their own.
