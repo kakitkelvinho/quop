@@ -56,8 +56,8 @@ is, so clicking its row in the beams box always finds it.
 reads as light passing through the parts rather than a flat stroke, with its
 soft halo around it.
 
-**Glow only, per beam.** A beam's inspector switches it between *Core &
-arrows* and *Glow only*. Glow only draws that beam as its soft halo alone, with
+**Arrow or no arrow, per beam.** A beam's inspector switches it between
+*Arrow* and *No arrow*. No arrow draws that beam as its soft halo alone, with
 no core and no arrows, closer to how a laser really looks and quieter on a busy
 layout. The halo is stronger then, and still follows the beam's width and
 opacity. It is saved with the beam; there is no table-wide switch. The beam

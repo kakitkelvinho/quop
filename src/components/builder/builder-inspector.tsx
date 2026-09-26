@@ -469,14 +469,14 @@ export function BeamInspector({
         onBegin={onCheckpoint}
         onChange={(next) => onUpdate({ opacity: next }, false)}
       />
-      <div className="builderChoice" role="group" aria-label="Beam look">
+      <div className="builderChoice" role="group" aria-label="Direction arrows">
         <button
           type="button"
           className="builderButton"
           aria-pressed={beam.arrows !== false}
           onClick={() => onUpdate({ arrows: undefined })}
         >
-          Core &amp; arrows
+          Arrow
         </button>
         <button
           type="button"
@@ -484,7 +484,7 @@ export function BeamInspector({
           aria-pressed={beam.arrows === false}
           onClick={() => onUpdate({ arrows: false })}
         >
-          Glow only
+          No arrow
         </button>
       </div>
       <dl className="builderMetrics">
