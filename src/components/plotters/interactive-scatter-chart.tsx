@@ -22,6 +22,19 @@ import {
 } from "chart.js";
 
 import {
+  CHART_STYLE_FONTS,
+  CHART_STYLE_LABELS,
+  CHART_STYLE_PALETTES,
+  CLASSIC_DARK,
+  CLASSIC_EXPORT,
+  CLASSIC_FONT_FAMILY,
+  CLASSIC_LIGHT,
+  setChartStyle,
+  useChartStyle,
+  type ChartStyle,
+  type ClassicColors,
+} from "@/components/plotters/chart-style";
+import {
   DARK_SKIN,
   LIGHT_SKIN,
   MATPLOTLIB_FONT_FAMILY,
@@ -47,10 +60,9 @@ type Bounds = {
   yMax: number;
 };
 
-const DEFAULT_CHART_FONT_FAMILY = MATPLOTLIB_FONT_FAMILY;
 const FONT_OPTIONS = [
   { label: "Computer Modern", value: MATPLOTLIB_FONT_FAMILY },
-  { label: "Trebuchet MS", value: '"Trebuchet MS", Helvetica, sans-serif' },
+  { label: "Trebuchet MS", value: CLASSIC_FONT_FAMILY },
   { label: "Times New Roman", value: '"Times New Roman", Times, serif' },
   { label: "Georgia", value: "Georgia, serif" },
   { label: "Garamond", value: 'Garamond, "Times New Roman", serif' },
@@ -281,16 +293,28 @@ function formatTickValue(
 }
 
 /**
- * The matplotlib look for one axis: no grid and no Chart.js border or tick
- * marks (the frame plugin draws the spines and inward ticks), labels close
- * to the spine, and the title laid out as plain text but painted by the
- * plugin, which draws its ^ / _ markup.
+ * One axis in the chosen style. In both, the title is laid out as plain
+ * text but painted by the frame plugin, which draws its ^ / _ markup.
+ *
+ * matplotlib: no grid and no Chart.js border or tick marks (the plugin
+ * draws the spines and inward ticks), and labels close to the spine.
+ * Chart.js: its own border, outward ticks and grid, in `classic.grid`.
  */
-function skinScale(
+function axisStyle(
+  style: ChartStyle,
   scale: NonNullable<ChartOptions<"scatter">["scales"]>[string],
   label: string,
+  classic: ClassicColors,
   factor = 1,
 ) {
+  if (style === "chartjs") {
+    return {
+      grid: { ...scale?.grid, color: classic.grid },
+      border: { ...scale?.border },
+      ticks: {},
+      title: { color: "transparent", text: plainLabel(label) },
+    };
+  }
   return {
     grid: { ...scale?.grid, display: false },
     border: { ...scale?.border, display: false },
@@ -300,6 +324,16 @@ function skinScale(
       text: plainLabel(label),
       padding: { top: 4 * factor, bottom: 4 * factor },
     },
+  };
+}
+
+function scaledLegendBoxes(
+  labels: { boxWidth?: number; boxHeight?: number } | undefined,
+  factor: number,
+) {
+  return {
+    ...(labels?.boxWidth !== undefined ? { boxWidth: labels.boxWidth * factor } : {}),
+    ...(labels?.boxHeight !== undefined ? { boxHeight: labels.boxHeight * factor } : {}),
   };
 }
 
@@ -730,6 +764,34 @@ function LegendIcon() {
   );
 }
 
+function StyleIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect
+        x="4.5"
+        y="4.5"
+        width="15"
+        height="15"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M9 19.5v-2.6M14 19.5v-2.6M4.5 10h2.6M4.5 15h2.6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M7.5 15.5c2.2-5 4.5-7.5 9-8.5"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
 function FontIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -979,6 +1041,8 @@ function InteractiveScatterChartInner({
   );
   const [scrollZoomEnabled, setScrollZoomEnabled] = useState(false);
   const [colorMode, setColorMode] = useState<"light" | "dark">("light");
+  const chartStyle = useChartStyle();
+  const isMatplotlib = chartStyle === "matplotlib";
 
   useEffect(() => {
     const root = document.documentElement;
@@ -1015,7 +1079,8 @@ function InteractiveScatterChartInner({
   const [joinedPoints, setJoinedPoints] = useState(() =>
     data.datasets.some((dataset) => dataset.showLine),
   );
-  const defaultFontFamily =
+  // a plotter's font, if it sets one; otherwise the style's
+  const plotterFontFamily =
     getFontFamily(options.font) ??
     getFontFamily(
       options.plugins?.title && typeof options.plugins.title === "object"
@@ -1030,10 +1095,12 @@ function InteractiveScatterChartInner({
     getFontFamily(options.scales?.x?.ticks?.font) ??
     getFontFamily(options.scales?.y?.ticks?.font) ??
     getFontFamily(options.scales?.x?.title?.font) ??
-    getFontFamily(options.scales?.y?.title?.font) ??
-    DEFAULT_CHART_FONT_FAMILY;
+    getFontFamily(options.scales?.y?.title?.font);
   const [fontControlsOpen, setFontControlsOpen] = useState(false);
-  const [fontFamily, setFontFamily] = useState(defaultFontFamily);
+  // a font picked here wins over the style's, in either style
+  const [pickedFontFamily, setPickedFontFamily] = useState(plotterFontFamily);
+  const fontFamily = pickedFontFamily ?? CHART_STYLE_FONTS[chartStyle];
+  const [styleControlsOpen, setStyleControlsOpen] = useState(false);
   const [pointSizeControlsOpen, setPointSizeControlsOpen] = useState(false);
   const [pointSize, setPointSize] = useState(() => {
     const firstDataset = data.datasets[0];
@@ -1095,6 +1162,7 @@ function InteractiveScatterChartInner({
   const [saveWhiteBackground, setSaveWhiteBackground] = useState(true);
   const [customizeMenuOpen, setCustomizeMenuOpen] = useState(false);
   const anyCustomizeControlOpen =
+    styleControlsOpen ||
     pointSizeControlsOpen ||
     fontControlsOpen ||
     titleControlsOpen ||
@@ -1453,21 +1521,34 @@ function InteractiveScatterChartInner({
     exportCanvas.height = exportHeight;
 
     // an export is always the light, paper-ready figure, whatever the screen shows
-    const exportTextColor = LIGHT_SKIN.text;
+    const exportTextColor = isMatplotlib ? LIGHT_SKIN.text : CLASSIC_EXPORT.text;
     const exportFrame: MatplotlibFrameOptions = {
-      colors: LIGHT_SKIN,
+      colors: isMatplotlib ? LIGHT_SKIN : { text: CLASSIC_EXPORT.text, frame: CLASSIC_EXPORT.grid },
       labels: { x: xAxisLabel, y: yAxisLabel },
       scale: scaleFactor,
+      frame: isMatplotlib,
     };
-    const exportXSkin = skinScale(mergedOptions.scales?.x, xAxisLabel, scaleFactor);
-    const exportYSkin = skinScale(mergedOptions.scales?.y, yAxisLabel, scaleFactor);
+    const exportXSkin = axisStyle(
+      chartStyle,
+      mergedOptions.scales?.x,
+      xAxisLabel,
+      CLASSIC_EXPORT,
+      scaleFactor,
+    );
+    const exportYSkin = axisStyle(
+      chartStyle,
+      mergedOptions.scales?.y,
+      yAxisLabel,
+      CLASSIC_EXPORT,
+      scaleFactor,
+    );
     const exportData = cloneScatterData(chartData, scaleFactor);
     const exportOptions: ChartOptions<"scatter"> = {
       ...mergedOptions,
       responsive: false,
       animation: false,
       color: exportTextColor,
-      layout: { padding: scaleLayoutPadding(scaleFactor) },
+      layout: isMatplotlib ? { padding: scaleLayoutPadding(scaleFactor) } : mergedOptions.layout,
       elements: {
         ...mergedOptions.elements,
         point: {
@@ -1484,6 +1565,8 @@ function InteractiveScatterChartInner({
               ...mergedOptions.plugins.legend,
               labels: {
                 ...mergedOptions.plugins.legend.labels,
+                // swatch sizes scale with the text, or a point-style dot swamps its label
+                ...scaledLegendBoxes(mergedOptions.plugins.legend.labels, scaleFactor),
                 color: exportTextColor,
                 font: {
                   ...mergedOptions.plugins.legend.labels?.font,
@@ -1623,24 +1706,28 @@ function InteractiveScatterChartInner({
 
   const isDarkMode = colorMode === "dark";
   const skin: SkinColors = isDarkMode ? DARK_SKIN : LIGHT_SKIN;
-  const chartTextColor = skin.text;
-  const xSkin = skinScale(options.scales?.x, xAxisLabel);
-  const ySkin = skinScale(options.scales?.y, yAxisLabel);
-  const chartData = useMemo<ChartData<"scatter">>(
-    () => ({
+  const classic = isDarkMode ? CLASSIC_DARK : CLASSIC_LIGHT;
+  const chartTextColor = isMatplotlib ? skin.text : classic.text;
+  const xSkin = axisStyle(chartStyle, options.scales?.x, xAxisLabel, classic);
+  const ySkin = axisStyle(chartStyle, options.scales?.y, yAxisLabel, classic);
+  const chartData = useMemo<ChartData<"scatter">>(() => {
+    const palette = CHART_STYLE_PALETTES[chartStyle];
+    return {
       ...data,
-      datasets: data.datasets.map((dataset) => ({
+      datasets: data.datasets.map((dataset, index) => ({
         ...dataset,
+        // the style's colour cycle, by series, whatever the plotter passed
+        borderColor: palette[index % palette.length],
+        backgroundColor: palette[index % palette.length],
         // matplotlib's lines.linewidth
-        borderWidth: 1.5,
+        borderWidth: chartStyle === "matplotlib" ? 1.5 : dataset.borderWidth,
         pointHoverRadius: Math.max(pointSize + 1.5, pointSize * 1.5),
         pointRadius: pointSize,
         radius: pointSize,
         showLine: joinedPoints,
       })),
-    }),
-    [data, joinedPoints, pointSize],
-  );
+    };
+  }, [chartStyle, data, joinedPoints, pointSize]);
   const mergedOptions: ChartOptions<"scatter"> = {
     ...options,
     animation:
@@ -1652,20 +1739,20 @@ function InteractiveScatterChartInner({
       ...options.font,
       family: fontFamily,
     },
-    layout: { padding: scaleLayoutPadding(1) },
+    layout: isMatplotlib ? { padding: scaleLayoutPadding(1) } : options.layout,
     plugins: {
       ...options.plugins,
       matplotlibFrame: {
-        colors: skin,
+        colors: isMatplotlib ? skin : { text: classic.text, frame: classic.grid },
         labels: { x: xAxisLabel, y: yAxisLabel },
+        frame: isMatplotlib,
       },
       legend: options.plugins?.legend
         ? {
             ...options.plugins.legend,
             labels: {
               ...options.plugins.legend.labels,
-              usePointStyle: true,
-              boxHeight: 5,
+              ...(isMatplotlib ? { usePointStyle: true, boxHeight: 5 } : {}),
               color: chartTextColor,
               font: {
                 ...options.plugins.legend.labels?.font,
@@ -1683,8 +1770,8 @@ function InteractiveScatterChartInner({
           ...options.plugins?.title?.font,
           family: fontFamily,
           size: chartTitleFontSize,
-          // matplotlib titles are set in the regular weight
-          weight: "normal",
+          // matplotlib titles are set in the regular weight, Chart.js's in bold
+          weight: isMatplotlib ? "normal" : "bold",
         },
         text: chartTitle,
       },
@@ -1783,7 +1870,9 @@ function InteractiveScatterChartInner({
   };
 
   return (
-    <div className={`interactiveChart interactiveChart--${colorMode}`}>
+    <div
+      className={`interactiveChart interactiveChart--${colorMode} interactiveChart--${chartStyle}`}
+    >
       <div
         className="interactiveChart__stage"
         onPointerDown={handlePointerDown}
@@ -1906,6 +1995,15 @@ function InteractiveScatterChartInner({
       {customizeMenuOpen ? (
         <div className="interactiveChart__customizeMenu">
           <button
+            aria-pressed={styleControlsOpen}
+            className={`interactiveChart__customizeMenuItem ${styleControlsOpen ? "is-active" : ""}`}
+            onClick={() => setStyleControlsOpen((current) => !current)}
+            type="button"
+          >
+            <StyleIcon />
+            <span>Style</span>
+          </button>
+          <button
             aria-pressed={pointSizeControlsOpen}
             className={`interactiveChart__customizeMenuItem ${pointSizeControlsOpen ? "is-active" : ""}`}
             onClick={() => setPointSizeControlsOpen((current) => !current)}
@@ -1996,6 +2094,26 @@ function InteractiveScatterChartInner({
         </div>
       </div>
 
+      {styleControlsOpen ? (
+        <div className="interactiveChart__editorBar">
+          <label className="interactiveChart__fieldRow">
+            <span>Style</span>
+            <select
+              className="interactiveChart__select"
+              onChange={(event) => setChartStyle(event.target.value as ChartStyle)}
+              title="Applies to every chart"
+              value={chartStyle}
+            >
+              {(Object.keys(CHART_STYLE_LABELS) as ChartStyle[]).map((style) => (
+                <option key={style} value={style}>
+                  {CHART_STYLE_LABELS[style]}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
+
       {pointSizeControlsOpen ? (
         <div className="interactiveChart__sliderBar">
           <label className="interactiveChart__sliderLabel">
@@ -2021,7 +2139,7 @@ function InteractiveScatterChartInner({
             <span>Font</span>
             <select
               className="interactiveChart__select"
-              onChange={(event) => setFontFamily(event.target.value)}
+              onChange={(event) => setPickedFontFamily(event.target.value)}
               value={fontFamily}
             >
               {FONT_OPTIONS.map((option) => (

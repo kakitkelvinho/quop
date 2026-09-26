@@ -200,6 +200,8 @@ export type MatplotlibFrameOptions = {
   labels: { x?: string; y?: string };
   /** scales every pixel measure, for a high-resolution export */
   scale?: number;
+  /** false paints only the labels, over Chart.js's own axes (the Chart.js style) */
+  frame?: boolean;
 };
 
 declare module "chart.js" {
@@ -211,7 +213,8 @@ declare module "chart.js" {
 
 /**
  * Draws on top of the datasets: the four spines, inward major and minor
- * ticks on every side, and the axis labels with their markup. Chart.js still
+ * ticks on every side (unless `frame` is false), and the axis labels with
+ * their markup. Chart.js still
  * lays the labels out (their titles are drawn transparent), so the space
  * they take is right; this only paints them.
  */
@@ -222,14 +225,16 @@ export const matplotlibFrame: Plugin<"scatter", MatplotlibFrameOptions> = {
     if (!area || !options.colors) return;
     const factor = options.scale ?? 1;
     ctx.save();
-    ctx.strokeStyle = options.colors.frame;
-    ctx.lineCap = "butt";
-    for (const id of ["x", "y"]) {
-      const scale = chart.scales[id];
-      if (scale) drawAxisTicks(ctx, scale, area, factor);
+    if (options.frame !== false) {
+      ctx.strokeStyle = options.colors.frame;
+      ctx.lineCap = "butt";
+      for (const id of ["x", "y"]) {
+        const scale = chart.scales[id];
+        if (scale) drawAxisTicks(ctx, scale, area, factor);
+      }
+      ctx.lineWidth = SPINE_WIDTH_PX * factor;
+      ctx.strokeRect(area.left, area.top, area.right - area.left, area.bottom - area.top);
     }
-    ctx.lineWidth = SPINE_WIDTH_PX * factor;
-    ctx.strokeRect(area.left, area.top, area.right - area.left, area.bottom - area.top);
 
     for (const id of ["x", "y"] as const) {
       const scale = chart.scales[id];

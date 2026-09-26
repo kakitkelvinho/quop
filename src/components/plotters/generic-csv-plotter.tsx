@@ -14,7 +14,6 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { CHART_SERIES_PALETTE as palette } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
@@ -263,9 +262,7 @@ export default function GenericCsvPlotter() {
     .filter(Boolean);
 
   const chartData: ChartData<"scatter"> = {
-    datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex, index) => {
-      const color = palette[index % palette.length];
-
+    datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex) => {
       return {
         label: parsed.headers[columnIndex],
         data: parsed.rows.map((row) => ({
@@ -274,8 +271,6 @@ export default function GenericCsvPlotter() {
         })),
         showLine: true,
         borderWidth: 2,
-        borderColor: color.border,
-        backgroundColor: color.background,
         pointRadius: 1.5,
         pointHoverRadius: 3,
       };

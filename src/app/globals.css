@@ -537,6 +537,23 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   --interactive-chart-text: #ebf1f7;
 }
 
+/* the Chart.js style keeps the warm stage gradient it had before the matplotlib skin */
+.interactiveChart--chartjs {
+  --interactive-chart-stage-bg: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.82),
+    rgb(248 243 234 / 0.94)
+  );
+}
+
+.interactiveChart--dark.interactiveChart--chartjs {
+  --interactive-chart-stage-bg: linear-gradient(
+    180deg,
+    rgb(17 23 33 / 0.96),
+    rgb(10 14 22 / 0.98)
+  );
+}
+
 .interactiveChart__toolbar {
   display: flex;
   justify-content: flex-end;

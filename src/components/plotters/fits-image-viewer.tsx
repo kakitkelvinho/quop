@@ -10,7 +10,6 @@ import {
 } from "react";
 import { type ChartData, type ChartOptions } from "chart.js";
 
-import { CHART_SERIES_PALETTE } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 type FitsImageSummary = {
@@ -906,8 +905,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           pointRadius: 0,
           pointHoverRadius: 3,
           borderWidth: 2,
-          borderColor: CHART_SERIES_PALETTE[0].border,
-          backgroundColor: CHART_SERIES_PALETTE[0].background,
         },
       ],
     }),

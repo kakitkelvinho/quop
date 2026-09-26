@@ -15,7 +15,6 @@ import {
 import { BlobReader, openFits, readImage, type Hdu, type FitsImage } from "@fits-js/core";
 
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
-import { CHART_SERIES_PALETTE } from "@/components/plotters/chart-series-palette";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
@@ -322,8 +321,6 @@ export default function FitsPlotter() {
               data: summary.points,
               showLine: true,
               borderWidth: 2,
-              borderColor: CHART_SERIES_PALETTE[0].border,
-              backgroundColor: CHART_SERIES_PALETTE[0].background,
             },
           ],
         }
