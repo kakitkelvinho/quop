@@ -33,6 +33,7 @@ export type BuilderHudProps = {
   beamColor: string;
   showLabels: boolean;
   showGrid: boolean;
+  showBeamCores: boolean;
   showPosts: boolean;
   view: CameraView;
   canUndo: boolean;
@@ -60,6 +61,7 @@ export type BuilderHudProps = {
   onToggleLabels: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
+  onToggleBeamCores: () => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -264,6 +266,12 @@ export default function BuilderHud(props: BuilderHudProps) {
           <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
           <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
           <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
+          <IconButton
+            icon="halo"
+            label={props.showBeamCores ? "Beams as glow only" : "Beam core lines and arrows"}
+            active={!props.showBeamCores}
+            onClick={props.onToggleBeamCores}
+          />
           <span className="builderIsland__sep" />
           <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />

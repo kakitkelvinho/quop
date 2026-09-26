@@ -635,6 +635,17 @@ function BeamLine({
 }
 
 /**
+ * The halo's width (× the beam's) and opacity (× its alpha). Under a core it
+ * is a faint glow; alone it has to carry the beam, so it is stronger.
+ */
+const HALO = {
+  underCore: { width: 2.9, opacity: 0.18 },
+  underCoreSelected: { width: 4, opacity: 0.34 },
+  alone: { width: 2.6, opacity: 0.5 },
+  aloneSelected: { width: 3.6, opacity: 0.8 },
+};
+
+/**
  * A beam, drawn in millimetres on the table: its width scales with the zoom
  * like the parts do. A selected beam draws fully opaque with a stronger halo,
  * so even a faint one can be found by clicking its chip.
@@ -646,6 +657,7 @@ function BeamPath({
   opacity = 1,
   showArrows = true,
   selected = false,
+  core = true,
 }: {
   points: Vector3[];
   color: string;
@@ -653,8 +665,17 @@ function BeamPath({
   opacity?: number;
   showArrows?: boolean;
   selected?: boolean;
+  /** off leaves only the halo: no crisp core line and no arrows */
+  core?: boolean;
 }) {
   const alpha = selected ? 1 : opacity;
+  const halo = core
+    ? selected
+      ? HALO.underCoreSelected
+      : HALO.underCore
+    : selected
+      ? HALO.aloneSelected
+      : HALO.alone;
   const arrowRadius = Math.max(3.5, width * 1.9);
   const arrows = useMemo(() => {
     const result: {
@@ -690,18 +711,20 @@ function BeamPath({
       <BeamLine
         points={flat}
         color={color}
-        width={width * (selected ? 4 : 2.9)}
-        opacity={(selected ? 0.34 : 0.18) * alpha}
+        width={width * halo.width}
+        opacity={halo.opacity * alpha}
         transparent
       />
-      <BeamLine
-        points={flat}
-        color={color}
-        width={width}
-        opacity={alpha}
-        transparent={alpha < 1}
-      />
-      {(showArrows ? arrows : []).map((arrow, index) => (
+      {core ? (
+        <BeamLine
+          points={flat}
+          color={color}
+          width={width}
+          opacity={alpha}
+          transparent={alpha < 1}
+        />
+      ) : null}
+      {(core && showArrows ? arrows : []).map((arrow, index) => (
         <mesh
           key={index}
           position={arrow.position}
@@ -746,6 +769,8 @@ export type BuilderCanvasProps = {
   beamDraft: string[];
   showLabels: boolean;
   showGrid: boolean;
+  /** draw every saved beam's core line and arrows; off, only their halos */
+  showBeamCores: boolean;
   /** draw posts; off, the parts float at their heights over their shadows */
   showPosts: boolean;
   view: CameraView;
@@ -784,6 +809,7 @@ export default function BuilderCanvas({
   beamDraft,
   showLabels,
   showGrid,
+  showBeamCores,
   showPosts,
   view,
   fitToken,
@@ -890,6 +916,7 @@ export default function BuilderCanvas({
             opacity={beam.opacity}
             showArrows={beam.arrows !== false}
             selected={beam.id === selectedBeamId}
+            core={showBeamCores}
           />
         );
       })}

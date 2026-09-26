@@ -45,6 +45,13 @@ const ICONS = {
   ),
   fit: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,
   grid: <path d="M4 4h16v16H4zM4 9.33h16M4 14.67h16M9.33 4v16M14.67 4v16" />,
+  // glow only: a soft band of light with no crisp line down its middle
+  halo: (
+    <>
+      <rect x="3" y="8" width="18" height="8" rx="4" fill="currentColor" fillOpacity={0.22} stroke="none" />
+      <rect x="3" y="8" width="18" height="8" rx="4" />
+    </>
+  ),
   labels: (
     <>
       <path d="M3 12V4h8l10 10-8 8L3 12Z" />
