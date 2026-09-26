@@ -35,7 +35,6 @@ export type BuilderHudProps = {
   beamColor: string;
   showLabels: boolean;
   showGrid: boolean;
-  showBeamCores: boolean;
   showPosts: boolean;
   view: CameraView;
   canUndo: boolean;
@@ -64,7 +63,6 @@ export type BuilderHudProps = {
   onToggleLabels: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
-  onToggleBeamCores: () => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -280,12 +278,6 @@ export default function BuilderHud(props: BuilderHudProps) {
           <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
           <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
           <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
-          <IconButton
-            icon="halo"
-            label={props.showBeamCores ? "Beams as glow only" : "Beam core lines and arrows"}
-            active={!props.showBeamCores}
-            onClick={props.onToggleBeamCores}
-          />
           <span className="builderIsland__sep" />
           <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
@@ -339,17 +331,17 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length ? (
-        <div className="builderHud__beams" aria-label="Beams">
+        <div className="builderIsland builderHud__beams" role="group" aria-label="Beams">
           {beams.map((beam) => (
             <button
               key={beam.id}
               type="button"
-              className={`builderBeamChip${selectedBeam?.id === beam.id ? " is-selected" : ""}`}
+              className={`builderBeamRow${selectedBeam?.id === beam.id ? " is-selected" : ""}`}
               aria-pressed={selectedBeam?.id === beam.id}
               onClick={() => props.onSelectBeam(beam.id)}
             >
-              <span className="builderBeamChip__dot" style={{ background: beam.color }} />
-              <span className="builderBeamChip__name">{beamDisplayName(beam)}</span>
+              <span className="builderBeamRow__dot" style={{ background: beam.color }} />
+              <span className="builderBeamRow__name">{beamDisplayName(beam)}</span>
               <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
             </button>
           ))}

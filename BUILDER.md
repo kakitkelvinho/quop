@@ -50,13 +50,18 @@ around.
 millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the
 parts) and opacity (10–100%), set with the sliders in its inspector. A
 selected beam is drawn fully opaque with a stronger halo, however faint it
-is, so clicking its chip always finds it.
+is, so clicking its row in the beams box always finds it.
 
-**Glow only.** A view toggle in the top toolbar draws every beam as its soft
-halo alone, with no crisp core line and no arrows, closer to how a laser
-really looks and quieter on a busy layout. The halo is stronger then, and
-still follows each beam's width and opacity. The beam being drawn keeps its
-core and arrows. Like Posts and Grid, it is not saved.
+**Round beams.** A beam's core is drawn as a lit tube along each leg, so it
+reads as light passing through the parts rather than a flat stroke, with its
+soft halo around it.
+
+**Arrow or no arrow, per beam.** A beam's inspector switches it between
+*Arrow* and *No arrow*. No arrow draws that beam as its soft halo alone, with
+no core and no arrows, closer to how a laser really looks and quieter on a busy
+layout. The halo is stronger then, and still follows the beam's width and
+opacity. It is saved with the beam; there is no table-wide switch. The beam
+being drawn always keeps its core and arrows.
 
 **A mirror in a beam angles itself.** A mirror that is a stop in the middle
 of a beam (not its first or last) turns so its face bisects the directions to
@@ -107,10 +112,11 @@ is on screen until it is needed:
   hints.
 - **Right**: the inspector, shown only while something is selected: a
   component, a beam, or a beam being drawn.
-- **Bottom**: one chip per beam with its path length (centre; click to
-  select), and the view controls (right). There is no readout: the inspector
-  and the chips already carry every number worth reading, and the corner box
-  that repeated them was dropped.
+- **Bottom left**: the beams box, one stacked row per beam with its colour,
+  name and path length; click a row to select that beam. It scrolls once there
+  are more beams than fit.
+- **Bottom right**: the view controls. There is no readout: the inspector and
+  the beams box already carry every number worth reading.
 
 | Action | How |
 | --- | --- |
@@ -120,7 +126,7 @@ is on screen until it is needed:
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam: it angles itself) |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
-| Select a beam | Click its chip along the bottom |
+| Select a beam | Click its row in the beams box, bottom left |
 | Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click a part to insert it into the segment it sits nearest, or past an end to extend the beam; `Enter` / `Esc` to finish |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then leaves Add stops, then deselects) |
@@ -186,7 +192,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beam chips, view controls |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
 | `src/components/builder/builder-icons.tsx` | The builder's icon set, icon button, and one glyph per part |

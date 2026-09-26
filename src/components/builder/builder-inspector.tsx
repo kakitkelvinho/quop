@@ -476,7 +476,7 @@ export function BeamInspector({
           aria-pressed={beam.arrows !== false}
           onClick={() => onUpdate({ arrows: undefined })}
         >
-          Arrows
+          Arrow
         </button>
         <button
           type="button"
@@ -484,7 +484,7 @@ export function BeamInspector({
           aria-pressed={beam.arrows === false}
           onClick={() => onUpdate({ arrows: false })}
         >
-          No arrows
+          No arrow
         </button>
       </div>
       <dl className="builderMetrics">
