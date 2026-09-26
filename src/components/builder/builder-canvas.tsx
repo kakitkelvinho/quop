@@ -647,15 +647,16 @@ const HALO = {
 
 /**
  * A beam, drawn in millimetres on the table: its width scales with the zoom
- * like the parts do. A selected beam draws fully opaque with a stronger halo,
- * so even a faint one can be found by clicking its chip.
+ * like the parts do. The core is a lit tube, one per leg with a ball at each
+ * turn, so it reads as a round beam passing through the parts rather than a
+ * flat stroke. A selected beam draws fully opaque with a stronger halo, so
+ * even a faint one can be found by clicking its row.
  */
 function BeamPath({
   points,
   color,
   width = BEAM_WIDTH_MM,
   opacity = 1,
-  showArrows = true,
   selected = false,
   core = true,
 }: {
@@ -663,9 +664,8 @@ function BeamPath({
   color: string;
   width?: number;
   opacity?: number;
-  showArrows?: boolean;
   selected?: boolean;
-  /** off leaves only the halo: no crisp core line and no arrows */
+  /** off leaves only the halo: no tube core and no arrows */
   core?: boolean;
 }) {
   const alpha = selected ? 1 : opacity;
@@ -676,26 +676,31 @@ function BeamPath({
     : selected
       ? HALO.aloneSelected
       : HALO.alone;
+  const radius = width / 2;
   const arrowRadius = Math.max(3.5, width * 1.9);
-  const arrows = useMemo(() => {
+  const legs = useMemo(() => {
     const result: {
       position: [number, number, number];
       quaternion: Quaternion;
+      length: number;
     }[] = [];
     for (let index = 1; index < points.length; index += 1) {
       const from = points[index - 1];
       const to = points[index];
       const direction = new Vector3().subVectors(to, from);
-      if (direction.length() < 40) continue;
+      const length = direction.length();
+      if (length < 1e-6) continue;
       const mid = new Vector3().addVectors(from, to).multiplyScalar(0.5);
       const quaternion = new Quaternion().setFromUnitVectors(
         UP,
-        direction.clone().normalize(),
+        direction.normalize(),
       );
-      result.push({ position: [mid.x, mid.y, mid.z], quaternion });
+      result.push({ position: [mid.x, mid.y, mid.z], quaternion, length });
     }
     return result;
   }, [points]);
+  const arrows = legs.filter((leg) => leg.length >= 40);
+  const turns = points.slice(1, -1);
 
   const flat = useMemo(
     () =>
@@ -705,9 +710,23 @@ function BeamPath({
     [points],
   );
 
+  // keyed so a fade rebuilds the material; see BeamLine on `transparent`
+  const coreMaterial = (
+    <meshStandardMaterial
+      key={alpha < 1 ? "faded" : "solid"}
+      color={color}
+      emissive={color}
+      emissiveIntensity={0.45}
+      roughness={0.35}
+      metalness={0}
+      transparent={alpha < 1}
+      opacity={alpha}
+    />
+  );
+
   return (
     <group>
-      {/* soft halo under a crisp core — a beam should glow, not just be a stroke */}
+      {/* soft halo around a round core — a beam should glow, not just be a stroke */}
       <BeamLine
         points={flat}
         color={color}
@@ -715,30 +734,35 @@ function BeamPath({
         opacity={halo.opacity * alpha}
         transparent
       />
-      {core ? (
-        <BeamLine
-          points={flat}
-          color={color}
-          width={width}
-          opacity={alpha}
-          transparent={alpha < 1}
-        />
-      ) : null}
-      {(core && showArrows ? arrows : []).map((arrow, index) => (
+      {core
+        ? legs.map((leg, index) => (
+            <mesh
+              key={`leg-${index}`}
+              position={leg.position}
+              quaternion={leg.quaternion}
+            >
+              <cylinderGeometry args={[radius, radius, leg.length, 16, 1, true]} />
+              {coreMaterial}
+            </mesh>
+          ))
+        : null}
+      {core
+        ? turns.map((point, index) => (
+            <mesh key={`turn-${index}`} position={point}>
+              <sphereGeometry args={[radius, 16, 12]} />
+              {coreMaterial}
+            </mesh>
+          ))
+        : null}
+      {(core ? arrows : []).map((arrow, index) => (
         <mesh
-          key={index}
+          key={`arrow-${index}`}
           position={arrow.position}
           quaternion={arrow.quaternion}
           renderOrder={2}
         >
           <coneGeometry args={[arrowRadius, arrowRadius * 2.7, 14]} />
-          {/* keyed so a fade rebuilds the material; see BeamLine on `transparent` */}
-          <meshBasicMaterial
-            key={alpha < 1 ? "faded" : "solid"}
-            color={color}
-            transparent={alpha < 1}
-            opacity={alpha}
-          />
+          {coreMaterial}
         </mesh>
       ))}
     </group>
@@ -769,8 +793,6 @@ export type BuilderCanvasProps = {
   beamDraft: string[];
   showLabels: boolean;
   showGrid: boolean;
-  /** draw every saved beam's core line and arrows; off, only their halos */
-  showBeamCores: boolean;
   /** draw posts; off, the parts float at their heights over their shadows */
   showPosts: boolean;
   view: CameraView;
@@ -809,7 +831,6 @@ export default function BuilderCanvas({
   beamDraft,
   showLabels,
   showGrid,
-  showBeamCores,
   showPosts,
   view,
   fitToken,
@@ -914,9 +935,8 @@ export default function BuilderCanvas({
             color={beam.color}
             width={beam.width}
             opacity={beam.opacity}
-            showArrows={beam.arrows !== false}
             selected={beam.id === selectedBeamId}
-            core={showBeamCores}
+            core={beam.arrows !== false}
           />
         );
       })}
