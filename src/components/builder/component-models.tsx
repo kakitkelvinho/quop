@@ -25,30 +25,42 @@ import type { ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
+  BLOCK_SIZE_MM,
   CAVITY_LENGTH_RANGE_MM,
-  COMPONENT_SPECS,
+  DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
+  DEFAULT_OBJECTIVE_COLOR,
+  DEFAULT_PARTICLE_COLOR,
+  DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
   FOCAL_LENGTH_RANGE_MM,
+  PARTICLE_RADIUS_MM,
   SAMPLE_OPACITY,
   clamp,
   componentDisplayName,
   componentRadius,
+  componentTop,
   type BuilderComponent,
   type LensShape,
+  type Vec3,
 } from "@/components/builder/types";
 
 const GLASS_BLUE = "#bfe3ff";
 const GLASS_CYAN = "#9fd8e0";
 const PLATE_AMBER = "#f4e2b0";
 const FILTER_TEAL = "#79b5a4";
-const SENSOR_GREEN = "#7be08a";
 const EMITTER_RED = "#ff5c5c";
 const SAMPLE_COPPER = "#c98a53";
 const CERAMIC = "#f2eee6";
 const FIBER_JACKET = "#f2c200";
+const GOLD = "#d4a93c";
+const SENSOR_SILICON = "#2c3a63";
+const CRYSTAL_CLEAR = "#dff3f5";
+const CRYSTAL_AMBER = "#f3d9a0";
+/** the sound wavefronts drawn inside an AOM's crystal */
+const ACOUSTIC_TEAL = "#2f7f86";
 /** Light held in place — a cavity's mode and a trapped particle share it. */
 const MODE_COLOR = "#ff5a36";
 
@@ -550,17 +562,25 @@ function BeamSplitter({ palette, color, axis }: ModelProps) {
 
 /**
  * The lens profile, revolved: a flat or curved face each side of a thin edge.
- * Curvature follows the lensmaker's equation (n = 1.5) but is exaggerated
- * threefold, because a real f = 100 mm lens bulges by under 2 mm; it is capped
- * at a hemisphere.
+ * Curvature follows the lensmaker's equation (n = 1.5): a face's real sag is
+ * about a²/2R. The sag, not the radius, is exaggerated (threefold, because a
+ * real f = 100 mm lens bulges by under 2 mm) and eased toward LENS_MAX_SAG, so
+ * it shrinks smoothly with focal length and never jumps. Exaggerating the
+ * radius instead hit a hemisphere cap: every short lens drew the same dome,
+ * then the bulge fell off a cliff just past it.
  */
+const LENS_SAG_GAIN = 3;
+const LENS_MAX_SAG = 8;
+
 function lensProfile(shape: LensShape, focalLength: number): Vector2[] {
   const a = OPTIC_D / 2;
   const f = clamp(focalLength, FOCAL_LENGTH_RANGE_MM);
   const curvedFaces = shape === "biconvex" ? 2 : 1;
   const realRadius = 0.5 * f * curvedFaces;
-  const radius = Math.max(a, realRadius / 3);
-  const sag = radius - Math.sqrt(radius * radius - a * a);
+  const realSag = (a * a) / (2 * realRadius);
+  const sag = LENS_MAX_SAG * (1 - Math.exp((-LENS_SAG_GAIN * realSag) / LENS_MAX_SAG));
+  // the sphere through the rim and that sag
+  const radius = (a * a + sag * sag) / (2 * sag);
   const edge = 1;
   const steps = 16;
   const face = (sign: 1 | -1) =>
@@ -966,58 +986,381 @@ function Cavity({ color, axis, length }: ModelProps & { length: number }) {
   );
 }
 
+/** Below this a particle is hard to click, so an unseen sphere this size catches the pointer. */
+const PARTICLE_HIT_MM = 6;
+
 /**
- * A particle: a small glowing sphere in the mode's colour, inside a soft halo
- * that makes it big enough to see and to click. In a host it sits at the
- * host's centre; alone it floats on the axis.
+ * A particle: a sphere of the user's colour and radius, so the same part can
+ * stand for a silica bead, an ion or a droplet. It glows faintly so it still
+ * reads inside a dark trap. In a host it sits at the host's centre; alone it
+ * floats on the axis.
  */
-function Particle({ axis }: { axis: number }) {
+function Particle({ axis, color, radius }: { axis: number; color: string; radius: number }) {
   return (
     <group position={[0, axis, 0]}>
       <mesh>
-        <sphereGeometry args={[2.2, 20, 14]} />
-        <meshBasicMaterial color={MODE_COLOR} toneMapped={false} />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[5, 20, 14]} />
-        <meshBasicMaterial
-          color={MODE_COLOR}
-          transparent
-          opacity={0.3}
-          depthWrite={false}
-          toneMapped={false}
+        <sphereGeometry args={[radius, 32, 20]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.35}
+          roughness={0.3}
+          metalness={0}
         />
+      </mesh>
+      {radius < PARTICLE_HIT_MM ? (
+        <mesh>
+          <sphereGeometry args={[PARTICLE_HIT_MM, 12, 8]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
+/**
+ * A Thorlabs LB1-style beam block: a stack of thin black-anodised fins between
+ * a top and a bottom plate, its broad face to the beam (-x). The fin edges
+ * show as bare aluminium down each end; a cap screw and two pins sit on top.
+ */
+const BLOCK_FINS_X = 24;
+const BLOCK_FINS_Y = 26;
+const BLOCK_FINS_Z = 50;
+const BLOCK_PLATE_MM = 1.6;
+
+function BeamBlock({ palette, axis }: ModelProps) {
+  const plateY = BLOCK_FINS_Y / 2 + BLOCK_PLATE_MM / 2;
+  const black = palette.mode === "dark" ? "#15181d" : "#1b1f26";
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - plateY - BLOCK_PLATE_MM / 2} />
+      {[-1, 1].map((side) => (
+        <RoundedBox
+          key={side}
+          args={[BLOCK_FINS_X + 6, BLOCK_PLATE_MM, BLOCK_FINS_Z + 8]}
+          radius={0.6}
+          smoothness={2}
+          position={[0, axis + side * plateY, 0]}
+        >
+          <meshStandardMaterial color={black} roughness={0.5} metalness={0.35} />
+        </RoundedBox>
+      ))}
+      <mesh position={[0, axis, 0]}>
+        <boxGeometry args={[BLOCK_FINS_X, BLOCK_FINS_Y, BLOCK_FINS_Z]} />
+        <meshStandardMaterial color={black} roughness={0.7} metalness={0.2} />
+      </mesh>
+      {/* the fin stack's grooves across the front face */}
+      {Array.from({ length: 9 }, (_, index) => (
+        <mesh
+          key={index}
+          position={[-BLOCK_FINS_X / 2 - 0.05, axis - BLOCK_FINS_Y / 2 + (index + 1) * (BLOCK_FINS_Y / 10), 0]}
+        >
+          <boxGeometry args={[0.1, 0.35, BLOCK_FINS_Z - 1]} />
+          <meshBasicMaterial color="#3a414c" />
+        </mesh>
+      ))}
+      {/* bare fin edges at each end */}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[0, axis, side * (BLOCK_FINS_Z / 2 + 1)]}>
+          <boxGeometry args={[BLOCK_FINS_X - 2, BLOCK_FINS_Y, 2]} />
+          <Hardware palette={palette} />
+        </mesh>
+      ))}
+      <mesh position={[0, axis + plateY + 2.5, 0]}>
+        <cylinderGeometry args={[3.2, 3.2, 4, 16]} />
+        <meshStandardMaterial color={black} roughness={0.45} metalness={0.4} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[0, axis + plateY + 1.3, side * 16]}>
+          <cylinderGeometry args={[3, 3, 1.4, 20]} />
+          <Stainless palette={palette} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * A generic infinity-corrected microscope objective, beam in from -x and the
+ * tip toward the focus (+x): a brass RMS thread screwed into a small plate on
+ * the post, a satin barrel with a black band, and a taper down to the front
+ * lens. The barrel takes the component colour, so it can be chrome, champagne
+ * or gunmetal like the real ones.
+ */
+const OBJECTIVE_BRASS = "#c9a24a";
+const OBJECTIVE_PLATE_GEOMETRY = boredPlate(36, 4, 20, 6);
+/** the plate's middle along the beam: drawn at x = -23 and extruded 6 mm back */
+const OBJECTIVE_PLATE_X = -26;
+
+function Objective({ palette, color, axis }: ModelProps) {
+  const barrel = color ?? DEFAULT_OBJECTIVE_COLOR;
+  const satin = (
+    <meshStandardMaterial color={barrel} roughness={0.28} metalness={0.85} />
+  );
+  return (
+    <group>
+      {/* the post stands under the plate the thread screws into, not under the barrel */}
+      <group position={[OBJECTIVE_PLATE_X, 0, 0]}>
+        <Pillar palette={palette} top={axis - 18} />
+      </group>
+      <mesh
+        geometry={OBJECTIVE_PLATE_GEOMETRY}
+        position={[-23, axis, 0]}
+        rotation={[0, -Math.PI / 2, 0]}
+      >
+        <Anodised color={palette.anodise} />
+      </mesh>
+      <mesh position={[-26, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[10, 10, 8, 32]} />
+        <meshStandardMaterial color={OBJECTIVE_BRASS} roughness={0.35} metalness={0.9} />
+      </mesh>
+      <mesh position={[-21, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[14, 14, 4, 40]} />
+        {satin}
+      </mesh>
+      <mesh position={[-4, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[16, 16, 30, 48]} />
+        {satin}
+      </mesh>
+      <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[16.15, 16.15, 1.6, 48]} />
+        <meshStandardMaterial color="#12161d" roughness={0.5} metalness={0.2} />
+      </mesh>
+      {/* the taper, the spring-loaded nose and the front lens */}
+      <mesh position={[16, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[6, 16, 10, 48]} />
+        {satin}
+      </mesh>
+      <mesh position={[23, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[4.2, 6, 4, 32]} />
+        <Stainless palette={palette} />
+      </mesh>
+      <mesh position={[25.05, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[2.4, 2.4, 0.2, 24]} />
+        <meshStandardMaterial color="#3a4a5c" roughness={0.05} metalness={0.2} />
       </mesh>
     </group>
   );
 }
 
-function Photodiode({ palette, axis }: ModelProps) {
+/**
+ * A plain box for any part the builder doesn't draw: the user sets its
+ * dimensions, colour and label. A Faraday rotator is this block between two
+ * beam splitters.
+ */
+function GenericBlock({ palette, color, axis, size }: ModelProps & { size: Vec3 }) {
+  const [dx, dy, dz] = size;
   return (
     <group>
-      <Pillar palette={palette} top={axis - 14} />
+      <Pillar palette={palette} top={axis - dy / 2} />
       <RoundedBox
-        args={[26, 26, 22]}
-        radius={0.8}
+        args={[dx, dy, dz]}
+        radius={Math.min(1.2, Math.min(dx, dy, dz) / 4)}
         smoothness={3}
-        position={[2, axis, 0]}
+        position={[0, axis, 0]}
       >
-        <Enamel color={palette.body} />
+        <Enamel color={color ?? DEFAULT_BLOCK_COLOR} />
       </RoundedBox>
-      <mesh position={[-11.5, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[8, 8, 3, 24]} />
-        <meshStandardMaterial
-          color={SENSOR_GREEN}
-          emissive={SENSOR_GREEN}
-          emissiveIntensity={0.35}
-          roughness={ENAMEL_ROUGHNESS}
-        />
-      </mesh>
-      {/* BNC stub out the back */}
-      <mesh position={[17, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[4, 4, 8, 16]} />
+      {/* the clear aperture on each beam face */}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={side}
+          position={[(side * dx) / 2 + side * 0.05, axis, 0]}
+          rotation={[0, (side * Math.PI) / 2, 0]}
+        >
+          <circleGeometry args={[Math.min(5, dy / 3, dz / 3), 28]} />
+          <meshStandardMaterial color="#12161d" roughness={0.4} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** An SMA stub pointing up from `at`: a stainless body and a gold pin. */
+function SmaConnector({
+  palette,
+  at,
+}: {
+  palette: ScenePalette;
+  at: [number, number, number];
+}) {
+  return (
+    <group position={at}>
+      <mesh position={[0, 3.5, 0]}>
+        <cylinderGeometry args={[3, 3, 7, 18]} />
         <Stainless palette={palette} />
       </mesh>
+      <mesh position={[0, 7.6, 0]}>
+        <cylinderGeometry args={[1, 1, 1.2, 10]} />
+        <meshStandardMaterial color={GOLD} roughness={0.3} metalness={0.9} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * The photodiode as lab diagrams draw it: a face the beam lands on (-x), a
+ * dome in the component colour bulging away from the beam, and a fiber off
+ * the dome's tip curling down to the table. The face is set back into a wide,
+ * shallow cup with the real, small active area in it: a square silicon chip
+ * in a gold frame. Colour the dome to tell detectors apart.
+ */
+const PD_RADIUS = 13;
+const PD_FACE_DEPTH = 4;
+const PD_CUP_RADIUS = 9.5;
+const PD_CUP_BLACK = "#20252d";
+const PD_FACE_GEOMETRY = annulus(PD_RADIUS, PD_CUP_RADIUS, PD_FACE_DEPTH);
+
+/** The fiber out of the dome's tip (+x) and down to the table. */
+function photodiodeFiberCurve(axis: number) {
+  const x = PD_RADIUS + 4;
+  return new CatmullRomCurve3([
+    new Vector3(x, axis, 0),
+    new Vector3(x + 14, axis - 2, 0),
+    new Vector3(x + 26, axis * 0.7, 6),
+    new Vector3(x + 32, axis * 0.33, 14),
+    new Vector3(x + 40, 4, 26),
+    new Vector3(x + 58, 1.8, 40),
+  ]);
+}
+
+function Photodiode({ palette, color, axis }: ModelProps) {
+  const fiber = useMemo(() => photodiodeFiberCurve(axis), [axis]);
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - PD_RADIUS} />
+      <group position={[0, axis, 0]}>
+        {/* the face plate, extruded from x = 0 toward the beam */}
+        <mesh geometry={PD_FACE_GEOMETRY} rotation={[0, -Math.PI / 2, 0]}>
+          <Enamel color={palette.body} />
+        </mesh>
+        {/* the cup's wall and floor. Unlit, and the wall a hair inside the
+            plate's bore so the two surfaces never fight */}
+        <mesh position={[-PD_FACE_DEPTH / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[PD_CUP_RADIUS - 0.1, PD_CUP_RADIUS - 0.1, PD_FACE_DEPTH, 48, 1, true]} />
+          <meshBasicMaterial color={PD_CUP_BLACK} side={DoubleSide} />
+        </mesh>
+        <mesh position={[-1.5, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+          <circleGeometry args={[PD_CUP_RADIUS, 48]} />
+          <meshStandardMaterial color={PD_CUP_BLACK} roughness={0.6} />
+        </mesh>
+        <mesh position={[-1.75, 0, 0]}>
+          <boxGeometry args={[0.5, 6, 6]} />
+          <meshStandardMaterial color={GOLD} roughness={0.25} metalness={0.9} />
+        </mesh>
+        <mesh position={[-2.05, 0, 0]}>
+          <boxGeometry args={[0.2, 4.4, 4.4]} />
+          <meshStandardMaterial color={SENSOR_SILICON} roughness={0.12} metalness={0.5} />
+        </mesh>
+        <mesh rotation={[0, 0, -Math.PI / 2]}>
+          <sphereGeometry args={[PD_RADIUS, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <Enamel color={color ?? DEFAULT_PHOTODIODE_COLOR} />
+        </mesh>
+        <mesh position={[PD_RADIUS + 2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[2.4, 2.4, 5, 14]} />
+          <Hardware palette={palette} />
+        </mesh>
+      </group>
+      <mesh>
+        <tubeGeometry args={[fiber, 48, 1.6, 10]} />
+        <Enamel color={FIBER_JACKET} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * An acousto-optic modulator, drawn bare: the crystal with the beam along x
+ * and a piezo transducer bonded on top that launches the sound wave down
+ * through it. The wavefronts are faint sheets, so the grating the beam
+ * diffracts off can be seen.
+ */
+const AOM_CRYSTAL: [number, number, number] = [30, 14, 12];
+
+function Aom({ palette, axis }: ModelProps) {
+  const [length, height, width] = AOM_CRYSTAL;
+  const top = axis + height / 2;
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - height / 2 - 4} />
+      <RoundedBox
+        args={[length + 10, 4, width + 12]}
+        radius={0.8}
+        smoothness={2}
+        position={[0, axis - height / 2 - 2, 0]}
+      >
+        <Anodised color={palette.anodise} />
+      </RoundedBox>
+      <mesh position={[0, axis, 0]}>
+        <boxGeometry args={AOM_CRYSTAL} />
+        <Glass tint={CRYSTAL_CLEAR} thickness={width} />
+      </mesh>
+      {Array.from({ length: 5 }, (_, index) => (
+        <mesh
+          key={index}
+          position={[0, axis - height / 2 + ((index + 1) * height) / 6, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          raycast={NO_RAYCAST}
+        >
+          <planeGeometry args={[length - 2, width - 2]} />
+          <meshBasicMaterial
+            color={ACOUSTIC_TEAL}
+            transparent
+            opacity={0.22}
+            depthWrite={false}
+            side={DoubleSide}
+          />
+        </mesh>
+      ))}
+      {/* the transducer: a gold electrode under the black piezo slab */}
+      <mesh position={[0, top + 0.3, 0]}>
+        <boxGeometry args={[length * 0.6, 0.6, width]} />
+        <meshStandardMaterial color={GOLD} roughness={0.3} metalness={0.9} />
+      </mesh>
+      <mesh position={[0, top + 2, 0]}>
+        <boxGeometry args={[length * 0.6, 3, width]} />
+        <Enamel color="#1b1f26" />
+      </mesh>
+      <SmaConnector palette={palette} at={[0, top + 3.5, 0]} />
+    </group>
+  );
+}
+
+/**
+ * An electro-optic modulator, drawn bare: a long crystal bar along the beam
+ * between gold electrodes top and bottom, wired up to an SMA.
+ */
+const EOM_LENGTH = 44;
+const EOM_SIDE = 9;
+
+function Eom({ palette, axis }: ModelProps) {
+  const top = axis + EOM_SIDE / 2;
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - EOM_SIDE / 2 - 5} />
+      <RoundedBox
+        args={[EOM_LENGTH + 10, 4, EOM_SIDE + 14]}
+        radius={0.8}
+        smoothness={2}
+        position={[0, axis - EOM_SIDE / 2 - 3, 0]}
+      >
+        <Anodised color={palette.anodise} />
+      </RoundedBox>
+      <mesh position={[0, axis, 0]}>
+        <boxGeometry args={[EOM_LENGTH, EOM_SIDE, EOM_SIDE]} />
+        <Glass tint={CRYSTAL_AMBER} dense thickness={EOM_SIDE} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[0, axis + side * (EOM_SIDE / 2 + 0.4), 0]}>
+          <boxGeometry args={[EOM_LENGTH - 4, 0.8, EOM_SIDE]} />
+          <meshStandardMaterial color={GOLD} roughness={0.3} metalness={0.9} />
+        </mesh>
+      ))}
+      <mesh position={[0, top + 3, 0]}>
+        <cylinderGeometry args={[0.5, 0.5, 5, 8]} />
+        <meshStandardMaterial color={GOLD} roughness={0.3} metalness={0.9} />
+      </mesh>
+      <SmaConnector palette={palette} at={[0, top + 5.5, 0]} />
     </group>
   );
 }
@@ -1151,7 +1494,7 @@ export function ComponentMesh({
   onPointerOver,
   onPointerOut,
 }: ComponentMeshProps) {
-  const spec = COMPONENT_SPECS[component.type];
+  const top = componentTop(component);
   const radius = componentRadius(component);
   const [x, axis, z] = component.position;
   const modelProps = useMemo<ModelProps>(
@@ -1221,8 +1564,21 @@ export function ComponentMesh({
           length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
         />
       ) : null}
-      {component.type === "particle" ? <Particle axis={axis} /> : null}
+      {component.type === "particle" ? (
+        <Particle
+          axis={axis}
+          color={component.color ?? DEFAULT_PARTICLE_COLOR}
+          radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
+        />
+      ) : null}
       {component.type === "photodiode" ? <Photodiode {...modelProps} /> : null}
+      {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
+      {component.type === "objective" ? <Objective {...modelProps} /> : null}
+      {component.type === "block" ? (
+        <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
+      ) : null}
+      {component.type === "aom" ? <Aom {...modelProps} /> : null}
+      {component.type === "eom" ? <Eom {...modelProps} /> : null}
       {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
       {component.type === "spectrometer" ? (
         <Spectrometer {...modelProps} />
@@ -1235,12 +1591,12 @@ export function ComponentMesh({
         <SelectionRing radius={radius} color={palette.accent} />
       ) : null}
       {beamOrder ? (
-        <BeamOrderBadge order={beamOrder} height={axis + spec.top} />
+        <BeamOrderBadge order={beamOrder} height={axis + top} />
       ) : null}
 
       {showLabel && !component.host ? (
         <Html
-          position={[0, axis + spec.top + 12, 0]}
+          position={[0, axis + top + 12, 0]}
           center
           zIndexRange={[0, 0]}
           className="builderHtmlLayer"
