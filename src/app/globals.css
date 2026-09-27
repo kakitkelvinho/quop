@@ -2590,6 +2590,14 @@ html[data-theme="dark"] .builderOrderBadge {
   );
 }
 
+/* on a phone the equations are laid out clear of the welcome text, and the
+   board is too small for the fade to leave them legible */
+.chalkboard.is-still .chalkLayer {
+  --eq-size: 1.35rem;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
 /* padded so the eraser's mask box also covers the chalk's rough edges and dust */
 .chalkEq {
   position: absolute;
