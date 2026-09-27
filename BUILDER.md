@@ -85,6 +85,14 @@ Everything on a post stands on one kind of post, a 1-inch pedestal pillar;
 a lens stands on a slim rod instead, because a holder would hide the glass.
 Parts too small to see at true scale (the sample slab, the Paul trap, a
 particle) are drawn larger than life and float at their height.
+Parts whose hardware hides what they do are drawn the way lab diagrams draw
+them instead: a photodiode is a coloured dome behind a face with a small
+silicon chip set into a cup, a fiber off the dome's tip; an AOM or EOM is its
+bare crystal, with the transducer or electrodes that drive it. Anything the
+builder has no model for is a generic block, sized, coloured and labelled by
+hand (a Faraday rotator is a block between two beam splitters). A lens's bulge
+is exaggerated so it can be seen, but still shrinks smoothly with focal
+length, so f = 50 and f = 500 never look alike.
 
 **A particle lives in a host.** Dropped on a Paul trap or a cavity, a particle
 snaps to its centre and moves with it; dragged or nudged clear, it lets go.
