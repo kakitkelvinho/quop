@@ -25,19 +25,30 @@ import type { ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
+  PrototypeAom,
+  PrototypeEom,
+  PrototypePhotodiode,
+} from "@/components/builder/component-models.prototype";
+import {
+  BLOCK_SIZE_MM,
   CAVITY_LENGTH_RANGE_MM,
-  COMPONENT_SPECS,
+  DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
+  DEFAULT_OBJECTIVE_COLOR,
+  DEFAULT_PARTICLE_COLOR,
   DEFAULT_SAMPLE_COLOR,
   FOCAL_LENGTH_RANGE_MM,
+  PARTICLE_RADIUS_MM,
   SAMPLE_OPACITY,
   clamp,
   componentDisplayName,
   componentRadius,
+  componentTop,
   type BuilderComponent,
   type LensShape,
+  type Vec3,
 } from "@/components/builder/types";
 
 const GLASS_BLUE = "#bfe3ff";
@@ -53,14 +64,14 @@ const FIBER_JACKET = "#f2c200";
 const MODE_COLOR = "#ff5a36";
 
 /** `axis` is the component's height: the model draws its optical centre there. */
-type ModelProps = { palette: ScenePalette; color?: string; axis: number };
+export type ModelProps = { palette: ScenePalette; color?: string; axis: number };
 
 /**
  * Whether posts are drawn: the view's toggle, read by every post, riser and
  * post adapter. A context rather than a prop so the models don't each thread
  * it through to their `Pillar`.
  */
-const PostsVisible = createContext(true);
+export const PostsVisible = createContext(true);
 
 /** Glow and the parts inside a host must not catch the pointer. */
 const NO_RAYCAST = () => null;
@@ -94,7 +105,7 @@ const PLATE = 49;
  * mount. Built once at module scope: geometry construction needs no GL
  * context, and every mount on the bench shares the same casting.
  */
-function boredPlate(size: number, corner: number, bore: number, depth: number) {
+export function boredPlate(size: number, corner: number, bore: number, depth: number) {
   const half = size / 2;
   const shape = new Shape();
   shape.moveTo(-half + corner, -half);
@@ -123,7 +134,7 @@ function boredPlate(size: number, corner: number, bore: number, depth: number) {
 const FILTER_PLATE_GEOMETRY = boredPlate(38, 5, 22, 6);
 
 /** A flat ring, extruded along +z: mount bodies, dials, trap holders. */
-function annulus(outerRadius: number, innerRadius: number, depth: number) {
+export function annulus(outerRadius: number, innerRadius: number, depth: number) {
   const shape = new Shape();
   shape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
   const hole = new Path();
@@ -161,7 +172,7 @@ function fiberJacketCurve(axis: number) {
 const ENAMEL_ROUGHNESS = 0.18;
 const ENAMEL_METALNESS = 0.04;
 
-function Enamel({ color, side }: { color: string; side?: Side }) {
+export function Enamel({ color, side }: { color: string; side?: Side }) {
   return (
     <meshStandardMaterial
       color={color}
@@ -173,7 +184,7 @@ function Enamel({ color, side }: { color: string; side?: Side }) {
 }
 
 /** Mount plates: the anodised colour, carried in enamel. */
-function Anodised({ color, side }: { color: string; side?: Side }) {
+export function Anodised({ color, side }: { color: string; side?: Side }) {
   return <Enamel color={color} side={side} />;
 }
 
@@ -188,7 +199,7 @@ function Anodised({ color, side }: { color: string; side?: Side }) {
  * part: at the default a 2 mm plate refracts like a cube and pulls the parts
  * around it (a mount's dial ticks) into view as ghosts.
  */
-function Glass({
+export function Glass({
   tint,
   dense = false,
   thickness = 12,
@@ -215,7 +226,7 @@ function Glass({
   );
 }
 
-function Stainless({ palette }: { palette: ScenePalette }) {
+export function Stainless({ palette }: { palette: ScenePalette }) {
   return (
     <meshStandardMaterial
       color={palette.metal}
@@ -230,7 +241,7 @@ function Stainless({ palette }: { palette: ScenePalette }) {
  * full brightness they out-shout the optics, which is the opposite of how a
  * bench reads. Knurled screw heads keep the brighter `Stainless`.
  */
-function Hardware({ palette }: { palette: ScenePalette }) {
+export function Hardware({ palette }: { palette: ScenePalette }) {
   return (
     <meshStandardMaterial
       color={palette.mode === "dark" ? "#6b727e" : "#a7aeb8"}
@@ -251,7 +262,7 @@ function Hardware({ palette }: { palette: ScenePalette }) {
 const PILLAR_RADIUS = 9;
 const PILLAR_BASE_HEIGHT = 6;
 
-function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
+export function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
   const length = Math.max(1, top - PILLAR_BASE_HEIGHT);
   if (!useContext(PostsVisible)) return null;
   return (
@@ -551,15 +562,15 @@ function BeamSplitter({ palette, color, axis }: ModelProps) {
 /**
  * The lens profile, revolved: a flat or curved face each side of a thin edge.
  * Curvature follows the lensmaker's equation (n = 1.5) but is exaggerated
- * threefold, because a real f = 100 mm lens bulges by under 2 mm; it is capped
- * at a hemisphere.
+ * sixfold, because a real f = 100 mm lens bulges by under 2 mm; it is capped
+ * at a hemisphere, which a biconvex lens only reaches below f ≈ 75 mm.
  */
 function lensProfile(shape: LensShape, focalLength: number): Vector2[] {
   const a = OPTIC_D / 2;
   const f = clamp(focalLength, FOCAL_LENGTH_RANGE_MM);
   const curvedFaces = shape === "biconvex" ? 2 : 1;
   const realRadius = 0.5 * f * curvedFaces;
-  const radius = Math.max(a, realRadius / 3);
+  const radius = Math.max(a, realRadius / 6);
   const sag = radius - Math.sqrt(radius * radius - a * a);
   const edge = 1;
   const steps = 16;
@@ -966,28 +977,187 @@ function Cavity({ color, axis, length }: ModelProps & { length: number }) {
   );
 }
 
+/** Below this a particle is hard to click, so an unseen sphere this size catches the pointer. */
+const PARTICLE_HIT_MM = 6;
+
 /**
- * A particle: a small glowing sphere in the mode's colour, inside a soft halo
- * that makes it big enough to see and to click. In a host it sits at the
- * host's centre; alone it floats on the axis.
+ * A particle: a sphere of the user's colour and radius, so the same part can
+ * stand for a silica bead, an ion or a droplet. It glows faintly so it still
+ * reads inside a dark trap. In a host it sits at the host's centre; alone it
+ * floats on the axis.
  */
-function Particle({ axis }: { axis: number }) {
+function Particle({ axis, color, radius }: { axis: number; color: string; radius: number }) {
   return (
     <group position={[0, axis, 0]}>
       <mesh>
-        <sphereGeometry args={[2.2, 20, 14]} />
-        <meshBasicMaterial color={MODE_COLOR} toneMapped={false} />
-      </mesh>
-      <mesh>
-        <sphereGeometry args={[5, 20, 14]} />
-        <meshBasicMaterial
-          color={MODE_COLOR}
-          transparent
-          opacity={0.3}
-          depthWrite={false}
-          toneMapped={false}
+        <sphereGeometry args={[radius, 32, 20]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.35}
+          roughness={0.3}
+          metalness={0}
         />
       </mesh>
+      {radius < PARTICLE_HIT_MM ? (
+        <mesh>
+          <sphereGeometry args={[PARTICLE_HIT_MM, 12, 8]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+        </mesh>
+      ) : null}
+    </group>
+  );
+}
+
+/**
+ * A Thorlabs LB1-style beam block: a stack of thin black-anodised fins between
+ * a top and a bottom plate, its broad face to the beam (-x). The fin edges
+ * show as bare aluminium down each end; a cap screw and two pins sit on top.
+ */
+const BLOCK_FINS_X = 24;
+const BLOCK_FINS_Y = 26;
+const BLOCK_FINS_Z = 50;
+const BLOCK_PLATE_MM = 1.6;
+
+function BeamBlock({ palette, axis }: ModelProps) {
+  const plateY = BLOCK_FINS_Y / 2 + BLOCK_PLATE_MM / 2;
+  const black = palette.mode === "dark" ? "#15181d" : "#1b1f26";
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - plateY - BLOCK_PLATE_MM / 2} />
+      {[-1, 1].map((side) => (
+        <RoundedBox
+          key={side}
+          args={[BLOCK_FINS_X + 6, BLOCK_PLATE_MM, BLOCK_FINS_Z + 8]}
+          radius={0.6}
+          smoothness={2}
+          position={[0, axis + side * plateY, 0]}
+        >
+          <meshStandardMaterial color={black} roughness={0.5} metalness={0.35} />
+        </RoundedBox>
+      ))}
+      <mesh position={[0, axis, 0]}>
+        <boxGeometry args={[BLOCK_FINS_X, BLOCK_FINS_Y, BLOCK_FINS_Z]} />
+        <meshStandardMaterial color={black} roughness={0.7} metalness={0.2} />
+      </mesh>
+      {/* the fin stack's grooves across the front face */}
+      {Array.from({ length: 9 }, (_, index) => (
+        <mesh
+          key={index}
+          position={[-BLOCK_FINS_X / 2 - 0.05, axis - BLOCK_FINS_Y / 2 + (index + 1) * (BLOCK_FINS_Y / 10), 0]}
+        >
+          <boxGeometry args={[0.1, 0.35, BLOCK_FINS_Z - 1]} />
+          <meshBasicMaterial color="#3a414c" />
+        </mesh>
+      ))}
+      {/* bare fin edges at each end */}
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[0, axis, side * (BLOCK_FINS_Z / 2 + 1)]}>
+          <boxGeometry args={[BLOCK_FINS_X - 2, BLOCK_FINS_Y, 2]} />
+          <Hardware palette={palette} />
+        </mesh>
+      ))}
+      <mesh position={[0, axis + plateY + 2.5, 0]}>
+        <cylinderGeometry args={[3.2, 3.2, 4, 16]} />
+        <meshStandardMaterial color={black} roughness={0.45} metalness={0.4} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        <mesh key={side} position={[0, axis + plateY + 1.3, side * 16]}>
+          <cylinderGeometry args={[3, 3, 1.4, 20]} />
+          <Stainless palette={palette} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * A generic infinity-corrected microscope objective, beam in from -x and the
+ * tip toward the focus (+x): a brass RMS thread screwed into a small plate on
+ * the post, a satin barrel with a black band, and a taper down to the front
+ * lens. The barrel takes the component colour, so it can be chrome, champagne
+ * or gunmetal like the real ones.
+ */
+const OBJECTIVE_BRASS = "#c9a24a";
+const OBJECTIVE_PLATE_GEOMETRY = boredPlate(36, 4, 20, 6);
+
+function Objective({ palette, color, axis }: ModelProps) {
+  const barrel = color ?? DEFAULT_OBJECTIVE_COLOR;
+  const satin = (
+    <meshStandardMaterial color={barrel} roughness={0.28} metalness={0.85} />
+  );
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - 18} />
+      <mesh
+        geometry={OBJECTIVE_PLATE_GEOMETRY}
+        position={[-23, axis, 0]}
+        rotation={[0, -Math.PI / 2, 0]}
+      >
+        <Anodised color={palette.anodise} />
+      </mesh>
+      <mesh position={[-26, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[10, 10, 8, 32]} />
+        <meshStandardMaterial color={OBJECTIVE_BRASS} roughness={0.35} metalness={0.9} />
+      </mesh>
+      <mesh position={[-21, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[14, 14, 4, 40]} />
+        {satin}
+      </mesh>
+      <mesh position={[-4, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[16, 16, 30, 48]} />
+        {satin}
+      </mesh>
+      <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[16.15, 16.15, 1.6, 48]} />
+        <meshStandardMaterial color="#12161d" roughness={0.5} metalness={0.2} />
+      </mesh>
+      {/* the taper, the spring-loaded nose and the front lens */}
+      <mesh position={[16, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[6, 16, 10, 48]} />
+        {satin}
+      </mesh>
+      <mesh position={[23, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[4.2, 6, 4, 32]} />
+        <Stainless palette={palette} />
+      </mesh>
+      <mesh position={[25.05, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[2.4, 2.4, 0.2, 24]} />
+        <meshStandardMaterial color="#3a4a5c" roughness={0.05} metalness={0.2} />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * A plain box for any part the builder doesn't draw: the user sets its
+ * dimensions, colour and label. A Faraday rotator is this block between two
+ * beam splitters.
+ */
+function GenericBlock({ palette, color, axis, size }: ModelProps & { size: Vec3 }) {
+  const [dx, dy, dz] = size;
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - dy / 2} />
+      <RoundedBox
+        args={[dx, dy, dz]}
+        radius={Math.min(1.2, Math.min(dx, dy, dz) / 4)}
+        smoothness={3}
+        position={[0, axis, 0]}
+      >
+        <Enamel color={color ?? DEFAULT_BLOCK_COLOR} />
+      </RoundedBox>
+      {/* the clear aperture on each beam face */}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={side}
+          position={[(side * dx) / 2 + side * 0.05, axis, 0]}
+          rotation={[0, (side * Math.PI) / 2, 0]}
+        >
+          <circleGeometry args={[Math.min(5, dy / 3, dz / 3), 28]} />
+          <meshStandardMaterial color="#12161d" roughness={0.4} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -1151,7 +1321,7 @@ export function ComponentMesh({
   onPointerOver,
   onPointerOut,
 }: ComponentMeshProps) {
-  const spec = COMPONENT_SPECS[component.type];
+  const top = componentTop(component);
   const radius = componentRadius(component);
   const [x, axis, z] = component.position;
   const modelProps = useMemo<ModelProps>(
@@ -1221,8 +1391,23 @@ export function ComponentMesh({
           length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
         />
       ) : null}
-      {component.type === "particle" ? <Particle axis={axis} /> : null}
-      {component.type === "photodiode" ? <Photodiode {...modelProps} /> : null}
+      {component.type === "particle" ? (
+        <Particle
+          axis={axis}
+          color={component.color ?? DEFAULT_PARTICLE_COLOR}
+          radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
+        />
+      ) : null}
+      {component.type === "photodiode" ? (
+        <PrototypePhotodiode {...modelProps} fallback={<Photodiode {...modelProps} />} />
+      ) : null}
+      {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
+      {component.type === "objective" ? <Objective {...modelProps} /> : null}
+      {component.type === "block" ? (
+        <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
+      ) : null}
+      {component.type === "aom" ? <PrototypeAom {...modelProps} /> : null}
+      {component.type === "eom" ? <PrototypeEom {...modelProps} /> : null}
       {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
       {component.type === "spectrometer" ? (
         <Spectrometer {...modelProps} />
@@ -1235,12 +1420,12 @@ export function ComponentMesh({
         <SelectionRing radius={radius} color={palette.accent} />
       ) : null}
       {beamOrder ? (
-        <BeamOrderBadge order={beamOrder} height={axis + spec.top} />
+        <BeamOrderBadge order={beamOrder} height={axis + top} />
       ) : null}
 
       {showLabel && !component.host ? (
         <Html
-          position={[0, axis + spec.top + 12, 0]}
+          position={[0, axis + top + 12, 0]}
           center
           zIndexRange={[0, 0]}
           className="builderHtmlLayer"

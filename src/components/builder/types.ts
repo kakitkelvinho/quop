@@ -22,7 +22,12 @@ export type ComponentType =
   | "particle"
   | "photodiode"
   | "camera"
-  | "spectrometer";
+  | "spectrometer"
+  | "beam-block"
+  | "objective"
+  | "block"
+  | "aom"
+  | "eom";
 
 export type LensShape = "plano-convex" | "biconvex";
 
@@ -51,6 +56,10 @@ export type BuilderComponent = {
   cavityLength?: number;
   /** particle only: the trap or cavity it sits in; it sits at the host's centre */
   host?: string;
+  /** particle only, mm; missing means PARTICLE_RADIUS_MM */
+  particleRadius?: number;
+  /** block only, mm along [beam (x), height (y), across (z)]; missing means BLOCK_SIZE_MM */
+  size?: Vec3;
 };
 
 export type Beam = {
@@ -217,6 +226,46 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 70,
     hint: "Disperses the light and records a spectrum.",
   },
+  "beam-block": {
+    label: "Beam block",
+    tag: "Dump",
+    top: 15,
+    minHeight: 21,
+    radius: 32,
+    hint: "Where a beam ends on purpose: a stack of black fins that soaks up stray or unused light.",
+  },
+  objective: {
+    label: "Microscope objective",
+    tag: "Obj",
+    top: 17,
+    minHeight: 24,
+    radius: 32,
+    hint: "Focuses the beam tightly, tip toward the focus. Note magnification and NA in the label.",
+  },
+  block: {
+    label: "Generic block",
+    tag: "Block",
+    top: 15,
+    minHeight: 15,
+    radius: 26,
+    hint: "A box for any part not in the list — a Faraday rotator, a vacuum window. Size, colour and label it.",
+  },
+  aom: {
+    label: "AOM",
+    tag: "AOM",
+    top: 18,
+    minHeight: 24,
+    radius: 32,
+    hint: "Acousto-optic modulator: a sound wave in a crystal diffracts and frequency-shifts the beam.",
+  },
+  eom: {
+    label: "EOM",
+    tag: "EOM",
+    top: 18,
+    minHeight: 24,
+    radius: 40,
+    hint: "Electro-optic modulator: a voltage across a crystal shifts the beam's phase or polarisation.",
+  },
 };
 
 export type ComponentGroup = { name: string; types: ComponentType[] };
@@ -225,9 +274,11 @@ export type ComponentGroup = { name: string; types: ComponentType[] };
 export const COMPONENT_GROUPS: ComponentGroup[] = [
   { name: "Source", types: ["laser-source", "fiber-collimator"] },
   { name: "Steering", types: ["mirror-mount", "beam-splitter"] },
-  { name: "Shaping", types: ["lens", "waveplate", "filter", "iris"] },
+  { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
+  { name: "Modulation", types: ["aom", "eom"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
-  { name: "Detection", types: ["photodiode", "camera", "spectrometer"] },
+  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "beam-block"] },
+  { name: "Other", types: ["block"] },
 ];
 
 export const COMPONENT_LIBRARY = (
@@ -268,6 +319,13 @@ export const DEFAULT_FOCAL_LENGTH_MM = 100;
 export const FOCAL_LENGTH_RANGE_MM: [number, number] = [10, 2000];
 export const DEFAULT_CAVITY_LENGTH_MM = 50;
 export const CAVITY_LENGTH_RANGE_MM: [number, number] = [10, 300];
+export const DEFAULT_PARTICLE_COLOR = "#ff5a36";
+export const PARTICLE_RADIUS_MM = 3;
+export const PARTICLE_RADIUS_RANGE_MM: [number, number] = [0.5, 15];
+export const DEFAULT_BLOCK_COLOR = "#3b4a6b";
+export const DEFAULT_OBJECTIVE_COLOR = "#d5d9df";
+export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
+export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
 /** A particle dropped within this distance of a host's centre snaps into it, mm. */
 export const HOST_CAPTURE_MM = 20;
 
@@ -367,7 +425,23 @@ export function componentRadius(component: BuilderComponent): number {
   if (component.type === "cavity") {
     return Math.max(COMPONENT_SPECS.cavity.radius, (component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM) / 2 + 12);
   }
+  if (component.type === "block") {
+    const [dx, , dz] = component.size ?? BLOCK_SIZE_MM;
+    return Math.hypot(dx, dz) / 2 + 6;
+  }
+  if (component.type === "particle") {
+    return Math.max(COMPONENT_SPECS.particle.radius, (component.particleRadius ?? PARTICLE_RADIUS_MM) + 5);
+  }
   return COMPONENT_SPECS[component.type].radius;
+}
+
+/** How far the part reaches above its optical centre, mm: where its label sits. */
+export function componentTop(component: BuilderComponent): number {
+  if (component.type === "block") return (component.size ?? BLOCK_SIZE_MM)[1] / 2;
+  if (component.type === "particle") {
+    return Math.max(COMPONENT_SPECS.particle.top, (component.particleRadius ?? PARTICLE_RADIUS_MM) + 4);
+  }
+  return COMPONENT_SPECS[component.type].top;
 }
 
 /** The nearest trap or cavity whose centre is within capture range of (x, z). */
@@ -620,7 +694,14 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     const opacity = finiteNumber(raw.opacity);
     if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
   }
-  if (type === "particle" && typeof raw.host === "string") component.host = raw.host;
+  if (type === "particle") {
+    if (typeof raw.host === "string") component.host = raw.host;
+    const radius = finiteNumber(raw.particleRadius);
+    if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
+  }
+  if (type === "block" && isVec3(raw.size)) {
+    component.size = raw.size.map((side) => clamp(side, BLOCK_SIZE_RANGE_MM)) as Vec3;
+  }
   return component;
 }
 

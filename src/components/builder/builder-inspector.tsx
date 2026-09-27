@@ -8,7 +8,16 @@ import {
   BEAM_OPACITY_RANGE,
   BEAM_WIDTH_MM,
   BEAM_WIDTH_RANGE_MM,
+  BLOCK_SIZE_MM,
+  BLOCK_SIZE_RANGE_MM,
   COMPONENT_SPECS,
+  DEFAULT_BLOCK_COLOR,
+  DEFAULT_OBJECTIVE_COLOR,
+  DEFAULT_PARTICLE_COLOR,
+  PARTICLE_RADIUS_MM,
+  PARTICLE_RADIUS_RANGE_MM,
+  clamp,
+  type Vec3,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
@@ -406,8 +415,89 @@ export function ComponentInspector({
           />
         </>
       ) : null}
+      {component.type === "particle" ? (
+        <>
+          <ColorField
+            label="Colour"
+            value={component.color ?? DEFAULT_PARTICLE_COLOR}
+            onChange={(color) => onUpdate({ color })}
+          />
+          <SliderField
+            label="Radius"
+            value={component.particleRadius ?? PARTICLE_RADIUS_MM}
+            display={`${(component.particleRadius ?? PARTICLE_RADIUS_MM).toFixed(1)} mm`}
+            range={PARTICLE_RADIUS_RANGE_MM}
+            step={0.5}
+            onBegin={onCheckpoint}
+            onChange={(next) => onUpdate({ particleRadius: next }, false)}
+          />
+        </>
+      ) : null}
+      {component.type === "block" ? (
+        <>
+          <div className="builderFieldRow">
+            {(["Length", "Height", "Width"] as const).map((name, axisIndex) => {
+              const size = component.size ?? BLOCK_SIZE_MM;
+              return (
+                <NumberField
+                  key={name}
+                  label={name}
+                  unit="mm"
+                  step={1}
+                  value={Math.round(size[axisIndex])}
+                  onChange={(next) => {
+                    const nextSize = [...size] as Vec3;
+                    nextSize[axisIndex] = clamp(next, BLOCK_SIZE_RANGE_MM);
+                    onUpdate({ size: nextSize });
+                  }}
+                />
+              );
+            })}
+          </div>
+          <ColorField
+            label="Colour"
+            value={component.color ?? DEFAULT_BLOCK_COLOR}
+            onChange={(color) => onUpdate({ color })}
+          />
+        </>
+      ) : null}
+      {component.type === "objective" ? (
+        <ColorField
+          label="Barrel colour"
+          value={component.color ?? DEFAULT_OBJECTIVE_COLOR}
+          onChange={(color) => onUpdate({ color })}
+        />
+      ) : null}
+      {/* PROTOTYPE — only some variants read these colours */}
+      {component.type === "photodiode" || component.type === "aom" || component.type === "eom" ? (
+        <ColorField
+          label="Colour (prototype)"
+          value={component.color ?? "#b3261e"}
+          onChange={(color) => onUpdate({ color })}
+        />
+      ) : null}
       <p className="builderInspector__hint">{spec.hint}</p>
     </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <label className="builderField">
+      <span className="builderField__label">{label}</span>
+      <span className="builderField__control builderField__control--color">
+        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} />
+        <span className="builderReadout">{value}</span>
+      </span>
+    </label>
   );
 }
 

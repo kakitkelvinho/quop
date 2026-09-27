@@ -225,6 +225,44 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M7 15l4-6M10.5 15.5 13 9M14 16l1.8-7" />
     </>
   ),
+  // a beam running into a finned stack
+  "beam-block": (
+    <>
+      <path d="M3 12h7" />
+      <rect x="10" y="6" width="10" height="12" rx="1" />
+      <path d="M10 9h10M10 12h10M10 15h10" />
+    </>
+  ),
+  // barrel, taper, tip
+  objective: (
+    <>
+      <path d="M3 9.5h3v5H3" />
+      <rect x="6" y="7" width="9" height="10" rx="1" />
+      <path d="M15 7l4 3.5v3L15 17" />
+    </>
+  ),
+  block: (
+    <>
+      <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+      <path d="m4 7.5 8 4.5 8-4.5M12 12v9" />
+    </>
+  ),
+  // a crystal with a transducer on top and sound wavefronts through it
+  aom: (
+    <>
+      <rect x="4" y="9" width="16" height="10" rx="1" />
+      <rect x="8" y="5" width="8" height="4" />
+      <path d="M6 12.5h12M6 15.5h12" strokeDasharray="1.5 1.5" />
+    </>
+  ),
+  // a crystal between two electrodes
+  eom: (
+    <>
+      <path d="M3 7h18M3 17h18" />
+      <rect x="5" y="9" width="14" height="6" rx="1" />
+      <path d="M12 3v4" />
+    </>
+  ),
 };
 
 export function PartIcon({ type, size = 20 }: { type: ComponentType; size?: number }) {

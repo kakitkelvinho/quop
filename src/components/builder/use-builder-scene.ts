@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useReducer } from "react";
 
 import {
   BEAM_COLORS,
+  BLOCK_SIZE_MM,
+  DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
@@ -173,6 +175,7 @@ export function useBuilderScene() {
               ? { lensShape: "plano-convex" as const, focalLength: DEFAULT_FOCAL_LENGTH_MM }
               : {}),
             ...(type === "cavity" ? { cavityLength: DEFAULT_CAVITY_LENGTH_MM } : {}),
+            ...(type === "block" ? { size: [...BLOCK_SIZE_MM] as Vec3, color: DEFAULT_BLOCK_COLOR } : {}),
             ...(extra?.host ? { host: extra.host } : {}),
           },
         ],

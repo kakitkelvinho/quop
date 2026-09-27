@@ -14,6 +14,12 @@ import BuilderCanvas, {
   type CameraView,
 } from "@/components/builder/builder-canvas";
 import BuilderHud from "@/components/builder/builder-hud";
+import { PrototypeVariant } from "@/components/builder/component-models.prototype";
+import {
+  PrototypeSwitcher,
+  usePrototypeVariant,
+  withShowcaseRow,
+} from "@/components/builder/prototype-switcher";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { getTheme, setTheme } from "@/components/theme-toggle";
@@ -87,6 +93,7 @@ export default function BuilderScene() {
   const [dragging, setDragging] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [trayOpen, setTrayOpen] = useState(false);
+  const [prototypeVariant, setPrototypeVariant] = usePrototypeVariant();
 
   const dragRef = useRef<DragState | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -459,9 +466,20 @@ export default function BuilderScene() {
 
   return (
     <div className="builderWorkspace">
+      {/* PROTOTYPE — new-parts variants; drop with prototype-switcher.tsx */}
+      <PrototypeSwitcher
+        variant={prototypeVariant}
+        onChange={setPrototypeVariant}
+        keysEnabled={!selectedId}
+        onShowcase={() => {
+          api.replaceScene(withShowcaseRow(sceneRef.current));
+          announce("Added a showcase row at z = +300 mm. Undo removes it.");
+        }}
+      />
       <div
         className={`builderCanvasHost${placingType || beamMode || addingStops ? " is-picking" : ""}`}
       >
+        <PrototypeVariant.Provider value={prototypeVariant}>
         <BuilderCanvas
           components={scene.components}
           beams={scene.beams}
@@ -482,6 +500,7 @@ export default function BuilderScene() {
           onComponentHover={setHoveredId}
           onCanvasReady={handleCanvasReady}
         />
+        </PrototypeVariant.Provider>
       </div>
 
       <BuilderHud
