@@ -26,6 +26,10 @@ const SWEEP_MS = 1250;
 /** How long the streaks an eraser leaves behind take to fade, in ms. */
 const RESIDUE_FADE_MS = 2600;
 
+/** Below this board width the equations stop being written and wiped: a
+ *  fixed few go up above and below the welcome text and stay there. */
+const STILL_BELOW_PX = 640;
+
 /** Seeds the grain and the hand-drawn card frames. Any integer. */
 const SEED = 4;
 
@@ -57,13 +61,22 @@ const EQUATIONS: Equation[] = [
   { id: "heisenberg", shape: "narrow", size: 1.2 },
 ];
 
+/** The phone layout: these stay put, spaced evenly through the gaps above
+ *  and below the welcome text. A gap too short for both of its pair keeps
+ *  only the first. */
+const STILL_LAYOUT: { above: string[]; below: string[] } = {
+  above: ["schrodinger", "commutator"],
+  below: ["heisenberg", "photon"],
+};
+
 /** Fetched once and inlined, so the SVG takes the chalk colour and filter.
  *  An equation whose file fails to load is simply never written up. */
 async function loadEquationSvgs() {
   const entries = await Promise.all(
     EQUATIONS.map(async ({ id }) => {
       try {
-        const response = await fetch(`/equations/${id}.svg`);
+        const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+        const response = await fetch(`${base}/equations/${id}.svg`);
         return response.ok ? ([id, await response.text()] as const) : null;
       } catch {
         return null;
@@ -329,8 +342,13 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       return [...active.values()].every((entry) => !overlaps(entry.el.getBoundingClientRect(), 18));
     }
 
-    function place(item: Equation, slotIndex: number, animate: boolean) {
-      const slot = SLOTS[slotIndex];
+    function place(
+      item: Equation,
+      slotIndex: number,
+      animate: boolean,
+      slot: { x: number; y: number } = SLOTS[slotIndex],
+      still = false,
+    ) {
       const el = document.createElement("div");
       el.className = "chalkEq";
       const ink = document.createElement("div");
@@ -366,7 +384,7 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
         el.classList.add("is-on");
       }
 
-      if (!reduce.matches) {
+      if (!still && !reduce.matches) {
         later(() => erase(slotIndex), 1600 + between(HOLD_MS));
       }
       return true;
@@ -509,6 +527,38 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
       drawGrain();
       drawGhosts();
 
+      const boardRect = board!.getBoundingClientRect();
+      if (boardRect.width < STILL_BELOW_PX) {
+        board!.classList.add("is-still");
+        const welcomeRect = welcome!.getBoundingClientRect();
+        const gaps = [
+          { from: boardRect.top, ids: STILL_LAYOUT.above, to: welcomeRect.top },
+          { from: welcomeRect.bottom, ids: STILL_LAYOUT.below, to: boardRect.bottom },
+        ];
+        let slotIndex = 0;
+        for (const { from, ids, to } of gaps) {
+          const items = ids
+            .map((id) => EQUATIONS.find((equation) => equation.id === id))
+            .filter((item): item is Equation => !!item && svgs.has(item.id));
+          for (let n = items.length; n > 0; n--) {
+            const placed = items.slice(0, n).map((item, k) => {
+              const y = from + ((k + 0.5) / n) * (to - from) - boardRect.top;
+              const position = { x: 50, y: (y / boardRect.height) * 100 };
+              return place(item, slotIndex + k, false, position, true) ? slotIndex + k : -1;
+            });
+            if (placed.every((index) => index >= 0)) break;
+            // take the partial row back down and try again with one fewer
+            for (const index of placed) {
+              active.get(index)?.el.remove();
+              active.delete(index);
+            }
+          }
+          slotIndex += items.length;
+        }
+        return;
+      }
+      board!.classList.remove("is-still");
+
       for (let k = 0; k < ON_SCREEN_AT_ONCE; k++) {
         if (animate && !reduce.matches) later(() => spawn(true), k * 420);
         else spawn(false);
@@ -516,7 +566,11 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
     }
 
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    let lastWidth = window.innerWidth;
     const onResize = () => {
+      // a phone's URL bar showing and hiding on scroll only changes the height
+      if (window.innerWidth === lastWidth) return;
+      lastWidth = window.innerWidth;
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => resetBoard(false), 220);
     };
