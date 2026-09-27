@@ -55,7 +55,6 @@ const GLASS_BLUE = "#bfe3ff";
 const GLASS_CYAN = "#9fd8e0";
 const PLATE_AMBER = "#f4e2b0";
 const FILTER_TEAL = "#79b5a4";
-const SENSOR_GREEN = "#7be08a";
 const EMITTER_RED = "#ff5c5c";
 const SAMPLE_COPPER = "#c98a53";
 const CERAMIC = "#f2eee6";
@@ -561,17 +560,25 @@ function BeamSplitter({ palette, color, axis }: ModelProps) {
 
 /**
  * The lens profile, revolved: a flat or curved face each side of a thin edge.
- * Curvature follows the lensmaker's equation (n = 1.5) but is exaggerated
- * sixfold, because a real f = 100 mm lens bulges by under 2 mm; it is capped
- * at a hemisphere, which a biconvex lens only reaches below f ≈ 75 mm.
+ * Curvature follows the lensmaker's equation (n = 1.5): a face's real sag is
+ * about a²/2R. The sag, not the radius, is exaggerated (threefold, because a
+ * real f = 100 mm lens bulges by under 2 mm) and eased toward LENS_MAX_SAG, so
+ * it shrinks smoothly with focal length and never jumps. Exaggerating the
+ * radius instead hit a hemisphere cap: every short lens drew the same dome,
+ * then the bulge fell off a cliff just past it.
  */
+const LENS_SAG_GAIN = 3;
+const LENS_MAX_SAG = 8;
+
 function lensProfile(shape: LensShape, focalLength: number): Vector2[] {
   const a = OPTIC_D / 2;
   const f = clamp(focalLength, FOCAL_LENGTH_RANGE_MM);
   const curvedFaces = shape === "biconvex" ? 2 : 1;
   const realRadius = 0.5 * f * curvedFaces;
-  const radius = Math.max(a, realRadius / 6);
-  const sag = radius - Math.sqrt(radius * radius - a * a);
+  const realSag = (a * a) / (2 * realRadius);
+  const sag = LENS_MAX_SAG * (1 - Math.exp((-LENS_SAG_GAIN * realSag) / LENS_MAX_SAG));
+  // the sphere through the rim and that sag
+  const radius = (a * a + sag * sag) / (2 * sag);
   const edge = 1;
   const steps = 16;
   const face = (sign: 1 | -1) =>
@@ -1080,6 +1087,8 @@ function BeamBlock({ palette, axis }: ModelProps) {
  */
 const OBJECTIVE_BRASS = "#c9a24a";
 const OBJECTIVE_PLATE_GEOMETRY = boredPlate(36, 4, 20, 6);
+/** the plate's middle along the beam: drawn at x = -23 and extruded 6 mm back */
+const OBJECTIVE_PLATE_X = -26;
 
 function Objective({ palette, color, axis }: ModelProps) {
   const barrel = color ?? DEFAULT_OBJECTIVE_COLOR;
@@ -1088,7 +1097,10 @@ function Objective({ palette, color, axis }: ModelProps) {
   );
   return (
     <group>
-      <Pillar palette={palette} top={axis - 18} />
+      {/* the post stands under the plate the thread screws into, not under the barrel */}
+      <group position={[OBJECTIVE_PLATE_X, 0, 0]}>
+        <Pillar palette={palette} top={axis - 18} />
+      </group>
       <mesh
         geometry={OBJECTIVE_PLATE_GEOMETRY}
         position={[-23, axis, 0]}
@@ -1158,36 +1170,6 @@ function GenericBlock({ palette, color, axis, size }: ModelProps & { size: Vec3 
           <meshStandardMaterial color="#12161d" roughness={0.4} />
         </mesh>
       ))}
-    </group>
-  );
-}
-
-function Photodiode({ palette, axis }: ModelProps) {
-  return (
-    <group>
-      <Pillar palette={palette} top={axis - 14} />
-      <RoundedBox
-        args={[26, 26, 22]}
-        radius={0.8}
-        smoothness={3}
-        position={[2, axis, 0]}
-      >
-        <Enamel color={palette.body} />
-      </RoundedBox>
-      <mesh position={[-11.5, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[8, 8, 3, 24]} />
-        <meshStandardMaterial
-          color={SENSOR_GREEN}
-          emissive={SENSOR_GREEN}
-          emissiveIntensity={0.35}
-          roughness={ENAMEL_ROUGHNESS}
-        />
-      </mesh>
-      {/* BNC stub out the back */}
-      <mesh position={[17, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[4, 4, 8, 16]} />
-        <Stainless palette={palette} />
-      </mesh>
     </group>
   );
 }
@@ -1399,7 +1381,7 @@ export function ComponentMesh({
         />
       ) : null}
       {component.type === "photodiode" ? (
-        <PrototypePhotodiode {...modelProps} fallback={<Photodiode {...modelProps} />} />
+        <PrototypePhotodiode {...modelProps} />
       ) : null}
       {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
       {component.type === "objective" ? <Objective {...modelProps} /> : null}

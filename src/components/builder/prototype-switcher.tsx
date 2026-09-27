@@ -140,9 +140,15 @@ export function withShowcaseRow(scene: BuilderSceneData): BuilderSceneData {
     part("photodiode", 400, { color: "#1f9d55", label: "PD green" }),
   ];
   const main = parts.slice(0, 11).map((component) => component.id);
+  // a focal-length sweep, plano-convex then biconvex, to check the curvature is smooth
+  const lenses = (["plano-convex", "biconvex"] as const).flatMap((lensShape, row) =>
+    [25, 50, 75, 100, 150, 200, 500, 1000].map((focalLength, index) =>
+      part("lens", -300 + index * 75, { lensShape, focalLength, rotation: 90 }, 175 + row * 75),
+    ),
+  );
   return {
     ...scene,
-    components: [...scene.components, ...parts],
+    components: [...scene.components, ...parts, ...lenses],
     beams: [
       ...scene.beams,
       { id: createBeamId(), path: main, color: "#dc2626", label: "Showcase" },
