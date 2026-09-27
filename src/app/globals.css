@@ -1336,6 +1336,51 @@ html[data-theme="dark"] .fitsColorControl__select {
     -8px 0;
 }
 
+.fitsSurfaceHost {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
+}
+
+.fitsSurfaceCanvas {
+  position: relative;
+  height: min(28rem, 72vw);
+  min-height: 16rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.fitsSurfaceCanvas:active {
+  cursor: grabbing;
+}
+
+.fitsSurfaceLabel {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.fitsSurfaceLabel--title {
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fitsSurfaceControls__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
 .fitsImageViewport__selection {
   z-index: 5;
   border-radius: 0.25rem;
