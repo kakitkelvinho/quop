@@ -23,7 +23,15 @@ import type {
   SurfaceExport,
 } from "@/components/plotters/fits-surface-view";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import { chooseSurfaceStep, type Footprint } from "@/components/plotters/surface-geometry";
+import {
+  clampPixelAspect,
+  displayAspect,
+  formatPixelAspect,
+  pixelAspectSliderRange,
+  squarePixelAspect,
+  TRUE_PIXEL_ASPECT,
+} from "@/components/plotters/pixel-aspect";
+import { chooseSurfaceStep } from "@/components/plotters/surface-geometry";
 
 // three.js loads only once someone opens the Surface view
 const FitsSurfaceView = dynamic(() => import("@/components/plotters/fits-surface-view"), {
@@ -391,6 +399,99 @@ function SurfaceIcon() {
   );
 }
 
+function AspectIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="4.5" y="7" width="15" height="10" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M8 12h8M8 12l1.8-1.8M8 12l1.8 1.8M16 12l-1.8-1.8M16 12l-1.8 1.8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+/** The Pixel aspect bar both views share: a log slider, an exact value, and the two presets. */
+function PixelAspectControls({
+  frameHeight,
+  frameWidth,
+  onChange,
+  pixelAspect,
+}: {
+  frameHeight: number;
+  frameWidth: number;
+  onChange: (pixelAspect: number) => void;
+  pixelAspect: number;
+}) {
+  const squareAspect = squarePixelAspect(frameWidth, frameHeight);
+  const sliderRange = pixelAspectSliderRange(frameWidth, frameHeight);
+
+  return (
+    <div className="interactiveChart__editorBar fitsAspectControls">
+      <label className="interactiveChart__sliderLabel">
+        <span>Pixel aspect (height ÷ width)</span>
+        <strong>{formatPixelAspect(pixelAspect)}</strong>
+      </label>
+      {/* log scale: 1/2 and 2 sit the same distance either side of true pixels */}
+      <input
+        aria-label="Pixel aspect"
+        className="interactiveChart__slider"
+        max={sliderRange.max}
+        min={sliderRange.min}
+        onChange={(event) => onChange(2 ** Number(event.target.value))}
+        step="0.01"
+        type="range"
+        value={Math.log2(pixelAspect)}
+      />
+      <div className="fitsAspectControls__row">
+        <label className="interactiveChart__fieldRow">
+          <span>Exact</span>
+          <input
+            aria-label="Pixel aspect value"
+            className="interactiveChart__textInput"
+            inputMode="decimal"
+            min="0.001"
+            onChange={(event) => {
+              const typed = Number.parseFloat(event.target.value);
+
+              if (typed > 0) {
+                onChange(clampPixelAspect(typed));
+              }
+            }}
+            step="0.05"
+            type="number"
+            value={Number(pixelAspect.toPrecision(4))}
+          />
+        </label>
+        <div className="fitsSurfaceControls__presets" role="group" aria-label="Pixel aspect presets">
+          <button
+            aria-pressed={pixelAspect === TRUE_PIXEL_ASPECT}
+            className="interactiveChart__applyButton"
+            onClick={() => onChange(TRUE_PIXEL_ASPECT)}
+            title="Draw every pixel square (1 : 1)"
+            type="button"
+          >
+            True pixels
+          </button>
+          <button
+            aria-pressed={pixelAspect === squareAspect}
+            className="interactiveChart__applyButton"
+            onClick={() => onChange(squareAspect)}
+            title={`Draw the whole frame as a square (pixel aspect ${formatPixelAspect(squareAspect)})`}
+            type="button"
+          >
+            Square
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type ViewMode = "image" | "surface";
 
 const CAMERA_PRESET_OPTIONS: Array<{ label: string; title: string; value: CameraPreset }> = [
@@ -482,7 +583,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   const [saveBlackText, setSaveBlackText] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("image");
   const [exaggeration, setExaggeration] = useState(1);
-  const [footprint, setFootprint] = useState<Footprint>("true");
+  // shared by both views: how tall one pixel is drawn relative to its width
+  const [pixelAspect, setPixelAspect] = useState(TRUE_PIXEL_ASPECT);
+  const [aspectControlsOpen, setAspectControlsOpen] = useState(false);
   const [shading, setShading] = useState(true);
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>("isometric");
   const [cameraToken, setCameraToken] = useState(0);
@@ -839,8 +942,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
 
   const canShowSurface = summary.width >= 2 && summary.height >= 2;
   const isSurface = viewMode === "surface" && canShowSurface;
-  const surfaceStep = chooseSurfaceStep(summary.width, summary.height);
-  const baseViewport = buildBaseViewport(summary);
+  const surfaceStep = chooseSurfaceStep(summary.width, summary.height);  const baseViewport = buildBaseViewport(summary);
   const isZoomed =
     viewport.left !== baseViewport.left ||
     viewport.top !== baseViewport.top ||
@@ -948,8 +1050,8 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                   colorMap={colorMap}
                   exaggeration={exaggeration}
                   exportRef={surfaceExportRef}
-                  footprint={footprint}
                   frame={summary}
+                  pixelAspect={pixelAspect}
                   shading={shading}
                   slice={sliceControlsOpen ? { axis: sliceAxis, index: activeSliceIndex } : null}
                   valueLabel="value"
@@ -958,7 +1060,12 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 />
               </div>
             ) : (
-            <div className="fitsImageViewport__surface">
+            <div
+              className="fitsImageViewport__surface"
+              // the box takes the shown region's shape at the pixel aspect; the
+              // canvas fills it, so overlays and pointer maths share its edges
+              style={{ "--fits-aspect": displayAspect(viewport.width, viewport.height, pixelAspect) } as CSSProperties}
+            >
               <canvas
                 className="fitsImageCanvas"
                 onPointerCancel={handlePointerCancel}
@@ -1107,6 +1214,16 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           <AxisLabelsIcon />
         </button>
         <button
+          aria-label={aspectControlsOpen ? "Hide pixel aspect controls" : "Show pixel aspect controls"}
+          aria-pressed={aspectControlsOpen}
+          className={`interactiveChart__iconButton interactiveChart__iconButton--aspect ${aspectControlsOpen ? "is-open" : ""}`}
+          onClick={() => setAspectControlsOpen((current) => !current)}
+          title="Pixel aspect"
+          type="button"
+        >
+          <AspectIcon />
+        </button>
+        <button
           aria-label={sliceControlsOpen ? "Hide slice tools" : "Show slice tools"}
           aria-pressed={sliceControlsOpen}
           className={`interactiveChart__iconButton interactiveChart__iconButton--slice ${sliceControlsOpen ? "is-open" : ""}`}
@@ -1145,20 +1262,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
             type="range"
             value={exaggeration}
           />
-          <label className="interactiveChart__fieldRow">
-            <span>Footprint</span>
-            <select
-              className="interactiveChart__select"
-              onChange={(event) => {
-                setFootprint(event.target.value as Footprint);
-                setCameraToken((current) => current + 1);
-              }}
-              value={footprint}
-            >
-              <option value="true">True pixel aspect</option>
-              <option value="square">Square</option>
-            </select>
-          </label>
           <label className="interactiveChart__checkboxRow">
             <input checked={shading} onChange={(event) => setShading(event.target.checked)} type="checkbox" />
             <span>Shading</span>
@@ -1180,6 +1283,15 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
             ))}
           </div>
         </div>
+      ) : null}
+
+      {aspectControlsOpen ? (
+        <PixelAspectControls
+          frameHeight={summary.height}
+          frameWidth={summary.width}
+          onChange={setPixelAspect}
+          pixelAspect={pixelAspect}
+        />
       ) : null}
 
       {titleControlsOpen ? (

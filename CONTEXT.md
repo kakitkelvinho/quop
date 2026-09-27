@@ -61,6 +61,10 @@ _Avoid_: cut, line-out, cross-section
 The thin upright rectangle in the Surface view that marks where the current slice cuts through the landscape.
 _Avoid_: cutting plane, slice marker
 
+**Pixel aspect**:
+How tall one pixel is drawn relative to its width, shared by the Image view and the Surface view. 1 is true pixels; the frame's width ÷ height draws the whole frame as a square.
+_Avoid_: aspect ratio (ambiguous: the frame's or the pixel's), footprint, stretch
+
 **Full header**:
 Every card of a FITS header, in file order, with its keyword, value and comment.
 _Avoid_: metadata, raw header

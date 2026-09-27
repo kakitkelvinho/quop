@@ -43,7 +43,6 @@ import {
   pixelTicks,
   reduceFrame,
   surfaceLayout,
-  type Footprint,
   type SurfaceLayout,
 } from "@/components/plotters/surface-geometry";
 
@@ -139,8 +138,17 @@ function Landscape({
     () => reduceFrame(frame.pixels, frame.width, frame.height, step),
     [frame, step],
   );
+  // the mesh is built once at true pixels and stretched to the pixel aspect by
+  // its group's scale, so dragging the aspect slider never rebuilds a 320k-vertex
+  // grid (three.js lights a non-uniformly scaled mesh through its normal matrix)
+  const baseLayout = useMemo(() => surfaceLayout(frame.width, frame.height), [frame]);
+  const stretch: [number, number, number] = [
+    layout.scaleX / baseLayout.scaleX,
+    layout.scaleY / baseLayout.scaleY,
+    1,
+  ];
   const geometry = useMemo(() => {
-    const arrays = buildSurfaceArrays(reduced, frame.width, frame.height, frame.min, frame.max, layout);
+    const arrays = buildSurfaceArrays(reduced, frame.width, frame.height, frame.min, frame.max, baseLayout);
     const result = new BufferGeometry();
     result.setAttribute("position", new BufferAttribute(arrays.position, 3));
     // full resolution looks each value up in the colormap; a downsampled mesh
@@ -149,7 +157,7 @@ function Landscape({
     result.setIndex(new BufferAttribute(arrays.index, 1));
     result.computeVertexNormals();
     return result;
-  }, [frame, layout, reduced, step]);
+  }, [baseLayout, frame, reduced, step]);
   const texture = useMemo<Texture>(
     () => (step === 1 ? buildColormapTexture(colorMap) : buildImageTexture(frame, colorMap)),
     [colorMap, frame, step],
@@ -160,8 +168,9 @@ function Landscape({
 
   function handlePointerMove(event: ThreeEvent<PointerEvent>) {
     event.stopPropagation();
+    // in the mesh's own (unstretched) coordinates
     const local = (event.object as Mesh).worldToLocal(event.point.clone());
-    const { column, row } = pixelFromLocal(local.x, local.y, frame.width, frame.height, layout);
+    const { column, row } = pixelFromLocal(local.x, local.y, frame.width, frame.height, baseLayout);
     // the original pixel, not the (maybe downsampled) mesh vertex
     onHover({ value: frame.pixels[row * frame.width + column] ?? Number.NaN, x: column, y: row });
   }
@@ -169,13 +178,15 @@ function Landscape({
   return (
     // keyed on the geometry: drei's Bvh builds its bounds tree once, on mount
     <Bvh firstHitOnly key={geometry.uuid}>
-      <mesh geometry={geometry} onPointerMove={handlePointerMove} onPointerOut={() => onHover(null)}>
-        {shading ? (
-          <meshLambertMaterial map={texture} side={DoubleSide} />
-        ) : (
-          <meshBasicMaterial map={texture} side={DoubleSide} />
-        )}
-      </mesh>
+      <group scale={stretch}>
+        <mesh geometry={geometry} onPointerMove={handlePointerMove} onPointerOut={() => onHover(null)}>
+          {shading ? (
+            <meshLambertMaterial map={texture} side={DoubleSide} />
+          ) : (
+            <meshBasicMaterial map={texture} side={DoubleSide} />
+          )}
+        </mesh>
+      </group>
     </Bvh>
   );
 }
@@ -319,6 +330,17 @@ function SlicePlane({ frame, layout, slice }: { frame: SurfaceFrame; layout: Sur
   );
 }
 
+/** How far back the camera sits to fit the landscape's bounding sphere in the narrower field of view. */
+function fitDistance(camera: PerspectiveCamera, layout: SurfaceLayout, relief: number) {
+  const radius = Math.hypot(layout.halfX, layout.halfY, relief / 2);
+  const halfFov = Math.min(
+    (camera.fov * Math.PI) / 360,
+    Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect),
+  );
+
+  return (radius / Math.sin(halfFov)) * 1.08;
+}
+
 function CameraRig({
   layout,
   preset,
@@ -348,20 +370,28 @@ function CameraRig({
 
     const framing = framingRef.current;
     const target = new Vector3(0, 0, framing.relief / 2);
-    const radius = Math.hypot(framing.layout.halfX, framing.layout.halfY, framing.relief / 2);
-    // fit the landscape's bounding sphere in the narrower of the two fields of view
-    const halfFov = Math.min(
-      (camera.fov * Math.PI) / 360,
-      Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect),
-    );
-    const distance = (radius / Math.sin(halfFov)) * 1.08;
     const direction = new Vector3(...PRESET_DIRECTIONS[preset]).normalize();
 
-    camera.position.copy(target).addScaledVector(direction, distance);
+    camera.position.copy(target).addScaledVector(direction, fitDistance(camera, framing.layout, framing.relief));
     controls.target.copy(target);
     controls.update();
     invalidate();
   }, [camera, controls, invalidate, preset, token]);
+
+  // a new pixel aspect changes the footprint's diagonal: refit the distance
+  // but keep the angle the camera has been orbited to
+  useEffect(() => {
+    if (!controls) {
+      return;
+    }
+
+    const direction = camera.position.clone().sub(controls.target).normalize();
+    camera.position
+      .copy(controls.target)
+      .addScaledVector(direction, fitDistance(camera, layout, framingRef.current.relief));
+    controls.update();
+    invalidate();
+  }, [camera, controls, invalidate, layout]);
 
   return null;
 }
@@ -412,8 +442,9 @@ export type FitsSurfaceViewProps = {
   colorMap: ColorMapName;
   exaggeration: number;
   exportRef: RefObject<SurfaceExport | null>;
-  footprint: Footprint;
   frame: SurfaceFrame;
+  /** how tall one pixel is drawn relative to its width; 1 is true pixels */
+  pixelAspect: number;
   shading: boolean;
   slice: SurfaceSlice | null;
   valueLabel: string;
@@ -427,8 +458,8 @@ export default function FitsSurfaceView({
   colorMap,
   exaggeration,
   exportRef,
-  footprint,
   frame,
+  pixelAspect,
   shading,
   slice,
   valueLabel,
@@ -436,7 +467,7 @@ export default function FitsSurfaceView({
   yLabel,
 }: FitsSurfaceViewProps) {
   const [hover, setHover] = useState<HoverSample | null>(null);
-  const layout = useMemo(() => surfaceLayout(frame.width, frame.height, footprint), [footprint, frame]);
+  const layout = useMemo(() => surfaceLayout(frame.width, frame.height, pixelAspect), [frame, pixelAspect]);
   const relief = RELIEF * exaggeration;
   const hoverPoint = hover
     ? new Vector3(

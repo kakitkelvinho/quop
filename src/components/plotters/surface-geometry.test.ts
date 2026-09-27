@@ -4,12 +4,20 @@ import { describe, it } from "node:test";
 import {
   buildSurfaceArrays,
   chooseSurfaceStep,
+  localX,
+  localY,
   niceTicks,
   pixelFromLocal,
   pixelTicks,
   reduceFrame,
   surfaceLayout,
 } from "./surface-geometry.ts";
+import {
+  clampPixelAspect,
+  displayAspect,
+  pixelAspectSliderRange,
+  squarePixelAspect,
+} from "./pixel-aspect.ts";
 
 function frame(width: number, height: number, fill = 0) {
   return new Float32Array(width * height).fill(fill);
@@ -73,24 +81,58 @@ describe("reduceFrame", () => {
 
 describe("surfaceLayout", () => {
   it("keeps true pixel aspect with the longer side 1 long", () => {
-    const layout = surfaceLayout(1601, 201, "true");
+    const layout = surfaceLayout(1601, 201, 1);
 
     assert.equal(layout.halfX, 0.5);
     assert.equal(layout.halfY, 0.0625);
   });
 
-  it("stretches to a unit square on request", () => {
-    const layout = surfaceLayout(1601, 201, "square");
+  it("stretches each pixel by the pixel aspect", () => {
+    const square = surfaceLayout(1601, 201, 8);
 
-    assert.equal(layout.halfX, 0.5);
-    assert.equal(layout.halfY, 0.5);
+    assert.equal(square.halfX, 0.5);
+    assert.equal(square.halfY, 0.5);
+
+    // tall pixels past square: y becomes the longer side
+    const tall = surfaceLayout(101, 101, 2);
+
+    assert.equal(tall.halfX, 0.25);
+    assert.equal(tall.halfY, 0.5);
+  });
+
+  it("maps a point back to its pixel at any aspect", () => {
+    const layout = surfaceLayout(40, 30, 3);
+    const point = { x: localX(12, 40, layout), y: localY(21, 30, layout) };
+
+    assert.deepEqual(pixelFromLocal(point.x, point.y, 40, 30, layout), { column: 12, row: 21 });
+  });
+});
+
+describe("pixel aspect", () => {
+  it("names the square aspect of a frame", () => {
+    assert.equal(squarePixelAspect(1600, 200), 8);
+    assert.equal(displayAspect(1600, 200, 8), 1);
+    assert.equal(displayAspect(1600, 200, 1), 8);
+  });
+
+  it("widens the slider to reach the square aspect", () => {
+    assert.deepEqual(pixelAspectSliderRange(51, 51), { max: 4, min: -4 });
+    assert.deepEqual(pixelAspectSliderRange(2048, 16), { max: 8, min: -4 });
+    assert.deepEqual(pixelAspectSliderRange(16, 2048), { max: 4, min: -8 });
+  });
+
+  it("refuses non-positive and runaway aspects", () => {
+    assert.equal(clampPixelAspect(0), 1);
+    assert.equal(clampPixelAspect(Number.NaN), 1);
+    assert.equal(clampPixelAspect(1e9), 1000);
+    assert.equal(clampPixelAspect(2.5), 2.5);
   });
 });
 
 describe("buildSurfaceArrays", () => {
   it("lays row 0 along the far (+y) edge and the value along z", () => {
     const pixels = new Float32Array([0, 1, 2, 3]);
-    const layout = surfaceLayout(2, 2, "true");
+    const layout = surfaceLayout(2, 2, 1);
     const arrays = buildSurfaceArrays(reduceFrame(pixels, 2, 2, 1), 2, 2, 0, 3, layout);
 
     // vertex 0 is pixel (0, 0): left, far, floor
@@ -102,7 +144,7 @@ describe("buildSurfaceArrays", () => {
   });
 
   it("winds every triangle to face +z", () => {
-    const layout = surfaceLayout(3, 3, "true");
+    const layout = surfaceLayout(3, 3, 1);
     const { index, position } = buildSurfaceArrays(reduceFrame(frame(3, 3), 3, 3, 1), 3, 3, 0, 1, layout);
 
     assert.equal(index.length, 2 * 2 * 6);
@@ -119,7 +161,7 @@ describe("buildSurfaceArrays", () => {
   });
 
   it("needs a 32-bit index past 65,535 vertices", () => {
-    const layout = surfaceLayout(300, 300, "true");
+    const layout = surfaceLayout(300, 300, 1);
     const small = buildSurfaceArrays(reduceFrame(frame(51, 51), 51, 51, 1), 51, 51, 0, 1, layout);
     const large = buildSurfaceArrays(reduceFrame(frame(300, 300), 300, 300, 1), 300, 300, 0, 1, layout);
 
@@ -130,7 +172,7 @@ describe("buildSurfaceArrays", () => {
 
 describe("pixelFromLocal", () => {
   it("inverts the layout, clamped to the frame", () => {
-    const layout = surfaceLayout(1600, 200, "true");
+    const layout = surfaceLayout(1600, 200, 1);
     const x = (37 - 1599 / 2) * layout.scaleX;
     const y = (199 / 2 - 150) * layout.scaleY;
 

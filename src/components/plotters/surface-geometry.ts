@@ -6,7 +6,8 @@
 // Local coordinates: x runs along the frame's columns, y against its rows
 // (row 0 is the far edge, as it is the top edge of the Image view), and z is
 // the value normalised to 0..1 between the frame's min and max. The footprint
-// is centred on the origin and its longer side is 1 long.
+// is centred on the origin, its longer side is 1 long, and each pixel is drawn
+// `pixelAspect` times as long along y as along x (1 is true pixels).
 
 /**
  * The most vertices the landscape draws before it is downsampled. The research
@@ -14,8 +15,6 @@
  * 1600×200 dispersion frame (320,000 pixels) stays at full resolution.
  */
 export const SURFACE_VERTEX_BUDGET = 320_000;
-
-export type Footprint = "true" | "square";
 
 /** The smallest block size that brings the frame within `budget` vertices. */
 export function chooseSurfaceStep(width: number, height: number, budget = SURFACE_VERTEX_BUDGET) {
@@ -123,12 +122,12 @@ export type SurfaceLayout = {
   scaleY: number;
 };
 
-export function surfaceLayout(width: number, height: number, footprint: Footprint): SurfaceLayout {
+export function surfaceLayout(width: number, height: number, pixelAspect = 1): SurfaceLayout {
   const spanX = Math.max(width - 1, 1);
-  const spanY = Math.max(height - 1, 1);
+  const spanY = Math.max(height - 1, 1) * pixelAspect;
   const longest = Math.max(spanX, spanY);
-  const scaleX = footprint === "square" ? 1 / spanX : 1 / longest;
-  const scaleY = footprint === "square" ? 1 / spanY : 1 / longest;
+  const scaleX = 1 / longest;
+  const scaleY = pixelAspect / longest;
 
   return {
     halfX: ((width - 1) / 2) * scaleX,
