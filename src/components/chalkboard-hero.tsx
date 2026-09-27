@@ -69,13 +69,21 @@ const STILL_LAYOUT: { above: string[]; below: string[] } = {
   below: ["heisenberg", "photon"],
 };
 
+/** fetch() doesn't get basePath prefixed the way <Link> does, and the Pages
+ *  workflow builds with its own generated next.config.js rather than ours, so
+ *  read the prefix off the URL Next's own scripts were served from. */
+function basePath() {
+  const src = document.querySelector<HTMLScriptElement>('script[src*="/_next/"]')?.src;
+  return src ? new URL(src).pathname.split("/_next/")[0] : "";
+}
+
 /** Fetched once and inlined, so the SVG takes the chalk colour and filter.
  *  An equation whose file fails to load is simply never written up. */
 async function loadEquationSvgs() {
+  const base = basePath();
   const entries = await Promise.all(
     EQUATIONS.map(async ({ id }) => {
       try {
-        const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
         const response = await fetch(`${base}/equations/${id}.svg`);
         return response.ok ? ([id, await response.text()] as const) : null;
       } catch {

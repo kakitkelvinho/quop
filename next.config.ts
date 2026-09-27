@@ -13,10 +13,6 @@ const nextConfig: NextConfig = {
   },
   basePath,
   assetPrefix: basePath || undefined,
-  // fetch() doesn't get basePath prefixed the way <Link> and <Image> do
-  env: {
-    NEXT_PUBLIC_BASE_PATH: basePath,
-  },
 };
 
 export default nextConfig;
