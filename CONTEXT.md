@@ -1,7 +1,7 @@
 # QUOP
 
 The lab's public site and tools. This glossary covers the Experiment Builder, a
-layout notebook for an optical table (see `BUILDER.md`).
+layout notebook for an optical table (see `BUILDER.md`), and the plotters.
 
 ## Experiment Builder
 
@@ -42,3 +42,29 @@ _Avoid_: cavity beam
 **Host**:
 A trap or cavity that a particle has been placed in. A particle with a host sits at the host's centre and moves with it.
 _Avoid_: parent, container
+
+## Plotters
+
+**Image view**:
+A 2D frame drawn flat, each pixel's value shown as a colour from a colormap.
+_Avoid_: heatmap, 2D view, colormap view
+
+**Surface view**:
+A 2D frame drawn as a landscape in 3D: pixel position across the ground, pixel value as elevation, coloured with the same colormap as the Image view.
+_Avoid_: 3D view, height map, mesh plot
+
+**Slice**:
+One row or one column of a frame, plotted as a 1D profile.
+_Avoid_: cut, line-out, cross-section
+
+**Slice plane**:
+The thin upright rectangle in the Surface view that marks where the current slice cuts through the landscape.
+_Avoid_: cutting plane, slice marker
+
+**Pixel aspect**:
+How tall one pixel is drawn relative to its width, shared by the Image view and the Surface view. 1 is true pixels; the frame's width ÷ height draws the whole frame as a square.
+_Avoid_: aspect ratio (ambiguous: the frame's or the pixel's), footprint, stretch
+
+**Full header**:
+Every card of a FITS header, in file order, with its keyword, value and comment.
+_Avoid_: metadata, raw header

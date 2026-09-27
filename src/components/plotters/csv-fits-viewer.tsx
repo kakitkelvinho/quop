@@ -708,8 +708,8 @@ function FitsCompactPanel() {
           <p className="sectionCard__kicker">FITS</p>
           <h2>FITS Viewer</h2>
           <p>
-            Upload a FITS image and preview the first image HDU as a trace or
-            grayscale frame.
+            Upload a FITS image and preview the first image HDU as a trace, a
+            colormapped frame or a 3D Surface view.
           </p>
         </div>
 
