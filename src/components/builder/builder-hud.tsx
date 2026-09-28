@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
@@ -108,13 +108,59 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
   return null;
 }
 
+/** What the builder leaves to the author: it is a notebook, not a simulator (BUILDER.md). */
+const LIMITATIONS = [
+  "A beam can pass through any component. Nothing checks that the light could really take that path.",
+  "Components can overlap; there is no collision check.",
+  "Marking a beam line, by tinting its mounts the beam’s colour, is up to you. Nothing enforces it.",
+  "There are no ruler or dimension annotations yet.",
+];
+
+function LimitationsPanel({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <aside className="builderIsland builderLimits" aria-labelledby="builder-limits-title">
+      <h2 id="builder-limits-title" className="builderLimits__title">
+        Known limitations
+      </h2>
+      <p className="builderLimits__lead">
+        The builder records the setup you intend. It doesn’t simulate it.
+      </p>
+      <ul className="builderLimits__list">
+        {LIMITATIONS.map((limitation) => (
+          <li key={limitation}>{limitation}</li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        className="builderHud__close"
+        aria-label="Close known limitations"
+        title="Close (Esc)"
+        onClick={onClose}
+      >
+        <Icon name="close" size={16} />
+      </button>
+    </aside>
+  );
+}
+
 function FileMenu({
   onSave,
   onLoad,
   onExportPng,
   onResetExample,
   onClear,
-}: Pick<BuilderHudProps, "onSave" | "onLoad" | "onExportPng" | "onResetExample" | "onClear">) {
+  onShowLimitations,
+}: Pick<BuilderHudProps, "onSave" | "onLoad" | "onExportPng" | "onResetExample" | "onClear"> & {
+  onShowLimitations: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -178,6 +224,10 @@ function FileMenu({
           <button type="button" role="menuitem" onClick={run(onClear)}>
             Clear table
           </button>
+          <hr />
+          <button type="button" role="menuitem" onClick={run(onShowLimitations)}>
+            Known limitations
+          </button>
         </div>
       ) : null}
     </div>
@@ -197,6 +247,14 @@ export default function BuilderHud(props: BuilderHudProps) {
   } = props;
   const mode = modeHints(props);
   const selecting = !beamMode && !placingType && !trayOpen;
+  // shares the parts panel's spot, so opening either one closes the other
+  const [limitsOpen, setLimitsOpen] = useState(false);
+  const closeLimits = useCallback(() => setLimitsOpen(false), []);
+  const { onCloseTray } = props;
+  const showLimits = useCallback(() => {
+    onCloseTray();
+    setLimitsOpen(true);
+  }, [onCloseTray]);
 
   let inspector = null;
   if (beamMode) {
@@ -254,15 +312,21 @@ export default function BuilderHud(props: BuilderHudProps) {
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
+          onShowLimitations={showLimits}
         />
       </div>
+
+      {limitsOpen && !trayOpen ? <LimitationsPanel onClose={closeLimits} /> : null}
 
       <div className="builderIsland builderHud__add">
         <IconButton
           icon="add"
           label="Add a part"
           active={trayOpen}
-          onClick={props.onToggleTray}
+          onClick={() => {
+            setLimitsOpen(false);
+            props.onToggleTray();
+          }}
         />
         <IconButton
           icon="beam"
