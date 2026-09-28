@@ -1,13 +1,17 @@
 # QUOP
 
 The lab's public site and tools. This glossary covers the Experiment Builder, a
-layout notebook for an optical table (see `BUILDER.md`).
+notebook for sketching setups on an optical table (see `BUILDER.md`).
 
 ## Experiment Builder
 
 **Table**:
-The working plane components stand on: the breadboard's surface, at height 0. It has no edges; a layout is as large as its components make it.
+The working plane components stand on: the breadboard's surface, at height 0. It has no edges; a setup is as large as its components make it.
 _Avoid_: board, bench, grid
+
+**Setup**:
+Everything placed on the table, its components and beams, as saved to or opened from a setup file. A setup file saved by any release from 1.0 on keeps opening, with nothing dropped, in every later release.
+_Avoid_: layout, scene, project
 
 **Component**:
 One piece of bench hardware placed on the table: a laser, a mirror mount, a lens, a detector.
