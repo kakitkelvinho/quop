@@ -238,6 +238,24 @@ h2 {
   color: var(--accent-strong);
 }
 
+/* a tool that works but hasn't met the release checklist; sized in rem so it
+   reads the same beside a page title, a card heading or the builder's menu */
+.betaBadge {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .buttonLink {
   display: inline-flex;
   align-items: center;

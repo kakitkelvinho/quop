@@ -1,7 +1,12 @@
+/** A tool that works but hasn't met the release checklist yet. */
+export type ToolStatus = "beta";
+
 export type NavLink = {
   href: string;
   label: string;
   description: string;
+  /** absent means stable; "beta" shows a badge on the tool's page and card */
+  status?: ToolStatus;
 };
 
 export type NavSection = {
@@ -100,3 +105,11 @@ export const navSections: NavSection[] = [
     ],
   },
 ];
+
+export function findTool(href: string): NavLink | undefined {
+  for (const section of navSections) {
+    const tool = section.links.find((link) => link.href === href);
+    if (tool) return tool;
+  }
+  return undefined;
+}

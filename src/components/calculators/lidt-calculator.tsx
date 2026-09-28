@@ -3,6 +3,7 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 
 import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { ToolTitle } from "@/components/tool-title";
 
 type LaserState = {
   power: string;
@@ -70,7 +71,7 @@ export function LidtCalculator() {
 
   return (
     <section className="pageSection">
-      <h1>Laser Induced Damage Threshold (LIDT)</h1>
+      <ToolTitle href="/calculators/lidt-calculator">Laser Induced Damage Threshold (LIDT)</ToolTitle>
       <p className="lead">
         Estimate per-pulse energy and fluence (energy density) from a pulsed
         laser&apos;s average-power setup, so you can compare against an
