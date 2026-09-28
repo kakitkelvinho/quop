@@ -20,6 +20,8 @@ import {
   type BuilderComponent,
   type ComponentType,
 } from "@/components/builder/types";
+import { findTool } from "@/components/navigation";
+import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
   components: BuilderComponent[];
@@ -116,7 +118,9 @@ const LIMITATIONS = [
   "There are no ruler or dimension annotations yet.",
 ];
 
-function LimitationsPanel({ onClose }: { onClose: () => void }) {
+/** What the builder is for, from the navigation registry, then what it leaves to the author. */
+function AboutPanel({ onClose }: { onClose: () => void }) {
+  const tool = findTool("/experiment/builder");
   // Capture, and stop, so this Esc closes only the panel: the scene's Esc
   // chain peels one layer per press and would otherwise also deselect.
   useEffect(() => {
@@ -130,14 +134,17 @@ function LimitationsPanel({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   return (
-    <aside className="builderIsland builderLimits" aria-labelledby="builder-limits-title">
-      <h2 id="builder-limits-title" className="builderLimits__title">
-        Known limitations
+    <aside className="builderIsland builderAbout" aria-labelledby="builder-about-title">
+      <h2 id="builder-about-title" className="builderAbout__title">
+        About the builder
+        <BetaMark tool={tool} />
       </h2>
-      <p className="builderLimits__lead">
+      {tool ? <p className="builderAbout__description">{tool.description}</p> : null}
+      <h3 className="builderAbout__subtitle">Known limitations</h3>
+      <p className="builderAbout__lead">
         The builder records the setup you intend. It doesn’t simulate it.
       </p>
-      <ul className="builderLimits__list">
+      <ul className="builderAbout__list">
         {LIMITATIONS.map((limitation) => (
           <li key={limitation}>{limitation}</li>
         ))}
@@ -145,7 +152,7 @@ function LimitationsPanel({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         className="builderHud__close"
-        aria-label="Close known limitations"
+        aria-label="Close panel"
         title="Close (Esc)"
         onClick={onClose}
       >
@@ -161,9 +168,9 @@ function FileMenu({
   onExportPng,
   onResetExample,
   onClear,
-  onShowLimitations,
+  onShowAbout,
 }: Pick<BuilderHudProps, "onSave" | "onLoad" | "onExportPng" | "onResetExample" | "onClear"> & {
-  onShowLimitations: () => void;
+  onShowAbout: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -199,6 +206,7 @@ function FileMenu({
         onClick={() => setOpen((current) => !current)}
       >
         <span className="builderMenu__title">Experiment builder</span>
+        <BetaMark tool={findTool("/experiment/builder")} />
         <Icon name="chevron" size={14} />
       </button>
       {open ? (
@@ -229,8 +237,8 @@ function FileMenu({
             Clear table
           </button>
           <hr />
-          <button type="button" role="menuitem" onClick={run(onShowLimitations)}>
-            Known limitations
+          <button type="button" role="menuitem" onClick={run(onShowAbout)}>
+            About the builder
           </button>
         </div>
       ) : null}
@@ -251,13 +259,13 @@ export default function BuilderHud(props: BuilderHudProps) {
   } = props;
   const mode = modeHints(props);
   const selecting = !beamMode && !placingType && !trayOpen;
-  // shares the parts panel's spot, so opening either one closes the other
-  const [limitsOpen, setLimitsOpen] = useState(false);
-  const closeLimits = useCallback(() => setLimitsOpen(false), []);
+  // the about panel shares the parts panel's spot, so opening either closes the other
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const closeAbout = useCallback(() => setAboutOpen(false), []);
   const { onCloseTray } = props;
-  const showLimits = useCallback(() => {
+  const showAbout = useCallback(() => {
     onCloseTray();
-    setLimitsOpen(true);
+    setAboutOpen(true);
   }, [onCloseTray]);
 
   let inspector = null;
@@ -316,11 +324,11 @@ export default function BuilderHud(props: BuilderHudProps) {
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
-          onShowLimitations={showLimits}
+          onShowAbout={showAbout}
         />
       </div>
 
-      {limitsOpen && !trayOpen ? <LimitationsPanel onClose={closeLimits} /> : null}
+      {aboutOpen && !trayOpen ? <AboutPanel onClose={closeAbout} /> : null}
 
       <div className="builderIsland builderHud__add">
         <IconButton
@@ -328,7 +336,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           label="Add a part"
           active={trayOpen}
           onClick={() => {
-            setLimitsOpen(false);
+            setAboutOpen(false);
             props.onToggleTray();
           }}
         />

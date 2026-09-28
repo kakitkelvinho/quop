@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { ToolIntro } from "@/components/tool-intro";
 
 type TimeUnit = "fs" | "ps" | "ns" | "us" | "ms" | "s";
 type DistanceUnit = "nm" | "um" | "mm" | "cm" | "m";
@@ -83,11 +84,7 @@ export function LightTravelCalculator() {
 
   return (
     <section className="pageSection">
-      <h1>Light Travel Calculator</h1>
-      <p className="lead">
-        Convert between elapsed time and the distance light travels in vacuum.
-        For reference, <code>30 fs</code> is about <code>8.994 um</code>.
-      </p>
+      <ToolIntro href="/calculators/light-travel-calculator">Light Travel Calculator</ToolIntro>
 
       <div className="calculatorGrid">
         <div className="inputCard">

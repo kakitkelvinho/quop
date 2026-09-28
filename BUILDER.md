@@ -111,12 +111,12 @@ is on screen until it is needed:
 
 - **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel,
   and the File menu (save/open JSON, export PNG, load the example, clear the
-  table, known limitations).
+  table, about the builder).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and one-line hint, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
-  reopening it. The known-limitations note opens in the same spot, so
-  opening either closes the other.
+  reopening it. The about panel (what the builder is for, then its known
+  limitations) opens in the same spot, so opening either closes the other.
 - **Top centre**: the tool pill (Select, Draw a beam, Undo, Redo). While
   placing or drawing, a mode badge under the pill carries that mode's key
   hints.
@@ -212,12 +212,12 @@ The render-style exploration that led here is kept on the
 
 ## Known gaps
 
-Visitors see these in the builder under File › Known limitations
+Visitors see these in the builder under File › About the builder
 (`LIMITATIONS` in `builder-hud.tsx`); keep the two lists in step.
 
-- A beam can be drawn through a part that would not physically steer it; nothing
-  validates the geometry.
-- Components can overlap — there is no collision or footprint check.
-- Beam colours are free-form, so the mount-colour convention is a convention,
-  not something the builder enforces.
-- No dimension/ruler annotations between arbitrary points yet.
+- A beam can pass through any component. Nothing checks that the light could
+  really take that path.
+- Components can overlap; there is no collision check.
+- Marking a beam line, by tinting its mounts the beam's colour, is up to you.
+  Nothing enforces it.
+- There are no ruler or dimension annotations yet.

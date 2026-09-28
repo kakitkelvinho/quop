@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
+import { BetaMark } from "@/components/beta-badge";
 
 const experiment = navSections.find((section) => section.href === "/experiment");
 
@@ -24,7 +25,10 @@ export default function ExperimentPage() {
         {experiment?.links.map((link) => (
           <article className="sectionCard" key={link.href}>
             <p className="sectionCard__kicker">Tool</p>
-            <h2>{link.label}</h2>
+            <h2>
+              {link.label}
+              <BetaMark tool={link} />
+            </h2>
             <p>{link.description}</p>
             <Link className="buttonLink" href={link.href}>
               Open {link.label.toLowerCase()}

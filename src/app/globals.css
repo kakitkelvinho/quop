@@ -238,6 +238,24 @@ h2 {
   color: var(--accent-strong);
 }
 
+/* a tool that works but hasn't met the release checklist; sized in rem so it
+   reads the same beside a page title, a card heading or the builder's menu */
+.betaBadge {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .buttonLink {
   display: inline-flex;
   align-items: center;
@@ -2082,8 +2100,8 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.2;
 }
 
-/* left, where the parts panel opens: what the builder leaves to the author */
-.builderLimits {
+/* left, where the parts panel opens: what the builder is for, and leaves out */
+.builderAbout {
   top: 7.3rem;
   left: 0.9rem;
   z-index: 6;
@@ -2095,7 +2113,7 @@ html[data-theme="dark"] .builderIsland {
   animation: builderSlideRight 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.builderLimits__title {
+.builderAbout__title {
   margin: 0;
   /* clear of the close button */
   padding: 0.2rem 1.9rem 0 0;
@@ -2104,13 +2122,31 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.2;
 }
 
-.builderLimits__lead {
+.builderAbout__description {
   margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* a section heading, in the parts panel's group-name style */
+.builderAbout__subtitle {
+  margin: 0.9rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.builderAbout__lead {
+  margin: 0.3rem 0 0;
   color: var(--muted);
   font-size: 0.8rem;
 }
 
-.builderLimits__list {
+.builderAbout__list {
   display: grid;
   gap: 0.45rem;
   margin: 0.65rem 0 0;
@@ -2521,7 +2557,7 @@ html[data-theme="dark"] .builderButton--primary {
 
 @media (prefers-reduced-motion: reduce) {
   .builderParts,
-  .builderLimits,
+  .builderAbout,
   .builderMenu__list,
   .builderHud__inspector {
     animation: none;
@@ -2565,7 +2601,7 @@ html[data-theme="dark"] .builderButton--primary {
     width: auto;
   }
 
-  .builderLimits {
+  .builderAbout {
     right: 0.9rem;
     width: auto;
   }

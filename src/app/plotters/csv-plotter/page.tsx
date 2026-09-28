@@ -1,14 +1,10 @@
 import CsvPlotter from "@/components/plotters/csv-plotter";
+import { ToolIntro } from "@/components/tool-intro";
 
 export default function CsvPlotterPage() {
   return (
     <section className="pageSection">
-      <h1>Time CSV Plotter</h1>
-      <p className="lead">
-        Upload a CSV with a <code>time</code> column and any number of channel
-        columns. Time stays on the x-axis and the remaining headers become the
-        legend entries.
-      </p>
+      <ToolIntro href="/plotters/csv-plotter">Time CSV Plotter</ToolIntro>
       <CsvPlotter />
     </section>
   );
