@@ -141,17 +141,25 @@ h2 {
   color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 0.18em;
+  border-radius: 0.25rem;
   cursor: pointer;
 }
 
+/* the hovered-link wash from the ink pair */
+.toolReport a:hover,
+.siteFooter a:hover,
+.builderAbout__report a:hover {
+  background: var(--accent-soft);
+}
+
+/* width and side padding come from the shell's column classes */
 .siteFooter {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 1.25rem 1rem 1.75rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.75rem;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.84rem;
@@ -970,6 +978,8 @@ html[data-theme="dark"] .visualizerOverlayState {
 
 .themeToggle:focus-visible,
 .buttonLink:focus-visible,
+.toolReport a:focus-visible,
+.siteFooter a:focus-visible,
 .field__control:focus-within {
   outline: 3px solid rgb(139 30 63 / 0.3);
   outline-offset: 3px;
@@ -977,6 +987,8 @@ html[data-theme="dark"] .visualizerOverlayState {
 
 html[data-theme="dark"] .themeToggle:focus-visible,
 html[data-theme="dark"] .buttonLink:focus-visible,
+html[data-theme="dark"] .toolReport a:focus-visible,
+html[data-theme="dark"] .siteFooter a:focus-visible,
 html[data-theme="dark"] .field__control:focus-within {
   outline-color: rgb(244 185 66 / 0.4);
 }

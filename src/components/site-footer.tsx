@@ -1,13 +1,10 @@
-import { version } from "../../package.json";
-
 import { ReportLink } from "@/components/report-link";
-
-/** Read at build time, so the footer, the package and the release tag agree. */
-export const SITE_VERSION = version;
+import { SITE_VERSION } from "@/components/site-version";
 
 export function SiteFooter() {
   return (
-    <footer className="siteFooter">
+    // the same column as <main>, so the footer's edges line up with the page
+    <footer className="siteFooter mx-auto w-full max-w-6xl px-4 sm:px-6">
       <span>quop v{SITE_VERSION}</span>
       <span aria-hidden="true">·</span>
       <ReportLink />

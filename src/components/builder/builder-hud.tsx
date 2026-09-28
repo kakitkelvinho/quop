@@ -21,7 +21,7 @@ import {
   type ComponentType,
 } from "@/components/builder/types";
 import { findTool } from "@/components/navigation";
-import { ReportLink } from "@/components/report-link";
+import { ReportLine } from "@/components/report-link";
 import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
@@ -150,9 +150,7 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
           <li key={limitation}>{limitation}</li>
         ))}
       </ul>
-      <p className="builderAbout__report">
-        Something wrong or unclear? <ReportLink tool={tool?.label} />
-      </p>
+      <ReportLine tool={tool?.label} className="builderAbout__report" showVersion />
       <button
         type="button"
         className="builderHud__close"

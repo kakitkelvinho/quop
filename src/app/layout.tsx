@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { EB_Garamond, IBM_Plex_Sans } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell";
-import { SITE_VERSION, SiteFooter } from "@/components/site-footer";
+import { SiteFooter } from "@/components/site-footer";
+import { SITE_VERSION } from "@/components/site-version";
 
 import "./globals.css";
 
