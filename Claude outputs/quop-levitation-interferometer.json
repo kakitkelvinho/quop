@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "components": [
+    { "id": "laser-pump", "type": "laser-source", "position": [-450, 100, -425], "rotation": 0, "label": "1550 nm" },
+    { "id": "qwp-1", "type": "waveplate", "position": [-325, 100, -425], "rotation": 0, "label": "λ/4" },
+    { "id": "hwp-1", "type": "waveplate", "position": [-275, 100, -425], "rotation": 0, "label": "λ/2" },
+    { "id": "isolator", "type": "filter", "position": [-200, 100, -425], "rotation": 0, "label": "Faraday isolator" },
+    { "id": "hwp-2", "type": "waveplate", "position": [-125, 100, -425], "rotation": 0, "label": "λ/2" },
+    { "id": "pbs-1", "type": "beam-splitter", "position": [-75, 100, -425], "rotation": 45, "label": "PBS" },
+    { "id": "m1", "type": "mirror-mount", "position": [25, 100, -425], "rotation": 45, "color": "#7c3aed", "label": "M1" },
+
+    { "id": "hwp-3", "type": "waveplate", "position": [25, 100, -350], "rotation": 90, "label": "λ/2" },
+    { "id": "bs-1", "type": "beam-splitter", "position": [25, 100, -300], "rotation": 45, "label": "PBS (split)" },
+    { "id": "tele-1", "type": "lens", "position": [100, 100, -300], "rotation": 0, "lensShape": "plano-convex", "focalLength": 75 },
+    { "id": "tele-2", "type": "lens", "position": [200, 100, -300], "rotation": 0, "lensShape": "plano-convex", "focalLength": 150 },
+    { "id": "m2", "type": "mirror-mount", "position": [275, 100, -300], "rotation": 45, "color": "#0891b2", "label": "M2" },
+    { "id": "m3", "type": "mirror-mount", "position": [275, 100, -150], "rotation": 45, "color": "#0891b2", "label": "M3" },
+    { "id": "bs-2", "type": "beam-splitter", "position": [25, 100, -150], "rotation": 45, "label": "BS (recombine)" },
+
+    { "id": "hwp-4", "type": "waveplate", "position": [25, 100, -25], "rotation": 90, "label": "λ/2" },
+    { "id": "bs-3", "type": "beam-splitter", "position": [25, 100, 25], "rotation": 45, "label": "BS (trap / ref)" },
+
+    { "id": "m4", "type": "mirror-mount", "position": [25, 100, 125], "rotation": 45, "color": "#ea580c", "label": "M4" },
+    { "id": "m5", "type": "mirror-mount", "position": [-225, 100, 125], "rotation": 45, "color": "#ea580c", "label": "M5" },
+    { "id": "particle-trap", "type": "particle", "position": [-225, 100, 275], "rotation": 0, "label": "Trapped particle" },
+    { "id": "m6", "type": "mirror-mount", "position": [-225, 100, 425], "rotation": 45, "color": "#ea580c", "label": "M6" },
+    { "id": "m7", "type": "mirror-mount", "position": [200, 100, 425], "rotation": 45, "color": "#ea580c", "label": "M7" },
+    { "id": "hwp-5", "type": "waveplate", "position": [200, 100, 125], "rotation": 90, "label": "λ/2" },
+    { "id": "bs-4", "type": "beam-splitter", "position": [200, 100, 50], "rotation": 45, "label": "PBS (recombine)" },
+
+    { "id": "m8", "type": "mirror-mount", "position": [200, 100, -50], "rotation": 45, "color": "#16a34a", "label": "M8" },
+    { "id": "m9", "type": "mirror-mount", "position": [400, 100, -50], "rotation": 45, "color": "#16a34a", "label": "M9" },
+    { "id": "hwp-6", "type": "waveplate", "position": [400, 100, 0], "rotation": 90, "label": "λ/2" },
+    { "id": "bs-5", "type": "beam-splitter", "position": [400, 100, 50], "rotation": 45, "label": "PBS (analyser)" },
+    { "id": "lens-det", "type": "lens", "position": [400, 100, 125], "rotation": 90, "lensShape": "plano-convex", "focalLength": 50 },
+    { "id": "pd-1", "type": "photodiode", "position": [400, 100, 175], "rotation": 90, "label": "Detector" },
+
+    { "id": "camera-1", "type": "camera", "position": [-25, 100, 350], "rotation": 180, "label": "Imaging camera" },
+
+    { "id": "hene", "type": "laser-source", "position": [-25, 100, 600], "rotation": 180, "label": "He-Ne 632.8 nm" },
+    { "id": "hene-l1", "type": "lens", "position": [-125, 100, 600], "rotation": 0, "lensShape": "plano-convex", "focalLength": 100 },
+    { "id": "hene-l2", "type": "lens", "position": [-225, 100, 600], "rotation": 0, "lensShape": "biconvex", "focalLength": 150 },
+    { "id": "hene-l3", "type": "lens", "position": [-325, 100, 600], "rotation": 0, "lensShape": "plano-convex", "focalLength": 100 },
+    { "id": "m10", "type": "mirror-mount", "position": [-400, 100, 600], "rotation": 45, "color": "#dc2626", "label": "M10" },
+    { "id": "m11", "type": "mirror-mount", "position": [-400, 100, 275], "rotation": 45, "color": "#dc2626", "label": "M11" }
+  ],
+  "beams": [
+    {
+      "id": "beam-pump",
+      "label": "Pump 1550 nm",
+      "path": ["laser-pump", "qwp-1", "hwp-1", "isolator", "hwp-2", "pbs-1", "m1", "hwp-3", "bs-1", "bs-2", "hwp-4", "bs-3"],
+      "color": "#7c3aed",
+      "width": 3
+    },
+    {
+      "id": "beam-telescope",
+      "label": "Telescope arm",
+      "path": ["bs-1", "tele-1", "tele-2", "m2", "m3", "bs-2"],
+      "color": "#0891b2",
+      "width": 3
+    },
+    {
+      "id": "beam-trap",
+      "label": "Trap arm",
+      "path": ["bs-3", "m4", "m5", "particle-trap", "m6", "m7", "hwp-5", "bs-4"],
+      "color": "#ea580c",
+      "width": 3
+    },
+    {
+      "id": "beam-ref",
+      "label": "Reference arm",
+      "path": ["bs-3", "bs-4"],
+      "color": "#db2777",
+      "width": 3
+    },
+    {
+      "id": "beam-detect",
+      "label": "Detection",
+      "path": ["bs-4", "m8", "m9", "hwp-6", "bs-5", "lens-det", "pd-1"],
+      "color": "#16a34a",
+      "width": 3
+    },
+    {
+      "id": "beam-hene",
+      "label": "He-Ne 632.8 nm",
+      "path": ["hene", "hene-l1", "hene-l2", "hene-l3", "m10", "m11", "particle-trap"],
+      "color": "#dc2626",
+      "width": 2
+    }
+  ]
+}

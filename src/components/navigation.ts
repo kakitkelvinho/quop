@@ -22,7 +22,8 @@ export const navSections: NavSection[] = [
   {
     href: "/calculators",
     label: "Calculators",
-    description: "Conversion, pace, and threshold tools for quick optical estimates.",
+    description:
+      "Quickly calculate and convert between numbers to do back-in-the-envelope calculations.",
     accent: "#ff9d5c",
     orbitalPhase: 0.15,
     links: [
@@ -34,7 +35,8 @@ export const navSections: NavSection[] = [
       {
         href: "/calculators/lidt-calculator",
         label: "LIDT",
-        description: "Estimate pulse energy density for optics work.",
+        description:
+          "Estimate pulse energy density and determining damage thresholds.",
       },
       {
         href: "/calculators/pace",
@@ -44,14 +46,16 @@ export const navSections: NavSection[] = [
       {
         href: "/calculators/light-travel-calculator",
         label: "Light Travel",
-        description: "Convert between time delay and the distance light travels.",
+        description:
+          "Figure out the distance and time travelled by a light pulse.",
       },
     ],
   },
   {
     href: "/theory",
     label: "Theory",
-    description: "Reference notes for quantum optics, operators, and physical intuition.",
+    description:
+      "Reference notes for quantum optics, operators, and physical intuition.",
     accent: "#6da8ff",
     orbitalPhase: 1.7,
     links: [],
@@ -59,7 +63,8 @@ export const navSections: NavSection[] = [
   {
     href: "/plotters",
     label: "Plotters",
-    description: "Interactive viewers for arrays, CSV traces, FITS frames, and lab exports.",
+    description:
+      "Interactive viewers for arrays, CSV traces, FITS frames, and lab exports.",
     accent: "#75d7c0",
     orbitalPhase: 3.25,
     links: [
@@ -71,7 +76,7 @@ export const navSections: NavSection[] = [
       {
         href: "/plotters/generic-csv-plotter",
         label: "CSV Plotter",
-        description: "Choose which CSV columns map to x and which become y-series.",
+        description: "Plot any csv files. Pick which columns are x and y.",
       },
       {
         href: "/plotters/csv-plotter",
@@ -81,26 +86,28 @@ export const navSections: NavSection[] = [
       {
         href: "/plotters/fits-plotter",
         label: "FITS Plotter",
-        description: "Upload a FITS image and preview its first frame in the browser.",
+        description: "Upload a FITS image and plot it.",
       },
       {
         href: "/plotters/csv-fits-viewer",
         label: "CSV + FITS Viewer",
-        description: "Open CSV and FITS viewers side by side in one comparison layout.",
+        description: "Open CSV and FITS viewers side by side.",
       },
     ],
   },
   {
     href: "/experiment",
     label: "Experiment",
-    description: "Lab setup notes, measurement workflows, and practical implementation details.",
+    description:
+      "Lab setup notes, measurement workflows, and practical implementation details.",
     accent: "#f06f86",
     orbitalPhase: 4.9,
     links: [
       {
         href: "/experiment/builder",
         label: "Builder",
-        description: "Design and visualize your own optical setup on a virtual table.",
+        description:
+          "Design and visualize your own optical setup on a virtual table.",
       },
     ],
   },
