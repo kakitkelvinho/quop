@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Claude Code worktrees: per-session scratch checkouts
 .claude/worktrees/
+
+# Claude's screenshots and exported setups, kept on disk but not in the site
+/Claude outputs/
