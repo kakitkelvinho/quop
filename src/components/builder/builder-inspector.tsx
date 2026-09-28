@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { IconButton, type IconName } from "@/components/builder/builder-icons";
 import {
@@ -212,28 +212,47 @@ function EditableStopList({
   path: string[];
   onChange: (path: string[]) => void;
 }) {
+  const listRef = useRef<HTMLOListElement>(null);
+  // Keyboard focus follows a moved stop, and stays on the row that closes the
+  // gap after a remove; a button the edit disabled hands focus to its row's next.
+  const focusAfter = useRef<{ row: number; button: number } | null>(null);
+  useEffect(() => {
+    const target = focusAfter.current;
+    focusAfter.current = null;
+    const rows = listRef.current?.children;
+    if (!target || !rows?.length) return;
+    const buttons = Array.from(rows[Math.min(target.row, rows.length - 1)].querySelectorAll("button"));
+    const wanted = buttons[target.button];
+    (wanted && !wanted.disabled ? wanted : buttons.find((button) => !button.disabled))?.focus();
+  }, [path]);
+
   return (
-    <ol className="builderStops builderStops--editable">
+    <ol ref={listRef} className="builderStops builderStops--editable">
       {path.map((id, index) => {
         const component = componentById(components, id);
         const name = component ? componentDisplayName(component) : "—";
-        const edits: [IconName, string, PathEdit][] = [
-          ["up", `move ${name} earlier`, moveStop(path, index, -1)],
-          ["down", `move ${name} later`, moveStop(path, index, 1)],
-          ["close", `remove ${name}`, removeStop(path, index)],
+        // [icon, action, edit, the row the stop ends up on]
+        const edits: [IconName, string, PathEdit, number][] = [
+          ["up", `move ${name} earlier`, moveStop(path, index, -1), index - 1],
+          ["down", `move ${name} later`, moveStop(path, index, 1), index + 1],
+          ["close", `remove ${name}`, removeStop(path, index), index],
         ];
         return (
-          // keyed by position, so a row keeps keyboard focus as stops move through it
+          // keyed by position: rows stay mounted, and focus is moved by hand above
           <li key={index}>
             <span className="builderStops__name">{name}</span>
             <span className="builderStops__actions">
-              {edits.map(([icon, action, edit]) => (
+              {edits.map(([icon, action, edit, row], button) => (
                 <IconButton
                   key={icon}
                   icon={icon}
                   label={edit.ok ? capitalise(action) : `Can't ${action}: ${edit.reason}`}
                   disabled={!edit.ok}
-                  onClick={() => edit.ok && onChange(edit.path)}
+                  onClick={() => {
+                    if (!edit.ok) return;
+                    focusAfter.current = { row, button };
+                    onChange(edit.path);
+                  }}
                 />
               ))}
             </span>

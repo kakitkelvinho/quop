@@ -173,7 +173,7 @@ export default function BuilderScene() {
         if (!beam) return;
         const edit = appendStop(beam.path, id);
         if (edit.ok) api.updateBeam(beam.id, { path: edit.path });
-        else announce(`Can't add ${componentDisplayName(component)}: ${edit.reason}`);
+        else announce(`Can't add ${componentDisplayName(component)}: ${edit.reason}.`);
         return;
       }
 

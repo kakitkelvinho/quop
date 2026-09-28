@@ -26,9 +26,7 @@ describe("adding stops", () => {
   });
 
   it("refuses the current last stop, and says why", () => {
-    const edit = appendStop(["A", "B", "C"], "C");
-    assert.equal(edit.ok, false);
-    assert.match(!edit.ok ? edit.reason : "", /already the last stop/);
+    assert.match(reason(appendStop(["A", "B", "C"], "C")), /already the last stop/);
   });
 });
 
@@ -40,6 +38,10 @@ function reason(edit: PathEdit): string {
 describe("removing and moving stops", () => {
   it("removes a stop", () => {
     assert.deepEqual(removeStop(["A", "B", "C"], 1), { ok: true, path: ["A", "C"] });
+  });
+
+  it("refuses a stop that isn't there", () => {
+    assert.match(reason(removeStop(["A", "B", "C"], 3)), /isn't on this beam/);
   });
 
   it("refuses to leave fewer than 2 stops", () => {

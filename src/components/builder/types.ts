@@ -493,8 +493,9 @@ export function settleHosts(scene: BuilderSceneData): BuilderSceneData {
 // ---------------------------------------------------------------------------
 //
 // Each returns the new path, or the reason the edit isn't allowed, worded to
-// finish "Can't remove the lens: …". A beam keeps at least 2 stops, and a part may appear more than once but never
-// twice in a row, the same rule as drawing.
+// finish "Can't remove the lens: …". A beam keeps at least 2 stops, and a
+// part may appear more than once but never twice in a row, the same rule as
+// drawing.
 
 export type PathEdit = { ok: true; path: string[] } | { ok: false; reason: string };
 
@@ -511,6 +512,7 @@ export function appendStop(path: string[], id: string): PathEdit {
 const TWICE_IN_A_ROW = "it would put the same part twice in a row";
 
 export function removeStop(path: string[], index: number): PathEdit {
+  if (index < 0 || index >= path.length) return { ok: false, reason: "it isn't on this beam" };
   if (path.length <= 2) return { ok: false, reason: "a beam needs 2 stops" };
   const next = path.filter((_, at) => at !== index);
   return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
@@ -528,11 +530,11 @@ export function moveStop(path: string[], index: number, direction: 1 | -1): Path
 
 /**
  * A path with the given parts taken out and the gaps closed: a part left
- * twice in a row is kept once. Undefined when fewer than 2 stops remain.
+ * twice in a row is kept once. Null when fewer than 2 stops remain.
  */
-function pathWithout(path: string[], keep: (id: string) => boolean): string[] | undefined {
+function pathWithout(path: string[], keep: (id: string) => boolean): string[] | null {
   const next = path.filter(keep).filter((id, index, kept) => index === 0 || kept[index - 1] !== id);
-  return next.length >= 2 ? next : undefined;
+  return next.length >= 2 ? next : null;
 }
 
 /** Take a deleted part off every beam; a beam it leaves with one stop is gone. */
@@ -702,7 +704,8 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   if (typeof raw.id !== "string") return null;
   if (!Array.isArray(raw.path)) return null;
 
-  // a stop naming a missing part is dropped like a deleted part
+  // a stop naming a missing part is dropped like a deleted part; only a path
+  // the editor could never have saved changes, so saved setups open as they were
   const path = pathWithout(
     raw.path.filter((entry): entry is string => typeof entry === "string"),
     (entry) => validIds.has(entry),
