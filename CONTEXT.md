@@ -15,7 +15,7 @@ Everything placed on the table, its components and beams, as saved to or opened 
 _Avoid_: layout, scene, project
 
 **Component**:
-One piece of bench hardware placed on the table: a laser, a mirror mount, a lens, a detector.
+One piece of bench hardware placed on the table: a laser, a mirror, a lens, a detector.
 _Avoid_: part, element, object
 
 **Height**:
@@ -36,9 +36,9 @@ The 3D length of a beam through its components' optical centres, in mm; the basi
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.
 
-**Beam splitter**:
-A cube that divides a beam in two. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
-_Avoid_: PBS, PBS cube, beamsplitter plate
+**Beam cube**:
+A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
+_Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 
 **Mode**:
 The light standing inside a cavity, drawn as a Gaussian envelope between its mirrors. Part of the cavity, not a beam: it is not drawn by the author and adds nothing to any path length.

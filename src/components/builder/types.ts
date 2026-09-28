@@ -43,7 +43,7 @@ export type BuilderComponent = {
   position: Vec3;
   /** degrees, yaw around the vertical axis */
   rotation: number;
-  /** hex colour — body tint; on a mirror mount it marks which beam line it serves */
+  /** hex colour — body tint; on a mirror it marks which beam line it serves */
   color?: string;
   /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
   opacity?: number;
@@ -122,7 +122,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     hint: "Where light enters or leaves a fiber: a beam can start or end here.",
   },
   "mirror-mount": {
-    label: "Mirror + mount",
+    label: "Mirror",
     tag: "Mirror",
     top: 25,
     minHeight: 27,
@@ -130,8 +130,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     hint: "Steers the beam. Colour the mount to mark which beam line it serves.",
   },
   "beam-splitter": {
-    label: "Beam splitter",
-    tag: "BS",
+    label: "Beam cube",
+    tag: "Cube",
     top: 13,
     minHeight: 25,
     radius: 30,
@@ -575,7 +575,7 @@ function mirrorAngleStop(
 
 /**
  * The beam that sets a mirror's angle, or undefined when the mirror is
- * turned by hand: on no beam, or only at a beam's ends. Beam splitters are
+ * turned by hand: on no beam, or only at a beam's ends. Beam cubes are
  * never derived (they transmit and reflect, so need a different rule).
  */
 export function mirrorAngleBeam(

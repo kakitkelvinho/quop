@@ -10,7 +10,7 @@ import { parseScene, serializeScene } from "./types.ts";
 
 const FIXTURES = ["setup-v1.json", "setup-v2.json"];
 
-/** Older files name beam splitters these ways; they open as beam splitters. */
+/** Older files name beam cubes these ways; they open as beam cubes. */
 const LEGACY_NAMES: Record<string, string> = {
   beamsplitter: "beam-splitter",
   "pbs-cube": "beam-splitter",
