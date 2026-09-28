@@ -50,6 +50,17 @@ function clampXZ(x: number, y: number, z: number): [number, number, number] {
   return [clampedX, y, clampedZ];
 }
 
+/** quop-setup-YYYYMMDD (ISO 8601 basic) on the local date, so files sort by day. */
+function setupFileName(extension: "json" | "png"): string {
+  const now = new Date();
+  const day = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("");
+  return `quop-setup-${day}.${extension}`;
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -292,7 +303,7 @@ export default function BuilderScene() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `quop-setup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = setupFileName("json");
     link.click();
     URL.revokeObjectURL(url);
     announce("Setup saved as JSON.");
@@ -335,7 +346,7 @@ export default function BuilderScene() {
     try {
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
-      link.download = `quop-setup-${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = setupFileName("png");
       link.click();
       announce("Exported the view as a PNG.");
     } catch {
