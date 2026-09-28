@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { EB_Garamond, IBM_Plex_Sans } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell";
+import { SiteFooter } from "@/components/site-footer";
+import { SITE_VERSION } from "@/components/site-version";
 
 import "./globals.css";
 
@@ -37,6 +39,8 @@ export const metadata: Metadata = {
     title: "quop",
     description,
   },
+  // read by report links, so a problem report says which version it's about
+  other: { "quop-version": SITE_VERSION },
 };
 
 const themeScript = `
@@ -65,7 +69,7 @@ export default function RootLayout({
     >
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        <AppShell>{children}</AppShell>
+        <AppShell footer={<SiteFooter />}>{children}</AppShell>
       </body>
     </html>
   );

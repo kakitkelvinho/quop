@@ -21,6 +21,7 @@ import {
   type ComponentType,
 } from "@/components/builder/types";
 import { findTool } from "@/components/navigation";
+import { ReportLine } from "@/components/report-link";
 import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
@@ -149,6 +150,7 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
           <li key={limitation}>{limitation}</li>
         ))}
       </ul>
+      <ReportLine tool={tool?.label} className="builderAbout__report" showVersion />
       <button
         type="button"
         className="builderHud__close"
