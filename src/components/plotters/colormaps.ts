@@ -66,15 +66,20 @@ export function interpolateColor(colorMap: ColorMapName, normalized: number) {
   ) as [number, number, number];
 }
 
-export function buildColorBarGradient(colorMap: ColorMapName) {
+/**
+ * The colour stops of a colormap, low to high, for a CSS linear-gradient. The
+ * direction is left to the stylesheet: the colorbar runs up on wide screens
+ * and left to right on phones.
+ */
+export function buildColorBarStops(colorMap: ColorMapName) {
   const stops = COLOR_MAP_STOPS[colorMap];
 
-  return `linear-gradient(to top, ${stops
+  return stops
     .map((stop, index) => {
       const position = (index / Math.max(stops.length - 1, 1)) * 100;
       return `rgb(${stop[0]} ${stop[1]} ${stop[2]}) ${position}%`;
     })
-    .join(", ")})`;
+    .join(", ");
 }
 
 export type ColormapFrame = {
