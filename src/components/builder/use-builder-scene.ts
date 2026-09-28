@@ -17,6 +17,7 @@ import {
   createBeamId,
   createComponentId,
   defaultHeight,
+  dropComponentFromBeams,
   parseScene,
   settleHosts,
   settleMirrors,
@@ -254,9 +255,7 @@ export function useBuilderScene() {
         ...current,
         components: current.components.filter((component) => component.id !== id),
         // a beam that loses a stop keeps going; one left with a single stop is gone
-        beams: current.beams
-          .map((beam) => ({ ...beam, path: beam.path.filter((entry) => entry !== id) }))
-          .filter((beam) => beam.path.length >= 2),
+        beams: dropComponentFromBeams(current.beams, id),
       }));
     },
     [commit],

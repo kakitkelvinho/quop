@@ -492,65 +492,55 @@ export function settleHosts(scene: BuilderSceneData): BuilderSceneData {
 // Beam path edits
 // ---------------------------------------------------------------------------
 //
-// Each returns the new path, or null when the edit isn't allowed: a beam
-// keeps at least 2 stops, and a part may appear more than once but never
+// Each returns the new path, or the reason the edit isn't allowed, worded to
+// finish "Can't remove the lens: …". A beam keeps at least 2 stops, and a part may appear more than once but never
 // twice in a row, the same rule as drawing.
+
+export type PathEdit = { ok: true; path: string[] } | { ok: false; reason: string };
 
 function repeatsInARow(path: string[]): boolean {
   return path.some((id, index) => index > 0 && path[index - 1] === id);
 }
 
-export function removeStop(path: string[], index: number): string[] | null {
+/** A clicked part joins the beam's end, in click order; a part already on it comes back as a revisit. */
+export function appendStop(path: string[], id: string): PathEdit {
+  if (path[path.length - 1] === id) return { ok: false, reason: "it's already the last stop" };
+  return { ok: true, path: [...path, id] };
+}
+
+const TWICE_IN_A_ROW = "it would put the same part twice in a row";
+
+export function removeStop(path: string[], index: number): PathEdit {
+  if (path.length <= 2) return { ok: false, reason: "a beam needs 2 stops" };
   const next = path.filter((_, at) => at !== index);
-  return next.length < 2 || repeatsInARow(next) ? null : next;
+  return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
 }
 
 /** Swap a stop with its neighbour: -1 moves it toward the start. */
-export function moveStop(path: string[], index: number, direction: 1 | -1): string[] | null {
+export function moveStop(path: string[], index: number, direction: 1 | -1): PathEdit {
   const other = index + direction;
-  if (other < 0 || other >= path.length) return null;
+  if (other < 0) return { ok: false, reason: "it's already first" };
+  if (other >= path.length) return { ok: false, reason: "it's already last" };
   const next = [...path];
   [next[index], next[other]] = [next[other], next[index]];
-  return repeatsInARow(next) ? null : next;
-}
-
-export function insertStop(path: string[], index: number, id: string): string[] | null {
-  const next = [...path.slice(0, index), id, ...path.slice(index)];
-  return repeatsInARow(next) ? null : next;
+  return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
 }
 
 /**
- * Where a part at (x, z) joins a beam: between the two consecutive stops
- * whose segment passes nearest it, measured in the table plane. A part past
- * either end, whose nearest point is that end stop, is prepended (0) or
- * appended (path.length) instead.
+ * A path with the given parts taken out and the gaps closed: a part left
+ * twice in a row is kept once. Undefined when fewer than 2 stops remain.
  */
-export function insertionIndex(
-  components: BuilderComponent[],
-  path: string[],
-  x: number,
-  z: number,
-): number {
-  let best = path.length;
-  let bestDistance = Infinity;
-  for (let index = 1; index < path.length; index += 1) {
-    const a = componentById(components, path[index - 1]);
-    const b = componentById(components, path[index]);
-    if (!a || !b) continue;
-    const [ax, , az] = a.position;
-    const dx = b.position[0] - ax;
-    const dz = b.position[2] - az;
-    const lengthSq = dx * dx + dz * dz;
-    const t = lengthSq === 0 ? 0 : ((x - ax) * dx + (z - az) * dz) / lengthSq;
-    const clamped = Math.min(1, Math.max(0, t));
-    const distance = Math.hypot(ax + clamped * dx - x, az + clamped * dz - z);
-    if (distance >= bestDistance) continue;
-    bestDistance = distance;
-    if (index === 1 && t < 0) best = 0;
-    else if (index === path.length - 1 && t > 1) best = path.length;
-    else best = index;
-  }
-  return best;
+function pathWithout(path: string[], keep: (id: string) => boolean): string[] | undefined {
+  const next = path.filter(keep).filter((id, index, kept) => index === 0 || kept[index - 1] !== id);
+  return next.length >= 2 ? next : undefined;
+}
+
+/** Take a deleted part off every beam; a beam it leaves with one stop is gone. */
+export function dropComponentFromBeams(beams: Beam[], id: string): Beam[] {
+  return beams.flatMap((beam) => {
+    const path = pathWithout(beam.path, (entry) => entry !== id);
+    return path ? [{ ...beam, path }] : [];
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -712,10 +702,12 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   if (typeof raw.id !== "string") return null;
   if (!Array.isArray(raw.path)) return null;
 
-  const path = raw.path.filter(
-    (entry): entry is string => typeof entry === "string" && validIds.has(entry),
+  // a stop naming a missing part is dropped like a deleted part
+  const path = pathWithout(
+    raw.path.filter((entry): entry is string => typeof entry === "string"),
+    (entry) => validIds.has(entry),
   );
-  if (path.length < 2) return null;
+  if (!path) return null;
 
   return {
     id: raw.id,

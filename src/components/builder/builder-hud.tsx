@@ -95,7 +95,7 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
     return {
       label: "Adding stops",
       hints: [
-        ["Click", "insert"],
+        ["Click", "add to end"],
         ["Enter", "done"],
         ["Esc", "done"],
       ],

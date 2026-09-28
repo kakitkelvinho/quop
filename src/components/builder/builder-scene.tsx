@@ -25,8 +25,7 @@ import {
   componentById,
   componentDisplayName,
   findHost,
-  insertStop,
-  insertionIndex,
+  appendStop,
   mirrorAngleBeam,
   parseScene,
   serializeScene,
@@ -169,13 +168,12 @@ export default function BuilderScene() {
       if (!component) return;
 
       if (addingStops && selectedBeamId) {
-        // into the segment the part sits nearest, one undo step per insert
+        // onto the end, in click order, one undo step per stop
         const beam = sceneRef.current.beams.find((entry) => entry.id === selectedBeamId);
         if (!beam) return;
-        const [x, , z] = component.position;
-        const index = insertionIndex(sceneRef.current.components, beam.path, x, z);
-        const path = insertStop(beam.path, index, id);
-        if (path) api.updateBeam(beam.id, { path });
+        const edit = appendStop(beam.path, id);
+        if (edit.ok) api.updateBeam(beam.id, { path: edit.path });
+        else announce(`Can't add ${componentDisplayName(component)}: ${edit.reason}`);
         return;
       }
 
@@ -191,7 +189,7 @@ export default function BuilderScene() {
       };
       setDragging(true);
     },
-    [addingStops, api, beamMode, selectedBeamId],
+    [addingStops, announce, api, beamMode, selectedBeamId],
   );
 
   const handleSurfaceDrag = useCallback(
