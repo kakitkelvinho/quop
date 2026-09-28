@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
-import { BetaBadge, isBeta } from "@/components/tool-title";
+import { BetaMark } from "@/components/tool-title";
 
 const calculators = navSections.find((section) => section.href === "/calculators");
 
@@ -19,12 +19,7 @@ export default function CalculatorsPage() {
             <p className="sectionCard__kicker">Calculator</p>
             <h2>
               {link.label}
-              {isBeta(link) ? (
-                <>
-                  {" "}
-                  <BetaBadge />
-                </>
-              ) : null}
+              <BetaMark tool={link} />
             </h2>
             <p>{link.description}</p>
             <Link className="buttonLink" href={link.href}>

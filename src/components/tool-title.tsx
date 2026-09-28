@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 
-import { findTool, type NavLink } from "@/components/navigation";
-
-export function isBeta(tool: Pick<NavLink, "status"> | undefined): boolean {
-  return tool?.status === "beta";
-}
+import { findTool, isBeta, type NavLink } from "@/components/navigation";
 
 export function BetaBadge() {
   return (
@@ -14,17 +10,23 @@ export function BetaBadge() {
   );
 }
 
+/** The badge, set off by a space, when the tool is beta; nothing otherwise. */
+export function BetaMark({ tool }: { tool: NavLink | undefined }) {
+  if (!isBeta(tool)) return null;
+  return (
+    <>
+      {" "}
+      <BetaBadge />
+    </>
+  );
+}
+
 /** A tool page's heading, badged when the navigation registry marks it beta. */
 export function ToolTitle({ href, children }: { href: string; children: ReactNode }) {
   return (
     <h1>
       {children}
-      {isBeta(findTool(href)) ? (
-        <>
-          {" "}
-          <BetaBadge />
-        </>
-      ) : null}
+      <BetaMark tool={findTool(href)} />
     </h1>
   );
 }

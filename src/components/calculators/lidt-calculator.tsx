@@ -71,7 +71,9 @@ export function LidtCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolTitle href="/calculators/lidt-calculator">Laser Induced Damage Threshold (LIDT)</ToolTitle>
+      <ToolTitle href="/calculators/lidt-calculator">
+        Laser Induced Damage Threshold (LIDT)
+      </ToolTitle>
       <p className="lead">
         Estimate per-pulse energy and fluence (energy density) from a pulsed
         laser&apos;s average-power setup, so you can compare against an

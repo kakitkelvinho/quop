@@ -106,6 +106,10 @@ export const navSections: NavSection[] = [
   },
 ];
 
+export function isBeta(tool: Pick<NavLink, "status"> | undefined): boolean {
+  return tool?.status === "beta";
+}
+
 export function findTool(href: string): NavLink | undefined {
   for (const section of navSections) {
     const tool = section.links.find((link) => link.href === href);

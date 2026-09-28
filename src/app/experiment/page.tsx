@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
-import { BetaBadge, isBeta } from "@/components/tool-title";
+import { BetaMark } from "@/components/tool-title";
 
 const experiment = navSections.find((section) => section.href === "/experiment");
 
@@ -27,12 +27,7 @@ export default function ExperimentPage() {
             <p className="sectionCard__kicker">Tool</p>
             <h2>
               {link.label}
-              {isBeta(link) ? (
-                <>
-                  {" "}
-                  <BetaBadge />
-                </>
-              ) : null}
+              <BetaMark tool={link} />
             </h2>
             <p>{link.description}</p>
             <Link className="buttonLink" href={link.href}>

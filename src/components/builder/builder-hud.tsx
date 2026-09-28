@@ -21,7 +21,7 @@ import {
   type ComponentType,
 } from "@/components/builder/types";
 import { findTool } from "@/components/navigation";
-import { BetaBadge, isBeta } from "@/components/tool-title";
+import { BetaMark } from "@/components/tool-title";
 
 export type BuilderHudProps = {
   components: BuilderComponent[];
@@ -151,7 +151,7 @@ function FileMenu({
         onClick={() => setOpen((current) => !current)}
       >
         <span className="builderMenu__title">Experiment builder</span>
-        {isBeta(findTool("/experiment/builder")) ? <BetaBadge /> : null}
+        <BetaMark tool={findTool("/experiment/builder")} />
         <Icon name="chevron" size={14} />
       </button>
       {open ? (

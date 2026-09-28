@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
-import { BetaBadge, isBeta } from "@/components/tool-title";
+import { BetaMark } from "@/components/tool-title";
 
 const plotters = navSections.find((section) => section.href === "/plotters");
 
@@ -20,12 +20,7 @@ export default function PlottersPage() {
             <p className="sectionCard__kicker">Plotter</p>
             <h2>
               {link.label}
-              {isBeta(link) ? (
-                <>
-                  {" "}
-                  <BetaBadge />
-                </>
-              ) : null}
+              <BetaMark tool={link} />
             </h2>
             <p>{link.description}</p>
             <Link className="buttonLink" href={link.href}>
