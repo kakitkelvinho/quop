@@ -87,7 +87,7 @@ const NO_RAYCAST = () => null;
  * rounded-square anodised plates roughly twice the optic across, a bored front
  * plate, and 170-TPI fine-thread adjusters standing proud of the back plate.
  * Dimensions below follow the SR100 (1 inch optic) sample drawing: 49 mm
- * plate, 25.4 mm clear bore. The mirror mount is drawn from the lab's own
+ * plate, 25.4 mm clear bore. A mirror's mount is drawn from the lab's own
  * LIOP-TEC kinematic mount (photographed on the bench); the rotation mount
  * follows Radiant Dyes. Everything on a post stands on a pedestal pillar.
  */

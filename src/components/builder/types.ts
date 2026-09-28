@@ -92,6 +92,8 @@ export type ComponentSpec = {
   label: string;
   /** short name drawn as the in-scene tag */
   tag: string;
+  /** other names a visitor might search for; never shown */
+  aliases?: string[];
   /** how far the part reaches above its optical centre, mm — where its label sits */
   top: number;
   /** lowest height, mm: where its post runs out, or where a floating part meets the table */
@@ -104,6 +106,10 @@ export type ComponentSpec = {
   hint: string;
 };
 
+/**
+ * Keyed by type id. The ids are what setup files store, so they keep their old
+ * names (`mirror-mount`, `beam-splitter`) even where the label has moved on.
+ */
 export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   "laser-source": {
     label: "Laser source",
@@ -124,6 +130,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   "mirror-mount": {
     label: "Mirror",
     tag: "Mirror",
+    aliases: ["mirror mount"],
     top: 25,
     minHeight: 27,
     radius: 34,
@@ -132,6 +139,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   "beam-splitter": {
     label: "Beam cube",
     tag: "Cube",
+    aliases: ["beam splitter", "BS", "PBS"],
     top: 13,
     minHeight: 25,
     radius: 30,

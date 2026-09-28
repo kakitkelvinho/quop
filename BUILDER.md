@@ -78,7 +78,7 @@ still be read at a glance. This is a user-facing convention, not a design-system
 colour — see `DESIGN.md` on keeping the section wayfinding colours out of it.
 
 **Real hardware where it can be seen, schematic where it can't.** Mounts
-follow the lab's own catalogues: LIOP-TEC for most parts (the mirror mount is
+follow the lab's own catalogues: LIOP-TEC for most parts (a mirror's mount is
 drawn from the lab's own LIOP-TEC kinematic mount), Radiant Dyes for the
 rotation mount a waveplate drops into.
 Everything on a post stands on one kind of post, a 1-inch pedestal pillar;
