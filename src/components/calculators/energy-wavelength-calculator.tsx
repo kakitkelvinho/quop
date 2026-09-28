@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
-import { ToolTitle } from "@/components/tool-title";
+import { ToolIntro } from "@/components/tool-intro";
 
 export function EnergyWavelengthCalculator() {
   const electronVolt = 1.602176634e-19;
@@ -26,13 +26,9 @@ export function EnergyWavelengthCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolTitle href="/calculators/energy-wavelength-calculator">
+      <ToolIntro href="/calculators/energy-wavelength-calculator">
         Energy-Wavelength Calculator
-      </ToolTitle>
-      <p className="lead">
-        Convert between photon energy in electron volts and wavelength in
-        nanometers.
-      </p>
+      </ToolIntro>
 
       <div className="calculatorGrid">
         <div className="inputCard">

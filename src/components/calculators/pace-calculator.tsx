@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
-import { ToolTitle } from "@/components/tool-title";
+import { ToolIntro } from "@/components/tool-intro";
 
 type ConversionMode = "pace-to-speed" | "speed-to-pace";
 
@@ -80,10 +80,7 @@ export function PaceCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolTitle href="/calculators/pace">Pace</ToolTitle>
-      <p className="lead">
-        Find out how fast you have to run/cycle to keep up!
-      </p>
+      <ToolIntro href="/calculators/pace">Pace</ToolIntro>
 
       <div className="paceCalculator">
         <section className="inputCard paceCalculator__panel">

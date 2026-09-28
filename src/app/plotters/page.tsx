@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
-import { BetaMark } from "@/components/tool-title";
+import { BetaMark } from "@/components/tool-intro";
 
 const plotters = navSections.find((section) => section.href === "/plotters");
 

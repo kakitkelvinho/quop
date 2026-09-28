@@ -2100,8 +2100,8 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.2;
 }
 
-/* left, where the parts panel opens: what the builder leaves to the author */
-.builderLimits {
+/* left, where the parts panel opens: what the builder is for, and leaves out */
+.builderAbout {
   top: 7.3rem;
   left: 0.9rem;
   z-index: 6;
@@ -2113,7 +2113,7 @@ html[data-theme="dark"] .builderIsland {
   animation: builderSlideRight 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.builderLimits__title {
+.builderAbout__title {
   margin: 0;
   /* clear of the close button */
   padding: 0.2rem 1.9rem 0 0;
@@ -2122,13 +2122,27 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.2;
 }
 
-.builderLimits__lead {
+.builderAbout__description {
   margin: 0.45rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.builderAbout__subtitle {
+  margin: 0.9rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.builderAbout__lead {
+  margin: 0.3rem 0 0;
   color: var(--muted);
   font-size: 0.8rem;
 }
 
-.builderLimits__list {
+.builderAbout__list {
   display: grid;
   gap: 0.45rem;
   margin: 0.65rem 0 0;
@@ -2539,7 +2553,7 @@ html[data-theme="dark"] .builderButton--primary {
 
 @media (prefers-reduced-motion: reduce) {
   .builderParts,
-  .builderLimits,
+  .builderAbout,
   .builderMenu__list,
   .builderHud__inspector {
     animation: none;
@@ -2583,7 +2597,7 @@ html[data-theme="dark"] .builderButton--primary {
     width: auto;
   }
 
-  .builderLimits {
+  .builderAbout {
     right: 0.9rem;
     width: auto;
   }
