@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { IconButton } from "@/components/builder/builder-icons";
+import { IconButton, type IconName } from "@/components/builder/builder-icons";
 import {
   BEAM_COLORS,
   BEAM_OPACITY_RANGE,
@@ -38,6 +38,7 @@ import {
   type Beam,
   type BuilderComponent,
   type LensShape,
+  type PathEdit,
 } from "@/components/builder/types";
 
 const LENS_SHAPES: { value: LensShape; label: string }[] = [
@@ -194,9 +195,13 @@ function StopList({ components, path }: { components: BuilderComponent[]; path: 
   );
 }
 
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /**
  * A saved beam's stops, editable: each row moves up or down or goes away.
- * A button is disabled when its edit isn't allowed (see removeStop).
+ * A button is disabled when its edit isn't allowed, and its label says why.
  */
 function EditableStopList({
   components,
@@ -207,26 +212,49 @@ function EditableStopList({
   path: string[];
   onChange: (path: string[]) => void;
 }) {
+  const listRef = useRef<HTMLOListElement>(null);
+  // Keyboard focus follows a moved stop, and stays on the row that closes the
+  // gap after a remove; a button the edit disabled hands focus to its row's next.
+  const focusAfter = useRef<{ row: number; button: number } | null>(null);
+  useEffect(() => {
+    const target = focusAfter.current;
+    focusAfter.current = null;
+    const rows = listRef.current?.children;
+    if (!target || !rows?.length) return;
+    const buttons = Array.from(rows[Math.min(target.row, rows.length - 1)].querySelectorAll("button"));
+    const wanted = buttons[target.button];
+    (wanted && !wanted.disabled ? wanted : buttons.find((button) => !button.disabled))?.focus();
+  }, [path]);
+
   return (
-    <ol className="builderStops builderStops--editable">
+    <ol ref={listRef} className="builderStops builderStops--editable">
       {path.map((id, index) => {
         const component = componentById(components, id);
         const name = component ? componentDisplayName(component) : "—";
-        const up = moveStop(path, index, -1);
-        const down = moveStop(path, index, 1);
-        const without = removeStop(path, index);
+        // [icon, action, edit, the row the stop ends up on]
+        const edits: [IconName, string, PathEdit, number][] = [
+          ["up", `move ${name} earlier`, moveStop(path, index, -1), index - 1],
+          ["down", `move ${name} later`, moveStop(path, index, 1), index + 1],
+          ["close", `remove ${name}`, removeStop(path, index), index],
+        ];
         return (
-          <li key={`${id}-${index}`}>
+          // keyed by position: rows stay mounted, and focus is moved by hand above
+          <li key={index}>
             <span className="builderStops__name">{name}</span>
             <span className="builderStops__actions">
-              <IconButton icon="up" label={`Move ${name} earlier`} disabled={!up} onClick={() => up && onChange(up)} />
-              <IconButton icon="down" label={`Move ${name} later`} disabled={!down} onClick={() => down && onChange(down)} />
-              <IconButton
-                icon="close"
-                label={path.length <= 2 ? "A beam needs 2 stops" : `Remove ${name}`}
-                disabled={!without}
-                onClick={() => without && onChange(without)}
-              />
+              {edits.map(([icon, action, edit, row], button) => (
+                <IconButton
+                  key={icon}
+                  icon={icon}
+                  label={edit.ok ? capitalise(action) : `Can't ${action}: ${edit.reason}`}
+                  disabled={!edit.ok}
+                  onClick={() => {
+                    if (!edit.ok) return;
+                    focusAfter.current = { row, button };
+                    onChange(edit.path);
+                  }}
+                />
+              ))}
             </span>
           </li>
         );
@@ -597,7 +625,7 @@ export function BeamInspector({
         {addingStops ? "Done adding stops" : "Add stops"}
       </button>
       {addingStops ? (
-        <p className="builderInspector__hint">Click a part to insert it into the segment it sits nearest.</p>
+        <p className="builderInspector__hint">Click parts to add them to the end, in order. Move a stop up or down to reorder.</p>
       ) : null}
     </div>
   );
