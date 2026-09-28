@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import { BlobReader, openFits, readImage, type Hdu, type FitsImage } from "@fits-js/core";
 
+import { describeFitsError, NO_IMAGE_MESSAGE } from "@/components/plotters/fits-errors";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
@@ -191,7 +192,7 @@ async function parseFitsFile(file: File): Promise<FitsSummary> {
   const hdu = selectImageHdu(hdus);
 
   if (!hdu) {
-    throw new Error("This FITS file does not contain an image HDU I can preview.");
+    throw new Error(NO_IMAGE_MESSAGE);
   }
 
   const image = await readImage(hdu, reader);
@@ -305,7 +306,7 @@ export default function FitsPlotter() {
       setSummary(nextSummary);
     } catch (nextError) {
       setSummary(null);
-      setError(nextError instanceof Error ? nextError.message : "Unable to parse this FITS file.");
+      setError(describeFitsError(nextError));
     } finally {
       setIsLoading(false);
       event.target.value = "";
