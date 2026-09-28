@@ -176,7 +176,13 @@ function MobileNav() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  footer,
+}: {
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const isBuilderRoute = pathname.startsWith("/experiment/builder");
 
@@ -221,6 +227,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       >
         {children}
       </main>
+
+      {isBuilderRoute ? null : footer}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { BetaMark } from "@/components/beta-badge";
 import { findTool } from "@/components/navigation";
+import { ReportLink } from "@/components/report-link";
 
 /**
  * A tool page's heading and lead. The lead is the tool's description in the
@@ -17,6 +18,9 @@ export function ToolIntro({ href, children }: { href: string; children: ReactNod
         <BetaMark tool={tool} />
       </h1>
       {tool ? <p className="lead">{tool.description}</p> : null}
+      <p className="toolReport">
+        Something wrong or unclear? <ReportLink tool={tool?.label} />
+      </p>
     </>
   );
 }
