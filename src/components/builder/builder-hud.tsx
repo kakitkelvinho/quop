@@ -15,7 +15,7 @@ import {
   COMPONENT_SPECS,
   beamDisplayName,
   beamLengthMm,
-  mirrorAngleBeam,
+  derivedAngleBeam,
   type Beam,
   type BuilderComponent,
   type ComponentType,
@@ -288,7 +288,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       <ComponentInspector
         component={selected}
         components={components}
-        angleBeam={mirrorAngleBeam(beams, selected)}
+        angleBeam={derivedAngleBeam(beams, selected)}
         onUpdate={props.onUpdateSelected}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
