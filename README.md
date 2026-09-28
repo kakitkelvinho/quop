@@ -17,3 +17,7 @@ Some simple I/Os to quickly calculate different physical concepts to help with b
 ## Plotter
 
 Our oscilloscope data are recorded primarily in `.csv`, and our spectrometer data is recorded in `.fits` files. Instead of writing python scripts every time or modifying mathematica notebooks to quickly check our data, we made this so we can quickly visualize the data we have recorded in the lab.
+
+## Reporting problems
+
+Found something broken or confusing? Use the "Report a problem" link in the footer or on any tool page. This lets you email me directly so I can address the problem.
