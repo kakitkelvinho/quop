@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "components": [
+    { "id": "laser", "type": "laser-source", "position": [-400, 0, 0], "rotation": 0, "label": "780 nm ECDL" },
+    { "id": "m1", "type": "mirror-mount", "position": [-250, 0, 0], "rotation": 45 },
+    { "id": "pbs", "type": "pbs-cube", "position": [-100, 0, 0], "rotation": 0, "label": "PBS" },
+    { "id": "lens", "type": "lens", "position": [50, 0, 0], "rotation": 90, "lensShape": "plano-convex", "focalLength": 200 },
+    { "id": "trap", "type": "paul-trap", "position": [200, 0, 0], "rotation": 0 },
+    { "id": "ion", "type": "particle", "position": [200, 0, 0], "rotation": 0, "host": "trap" },
+    { "id": "pd", "type": "photodiode", "position": [350, 0, 0], "rotation": 180 },
+    { "id": "bs", "type": "beamsplitter", "position": [-100, 0, 150], "rotation": 0, "label": "50:50" },
+    { "id": "wp", "type": "waveplate", "position": [-100, 0, 250], "rotation": 0 },
+    { "id": "filter", "type": "filter", "position": [-100, 0, 350], "rotation": 0 },
+    { "id": "iris", "type": "iris", "position": [-100, 0, 450], "rotation": 0 },
+    { "id": "sample", "type": "sample", "position": [-100, 0, 550], "rotation": 0 },
+    { "id": "cam", "type": "camera", "position": [-100, 0, 700], "rotation": 90 },
+    { "id": "fiber", "type": "fiber-collimator", "position": [-400, 0, -300], "rotation": 0 },
+    { "id": "cavity", "type": "cavity", "position": [-100, 0, -300], "rotation": 0 },
+    { "id": "spec", "type": "spectrometer", "position": [100, 0, -300], "rotation": 0 }
+  ],
+  "beams": [
+    { "id": "probe", "path": ["laser", "m1", "pbs", "lens", "trap", "pd"], "color": "#dc2626", "label": "probe" },
+    { "id": "imaging", "path": ["pbs", "bs", "wp", "filter", "iris", "sample", "cam"], "color": "#0891b2" },
+    { "id": "lock", "path": ["fiber", "cavity", "spec"], "color": "#16a34a" }
+  ]
+}

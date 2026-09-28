@@ -12,7 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Agent tooling, not site code.
+    ".claude/**",
+    ".github/skills/**",
   ]),
+  {
+    // Reports components the React Compiler would skip. The compiler is not
+    // enabled here, so hand-written useMemo is what memoizes, and it stays.
+    rules: { "react-hooks/preserve-manual-memoization": "off" },
+  },
 ]);
 
 export default eslintConfig;

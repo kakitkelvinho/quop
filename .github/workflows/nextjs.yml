@@ -65,6 +65,12 @@ jobs:
       # restored cache shipped CSS from an old globals.css. The build is quick.
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+      # Either failing stops the deploy. The tests include the setup file
+      # fixtures that guard ADR 0001.
+      - name: Lint
+        run: ${{ steps.detect-package-manager.outputs.manager }} run lint
+      - name: Test
+        run: ${{ steps.detect-package-manager.outputs.manager }} test
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
       - name: Upload artifact
