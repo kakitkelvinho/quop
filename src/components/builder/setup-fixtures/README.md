@@ -1,10 +1,14 @@
 # Setup file fixtures
 
-One setup file per schema version ever released, as that version saved it.
-`setup-files.test.ts` checks that each still opens with every component and
-beam intact: the promise in `docs/adr/0001-setup-files-stay-compatible.md`.
+One setup file per schema version ever released, in the shape that version
+saved. `setup-files.test.ts` checks that each still opens with every
+component and beam intact: the promise in
+`docs/adr/0001-setup-files-stay-compatible.md`.
 
-- **Bumping the schema version?** Add a migration, then add a new
-  `setup-vN.json` saved by the new version and cover it in the test.
+v1 and v2 are hand-written. v1 also carries the beam splitter names from
+before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam splitters.
+
+- **Bumping the schema version?** Add a migration, then save a setup from the
+  new version as `setup-vN.json` and add it to `FIXTURES` in the test.
 - **Never edit an existing fixture.** It stands for files people already
   hold; if the test fails on one, the parser is what broke.

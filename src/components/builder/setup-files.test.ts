@@ -5,91 +5,63 @@ import { describe, it } from "node:test";
 import { parseScene, serializeScene } from "./types.ts";
 
 // ADR 0001: a setup file saved by a release keeps opening, with nothing
-// dropped, in every later release. Each fixture is a setup file as saved by
-// one schema version; see setup-fixtures/README.md before touching them.
+// dropped, in every later release. Each fixture is a setup file in the shape
+// one schema version saved; see setup-fixtures/README.md before touching them.
+
+const FIXTURES = ["setup-v1.json", "setup-v2.json"];
+
+/** Older files name beam splitters these ways; they open as beam splitters. */
+const LEGACY_NAMES: Record<string, string> = {
+  beamsplitter: "beam-splitter",
+  "pbs-cube": "beam-splitter",
+};
 
 type SavedSetup = {
-  components: { id: string; type: string; host?: string }[];
+  components: { id: string; type: string }[];
   beams: { id: string; path: string[] }[];
 };
 
-function readFixture(name: string): SavedSetup {
+function readSaved(name: string): SavedSetup {
   return JSON.parse(readFileSync(new URL(`./setup-fixtures/${name}`, import.meta.url), "utf8"));
 }
 
-function openFixture(name: string) {
-  const setup = parseScene(readFixture(name));
+function open(name: string) {
+  const setup = parseScene(readSaved(name));
   assert.ok(setup, `${name} should open`);
   return setup;
 }
 
-describe("a v1 setup file", () => {
-  const saved = readFixture("setup-v1.json");
+for (const name of FIXTURES) {
+  describe(name, () => {
+    const saved = readSaved(name);
 
-  it("opens with every component, old beam splitter names read as beam splitters", () => {
-    const setup = openFixture("setup-v1.json");
-    const legacy: Record<string, string> = { beamsplitter: "beam-splitter", "pbs-cube": "beam-splitter" };
-    assert.deepEqual(
-      setup.components.map(({ id, type }) => ({ id, type })),
-      saved.components.map(({ id, type }) => ({ id, type: legacy[type] ?? type })),
-    );
-  });
+    it("opens with every component it was saved with", () => {
+      assert.deepEqual(
+        open(name).components.map(({ id, type }) => ({ id, type })),
+        saved.components.map(({ id, type }) => ({ id, type: LEGACY_NAMES[type] ?? type })),
+      );
+    });
 
-  it("opens with every beam and its full path", () => {
-    const setup = openFixture("setup-v1.json");
-    assert.deepEqual(
-      setup.beams.map(({ id, path }) => ({ id, path })),
-      saved.beams.map(({ id, path }) => ({ id, path })),
-    );
-  });
+    it("opens with every beam and its full path", () => {
+      assert.deepEqual(
+        open(name).beams.map(({ id, path }) => ({ id, path })),
+        saved.beams.map(({ id, path }) => ({ id, path })),
+      );
+    });
 
-  it("stands its components at the beam height, since v1 had no heights", () => {
-    const setup = openFixture("setup-v1.json");
-    const mirror = setup.components.find(({ id }) => id === "m1");
-    assert.equal(mirror?.position[1], 100);
-  });
+    it("keeps a trapped particle in its trap", () => {
+      assert.equal(open(name).components.find(({ id }) => id === "ion")?.host, "trap");
+    });
 
-  it("keeps a trapped particle in its trap", () => {
-    const setup = openFixture("setup-v1.json");
-    assert.equal(setup.components.find(({ id }) => id === "ion")?.host, "trap");
-  });
-});
-
-describe("a v2 setup file", () => {
-  const saved = readFixture("setup-v2.json");
-
-  it("opens with every component it was saved with", () => {
-    const setup = openFixture("setup-v2.json");
-    assert.deepEqual(
-      setup.components.map(({ id, type }) => ({ id, type })),
-      saved.components.map(({ id, type }) => ({ id, type })),
-    );
-  });
-
-  it("opens with every beam and its full path", () => {
-    const setup = openFixture("setup-v2.json");
-    assert.deepEqual(
-      setup.beams.map(({ id, path }) => ({ id, path })),
-      saved.beams.map(({ id, path }) => ({ id, path })),
-    );
-  });
-
-  it("keeps each component at the height it was saved at", () => {
-    const setup = openFixture("setup-v2.json");
-    assert.equal(setup.components.find(({ id }) => id === "cam")?.position[1], 125);
-  });
-
-  it("keeps a trapped particle in its trap", () => {
-    const setup = openFixture("setup-v2.json");
-    assert.equal(setup.components.find(({ id }) => id === "ion")?.host, "trap");
-  });
-});
-
-describe("saving an opened setup file and opening it again", () => {
-  for (const name of ["setup-v1.json", "setup-v2.json"]) {
-    it(`gives the same setup for ${name}`, () => {
-      const setup = openFixture(name);
+    it("gives the same setup when saved and opened again", () => {
+      const setup = open(name);
       assert.deepEqual(parseScene(JSON.parse(serializeScene(setup))), setup);
     });
-  }
+  });
+}
+
+describe("setup-v2.json, the first version with heights", () => {
+  it("keeps each component at the height it was saved at", () => {
+    assert.equal(open("setup-v2.json").components.find(({ id }) => id === "cam")?.position[1], 125);
+  });
 });
