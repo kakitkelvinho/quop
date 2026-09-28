@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
-import { BetaMark } from "@/components/tool-intro";
+import { BetaMark } from "@/components/beta-badge";
 
 const experiment = navSections.find((section) => section.href === "/experiment");
 

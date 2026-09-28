@@ -21,7 +21,7 @@ import {
   type ComponentType,
 } from "@/components/builder/types";
 import { findTool } from "@/components/navigation";
-import { BetaMark } from "@/components/tool-intro";
+import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
   components: BuilderComponent[];
@@ -152,7 +152,7 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
       <button
         type="button"
         className="builderHud__close"
-        aria-label="Close about the builder"
+        aria-label="Close panel"
         title="Close (Esc)"
         onClick={onClose}
       >

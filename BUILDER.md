@@ -215,9 +215,9 @@ The render-style exploration that led here is kept on the
 Visitors see these in the builder under File › About the builder
 (`LIMITATIONS` in `builder-hud.tsx`); keep the two lists in step.
 
-- A beam can be drawn through a part that would not physically steer it; nothing
-  validates the geometry.
-- Components can overlap — there is no collision or footprint check.
-- Beam colours are free-form, so the mount-colour convention is a convention,
-  not something the builder enforces.
-- No dimension/ruler annotations between arbitrary points yet.
+- A beam can pass through any component. Nothing checks that the light could
+  really take that path.
+- Components can overlap; there is no collision check.
+- Marking a beam line, by tinting its mounts the beam's colour, is up to you.
+  Nothing enforces it.
+- There are no ruler or dimension annotations yet.

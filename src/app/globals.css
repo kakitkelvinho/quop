@@ -2128,12 +2128,16 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.4;
 }
 
+/* a section heading, in the parts panel's group-name style */
 .builderAbout__subtitle {
   margin: 0.9rem 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--border);
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .builderAbout__lead {
