@@ -87,7 +87,7 @@ const NO_RAYCAST = () => null;
  * rounded-square anodised plates roughly twice the optic across, a bored front
  * plate, and 170-TPI fine-thread adjusters standing proud of the back plate.
  * Dimensions below follow the SR100 (1 inch optic) sample drawing: 49 mm
- * plate, 25.4 mm clear bore. The mirror mount is drawn from the lab's own
+ * plate, 25.4 mm clear bore. A mirror's mount is drawn from the lab's own
  * LIOP-TEC kinematic mount (photographed on the bench); the rotation mount
  * follows Radiant Dyes. Everything on a post stands on a pedestal pillar.
  */
@@ -770,7 +770,7 @@ function Iris({ palette, color, axis }: ModelProps) {
 /**
  * The sample: a thin, tinted slab, floating on the axis and facing the beam
  * like a lens. The real one is 10 x 10 x 1 mm, too small to see, so it is
- * drawn at beam-splitter size. Its colour and opacity are the user's: plain
+ * drawn at beam-cube size. Its colour and opacity are the user's: plain
  * alpha rather than transmission, so the opacity slider means what it says.
  */
 function Sample({
@@ -1146,7 +1146,7 @@ function Objective({ palette, color, axis }: ModelProps) {
 /**
  * A plain box for any part the builder doesn't draw: the user sets its
  * dimensions, colour and label. A Faraday rotator is this block between two
- * beam splitters.
+ * beam cubes.
  */
 function GenericBlock({ palette, color, axis, size }: ModelProps & { size: Vec3 }) {
   const [dx, dy, dz] = size;

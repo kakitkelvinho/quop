@@ -5,8 +5,8 @@ saved. `setup-files.test.ts` checks that each still opens with every
 component and beam intact: the promise in
 `docs/adr/0001-setup-files-stay-compatible.md`.
 
-v1 and v2 are hand-written. v1 also carries the beam splitter names from
-before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam splitters.
+v1 and v2 are hand-written. v1 also carries the beam cube names from
+before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 
 - **Bumping the schema version?** Add a migration, then save a setup from the
   new version as `setup-vN.json` and add it to `FIXTURES` in the test.

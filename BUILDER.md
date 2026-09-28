@@ -70,15 +70,15 @@ the stops before and after it, and re-angles live as any of the three moves.
 Its yaw is then read-only in the inspector, and `R` does nothing. If two beams
 pass through it, the first in the beam list wins, and the inspector names it
 ("Angle set by …"). A mirror on no beam, or only at a beam's end, turns by
-hand. Beam splitters always turn by hand.
+hand. Beam cubes always turn by hand.
 
-**Mount colour marks the beam line.** A mirror mount can be tinted; the
+**Mount colour marks the beam line.** A mirror's mount can be tinted; the
 convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system
 colour — see `DESIGN.md` on keeping the section wayfinding colours out of it.
 
 **Real hardware where it can be seen, schematic where it can't.** Mounts
-follow the lab's own catalogues: LIOP-TEC for most parts (the mirror mount is
+follow the lab's own catalogues: LIOP-TEC for most parts (a mirror's mount is
 drawn from the lab's own LIOP-TEC kinematic mount), Radiant Dyes for the
 rotation mount a waveplate drops into.
 Everything on a post stands on one kind of post, a 1-inch pedestal pillar;
@@ -90,7 +90,7 @@ them instead: a photodiode is a coloured dome behind a face with a small
 silicon chip set into a cup, a fiber off the dome's tip; an AOM or EOM is its
 bare crystal, with the transducer or electrodes that drive it. Anything the
 builder has no model for is a generic block, sized, coloured and labelled by
-hand (a Faraday rotator is a block between two beam splitters). A lens's bulge
+hand (a Faraday rotator is a block between two beam cubes). A lens's bulge
 is exaggerated so it can be seen, but still shrinks smoothly with focal
 length, so f = 50 and f = 500 never look alike.
 

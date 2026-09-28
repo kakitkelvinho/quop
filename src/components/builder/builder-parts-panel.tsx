@@ -9,10 +9,10 @@ import {
   type ComponentType,
 } from "@/components/builder/types";
 
-/** Name and tag only: hints mention other parts ("drop it on a Paul trap"). */
+/** Name, tag and aliases only: hints mention other parts ("drop it on a Paul trap"). */
 function matches(type: ComponentType, query: string): boolean {
   const spec = COMPONENT_SPECS[type];
-  return [spec.label, spec.tag].some((text) => text.toLowerCase().includes(query));
+  return [spec.label, spec.tag, ...(spec.aliases ?? [])].some((text) => text.toLowerCase().includes(query));
 }
 
 /**
