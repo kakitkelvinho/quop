@@ -23,20 +23,20 @@ export const navSections: NavSection[] = [
     href: "/calculators",
     label: "Calculators",
     description:
-      "Quickly calculate and convert between numbers to do back-in-the-envelope calculations.",
+      "Quick conversions and estimates for back-of-the-envelope calculations.",
     accent: "#ff9d5c",
     orbitalPhase: 0.15,
     links: [
       {
         href: "/calculators/energy-wavelength-calculator",
         label: "Energy-Wavelength",
-        description: "Convert between photon energy and wavelength.",
+        description: "Convert between photon energy in eV and wavelength in nm.",
       },
       {
         href: "/calculators/lidt-calculator",
         label: "LIDT",
         description:
-          "Estimate pulse energy density and determining damage thresholds.",
+          "Estimate pulse energy and fluence from a pulsed laser's power, repetition rate and beam waist, to compare against an optic's damage threshold.",
       },
       {
         href: "/calculators/pace",
@@ -47,7 +47,7 @@ export const navSections: NavSection[] = [
         href: "/calculators/light-travel-calculator",
         label: "Light Travel",
         description:
-          "Figure out the distance and time travelled by a light pulse.",
+          "Figure out the distance a light pulse travels in vacuum in a given time, or the time it takes to cover a distance.",
       },
     ],
   },
@@ -71,27 +71,29 @@ export const navSections: NavSection[] = [
       {
         href: "/plotters/array-plotter",
         label: "Array Plotter",
-        description: "Plot x and y arrays in a Chart.js figure.",
+        description: "Paste x and y arrays and plot them straight away.",
       },
       {
         href: "/plotters/generic-csv-plotter",
         label: "CSV Plotter",
-        description: "Plot any csv files. Pick which columns are x and y.",
+        description: "Plot any numeric CSV file. Pick which columns are x and y.",
       },
       {
         href: "/plotters/csv-plotter",
         label: "Time CSV Plotter",
-        description: "Plot every non-time column against a detected time axis.",
+        description:
+          "Upload a CSV with a time column, e.g. an oscilloscope or Moku export. Every other column is plotted against time.",
       },
       {
         href: "/plotters/fits-plotter",
         label: "FITS Plotter",
-        description: "Upload a FITS image and plot it.",
+        description:
+          "Upload a FITS file and plot its first frame: 1D data as a trace, 2D as an image or a 3D surface.",
       },
       {
         href: "/plotters/csv-fits-viewer",
         label: "CSV + FITS Viewer",
-        description: "Open CSV and FITS viewers side by side.",
+        description: "Open a time-series CSV and a FITS file side by side.",
       },
     ],
   },
