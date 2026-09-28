@@ -21,6 +21,7 @@ import {
   type Hdu,
 } from "@fits-js/core";
 
+import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
@@ -32,24 +33,6 @@ ChartJS.register(
   Tooltip,
   Legend,
 );
-
-type DataPoint = {
-  x: number;
-  y: number;
-};
-
-type ChannelSeries = {
-  label: string;
-  points: DataPoint[];
-};
-
-type ParsedCsv = {
-  channelLabels: string[];
-  error: string | null;
-  rowCount: number;
-  series: ChannelSeries[];
-  xLabel: string;
-};
 
 type HeaderAccessor = {
   get: (key: string) => unknown;
@@ -85,7 +68,6 @@ type SeriesSummary = {
 
 type FitsSummary = ImageSummary | SeriesSummary;
 
-
 function getBundledAssetPath(filename: string) {
   if (typeof window === "undefined") {
     return `/data/${filename}`;
@@ -108,39 +90,6 @@ const baseChartOptions: ChartOptions<"scatter"> = {
   },
 };
 
-function parseCsvRow(row: string): string[] {
-  const values: string[] = [];
-  let current = "";
-  let insideQuotes = false;
-
-  for (let index = 0; index < row.length; index += 1) {
-    const character = row[index];
-    const nextCharacter = row[index + 1];
-
-    if (character === '"') {
-      if (insideQuotes && nextCharacter === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-
-      continue;
-    }
-
-    if (character === "," && !insideQuotes) {
-      values.push(current.trim());
-      current = "";
-      continue;
-    }
-
-    current += character;
-  }
-
-  values.push(current.trim());
-  return values;
-}
-
 function createDemoCsv() {
   const rows = ["ch2,ch3,time"];
 
@@ -159,129 +108,6 @@ function createDemoCsv() {
 }
 
 const demoCsv = createDemoCsv();
-
-function findTimeColumn(headers: string[]) {
-  return headers.findIndex((header) =>
-    /(^|[^a-z])time([^a-z]|$)/i.test(header),
-  );
-}
-
-function parseTimeSeriesCsv(csv: string): ParsedCsv {
-  const lines = csv
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length < 2) {
-    return {
-      channelLabels: [],
-      error: "Provide a header row and at least one data row.",
-      rowCount: 0,
-      series: [],
-      xLabel: "time",
-    };
-  }
-
-  const headers = parseCsvRow(lines[0]).map(
-    (header, index) => header || `column_${index + 1}`,
-  );
-
-  if (headers.length < 2) {
-    return {
-      channelLabels: [],
-      error: "CSV input must contain at least two columns including time.",
-      rowCount: 0,
-      series: [],
-      xLabel: "time",
-    };
-  }
-
-  const timeIndex = findTimeColumn(headers);
-
-  if (timeIndex === -1) {
-    return {
-      channelLabels: [],
-      error: "CSV input must include a column named time.",
-      rowCount: 0,
-      series: [],
-      xLabel: "time",
-    };
-  }
-
-  const channelIndexes = headers
-    .map((label, index) => ({ index, label }))
-    .filter(({ index }) => index !== timeIndex);
-
-  if (channelIndexes.length === 0) {
-    return {
-      channelLabels: [],
-      error: "CSV input must include at least one channel column besides time.",
-      rowCount: 0,
-      series: [],
-      xLabel: headers[timeIndex],
-    };
-  }
-
-  const series = channelIndexes.map(({ label }) => ({
-    label,
-    points: [] as DataPoint[],
-  }));
-
-  for (let index = 1; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index]);
-
-    if (columns.length !== headers.length) {
-      return {
-        channelLabels: channelIndexes.map(({ label }) => label),
-        error: `Row ${index + 1} does not contain ${headers.length} columns.`,
-        rowCount: index - 1,
-        series: [],
-        xLabel: headers[timeIndex],
-      };
-    }
-
-    const timeValue = Number(columns[timeIndex]);
-
-    if (!Number.isFinite(timeValue)) {
-      return {
-        channelLabels: channelIndexes.map(({ label }) => label),
-        error: `Row ${index + 1} has an invalid time value.`,
-        rowCount: index - 1,
-        series: [],
-        xLabel: headers[timeIndex],
-      };
-    }
-
-    for (
-      let channelOffset = 0;
-      channelOffset < channelIndexes.length;
-      channelOffset += 1
-    ) {
-      const channelIndex = channelIndexes[channelOffset].index;
-      const yValue = Number(columns[channelIndex]);
-
-      if (!Number.isFinite(yValue)) {
-        return {
-          channelLabels: channelIndexes.map(({ label }) => label),
-          error: `Row ${index + 1} has an invalid value in ${headers[channelIndex]}.`,
-          rowCount: index - 1,
-          series: [],
-          xLabel: headers[timeIndex],
-        };
-      }
-
-      series[channelOffset].points.push({ x: timeValue, y: yValue });
-    }
-  }
-
-  return {
-    channelLabels: channelIndexes.map(({ label }) => label),
-    error: null,
-    rowCount: lines.length - 1,
-    series,
-    xLabel: headers[timeIndex],
-  };
-}
 
 function readHeaderNumber(header: HeaderAccessor, key: string) {
   const value = header.get(key);
@@ -570,7 +396,11 @@ function CsvCompactPanel() {
         <p className="resultCard comparisonResultCard">
           {parsed.error
             ? parsed.error
-            : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. Channels: ${parsed.channelLabels.join(", ")}.`}
+            : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. Channels: ${parsed.channelLabels.join(", ")}.${
+                parsed.skippedRowCount > 0
+                  ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
+                  : ""
+              }`}
         </p>
       </div>
 
