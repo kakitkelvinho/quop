@@ -3,79 +3,59 @@
 import { useState } from "react";
 
 import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import {
+  formatSpeed,
+  paceToSpeed,
+  speedToPace,
+} from "@/components/calculators/pace";
 import { ToolIntro } from "@/components/tool-intro";
 
 type ConversionMode = "pace-to-speed" | "speed-to-pace";
 
+const DEFAULT_MINUTES = 4;
+const DEFAULT_SECONDS = 30;
+
+function readPace(minutes: string, seconds: string) {
+  const parsedMinutes = parseFlexibleDecimal(minutes);
+  const parsedSeconds = parseFlexibleDecimal(seconds);
+
+  return parsedMinutes === null || parsedSeconds === null
+    ? null
+    : paceToSpeed(parsedMinutes, parsedSeconds);
+}
+
+function readSpeed(speed: string) {
+  const parsed = parseFlexibleDecimal(speed);
+  return parsed === null ? null : speedToPace(parsed);
+}
+
 export function PaceCalculator() {
   const [mode, setMode] = useState<ConversionMode>("pace-to-speed");
-  const [paceMinutes, setPaceMinutes] = useState("4");
-  const [paceSeconds, setPaceSeconds] = useState("30");
-  const [speed, setSpeed] = useState("13.3");
-  const [conversionError, setConversionError] = useState<string | null>(null);
+  const [paceMinutes, setPaceMinutes] = useState(String(DEFAULT_MINUTES));
+  const [paceSeconds, setPaceSeconds] = useState(String(DEFAULT_SECONDS));
+  // the same pace as the defaults above, so the two sides agree on first load
+  const [speed, setSpeed] = useState(() =>
+    formatSpeed(paceToSpeed(DEFAULT_MINUTES, DEFAULT_SECONDS) ?? 0),
+  );
 
   const isPaceToSpeed = mode === "pace-to-speed";
 
-  function handlePaceMinutesChange(value: string) {
-    setPaceMinutes(value);
+  // The output always comes from the input on show, so it can't go stale.
+  const speedResult = isPaceToSpeed ? readPace(paceMinutes, paceSeconds) : null;
+  const paceResult = isPaceToSpeed ? null : readSpeed(speed);
 
-    const nextMinutes = parseFlexibleDecimal(value);
-    const nextSeconds = parseFlexibleDecimal(paceSeconds);
-    const minutesPerKm =
-      nextMinutes !== null && nextSeconds !== null
-        ? nextMinutes + nextSeconds / 60
-        : Number.NaN;
-
-    if (minutesPerKm > 0) {
-      const result = 60 / minutesPerKm;
-      setSpeed(String(result.toFixed(2)));
-      setConversionError(null);
-    } else {
-      setConversionError("Enter a pace above zero to see the speed.");
+  // Swap carries the result over as the new input. With no result there is
+  // nothing to carry, so the new input starts empty rather than stale.
+  function handleSwap() {
+    if (isPaceToSpeed) {
+      setSpeed(speedResult === null ? "" : formatSpeed(speedResult));
+      setMode("speed-to-pace");
+      return;
     }
-  }
 
-  function handlePaceSecondsChange(value: string) {
-    setPaceSeconds(value);
-
-    const nextMinutes = parseFlexibleDecimal(paceMinutes);
-    const nextSeconds = parseFlexibleDecimal(value);
-    const minutesPerKm =
-      nextMinutes !== null && nextSeconds !== null
-        ? nextMinutes + nextSeconds / 60
-        : Number.NaN;
-
-    if (minutesPerKm > 0) {
-      const result = 60 / minutesPerKm;
-      setSpeed(String(result.toFixed(2)));
-      setConversionError(null);
-    } else {
-      setConversionError("Enter a pace above zero to see the speed.");
-    }
-  }
-
-  function handleSpeedChange(value: string) {
-    setSpeed(value);
-
-    const nextSpeed = parseFlexibleDecimal(value);
-
-    if (nextSpeed !== null && nextSpeed > 0) {
-      const totalMinutesPerKm = 60 / nextSpeed;
-      const wholeMinutes = Math.floor(totalMinutesPerKm);
-      const seconds = Math.round((totalMinutesPerKm - wholeMinutes) * 60);
-
-      if (seconds === 60) {
-        setPaceMinutes(String(wholeMinutes + 1));
-        setPaceSeconds("0");
-      } else {
-        setPaceMinutes(String(wholeMinutes));
-        setPaceSeconds(String(seconds.toFixed(2)));
-      }
-
-      setConversionError(null);
-    } else {
-      setConversionError("Enter a speed above zero to see the pace.");
-    }
+    setPaceMinutes(paceResult === null ? "" : String(paceResult.minutes));
+    setPaceSeconds(paceResult === null ? "" : String(paceResult.seconds));
+    setMode("pace-to-speed");
   }
 
   return (
@@ -103,9 +83,7 @@ export function PaceCalculator() {
                     type="text"
                     inputMode="decimal"
                     value={paceMinutes}
-                    onChange={(event) =>
-                      handlePaceMinutesChange(event.target.value)
-                    }
+                    onChange={(event) => setPaceMinutes(event.target.value)}
                   />
                   <span>min</span>
                 </div>
@@ -118,11 +96,9 @@ export function PaceCalculator() {
                     type="text"
                     inputMode="decimal"
                     value={paceSeconds}
-                    onChange={(event) =>
-                      handlePaceSecondsChange(event.target.value)
-                    }
+                    onChange={(event) => setPaceSeconds(event.target.value)}
                   />
-                  <span> sec(s)</span>
+                  <span>sec</span>
                 </div>
               </label>
             </div>
@@ -134,7 +110,7 @@ export function PaceCalculator() {
                   type="text"
                   inputMode="decimal"
                   value={speed}
-                  onChange={(event) => handleSpeedChange(event.target.value)}
+                  onChange={(event) => setSpeed(event.target.value)}
                 />
                 <span>km/h</span>
               </div>
@@ -146,12 +122,7 @@ export function PaceCalculator() {
           <button
             type="button"
             className="buttonControl paceCalculator__swap"
-            onClick={() => {
-              setConversionError(null);
-              setMode((current) =>
-                current === "pace-to-speed" ? "speed-to-pace" : "pace-to-speed",
-              );
-            }}
+            onClick={handleSwap}
           >
             <span className="paceCalculator__swapIcon" aria-hidden="true">
               ⇄
@@ -174,28 +145,36 @@ export function PaceCalculator() {
             </p>
           </div>
 
-          {conversionError ? (
+          {isPaceToSpeed ? (
+            speedResult === null ? (
+              <p className="resultCard" aria-live="polite">
+                Enter a pace above zero to see the speed.
+              </p>
+            ) : (
+              <div className="paceCalculator__resultCard" aria-live="polite">
+                <span className="paceCalculator__resultValue">
+                  {formatSpeed(speedResult)}
+                </span>
+                <span className="paceCalculator__resultUnit"> km/h</span>
+              </div>
+            )
+          ) : paceResult === null ? (
             <p className="resultCard" aria-live="polite">
-              {conversionError}
+              Enter a speed above zero to see the pace.
             </p>
-          ) : isPaceToSpeed ? (
-            <div className="paceCalculator__resultCard" aria-live="polite">
-              <span className="paceCalculator__resultValue">{speed}</span>
-              <span className="paceCalculator__resultUnit"> km/h</span>
-            </div>
           ) : (
             <div className="paceCalculator__paceResult" aria-live="polite">
               <div className="paceCalculator__resultCard">
                 <span className="paceCalculator__resultValue">
-                  {paceMinutes}
+                  {paceResult.minutes}
                 </span>
                 <span className="paceCalculator__resultUnit"> min</span>
               </div>
               <div className="paceCalculator__resultCard">
                 <span className="paceCalculator__resultValue">
-                  {paceSeconds}
+                  {paceResult.seconds}
                 </span>
-                <span className="paceCalculator__resultUnit"> sec(s)</span>
+                <span className="paceCalculator__resultUnit"> sec</span>
               </div>
             </div>
           )}

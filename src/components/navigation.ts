@@ -41,7 +41,8 @@ export const navSections: NavSection[] = [
       {
         href: "/calculators/pace",
         label: "Pace",
-        description: "Swap between running pace and speed inputs.",
+        description:
+          "Convert a running pace in minutes per km to a speed in km/h, and back.",
       },
       {
         href: "/calculators/light-travel-calculator",
