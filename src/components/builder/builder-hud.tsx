@@ -117,12 +117,16 @@ const LIMITATIONS = [
 ];
 
 function LimitationsPanel({ onClose }: { onClose: () => void }) {
+  // Capture, and stop, so this Esc closes only the panel: the scene's Esc
+  // chain peels one layer per press and would otherwise also deselect.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      onClose();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
 
   return (

@@ -2082,14 +2082,13 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.2;
 }
 
-/* right: the inspector, only while something is selected */
 /* left, where the parts panel opens: what the builder leaves to the author */
 .builderLimits {
   top: 7.3rem;
   left: 0.9rem;
   z-index: 6;
   display: block;
-  width: clamp(16rem, 25vw, 22rem);
+  width: clamp(16rem, 25vw, 24rem);
   max-height: calc(100% - 11rem);
   overflow-y: auto;
   padding: 0.75rem 0.85rem 0.85rem;
@@ -2121,6 +2120,7 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.4;
 }
 
+/* right: the inspector, only while something is selected */
 .builderHud__inspector {
   top: 4.2rem;
   right: 0.9rem;
