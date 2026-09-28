@@ -60,6 +60,56 @@ function setupFileName(extension: "json" | "png"): string {
   return `quop-setup-${day}.${extension}`;
 }
 
+/**
+ * The view as a PNG data URL, part labels included. The labels are HTML laid
+ * over the canvas (drei's Html), so the canvas's own pixels leave them out;
+ * each one is drawn back on where it sits on screen, in its own colours.
+ */
+function exportViewPng(canvas: HTMLCanvasElement): string {
+  const out = document.createElement("canvas");
+  out.width = canvas.width;
+  out.height = canvas.height;
+  const context = out.getContext("2d");
+  if (!context) return canvas.toDataURL("image/png");
+
+  context.drawImage(canvas, 0, 0);
+
+  const box = canvas.getBoundingClientRect();
+  const scale = box.width > 0 ? canvas.width / box.width : 1;
+  const labels = canvas.parentElement?.parentElement?.querySelectorAll<HTMLElement>(".builderLabel") ?? [];
+
+  for (const label of labels) {
+    const rect = label.getBoundingClientRect();
+    const text = label.textContent ?? "";
+    const offCanvas =
+      rect.right < box.left || rect.left > box.right || rect.bottom < box.top || rect.top > box.bottom;
+    if (!text || rect.width === 0 || offCanvas) continue;
+
+    const style = getComputedStyle(label);
+    const x = (rect.left - box.left) * scale;
+    const y = (rect.top - box.top) * scale;
+    const width = rect.width * scale;
+    const height = rect.height * scale;
+
+    context.beginPath();
+    context.roundRect(x, y, width, height, (parseFloat(style.borderTopLeftRadius) || 0) * scale);
+    context.fillStyle = style.backgroundColor;
+    context.fill();
+    context.lineWidth = (parseFloat(style.borderTopWidth) || 0) * scale;
+    if (context.lineWidth > 0) {
+      context.strokeStyle = style.borderTopColor;
+      context.stroke();
+    }
+    context.fillStyle = style.color;
+    context.font = `${style.fontWeight} ${parseFloat(style.fontSize) * scale}px ${style.fontFamily}`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(text, x + width / 2, y + height / 2);
+  }
+
+  return out.toDataURL("image/png");
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -343,7 +393,7 @@ export default function BuilderScene() {
     if (!canvas) return;
     try {
       const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
+      link.href = exportViewPng(canvas);
       link.download = setupFileName("png");
       link.click();
       announce("Exported the view as a PNG.");
