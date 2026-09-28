@@ -8,9 +8,36 @@ import {
   type CSSProperties,
   type PointerEvent,
 } from "react";
+import dynamic from "next/dynamic";
 import { type ChartData, type ChartOptions } from "chart.js";
 
+import {
+  buildColorBarGradient,
+  COLOR_MAP_OPTIONS,
+  COLOR_MAP_STOPS,
+  renderColormappedFrame,
+  type ColorMapName,
+} from "@/components/plotters/colormaps";
+import type {
+  CameraPreset,
+  SurfaceExport,
+} from "@/components/plotters/fits-surface-view";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import {
+  clampPixelAspect,
+  displayAspect,
+  formatPixelAspect,
+  pixelAspectSliderRange,
+  squarePixelAspect,
+  TRUE_PIXEL_ASPECT,
+} from "@/components/plotters/pixel-aspect";
+import { chooseSurfaceStep } from "@/components/plotters/surface-geometry";
+
+// three.js loads only once someone opens the Surface view
+const FitsSurfaceView = dynamic(() => import("@/components/plotters/fits-surface-view"), {
+  ssr: false,
+  loading: () => <div className="fitsSurfaceCanvas" />,
+});
 
 type FitsImageSummary = {
   height: number;
@@ -47,51 +74,6 @@ type HoverSample = {
 
 type SliceAxis = "horizontal" | "vertical";
 
-type ColorMapName = "gray" | "viridis" | "plasma" | "inferno" | "magma";
-
-const COLOR_MAP_OPTIONS: Array<{ label: string; value: ColorMapName }> = [
-  { label: "Gray", value: "gray" },
-  { label: "Viridis", value: "viridis" },
-  { label: "Plasma", value: "plasma" },
-  { label: "Inferno", value: "inferno" },
-  { label: "Magma", value: "magma" },
-];
-
-const COLOR_MAP_STOPS: Record<ColorMapName, Array<[number, number, number]>> = {
-  gray: [
-    [0, 0, 0],
-    [255, 255, 255],
-  ],
-  viridis: [
-    [68, 1, 84],
-    [59, 82, 139],
-    [33, 145, 140],
-    [94, 201, 97],
-    [253, 231, 37],
-  ],
-  plasma: [
-    [13, 8, 135],
-    [84, 3, 160],
-    [182, 54, 121],
-    [251, 136, 97],
-    [240, 249, 33],
-  ],
-  inferno: [
-    [0, 0, 4],
-    [87, 15, 109],
-    [187, 55, 84],
-    [249, 142, 8],
-    [252, 255, 164],
-  ],
-  magma: [
-    [0, 0, 4],
-    [72, 20, 103],
-    [149, 52, 110],
-    [221, 95, 75],
-    [252, 253, 191],
-  ],
-};
-
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
 }
@@ -121,71 +103,6 @@ function normalizeViewport(
     top: clamp(top, 0, summary.height - nextHeight),
     width: nextWidth,
   };
-}
-
-function interpolateColor(colorMap: ColorMapName, normalized: number) {
-  const stops = COLOR_MAP_STOPS[colorMap];
-
-  if (stops.length === 1) {
-    return stops[0];
-  }
-
-  const clamped = Math.min(Math.max(normalized, 0), 1);
-  const scaled = clamped * (stops.length - 1);
-  const lowerIndex = Math.floor(scaled);
-  const upperIndex = Math.min(stops.length - 1, lowerIndex + 1);
-  const blend = scaled - lowerIndex;
-  const lower = stops[lowerIndex];
-  const upper = stops[upperIndex];
-
-  return [0, 1, 2].map((channel) =>
-    Math.round(lower[channel] + (upper[channel] - lower[channel]) * blend),
-  ) as [number, number, number];
-}
-
-function buildColorBarGradient(colorMap: ColorMapName) {
-  const stops = COLOR_MAP_STOPS[colorMap];
-
-  return `linear-gradient(to top, ${stops
-    .map((stop, index) => {
-      const position = (index / Math.max(stops.length - 1, 1)) * 100;
-      return `rgb(${stop[0]} ${stop[1]} ${stop[2]}) ${position}%`;
-    })
-    .join(", ")})`;
-}
-
-function renderImagePreview(
-  canvas: HTMLCanvasElement,
-  summary: FitsImageSummary,
-  colorMap: ColorMapName,
-) {
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    return;
-  }
-
-  const { width, height, pixels, min, max } = summary;
-  const imageData = context.createImageData(width, height);
-  const span = max - min || 1;
-
-  for (let index = 0; index < pixels.length; index += 1) {
-    const value = pixels[index];
-    const normalized = Number.isFinite(value)
-      ? Math.max(0, Math.min(1, (value - min) / span))
-      : 0;
-    const pixelIndex = index * 4;
-    const [red, green, blue] = interpolateColor(colorMap, normalized);
-
-    imageData.data[pixelIndex] = red;
-    imageData.data[pixelIndex + 1] = green;
-    imageData.data[pixelIndex + 2] = blue;
-    imageData.data[pixelIndex + 3] = 255;
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-  context.putImageData(imageData, 0, 0);
 }
 
 function renderViewport(
@@ -466,6 +383,124 @@ function SliceIcon() {
   );
 }
 
+function SurfaceIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path
+        d="M3.5 16.5 8 11l3 3 3.5-6.5L20.5 16"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+      <path d="M3.5 19.5h17" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function AspectIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="4.5" y="7" width="15" height="10" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M8 12h8M8 12l1.8-1.8M8 12l1.8 1.8M16 12l-1.8-1.8M16 12l-1.8 1.8"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
+/** The Pixel aspect bar both views share: a log slider, an exact value, and the two presets. */
+function PixelAspectControls({
+  frameHeight,
+  frameWidth,
+  onChange,
+  pixelAspect,
+}: {
+  frameHeight: number;
+  frameWidth: number;
+  onChange: (pixelAspect: number) => void;
+  pixelAspect: number;
+}) {
+  const squareAspect = squarePixelAspect(frameWidth, frameHeight);
+  const sliderRange = pixelAspectSliderRange(frameWidth, frameHeight);
+
+  return (
+    <div className="interactiveChart__editorBar fitsAspectControls">
+      <label className="interactiveChart__sliderLabel">
+        <span>Pixel aspect (height ÷ width)</span>
+        <strong>{formatPixelAspect(pixelAspect)}</strong>
+      </label>
+      {/* log scale: 1/2 and 2 sit the same distance either side of true pixels */}
+      <input
+        aria-label="Pixel aspect"
+        className="interactiveChart__slider"
+        max={sliderRange.max}
+        min={sliderRange.min}
+        onChange={(event) => onChange(2 ** Number(event.target.value))}
+        step="0.01"
+        type="range"
+        value={Math.log2(pixelAspect)}
+      />
+      <div className="fitsAspectControls__row">
+        <label className="interactiveChart__fieldRow">
+          <span>Exact</span>
+          <input
+            aria-label="Pixel aspect value"
+            className="interactiveChart__textInput"
+            inputMode="decimal"
+            min="0.001"
+            onChange={(event) => {
+              const typed = Number.parseFloat(event.target.value);
+
+              if (typed > 0) {
+                onChange(clampPixelAspect(typed));
+              }
+            }}
+            step="0.05"
+            type="number"
+            value={Number(pixelAspect.toPrecision(4))}
+          />
+        </label>
+        <div className="fitsSurfaceControls__presets" role="group" aria-label="Pixel aspect presets">
+          <button
+            aria-pressed={pixelAspect === TRUE_PIXEL_ASPECT}
+            className="interactiveChart__applyButton"
+            onClick={() => onChange(TRUE_PIXEL_ASPECT)}
+            title="Draw every pixel square (1 : 1)"
+            type="button"
+          >
+            True pixels
+          </button>
+          <button
+            aria-pressed={pixelAspect === squareAspect}
+            className="interactiveChart__applyButton"
+            onClick={() => onChange(squareAspect)}
+            title={`Draw the whole frame as a square (pixel aspect ${formatPixelAspect(squareAspect)})`}
+            type="button"
+          >
+            Square
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type ViewMode = "image" | "surface";
+
+const CAMERA_PRESET_OPTIONS: Array<{ label: string; title: string; value: CameraPreset }> = [
+  { label: "Reset", title: "Isometric view (reset camera)", value: "isometric" },
+  { label: "Top", title: "Top-down, as the Image view", value: "top" },
+  { label: "Side x", title: "Side-on, x across", value: "side-x" },
+  { label: "Side y", title: "Side-on, y across", value: "side-y" },
+];
+
 function getDefaultTitleFromSourceLabel(sourceLabel: string) {
   const normalized = sourceLabel.replace(/\\/g, "/").split("/").pop()?.trim() ?? "";
 
@@ -546,13 +581,23 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   const [saveControlsOpen, setSaveControlsOpen] = useState(false);
   const [saveWhiteBackground, setSaveWhiteBackground] = useState(true);
   const [saveBlackText, setSaveBlackText] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("image");
+  const [exaggeration, setExaggeration] = useState(1);
+  // shared by both views: how tall one pixel is drawn relative to its width
+  const [pixelAspect, setPixelAspect] = useState(TRUE_PIXEL_ASPECT);
+  const [aspectControlsOpen, setAspectControlsOpen] = useState(false);
+  const [shading, setShading] = useState(true);
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset>("isometric");
+  const [cameraToken, setCameraToken] = useState(0);
+  const surfaceHostRef = useRef<HTMLDivElement | null>(null);
+  const surfaceExportRef = useRef<SurfaceExport | null>(null);
 
   useEffect(() => {
     if (!sourceCanvasRef.current) {
       sourceCanvasRef.current = document.createElement("canvas");
     }
 
-    renderImagePreview(sourceCanvasRef.current, summary, colorMap);
+    renderColormappedFrame(sourceCanvasRef.current, summary, colorMap);
   }, [colorMap, summary]);
 
   useEffect(() => {
@@ -561,7 +606,8 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     }
 
     renderViewport(canvasRef.current, sourceCanvasRef.current, viewport);
-  }, [colorMap, summary, viewport]);
+    // viewMode: the canvas remounts on the way back from the Surface view
+  }, [colorMap, summary, viewport, viewMode]);
 
   function updateHoverSample(event: PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -716,11 +762,12 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   }
 
   function handleSave() {
-    const canvas = canvasRef.current;
+    // the plot rectangle: the flat canvas, or the Surface view's host
+    const plotElement = viewMode === "surface" ? surfaceHostRef.current : canvasRef.current;
     const figure = figureRef.current;
     const sourceCanvas = sourceCanvasRef.current;
 
-    if (!canvas || !figure || !sourceCanvas) {
+    if (!plotElement || !figure || !sourceCanvas) {
       return;
     }
 
@@ -749,27 +796,48 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     const exportTextColor = saveBlackText ? "#111827" : getComputedStyle(figure).color || "#243244";
     const borderColor = saveBlackText
       ? "rgba(55, 65, 81, 0.24)"
-      : getComputedStyle(canvas).borderColor || "rgba(91, 102, 117, 0.2)";
+      : getComputedStyle(plotElement).borderColor || "rgba(91, 102, 117, 0.2)";
     const titleFontFamily = getComputedStyle(titleRef.current ?? figure).fontFamily || "sans-serif";
     const axisFontFamily = getComputedStyle(xAxisRef.current ?? figure).fontFamily || titleFontFamily;
     const labelFontFamily = getComputedStyle(colorbarTopLabelRef.current ?? figure).fontFamily || "monospace";
-    const canvasRect = getRelativeRect(canvas, figureRect, scaleFactor);
+    const plotRect = getRelativeRect(plotElement, figureRect, scaleFactor);
 
     context.imageSmoothingEnabled = false;
-    context.drawImage(
-      sourceCanvas,
-      viewport.left,
-      viewport.top,
-      viewport.width,
-      viewport.height,
-      canvasRect.x,
-      canvasRect.y,
-      canvasRect.width,
-      canvasRect.height,
-    );
+
+    if (viewMode === "surface") {
+      surfaceExportRef.current?.drawInto(context, plotRect, scaleFactor);
+      // the tick labels and axis titles are HTML over the 3D canvas, so they
+      // are drawn from their rects like the rest of the figure's chrome
+      plotElement.querySelectorAll<HTMLElement>("[data-surface-label]").forEach((label) => {
+        const labelRect = getRelativeRect(label, figureRect, scaleFactor);
+        const labelStyle = getComputedStyle(label);
+        context.fillStyle = saveBlackText ? exportTextColor : labelStyle.color;
+        context.font = `${labelStyle.fontWeight} ${(parseFloat(labelStyle.fontSize) || 12) * scaleFactor}px ${labelStyle.fontFamily}`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(
+          label.textContent ?? "",
+          labelRect.x + labelRect.width / 2,
+          labelRect.y + labelRect.height / 2,
+        );
+      });
+    } else {
+      context.drawImage(
+        sourceCanvas,
+        viewport.left,
+        viewport.top,
+        viewport.width,
+        viewport.height,
+        plotRect.x,
+        plotRect.y,
+        plotRect.width,
+        plotRect.height,
+      );
+    }
+
     context.strokeStyle = borderColor;
     context.lineWidth = Math.max(1, scaleFactor);
-    context.strokeRect(canvasRect.x, canvasRect.y, canvasRect.width, canvasRect.height);
+    context.strokeRect(plotRect.x, plotRect.y, plotRect.width, plotRect.height);
 
     if (chartTitle && titleRef.current) {
       const titleRect = getRelativeRect(titleRef.current, figureRect, scaleFactor);
@@ -872,7 +940,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     link.click();
   }
 
-  const baseViewport = buildBaseViewport(summary);
+  const canShowSurface = summary.width >= 2 && summary.height >= 2;
+  const isSurface = viewMode === "surface" && canShowSurface;
+  const surfaceStep = chooseSurfaceStep(summary.width, summary.height);  const baseViewport = buildBaseViewport(summary);
   const isZoomed =
     viewport.left !== baseViewport.left ||
     viewport.top !== baseViewport.top ||
@@ -961,7 +1031,10 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           </div>
         ) : null}
         <div className="fitsImageFigure__body">
-          {yAxisLabel ? (
+          {isSurface ? (
+            // the Surface view labels its axes in the scene; this keeps the grid's columns
+            <div aria-hidden="true" className="fitsImageFigure__axis fitsImageFigure__axis--y" />
+          ) : yAxisLabel ? (
             <div className="fitsImageFigure__axis fitsImageFigure__axis--y" ref={yAxisRef}>
               <span className="fitsImageFigure__axisLabel fitsImageFigure__axisLabel--y" style={{ fontSize: `${axisLabelFontSize}px` }}>
                 {yAxisLabel}
@@ -969,7 +1042,30 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
             </div>
           ) : null}
           <div className="fitsImageViewport">
-            <div className="fitsImageViewport__surface">
+            {isSurface ? (
+              <div className="fitsSurfaceHost" ref={surfaceHostRef}>
+                <FitsSurfaceView
+                  cameraPreset={cameraPreset}
+                  cameraToken={cameraToken}
+                  colorMap={colorMap}
+                  exaggeration={exaggeration}
+                  exportRef={surfaceExportRef}
+                  frame={summary}
+                  pixelAspect={pixelAspect}
+                  shading={shading}
+                  slice={sliceControlsOpen ? { axis: sliceAxis, index: activeSliceIndex } : null}
+                  valueLabel="value"
+                  xLabel={xAxisLabel}
+                  yLabel={yAxisLabel}
+                />
+              </div>
+            ) : (
+            <div
+              className="fitsImageViewport__surface"
+              // the box takes the shown region's shape at the pixel aspect; the
+              // canvas fills it, so overlays and pointer maths share its edges
+              style={{ "--fits-aspect": displayAspect(viewport.width, viewport.height, pixelAspect) } as CSSProperties}
+            >
               <canvas
                 className="fitsImageCanvas"
                 onPointerCancel={handlePointerCancel}
@@ -1011,6 +1107,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 </>
               ) : null}
             </div>
+            )}
           </div>
           <div className="fitsColorbar" role="group" aria-label="Colorbar intensity scale">
             <span className="fitsColorbar__label" ref={colorbarTopLabelRef}>
@@ -1027,7 +1124,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
             </span>
           </div>
         </div>
-        {xAxisLabel ? (
+        {xAxisLabel && !isSurface ? (
           <div
             className="fitsImageFigure__axis fitsImageFigure__axis--x"
             ref={xAxisRef}
@@ -1039,6 +1136,30 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
       </div>
 
       <div className="interactiveChart__footer">
+        <button
+          aria-label={isSurface ? "Show the Image view" : "Show the Surface view"}
+          aria-pressed={isSurface}
+          className={`interactiveChart__iconButton ${isSurface ? "is-active" : ""}`}
+          disabled={!canShowSurface}
+          onClick={() => {
+            setViewMode(isSurface ? "image" : "surface");
+            setHoverSample(null);
+            setDragSelection(null);
+          }}
+          title={
+            canShowSurface
+              ? isSurface
+                ? "Image view"
+                : "Surface view (3D)"
+              : "The Surface view needs a frame of at least 2 × 2 pixels"
+          }
+          type="button"
+        >
+          <SurfaceIcon />
+        </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        {isSurface ? null : (
+        <>
         <button
           aria-label="Reset zoom"
           className={`interactiveChart__iconButton ${isZoomed ? "is-active" : ""}`}
@@ -1070,6 +1191,8 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           <ZoomOutIcon />
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        </>
+        )}
         <button
           aria-label={titleControlsOpen ? "Hide title editor" : "Show title editor"}
           aria-pressed={titleControlsOpen}
@@ -1089,6 +1212,16 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           type="button"
         >
           <AxisLabelsIcon />
+        </button>
+        <button
+          aria-label={aspectControlsOpen ? "Hide pixel aspect controls" : "Show pixel aspect controls"}
+          aria-pressed={aspectControlsOpen}
+          className={`interactiveChart__iconButton interactiveChart__iconButton--aspect ${aspectControlsOpen ? "is-open" : ""}`}
+          onClick={() => setAspectControlsOpen((current) => !current)}
+          title="Pixel aspect"
+          type="button"
+        >
+          <AspectIcon />
         </button>
         <button
           aria-label={sliceControlsOpen ? "Hide slice tools" : "Show slice tools"}
@@ -1112,6 +1245,54 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           <SaveIcon />
         </button>
       </div>
+
+      {isSurface ? (
+        <div className="interactiveChart__editorBar fitsSurfaceControls">
+          <label className="interactiveChart__sliderLabel">
+            <span>Exaggeration</span>
+            <strong>{exaggeration.toFixed(1)}×</strong>
+          </label>
+          <input
+            aria-label="Elevation exaggeration"
+            className="interactiveChart__slider"
+            max="4"
+            min="0.1"
+            onChange={(event) => setExaggeration(Number(event.target.value))}
+            step="0.1"
+            type="range"
+            value={exaggeration}
+          />
+          <label className="interactiveChart__checkboxRow">
+            <input checked={shading} onChange={(event) => setShading(event.target.checked)} type="checkbox" />
+            <span>Shading</span>
+          </label>
+          <div className="fitsSurfaceControls__presets" role="group" aria-label="Camera">
+            {CAMERA_PRESET_OPTIONS.map((option) => (
+              <button
+                className="interactiveChart__applyButton"
+                key={option.value}
+                onClick={() => {
+                  setCameraPreset(option.value);
+                  setCameraToken((current) => current + 1);
+                }}
+                title={option.title}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {aspectControlsOpen ? (
+        <PixelAspectControls
+          frameHeight={summary.height}
+          frameWidth={summary.width}
+          onChange={setPixelAspect}
+          pixelAspect={pixelAspect}
+        />
+      ) : null}
 
       {titleControlsOpen ? (
         <div className="interactiveChart__editorBar">
@@ -1273,9 +1454,24 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                   </label>
                 )}
               </div>
+              <input
+                aria-label={sliceAxis === "horizontal" ? "Slice row" : "Slice column"}
+                className="interactiveChart__slider"
+                max={Math.max((sliceAxis === "horizontal" ? summary.height : summary.width) - 1, 0)}
+                min="0"
+                onChange={(event) =>
+                  sliceAxis === "horizontal"
+                    ? setSelectedRow(Number(event.target.value))
+                    : setSelectedColumn(Number(event.target.value))
+                }
+                step="1"
+                type="range"
+                value={activeSliceIndex}
+              />
               <p className="fitsInspectorCard__meta">
-                Click the image to snap the active {sliceAxis === "horizontal" ? "row" : "column"} to the hovered location.
-                The highlighted band on the image matches the trace below.
+                {isSurface
+                  ? `Move the slider to sweep the Slice plane through the landscape; its yellow line matches the trace below.`
+                  : `Click the image to snap the active ${sliceAxis === "horizontal" ? "row" : "column"} to the hovered location. The highlighted band on the image matches the trace below.`}
               </p>
               <button
                 className="buttonControl buttonControl--secondary fitsInspectorCard__button"
@@ -1328,6 +1524,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
       </label>
       <p className="fitsImageCaption">
         {summary.width} × {summary.height} pixels. Original axes: {summary.xLabel} / {summary.yLabel}.
+        {isSurface
+          ? `${surfaceStep > 1 ? ` Surface mesh at 1/${surfaceStep} resolution (peaks kept); colour and hover use every pixel.` : ""} Drag to orbit, scroll to zoom, right-drag to pan.`
+          : null}
       </p>
     </div>
   );

@@ -1313,11 +1313,12 @@ html[data-theme="dark"] .fitsColorControl__select {
   min-width: 0;
 }
 
+/* fills its surface box, which carries the pixel aspect (--fits-aspect) */
 .fitsImageCanvas {
   display: block;
   width: 100%;
-  max-height: 28rem;
-  object-fit: contain;
+  height: 100%;
+  object-fit: fill;
   image-rendering: pixelated;
   cursor: crosshair;
   touch-action: none;
@@ -1334,6 +1335,51 @@ html[data-theme="dark"] .fitsColorControl__select {
     0 8px,
     8px -8px,
     -8px 0;
+}
+
+.fitsSurfaceHost {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
+}
+
+.fitsSurfaceCanvas {
+  position: relative;
+  height: min(28rem, 72vw);
+  min-height: 16rem;
+  cursor: grab;
+  touch-action: none;
+}
+
+.fitsSurfaceCanvas:active {
+  cursor: grabbing;
+}
+
+.fitsSurfaceLabel {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.fitsSurfaceLabel--title {
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.fitsSurfaceControls__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .fitsImageViewport__selection {
@@ -1517,13 +1563,32 @@ html[data-theme="dark"] .fitsColorControl__select {
   justify-items: start;
 }
 
+/* the shown region at the chosen pixel aspect: as wide as the column allows,
+   no taller than 28rem */
 .fitsImageViewport__surface {
   position: relative;
-  width: 100%;
+  justify-self: center;
+  width: min(100%, calc(28rem * var(--fits-aspect, 1)));
   min-width: 0;
+  aspect-ratio: var(--fits-aspect, 1);
 }
 
+.fitsAspectControls__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
 
+.fitsAspectControls__row .interactiveChart__textInput {
+  width: 6.5rem;
+}
+
+.fitsImageFrame .interactiveChart__iconButton--aspect.is-open {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 88%, var(--surface));
+  color: var(--accent-strong);
+}
 
 .fitsSlicePanel__chart {
   padding: 0;

@@ -7,7 +7,7 @@ export default function FitsPlotterPage() {
       <p className="lead">
         Upload a FITS image file and preview its first frame directly in the
         browser. One-dimensional FITS data are shown as a trace; two-dimensional
-        data are rendered as a grayscale image.
+        data are drawn as a colormapped image, or as a 3D Surface view.
       </p>
       <FitsPlotter />
     </section>

@@ -403,7 +403,7 @@ export default function FitsPlotter() {
           <p>
             {summary?.kind === "series"
               ? "1D FITS data are plotted as a line trace from the decoded image array."
-              : "2D FITS image data are shown as a linear grayscale preview."}
+              : "2D FITS image data are shown with a linear colormap, flat or as a Surface view."}
           </p>
         </div>
         <div className="visualizerChartSurface">
