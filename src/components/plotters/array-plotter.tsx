@@ -14,6 +14,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 
+import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -28,17 +29,6 @@ type ParseResult = {
   points: Point[];
   xCount: number;
   yCount: number;
-};
-
-type CsvDataset = {
-  label: string;
-  points: Point[];
-};
-
-type CsvParseResult = {
-  datasets: CsvDataset[];
-  error: string | null;
-  sourceLabel: string;
 };
 
 const defaultX = "[0, 1, 2, 3, 4, 5, 6]";
@@ -68,39 +58,6 @@ function parseNumberArray(value: string): number[] {
 
     return numeric;
   });
-}
-
-function parseCsvRow(row: string): string[] {
-  const values: string[] = [];
-  let current = "";
-  let insideQuotes = false;
-
-  for (let index = 0; index < row.length; index += 1) {
-    const character = row[index];
-    const nextCharacter = row[index + 1];
-
-    if (character === '"') {
-      if (insideQuotes && nextCharacter === '"') {
-        current += '"';
-        index += 1;
-      } else {
-        insideQuotes = !insideQuotes;
-      }
-
-      continue;
-    }
-
-    if (character === "," && !insideQuotes) {
-      values.push(current.trim());
-      current = "";
-      continue;
-    }
-
-    current += character;
-  }
-
-  values.push(current.trim());
-  return values;
 }
 
 function buildSeries(xInput: string, yInput: string): ParseResult {
@@ -140,83 +97,6 @@ function buildSeries(xInput: string, yInput: string): ParseResult {
       yCount: 0,
     };
   }
-}
-
-function parseCsvFile(contents: string, label: string): CsvParseResult {
-  const lines = contents
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => !line.startsWith("%"));
-
-  if (!lines.length) {
-    return {
-      datasets: [],
-      error: `${label}: no usable CSV rows found.`,
-      sourceLabel: label,
-    };
-  }
-
-  const dataStartIndex = lines.findIndex((line) => {
-    const columns = parseCsvRow(line);
-
-    if (columns.length < 2) {
-      return false;
-    }
-
-    const xValue = Number(columns[0]);
-    const yValue = Number(columns[1]);
-    return Number.isFinite(xValue) && Number.isFinite(yValue);
-  });
-
-  if (dataStartIndex === -1) {
-    return {
-      datasets: [],
-      error: `${label}: could not find a numeric x/y data block.`,
-      sourceLabel: label,
-    };
-  }
-
-  const points: Point[] = [];
-
-  for (let index = dataStartIndex; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index]);
-
-    if (columns.length < 2) {
-      return {
-        datasets: [],
-        error: `${label}: row ${index + 1} does not contain at least two columns.`,
-        sourceLabel: label,
-      };
-    }
-
-    const xValue = Number(columns[0]);
-    const yValue = Number(columns[1]);
-
-    if (!Number.isFinite(xValue) || !Number.isFinite(yValue)) {
-      return {
-        datasets: [],
-        error: `${label}: row ${index + 1} has a non-numeric x or y value.`,
-        sourceLabel: label,
-      };
-    }
-
-    points.push({ x: xValue, y: yValue });
-  }
-
-  if (!points.length) {
-    return {
-      datasets: [],
-      error: `${label}: no numeric data rows found.`,
-      sourceLabel: label,
-    };
-  }
-
-  return {
-    datasets: [{ label, points }],
-    error: null,
-    sourceLabel: label,
-  };
 }
 
 const chartOptions: ChartOptions<"scatter"> = {
@@ -282,7 +162,7 @@ export default function ArrayPlotter() {
     }
 
     const results = await Promise.all(
-      files.map(async (file) => parseCsvFile(await file.text(), file.name)),
+      files.map(async (file) => parseArrayCsv(await file.text(), file.name)),
     );
     const firstError = results.find((result) => result.error);
 
@@ -296,7 +176,17 @@ export default function ArrayPlotter() {
 
     const datasets = results.flatMap((result) => result.datasets);
     setCsvDatasets(datasets);
-    setCsvStatus(`Loaded ${files.length} CSV file${files.length === 1 ? "" : "s"}.`);
+    const skippedRowCount = results.reduce(
+      (total, result) => total + result.skippedRowCount,
+      0,
+    );
+    setCsvStatus(
+      `Loaded ${files.length} CSV file${files.length === 1 ? "" : "s"}.${
+        skippedRowCount > 0
+          ? ` (${skippedRowCount} row${skippedRowCount === 1 ? "" : "s"} skipped.)`
+          : ""
+      }`,
+    );
     setCsvError(null);
     event.target.value = "";
   }
