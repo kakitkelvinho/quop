@@ -526,6 +526,8 @@ function MirrorMount({ palette, color, axis }: ModelProps) {
   );
 }
 
+const CUBE_COATING_MM = 1.2;
+
 function BeamSplitter({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const cube = 25.4;
@@ -545,17 +547,25 @@ function BeamSplitter({ palette, color, axis }: ModelProps) {
         <boxGeometry args={[cube, cube, cube]} />
         <Glass tint={GLASS_CYAN} />
       </mesh>
-      {/* the internal 45 degree coating plane; polarizing or not, it looks the same */}
-      <mesh position={[0, axis, 0]} rotation={[0, Math.PI / 4, 0]}>
-        <planeGeometry args={[cube * 1.41, cube]} />
-        <meshStandardMaterial
-          color="#5fd0e0"
-          transparent
-          opacity={0.4}
-          side={DoubleSide}
-          roughness={0.1}
-        />
-      </mesh>
+      {/* the coating on the cemented diagonal, corner to corner; polarizing or
+          not, it looks the same. It runs along local x = z, so a beam arriving
+          along +x turns to +z. Opaque, because the glass's transmission pass
+          leaves transparent objects out, and a little thick so it still reads
+          edge-on from top-down. Shortened so its ends stay inside the glass. */}
+      <group position={[0, axis, 0]} rotation={[0, -Math.PI / 4, 0]}>
+        <mesh>
+          <boxGeometry args={[cube * Math.SQRT2 - 2.4, cube - 0.6, CUBE_COATING_MM]} />
+          <meshStandardMaterial color="#2a9fb3" roughness={0.15} metalness={0.5} />
+        </mesh>
+        {/* where the coating meets the top face: a bright hairline corner to
+            corner, laid on the glass rather than seen through it (the
+            transmission pass blurs one that thin away), so the diagonal
+            reads from any side and in either theme */}
+        <mesh position={[0, cube / 2 + 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[cube * Math.SQRT2 - 2.4, CUBE_COATING_MM]} />
+          <meshBasicMaterial color="#8ff0ff" toneMapped={false} />
+        </mesh>
+      </group>
     </group>
   );
 }
