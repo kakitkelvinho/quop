@@ -218,9 +218,10 @@ function FileMenu({
           </button>
           <label role="menuitem">
             Open JSON…
+            {/* No accept filter: macOS sometimes greys out .json files the
+                first time the picker opens. handleLoad rejects non-setups. */}
             <input
               type="file"
-              accept="application/json,.json"
               hidden
               onChange={(event) => {
                 onLoad(event);
