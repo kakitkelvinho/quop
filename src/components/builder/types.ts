@@ -573,16 +573,39 @@ function mirrorAngleStop(
   return undefined;
 }
 
+/** Detectors whose face (local −x) turns to the light arriving at them. */
+const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer"]);
+
 /**
- * The beam that sets a mirror's angle, or undefined when the mirror is
- * turned by hand: on no beam, or only at a beam's ends. Beam cubes are
- * never derived (they transmit and reflect, so need a different rule).
+ * Where a detector's angle comes from: the first beam, in scene order, that
+ * ends at it. The stop before it is where its light arrives from.
  */
-export function mirrorAngleBeam(
+function detectorAngleStop(
+  beams: Beam[],
+  component: BuilderComponent,
+): { beam: Beam; index: number } | undefined {
+  if (!AIMED_DETECTORS.has(component.type)) return undefined;
+  const beam = beams.find((entry) => entry.path.length >= 2 && entry.path.at(-1) === component.id);
+  return beam ? { beam, index: beam.path.length - 1 } : undefined;
+}
+
+/**
+ * The beam that sets a part's angle, or undefined when it is turned by hand.
+ * A mirror takes its angle from a beam it sits in the middle of, and a
+ * photodiode, camera or spectrometer from a beam that ends at it. Beam cubes
+ * are never derived (they transmit and reflect, so need a different rule).
+ */
+export function derivedAngleBeam(
   beams: Beam[],
   component: BuilderComponent,
 ): Beam | undefined {
-  return mirrorAngleStop(beams, component)?.beam;
+  return (mirrorAngleStop(beams, component) ?? detectorAngleStop(beams, component))?.beam;
+}
+
+/** Degrees in [0, 360), rounded so a float wobble never reads as an edit. */
+function yawDegrees(radians: number): number {
+  const degrees = (((radians * 180) / Math.PI) + 360) % 360;
+  return (Math.round(degrees * 100) / 100) % 360;
 }
 
 function unitXZ(from: Vec3, to: Vec3): [number, number] | undefined {
@@ -607,25 +630,44 @@ export function bisectingYaw(mirror: Vec3, previous: Vec3, next: Vec3): number |
   const nx = into[0] + out[0];
   const nz = into[1] + out[1];
   if (Math.hypot(nx, nz) < 1e-9) return undefined;
-  const degrees = (((Math.atan2(-nz, nx) * 180) / Math.PI) + 360) % 360;
-  // rounded, so a float wobble never reads as an edit
-  return (Math.round(degrees * 100) / 100) % 360;
+  return yawDegrees(Math.atan2(-nz, nx));
 }
 
 /**
- * Turn every mirror in the middle of a beam to its bisecting yaw. Run after
- * every edit, like settleHosts, so the stored rotation is always the drawn
- * one and moving a mirror or either neighbour re-angles it.
+ * The yaw, degrees in [0, 360), that turns a detector's face (local −x, which
+ * a yaw θ maps to world (−cos θ, 0, sin θ)) toward the stop its light comes
+ * from, so θ = atan2(d.z, −d.x). Undefined when the two sit on each other.
  */
-export function settleMirrors(scene: BuilderSceneData): BuilderSceneData {
+export function facingYaw(detector: Vec3, source: Vec3): number | undefined {
+  const toward = unitXZ(detector, source);
+  return toward ? yawDegrees(Math.atan2(toward[1], -toward[0])) : undefined;
+}
+
+/** A part's derived yaw, or undefined when it is turned by hand. */
+function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): number | undefined {
+  const at = (stop: { beam: Beam; index: number }, offset: number) =>
+    componentById(scene.components, stop.beam.path[stop.index + offset]);
+  const mirror = mirrorAngleStop(scene.beams, component);
+  if (mirror) {
+    const previous = at(mirror, -1);
+    const next = at(mirror, 1);
+    return previous && next ? bisectingYaw(component.position, previous.position, next.position) : undefined;
+  }
+  const detector = detectorAngleStop(scene.beams, component);
+  const source = detector && at(detector, -1);
+  return source ? facingYaw(component.position, source.position) : undefined;
+}
+
+/**
+ * Turn every mirror in the middle of a beam to its bisecting yaw, and every
+ * detector that ends a beam to face the stop before it. Run after every
+ * edit, like settleHosts, so the stored rotation is always the drawn one and
+ * moving a part or its neighbours re-angles it.
+ */
+export function settleAngles(scene: BuilderSceneData): BuilderSceneData {
   let changed = false;
   const components = scene.components.map((component) => {
-    const stop = mirrorAngleStop(scene.beams, component);
-    if (!stop) return component;
-    const previous = componentById(scene.components, stop.beam.path[stop.index - 1]);
-    const next = componentById(scene.components, stop.beam.path[stop.index + 1]);
-    if (!previous || !next) return component;
-    const yaw = bisectingYaw(component.position, previous.position, next.position);
+    const yaw = derivedYaw(scene, component);
     if (yaw === undefined || yaw === component.rotation) return component;
     changed = true;
     return { ...component, rotation: yaw };
@@ -757,7 +799,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         .filter((beam): beam is Beam => beam !== null)
     : [];
 
-  return settleMirrors(settleHosts({ version: SCENE_VERSION, components, beams }));
+  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams }));
 }
 
 export function serializeScene(scene: BuilderSceneData): string {
@@ -792,7 +834,7 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     { id: "filter-1", type: "filter", position: [200, 0, -150], rotation: 0, label: "Pump block" },
     { id: "spectrometer-1", type: "spectrometer", position: [325, 0, -150], rotation: 0 },
     { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 45, color: "#dc2626", label: "M1" },
-    { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 180, label: "Reference PD" },
+    { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 0, label: "Reference PD" },
   ]),
   beams: [
     {

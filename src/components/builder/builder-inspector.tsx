@@ -306,7 +306,7 @@ export function ComponentInspector({
 }: {
   component: BuilderComponent;
   components: BuilderComponent[];
-  /** set when a beam turns this mirror; its yaw is then read-only */
+  /** set when a beam turns this part; its yaw is then read-only */
   angleBeam?: Beam;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
   onCheckpoint: () => void;
