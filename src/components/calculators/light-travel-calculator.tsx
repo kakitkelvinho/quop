@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { DecimalNote } from "@/components/calculators/decimal-note";
+import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
 import { ToolIntro } from "@/components/tool-intro";
 
 type TimeUnit = "fs" | "ps" | "ns" | "us" | "ms" | "s";
@@ -111,6 +112,7 @@ export function LightTravelCalculator() {
                 <option value="s">s</option>
               </select>
             </div>
+            <DecimalNote reading={readFlexibleDecimal(timeInput)} />
           </label>
 
           <label className="field">
@@ -160,6 +162,7 @@ export function LightTravelCalculator() {
                 <option value="m">m</option>
               </select>
             </div>
+            <DecimalNote reading={readFlexibleDecimal(distanceInput)} />
           </label>
 
           <label className="field">

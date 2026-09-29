@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { DecimalNote } from "@/components/calculators/decimal-note";
+import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
 import { ToolIntro } from "@/components/tool-intro";
 
 export function EnergyWavelengthCalculator() {
@@ -44,6 +45,7 @@ export function EnergyWavelengthCalculator() {
               />
               <span>eV</span>
             </div>
+            <DecimalNote reading={readFlexibleDecimal(energyInput)} />
           </label>
           <p className="resultCard">
             {Number.isNaN(wavelengthFromEnergy)
@@ -65,6 +67,7 @@ export function EnergyWavelengthCalculator() {
               />
               <span>nm</span>
             </div>
+            <DecimalNote reading={readFlexibleDecimal(wavelengthInput)} />
           </label>
           <p className="resultCard">
             {Number.isNaN(energyFromWavelength)

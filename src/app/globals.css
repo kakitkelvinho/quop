@@ -361,6 +361,12 @@ html[data-theme="dark"] .buttonLink--ghost {
   font-weight: 700;
 }
 
+.field__note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
 .field__control--textarea {
   padding: 0;
   align-items: stretch;
