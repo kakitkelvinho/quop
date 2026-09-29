@@ -12,7 +12,7 @@ import dynamic from "next/dynamic";
 import { type ChartData, type ChartOptions } from "chart.js";
 
 import {
-  buildColorBarGradient,
+  buildColorBarStops,
   COLOR_MAP_OPTIONS,
   COLOR_MAP_STOPS,
   renderColormappedFrame,
@@ -887,7 +887,11 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
 
     if (colorbarScaleRef.current) {
       const scaleRect = getRelativeRect(colorbarScaleRef.current, figureRect, scaleFactor);
-      const gradient = context.createLinearGradient(0, scaleRect.y + scaleRect.height, 0, scaleRect.y);
+      // low to high, the way the colorbar runs on screen: up, or left to right on phones
+      const gradient =
+        scaleRect.width > scaleRect.height
+          ? context.createLinearGradient(scaleRect.x, 0, scaleRect.x + scaleRect.width, 0)
+          : context.createLinearGradient(0, scaleRect.y + scaleRect.height, 0, scaleRect.y);
       const colorStops = COLOR_MAP_STOPS[colorMap];
 
       colorStops.forEach((stop, index) => {
@@ -1117,7 +1121,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
               aria-hidden="true"
               className="fitsColorbar__scale"
               ref={colorbarScaleRef}
-              style={{ backgroundImage: buildColorBarGradient(colorMap) }}
+              style={{ "--colorbar-stops": buildColorBarStops(colorMap) } as CSSProperties}
             />
             <span className="fitsColorbar__label" ref={colorbarBottomLabelRef}>
               {formatPixelValue(summary.min)}

@@ -1004,6 +1004,12 @@ html[data-theme="dark"] .field__control:focus-within {
     grid-template-columns: 1fr;
   }
 
+  /* the sidebar is full width here, so a toggle hung over its edge would
+     stick out past the page */
+  .sidebarCollapseToggle {
+    right: 0.75rem;
+  }
+
   .paceCalculator {
     grid-template-columns: 1fr;
   }
@@ -1186,7 +1192,7 @@ html[data-theme="dark"] .field__control:focus-within {
   justify-items: center;
   align-content: stretch;
   gap: 0.45rem;
-  width: 3.5rem;
+  min-width: 3.5rem;
 }
 
 .fitsColorbar__scale {
@@ -1195,9 +1201,11 @@ html[data-theme="dark"] .field__control:focus-within {
   height: min(28rem, 100%);
   border: 1px solid var(--border);
   border-radius: 999px;
+  background-image: linear-gradient(to top, var(--colorbar-stops));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
 }
 
+/* one line: the column grows to fit the value rather than wrapping it */
 .fitsColorbar__label {
   color: var(--muted);
   font-family: var(--font-mono);
@@ -1205,7 +1213,7 @@ html[data-theme="dark"] .field__control:focus-within {
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .fitsColorControl {
@@ -1476,7 +1484,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   justify-items: center;
   align-content: stretch;
   gap: 0.45rem;
-  width: 3.5rem;
+  min-width: 3.5rem;
 }
 
 .fitsColorbar__scale {
@@ -1485,9 +1493,11 @@ html[data-theme="dark"] .fitsColorControl__select {
   height: min(28rem, 100%);
   border: 1px solid var(--border);
   border-radius: 999px;
+  background-image: linear-gradient(to top, var(--colorbar-stops));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
 }
 
+/* one line: the column grows to fit the value rather than wrapping it */
 .fitsColorbar__label {
   color: var(--muted);
   font-family: var(--font-mono);
@@ -1495,7 +1505,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
-  word-break: break-word;
+  white-space: nowrap;
 }
 
 .fitsImageFrame .interactiveChart__footer {
@@ -1597,10 +1607,18 @@ html[data-theme="dark"] .fitsColorControl__select {
     width: 100%;
   }
 
+  /* across the page it reads min to max, left to right: the max label
+     comes first in the markup (it tops the upright bar), so it moves last */
   .fitsColorbar__scale {
+    order: 1;
     width: 100%;
     min-height: 1rem;
     height: 1rem;
+    background-image: linear-gradient(to right, var(--colorbar-stops));
+  }
+
+  .fitsColorbar__label:first-child {
+    order: 2;
   }
 }
 
@@ -1616,10 +1634,18 @@ html[data-theme="dark"] .fitsColorControl__select {
     width: 100%;
   }
 
+  /* across the page it reads min to max, left to right: the max label
+     comes first in the markup (it tops the upright bar), so it moves last */
   .fitsColorbar__scale {
+    order: 1;
     width: 100%;
     min-height: 1rem;
     height: 1rem;
+    background-image: linear-gradient(to right, var(--colorbar-stops));
+  }
+
+  .fitsColorbar__label:first-child {
+    order: 2;
   }
 }
 
