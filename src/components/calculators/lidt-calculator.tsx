@@ -2,14 +2,14 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 
-import { parseFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { DecimalNote } from "@/components/calculators/decimal-note";
+import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
 import { ToolIntro } from "@/components/tool-intro";
 
 type LaserState = {
   power: string;
   repetition: string;
-  w0: string;
-  wavelength: string;
+  radius: string;
 };
 
 type LaserFieldProps = {
@@ -44,6 +44,7 @@ function LaserField({
         />
         <span>{unit}</span>
       </div>
+      <DecimalNote reading={readFlexibleDecimal(value)} />
     </label>
   );
 }
@@ -52,22 +53,22 @@ export function LidtCalculator() {
   const [laser, setLaser] = useState<LaserState>({
     power: "1",
     repetition: "1000",
-    w0: "1.1",
-    wavelength: "980",
+    radius: "0.1",
   });
   const power = parseFlexibleDecimal(laser.power);
   const repetition = parseFlexibleDecimal(laser.repetition);
-  const w0 = parseFlexibleDecimal(laser.w0);
-  const wavelength = parseFlexibleDecimal(laser.wavelength);
+  const radius = parseFlexibleDecimal(laser.radius);
 
   const pulseEnergy =
     power !== null && power > 0 && repetition !== null && repetition > 0
       ? power / repetition
       : Number.NaN;
-  const energyDensity =
-    Number.isFinite(pulseEnergy) && w0 !== null && w0 > 0
-      ? pulseEnergy / (Math.PI * w0 ** 2)
+  // E/(πw²) with w the 1/e² radius: the convention LIDT specs use.
+  const fluence =
+    Number.isFinite(pulseEnergy) && radius !== null && radius > 0
+      ? pulseEnergy / (Math.PI * radius ** 2)
       : Number.NaN;
+  const peakFluence = 2 * fluence;
 
   return (
     <section className="pageSection">
@@ -79,8 +80,9 @@ export function LidtCalculator() {
         <div className="inputCard">
           <h2>Pulsed Lasers</h2>
           <p>
-            Enter your beam parameters below. Both decimal commas and decimal
-            periods are accepted.
+            Enter your beam parameters below. Decimal commas and decimal
+            points both work, and so do 1e6 and 1,000,000. Give the beam
+            radius at 1/e² intensity, not the diameter.
           </p>
 
           <div className="fieldStack">
@@ -99,17 +101,10 @@ export function LidtCalculator() {
               setLaser={setLaser}
             />
             <LaserField
-              field="Beam waist"
-              property="w0"
+              field="Beam radius (1/e²)"
+              property="radius"
               unit="cm"
-              value={laser.w0}
-              setLaser={setLaser}
-            />
-            <LaserField
-              field="Wavelength"
-              property="wavelength"
-              unit="nm"
-              value={laser.wavelength}
+              value={laser.radius}
               setLaser={setLaser}
             />
           </div>
@@ -121,23 +116,27 @@ export function LidtCalculator() {
                 : `Pulse energy: ${pulseEnergy.toExponential(6)} J`}
             </p>
             <p className="resultCard">
-              {Number.isNaN(energyDensity)
-                ? "Enter a positive beam waist to compute fluence."
-                : `Fluence (energy density): ${energyDensity.toExponential(6)} J/cm^2`}
+              {Number.isNaN(fluence)
+                ? "Enter a positive beam radius to compute fluence."
+                : `Fluence E/(πw²): ${fluence.toExponential(6)} J/cm²`}
             </p>
-            {Number.isFinite(energyDensity) ? (
-              <p className="infoPanel">
-                This calculator estimates fluence from your beam parameters
-                only &mdash; it does not know your optic&apos;s actual damage
-                threshold. Compare the fluence above against the
-                manufacturer&apos;s LIDT rating
-                {wavelength !== null && wavelength > 0
-                  ? ` at ${wavelength} nm`
-                  : ""}
-                : damage thresholds are wavelength- and pulse-duration-dependent,
-                so a rating quoted at a different wavelength or pulse length
-                is not directly comparable.
-              </p>
+            {Number.isFinite(fluence) ? (
+              <>
+                <p className="resultCard">
+                  {`Gaussian peak fluence 2E/(πw²): ${peakFluence.toExponential(6)} J/cm²`}
+                </p>
+                <p className="infoPanel">
+                  Fluence here is E/(πw²), with w the 1/e² radius. Vendors
+                  such as Thorlabs quote LIDT this way, so compare the first
+                  number against the rating. The centre of a Gaussian beam
+                  sees twice that, the peak fluence. This calculator
+                  doesn&apos;t know your optic&apos;s damage threshold, and
+                  the fluence doesn&apos;t depend on wavelength or pulse
+                  length. Damage thresholds do, so only compare against a
+                  rating quoted at your wavelength and a similar pulse
+                  length.
+                </p>
+              </>
             ) : null}
           </div>
         </div>

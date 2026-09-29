@@ -19,8 +19,8 @@ import {
   defaultHeight,
   dropComponentFromBeams,
   parseScene,
+  settleAngles,
   settleHosts,
-  settleMirrors,
   snapToGrid,
   type Beam,
   type BuilderComponent,
@@ -42,7 +42,7 @@ type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 function settled(mutate: Mutation): Mutation {
   return (scene) => {
     const next = mutate(scene);
-    return next === scene ? scene : settleMirrors(settleHosts(next));
+    return next === scene ? scene : settleAngles(settleHosts(next));
   };
 }
 

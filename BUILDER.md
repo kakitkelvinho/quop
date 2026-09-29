@@ -72,6 +72,11 @@ pass through it, the first in the beam list wins, and the inspector names it
 ("Angle set by …"). A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
+**A detector at a beam's end faces the light.** A photodiode, camera or
+spectrometer that is a beam's last stop turns its face to the stop before it,
+and re-aims live as either moves. Like a mirror, its yaw is then read-only and
+names the beam. At a beam's start, or on no beam, it turns by hand.
+
 **Mount colour marks the beam line.** A mirror's mount can be tinted; the
 convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system
@@ -135,7 +140,7 @@ is on screen until it is needed:
 | Add a part | ＋ at the top left, pick it in the panel (or search, then `Enter`), click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
 | Raise / lower | Type a height in the inspector (Enter or leaving the field applies it) |
-| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam: it angles itself) |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves) |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |

@@ -26,7 +26,7 @@ import {
   componentDisplayName,
   findHost,
   appendStop,
-  mirrorAngleBeam,
+  derivedAngleBeam,
   parseScene,
   serializeScene,
   snapToGrid,
@@ -412,8 +412,8 @@ export default function BuilderScene() {
     (direction: 1 | -1) => {
       if (!selectedId) return;
       const component = componentById(sceneRef.current.components, selectedId);
-      // a mirror in the middle of a beam takes its angle from the beam
-      if (!component || mirrorAngleBeam(sceneRef.current.beams, component)) return;
+      // a part whose angle a beam sets doesn't turn by hand
+      if (!component || derivedAngleBeam(sceneRef.current.beams, component)) return;
       api.rotateComponent(selectedId, direction);
     },
     [api, selectedId],

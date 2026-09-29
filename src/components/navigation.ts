@@ -36,7 +36,7 @@ export const navSections: NavSection[] = [
         href: "/calculators/lidt-calculator",
         label: "LIDT",
         description:
-          "Estimate pulse energy and fluence from a pulsed laser's power, repetition rate and beam waist, to compare against an optic's damage threshold.",
+          "Estimate pulse energy and fluence from a pulsed laser's power, repetition rate and 1/e² beam radius, to compare against an optic's damage threshold.",
       },
       {
         href: "/calculators/pace",
