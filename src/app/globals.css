@@ -128,14 +128,6 @@ h2 {
   color: var(--muted);
 }
 
-/* the report link under a tool's lead: close to it, quieter than it */
-.toolReport {
-  margin-top: -0.75rem;
-  color: var(--muted);
-  font-size: 0.84rem;
-}
-
-.toolReport a,
 .siteFooter a,
 .builderAbout__report a {
   color: var(--accent-strong);
@@ -146,7 +138,6 @@ h2 {
 }
 
 /* the hovered-link wash from the ink pair */
-.toolReport a:hover,
 .siteFooter a:hover,
 .builderAbout__report a:hover {
   background: var(--accent-soft);
@@ -984,7 +975,6 @@ html[data-theme="dark"] .visualizerOverlayState {
 
 .themeToggle:focus-visible,
 .buttonLink:focus-visible,
-.toolReport a:focus-visible,
 .siteFooter a:focus-visible,
 .field__control:focus-within {
   outline: 3px solid rgb(139 30 63 / 0.3);
@@ -993,8 +983,7 @@ html[data-theme="dark"] .visualizerOverlayState {
 
 html[data-theme="dark"] .themeToggle:focus-visible,
 html[data-theme="dark"] .buttonLink:focus-visible,
-html[data-theme="dark"] .toolReport a:focus-visible,
-html[data-theme="dark"] .siteFooter a:focus-visible,
+html[data-theme="dark"] html[data-theme="dark"] .siteFooter a:focus-visible,
 html[data-theme="dark"] .field__control:focus-within {
   outline-color: rgb(244 185 66 / 0.4);
 }
