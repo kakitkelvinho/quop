@@ -23,6 +23,7 @@ import {
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SAMPLE_COLOR,
+  MOUNTED_TYPES,
   SAMPLE_OPACITY,
   SAMPLE_OPACITY_RANGE,
   clampHeight,
@@ -407,7 +408,7 @@ export function ComponentInspector({
           onChange={(next) => onUpdate({ cavityLength: next })}
         />
       ) : null}
-      {component.type === "mirror-mount" ? (
+      {MOUNTED_TYPES.has(component.type) ? (
         <label className="builderField" title="Tint the mount the colour of the beam it serves">
           <span className="builderField__label">Mount colour</span>
           <span className="builderField__control builderField__control--color">

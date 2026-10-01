@@ -77,7 +77,8 @@ spectrometer that is a beam's last stop turns its face to the stop before it,
 and re-aims live as either moves. Like a mirror, its yaw is then read-only and
 names the beam. At a beam's start, or on no beam, it turns by hand.
 
-**Mount colour marks the beam line.** A mirror's mount can be tinted; the
+**Mount colour marks the beam line.** Any part held in a mount (mirror, beam
+cube, waveplate, filter, iris, fiber collimator) can have its mount tinted; the
 convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system
 colour — see `DESIGN.md` on keeping the section wayfinding colours out of it.

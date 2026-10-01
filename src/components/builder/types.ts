@@ -34,6 +34,20 @@ export type LensShape = "plano-convex" | "biconvex";
 /** Components a particle can be placed in — its host. */
 export const HOST_TYPES: ReadonlySet<ComponentType> = new Set(["paul-trap", "cavity"]);
 
+/**
+ * Components held in a coloured mount: their `color` tints the mount, so it
+ * can mark the beam line they serve. A lens stands on a bare rod, and the
+ * trap and cavity have no holder, so they are left out.
+ */
+export const MOUNTED_TYPES: ReadonlySet<ComponentType> = new Set([
+  "mirror-mount",
+  "beam-splitter",
+  "waveplate",
+  "filter",
+  "iris",
+  "fiber-collimator",
+]);
+
 export type Vec3 = [number, number, number];
 
 export type BuilderComponent = {
