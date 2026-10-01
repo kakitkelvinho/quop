@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 
+import { findTool } from "@/components/navigation";
+
 // Joined in the browser, so the address never sits whole in the static HTML
 // for a scraper to lift.
 const MAILBOX = ["kelvin.ho", "aalto.fi"];
@@ -21,15 +23,17 @@ export function useSiteVersion(): string | undefined {
 /**
  * A "Report a problem" email link. The subject names the tool, so reports
  * can be filtered; the body carries the page and version, so they say where.
+ * Without a tool given, it names the tool whose page it is on, if any.
  */
 export function ReportLink({ tool }: { tool?: string }) {
   const ref = useRef<HTMLAnchorElement>(null);
   const pathname = usePathname();
   const version = useSiteVersion();
+  const label = tool ?? findTool(pathname.replace(/\/$/, ""))?.label;
 
   useEffect(() => {
     if (!ref.current) return;
-    const subject = tool ? `[quop] ${tool}` : "[quop]";
+    const subject = label ? `[quop] ${label}` : "[quop]";
     const body = [
       "What happened, and what did you expect?",
       "",
@@ -39,14 +43,15 @@ export function ReportLink({ tool }: { tool?: string }) {
       `Version: ${version ?? "unknown"}`,
     ].join("\n");
     ref.current.href = `mailto:${MAILBOX.join("@")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }, [tool, pathname, version]);
+  }, [label, pathname, version]);
 
   return <a ref={ref}>Report a problem</a>;
 }
 
 /**
- * The one-line invitation a tool carries under its intro. showVersion is for
- * the builder, which has no site footer to show it.
+ * The builder's one-line invitation, in its About panel: the builder has no
+ * site footer, so it carries its own report link. showVersion stands in for
+ * the footer's version too.
  */
 export function ReportLine({
   tool,
