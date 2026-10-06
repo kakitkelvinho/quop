@@ -18,6 +18,13 @@ const mokuCsv = [
   "1.0e-06, 0.12, 0.22",
 ].join("\n");
 
+// Avantes/Astrella spectrometer export: metadata columns, then one column per
+// wavelength, with the whole spectrum on a single quoted row.
+const astrellaCsv = [
+  '"device timestamp","system timestamp","scope type","integration time","144.848","145.454","146.06"',
+  '"67666522","2026/10/06 08:39:03.090.155","scope","1000","408.956","501.223","529.069"',
+].join("\n");
+
 describe("parseNumericCell", () => {
   it("treats a blank cell as missing, not 0", () => {
     assert.ok(Number.isNaN(parseNumericCell("")));
@@ -66,6 +73,42 @@ describe("parseGenericCsv", () => {
       [1, 1],
     ]);
     assert.equal(parsed.skippedRowCount, 0);
+  });
+
+  it("turns a wide spectrometer export on its side", () => {
+    const parsed = parseGenericCsv(astrellaCsv);
+
+    assert.equal(parsed.error, null);
+    assert.deepEqual(parsed.headers, ["x", "row 1"]);
+    assert.deepEqual(parsed.rows, [
+      [144.848, 408.956],
+      [145.454, 501.223],
+      [146.06, 529.069],
+    ]);
+    assert.equal(parsed.skippedRowCount, 0);
+    assert.match(parsed.extraInfo, /system timestamp: 2026\/10\/06 08:39:03\.090\.155/);
+    assert.match(parsed.extraInfo, /integration time: 1000/);
+  });
+
+  it("plots each row of a wide export as its own series", () => {
+    const parsed = parseGenericCsv(
+      ["label,1,2,3", "a,10,20,30", "b,11,,31"].join("\n"),
+    );
+
+    assert.equal(parsed.error, null);
+    assert.deepEqual(parsed.headers, ["x", "row 1", "row 2"]);
+    assert.deepEqual(parsed.rows, [
+      [1, 10, 11],
+      [3, 30, 31],
+    ]);
+    assert.equal(parsed.skippedRowCount, 1);
+    assert.match(parsed.extraInfo, /row 2 · label: b/);
+  });
+
+  it("still reports no numeric data when nothing looks wide either", () => {
+    const parsed = parseGenericCsv("name,unit\nfoo,bar");
+
+    assert.equal(parsed.error, "Couldn't find any numeric data rows in this file.");
   });
 });
 
