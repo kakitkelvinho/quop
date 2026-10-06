@@ -304,6 +304,94 @@ export function parseTimeSeriesCsv(csv: string): ParsedCsv {
   };
 }
 
+type CsvLine = ReturnType<typeof locateHeaderAndData>["lines"][number];
+
+// Some spectrometer exports (e.g. Avantes/Astrella) are wide: a few metadata
+// columns, then one column per wavelength, with each spectrum on a single
+// row. The header's trailing numeric cells become x, and each row's matching
+// cells become one y series. Returns null when the file isn't shaped that way.
+function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
+  const isNumericOrBlank = (cell: string) =>
+    isBlankCell(cell) || Number.isFinite(parseNumericCell(cell));
+
+  for (let headerIndex = 0; headerIndex < lines.length; headerIndex += 1) {
+    const header = lines[headerIndex].fields;
+    let xStart = header.length;
+
+    while (xStart > 0 && Number.isFinite(parseNumericCell(header[xStart - 1]))) {
+      xStart -= 1;
+    }
+
+    if (header.length - xStart < 2) {
+      continue;
+    }
+
+    const seriesLines: CsvLine[] = [];
+    const trailingInfo: string[] = [];
+
+    for (const line of lines.slice(headerIndex + 1)) {
+      if (
+        line.fields.length === header.length &&
+        line.fields.slice(xStart).every(isNumericOrBlank)
+      ) {
+        seriesLines.push(line);
+      } else if (line.text) {
+        trailingInfo.push(line.text);
+      }
+    }
+
+    if (seriesLines.length === 0) {
+      continue;
+    }
+
+    const labels = seriesLines.map((_, index) => `row ${index + 1}`);
+    const rows: number[][] = [];
+    let skippedRowCount = 0;
+
+    for (let column = xStart; column < header.length; column += 1) {
+      const row = [
+        parseNumericCell(header[column]),
+        ...seriesLines.map((line) => parseNumericCell(line.fields[column])),
+      ];
+
+      if (row.every((value) => Number.isFinite(value))) {
+        rows.push(row);
+      } else {
+        skippedRowCount += 1;
+      }
+    }
+
+    if (rows.length === 0) {
+      continue;
+    }
+
+    // Each row's metadata cells (timestamps, integration time, ...) are kept
+    // as "name: value" lines, tagged by row when there is more than one.
+    const metadata = seriesLines.flatMap((line, index) =>
+      header.slice(0, xStart).map((name, column) => {
+        const entry = `${name || `column_${column + 1}`}: ${line.fields[column]}`;
+        return seriesLines.length > 1 ? `${labels[index]} · ${entry}` : entry;
+      }),
+    );
+
+    return {
+      error: null,
+      headers: ["x", ...labels],
+      rowCount: rows.length,
+      skippedRowCount,
+      rows,
+      extraInfo: [
+        ...lines.slice(0, headerIndex).map((line) => line.text).filter(Boolean),
+        "Wide layout: header values plotted as x, one series per row.",
+        ...metadata,
+        ...trailingInfo,
+      ].join("\n"),
+    };
+  }
+
+  return null;
+}
+
 export function parseGenericCsv(csv: string): ParsedGenericCsv {
   const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
@@ -322,6 +410,12 @@ export function parseGenericCsv(csv: string): ParsedGenericCsv {
     locateHeaderAndData(rawLines);
 
   if (dataStartIndex === -1) {
+    const wide = parseWideLayout(lines);
+
+    if (wide) {
+      return wide;
+    }
+
     return {
       error: "Couldn't find any numeric data rows in this file.",
       headers: [],
