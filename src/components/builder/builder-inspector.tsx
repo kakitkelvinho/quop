@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { IconButton, type IconName } from "@/components/builder/builder-icons";
+import { useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
   BEAM_OPACITY_RANGE,
@@ -49,11 +50,21 @@ const LENS_SHAPES: { value: LensShape; label: string }[] = [
 
 type ComponentPatch = Partial<Omit<BuilderComponent, "id" | "type">>;
 
+/**
+ * What is typed stays a draft until it is a number, and applies on Enter or
+ * leaving the field (or at once for a step). A lone "-" or an empty field is
+ * not a number: it reverts instead of snapping the part to 0, and typing "1"
+ * on the way to "150" never moves the part to 1 first. The shown value is
+ * rounded to a tenth so a typed -12.5 still reads -12.5.
+ */
 function NumberField({
   label,
   unit,
   value,
   step,
+  min,
+  max,
+  title,
   disabled,
   onChange,
 }: {
@@ -61,31 +72,25 @@ function NumberField({
   unit: string;
   value: number;
   step: number;
+  min?: number;
+  max?: number;
+  title?: string;
   disabled?: boolean;
   onChange: (value: number) => void;
 }) {
+  const field = useNumberDraft(Math.round(value * 10) / 10, onChange);
   return (
-    <label className="builderField">
+    <label className="builderField" title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control">
-        <input
-          type="number"
-          step={step}
-          value={value}
-          disabled={disabled}
-          onChange={(event) => onChange(Number(event.target.value) || 0)}
-        />
+        <input type="number" step={step} min={min} max={max} disabled={disabled} {...field} />
         <span className="builderField__unit">{unit}</span>
       </span>
     </label>
   );
 }
 
-/**
- * Height is clamped to what the part allows, so it commits on blur or Enter
- * rather than per keystroke — typing "1" on the way to "150" must not snap the
- * part to its lowest height first.
- */
+/** Height is clamped to what the part allows, and shows the range it may take. */
 function HeightField({
   component,
   onChange,
@@ -93,42 +98,20 @@ function HeightField({
   component: BuilderComponent;
   onChange: (height: number) => void;
 }) {
-  const height = Math.round(component.position[1]);
   const [min, max] = heightRange(component.type);
   const fixed = min === max;
-  const [draft, setDraft] = useState<string | null>(null);
-
-  const commit = () => {
-    if (draft === null) return;
-    const next = Number(draft);
-    setDraft(null);
-    if (draft.trim() !== "" && Number.isFinite(next)) onChange(clampHeight(component.type, next));
-  };
-
   return (
-    <label
-      className="builderField"
+    <NumberField
+      label="Height"
+      unit="mm"
+      step={5}
+      min={min}
+      max={max}
       title={fixed ? "Fixed by the instrument" : `Optical centre above the breadboard, ${min}–${max} mm`}
-    >
-      <span className="builderField__label">Height</span>
-      <span className="builderField__control">
-        <input
-          type="number"
-          step={5}
-          min={min}
-          max={max}
-          value={draft ?? height}
-          disabled={fixed || Boolean(component.host)}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={commit}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") commit();
-            if (event.key === "Escape") setDraft(null);
-          }}
-        />
-        <span className="builderField__unit">mm</span>
-      </span>
-    </label>
+      value={component.position[1]}
+      disabled={fixed || Boolean(component.host)}
+      onChange={(height) => onChange(clampHeight(component.type, height))}
+    />
   );
 }
 
@@ -338,8 +321,8 @@ export function ComponentInspector({
         </span>
       </label>
       <div className="builderFieldRow">
-        <NumberField label="x" unit="mm" step={5} value={Math.round(x)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [next, y, z] })} />
-        <NumberField label="z" unit="mm" step={5} value={Math.round(z)} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [x, y, next] })} />
+        <NumberField label="x" unit="mm" step={5} value={x} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [next, y, z] })} />
+        <NumberField label="z" unit="mm" step={5} value={z} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [x, y, next] })} />
       </div>
       <HeightField
         key={component.id}
@@ -361,7 +344,7 @@ export function ComponentInspector({
           label="Yaw"
           unit="°"
           step={15}
-          value={Math.round(component.rotation * 10) / 10}
+          value={component.rotation}
           disabled={Boolean(angleBeam)}
           onChange={(yaw) => onUpdate({ rotation: ((yaw % 360) + 360) % 360 })}
         />
@@ -394,7 +377,7 @@ export function ComponentInspector({
             label="Focal length"
             unit="mm"
             step={5}
-            value={Math.round(component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM)}
+            value={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
             onChange={(next) => onUpdate({ focalLength: next })}
           />
         </>
@@ -404,7 +387,7 @@ export function ComponentInspector({
           label="Length"
           unit="mm"
           step={5}
-          value={Math.round(component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM)}
+          value={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
           onChange={(next) => onUpdate({ cavityLength: next })}
         />
       ) : null}
@@ -474,7 +457,7 @@ export function ComponentInspector({
                   label={name}
                   unit="mm"
                   step={1}
-                  value={Math.round(size[axisIndex])}
+                  value={size[axisIndex]}
                   onChange={(next) => {
                     const nextSize = [...size] as Vec3;
                     nextSize[axisIndex] = clamp(next, BLOCK_SIZE_RANGE_MM);

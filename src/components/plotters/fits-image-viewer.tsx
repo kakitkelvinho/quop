@@ -32,6 +32,7 @@ import {
   TRUE_PIXEL_ASPECT,
 } from "@/components/plotters/pixel-aspect";
 import { chooseSurfaceStep } from "@/components/plotters/surface-geometry";
+import { useNumberDraft } from "@/components/use-number-draft";
 
 // three.js loads only once someone opens the Surface view
 const FitsSurfaceView = dynamic(() => import("@/components/plotters/fits-surface-view"), {
@@ -429,6 +430,13 @@ function PixelAspectControls({
 }) {
   const squareAspect = squarePixelAspect(frameWidth, frameHeight);
   const sliderRange = pixelAspectSliderRange(frameWidth, frameHeight);
+  const exactField = useNumberDraft(
+    Number(pixelAspect.toPrecision(4)),
+    (typed) => {
+      if (typed > 0) onChange(clampPixelAspect(typed));
+    },
+    { live: true },
+  );
 
   return (
     <div className="interactiveChart__editorBar fitsAspectControls">
@@ -455,16 +463,9 @@ function PixelAspectControls({
             className="interactiveChart__textInput"
             inputMode="decimal"
             min="0.001"
-            onChange={(event) => {
-              const typed = Number.parseFloat(event.target.value);
-
-              if (typed > 0) {
-                onChange(clampPixelAspect(typed));
-              }
-            }}
             step="0.05"
             type="number"
-            value={Number(pixelAspect.toPrecision(4))}
+            {...exactField}
           />
         </label>
         <div className="fitsSurfaceControls__presets" role="group" aria-label="Pixel aspect presets">
@@ -955,6 +956,16 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   const activeRow = clamp(selectedRow, 0, summary.height - 1);
   const activeColumn = clamp(selectedColumn, 0, summary.width - 1);
   const activeSliceIndex = sliceAxis === "horizontal" ? activeRow : activeColumn;
+  const rowField = useNumberDraft(
+    activeRow,
+    (typed) => setSelectedRow(clamp(Math.trunc(typed), 0, Math.max(summary.height - 1, 0))),
+    { live: true },
+  );
+  const columnField = useNumberDraft(
+    activeColumn,
+    (typed) => setSelectedColumn(clamp(Math.trunc(typed), 0, Math.max(summary.width - 1, 0))),
+    { live: true },
+  );
   const sliceBandStyle = buildSliceBandStyle(viewport, sliceAxis, activeSliceIndex, summary);
   const selectionStyle = dragSelection
     ? {
@@ -1418,16 +1429,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                         min="0"
                         max={Math.max(summary.height - 1, 0)}
                         step="1"
-                        value={activeRow}
-                        onChange={(event) =>
-                          setSelectedRow(
-                            clamp(
-                              Number.parseInt(event.target.value || "0", 10) || 0,
-                              0,
-                              Math.max(summary.height - 1, 0),
-                            ),
-                          )
-                        }
+                        {...rowField}
                       />
                       <span>px</span>
                     </div>
@@ -1442,16 +1444,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                         min="0"
                         max={Math.max(summary.width - 1, 0)}
                         step="1"
-                        value={activeColumn}
-                        onChange={(event) =>
-                          setSelectedColumn(
-                            clamp(
-                              Number.parseInt(event.target.value || "0", 10) || 0,
-                              0,
-                              Math.max(summary.width - 1, 0),
-                            ),
-                          )
-                        }
+                        {...columnField}
                       />
                       <span>px</span>
                     </div>
