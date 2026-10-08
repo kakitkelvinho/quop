@@ -2536,7 +2536,8 @@ html[data-theme="dark"] .builderButton--primary {
   gap: 0.35rem;
 }
 
-.builderInspector__host {
+.builderInspector__host,
+.builderInspector__turn {
   display: flex;
   align-items: center;
   justify-content: space-between;
