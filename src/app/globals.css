@@ -2523,8 +2523,10 @@ html[data-theme="dark"] .builderButton--primary {
   gap: 0.1rem;
   width: max-content;
   min-width: 11rem;
-  max-width: min(18rem, calc(100% - 1.8rem));
+  max-width: min(22rem, calc(100% - 1.8rem));
   max-height: min(14rem, 40vh);
+  margin: 0;
+  list-style: none;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -2534,22 +2536,15 @@ html[data-theme="dark"] .builderButton--primary {
   left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
 }
 
+/* a row is the select button and the beam's own move and delete buttons; the
+   row, not the select button, carries the hover and selected look */
 .builderBeamRow {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 0.5rem;
-  min-height: 1.9rem;
-  padding: 0 0.55rem;
   border: 1px solid transparent;
   border-radius: 0.55rem;
-  background: none;
   color: var(--foreground);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-align: left;
-  white-space: nowrap;
-  cursor: pointer;
 }
 
 .builderBeamRow:hover {
@@ -2559,6 +2554,49 @@ html[data-theme="dark"] .builderButton--primary {
 .builderBeamRow.is-selected {
   border-color: var(--accent);
   color: var(--accent-strong);
+}
+
+.builderBeamRow__select {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  min-height: calc(1.9rem - 2px);
+  padding: 0 0.3rem 0 0.55rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.builderBeamRow__actions {
+  display: inline-flex;
+  flex: none;
+  padding-right: 0.1rem;
+}
+
+.builderBeamRow__actions .builderIconBtn {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.builderBeamRow__actions .builderIconBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (pointer: coarse) {
+  .builderBeamRow__actions .builderIconBtn {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
 }
 
 .builderBeamRow__dot {
