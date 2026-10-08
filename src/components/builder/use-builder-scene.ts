@@ -18,6 +18,7 @@ import {
   createComponentId,
   defaultHeight,
   dropComponentFromBeams,
+  moveBeam as moveBeamInList,
   parseScene,
   settleAngles,
   settleHosts,
@@ -326,6 +327,20 @@ export function useBuilderScene() {
     [commit],
   );
 
+  /** One step up or down the beam list; the beam's new place, or null when it can't go that way. */
+  const moveBeam = useCallback(
+    (id: string, direction: 1 | -1): number | null => {
+      const edit = moveBeamInList(scene.beams, id, direction);
+      if (!edit.ok) return null;
+      commit((current) => {
+        const moved = moveBeamInList(current.beams, id, direction);
+        return moved.ok ? { ...current, beams: moved.beams } : current;
+      });
+      return edit.beams.findIndex((beam) => beam.id === id);
+    },
+    [commit, scene.beams],
+  );
+
   // ---- whole-scene ---------------------------------------------------------
 
   const replaceScene = useCallback((next: BuilderSceneData) => commit(() => next), [commit]);
@@ -353,6 +368,7 @@ export function useBuilderScene() {
       addBeam,
       updateBeam,
       deleteBeam,
+      moveBeam,
       replaceScene,
       clearScene,
       resetToExample,
@@ -375,6 +391,7 @@ export function useBuilderScene() {
       addBeam,
       updateBeam,
       deleteBeam,
+      moveBeam,
       replaceScene,
       clearScene,
       resetToExample,

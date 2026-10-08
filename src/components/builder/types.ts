@@ -568,6 +568,27 @@ export function dropComponentFromBeams(beams: Beam[], id: string): Beam[] {
 }
 
 // ---------------------------------------------------------------------------
+// Beam list edits
+// ---------------------------------------------------------------------------
+//
+// A setup's beams are an ordered list, saved in that order, and the order
+// means something: the first beam through a mirror sets its angle.
+
+export type BeamListEdit = { ok: true; beams: Beam[] } | { ok: false; reason: string };
+
+/** Swap a beam with its neighbour in the list: -1 moves it up, toward the first. */
+export function moveBeam(beams: Beam[], id: string, direction: 1 | -1): BeamListEdit {
+  const index = beams.findIndex((beam) => beam.id === id);
+  if (index < 0) return { ok: false, reason: "it isn't in the list" };
+  const other = index + direction;
+  if (other < 0) return { ok: false, reason: "it's already first" };
+  if (other >= beams.length) return { ok: false, reason: "it's already last" };
+  const next = [...beams];
+  [next[index], next[other]] = [next[other], next[index]];
+  return { ok: true, beams: next };
+}
+
+// ---------------------------------------------------------------------------
 // Mirror angles
 // ---------------------------------------------------------------------------
 
