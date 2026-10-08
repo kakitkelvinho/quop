@@ -130,17 +130,18 @@ describe("pixel aspect", () => {
 });
 
 describe("buildSurfaceArrays", () => {
-  it("lays row 0 along the far (+y) edge and the value along z", () => {
+  it("lays row 0 along the near (-y) edge and the value along z", () => {
     const pixels = new Float32Array([0, 1, 2, 3]);
     const layout = surfaceLayout(2, 2, 1);
     const arrays = buildSurfaceArrays(reduceFrame(pixels, 2, 2, 1), 2, 2, 0, 3, layout);
 
-    // vertex 0 is pixel (0, 0): left, far, floor
-    assert.deepEqual(Array.from(arrays.position.subarray(0, 3)), [-0.5, 0.5, 0]);
-    // vertex 3 is pixel (1, 1): right, near, top
-    assert.deepEqual(Array.from(arrays.position.subarray(9, 12)), [0.5, -0.5, 1]);
+    // vertex 0 is pixel (0, 0): left, near, floor
+    assert.deepEqual(Array.from(arrays.position.subarray(0, 3)), [-0.5, -0.5, 0]);
+    // vertex 3 is pixel (1, 1): right, far, top
+    assert.deepEqual(Array.from(arrays.position.subarray(9, 12)), [0.5, 0.5, 1]);
     assert.deepEqual(Array.from(arrays.valueUv.subarray(6, 8)), [1, 0.5]);
-    assert.deepEqual(Array.from(arrays.imageUv.subarray(0, 2)), [0.25, 0.75]);
+    // the image texture has row 0 on its bottom scanline, so row 0 is v near 0
+    assert.deepEqual(Array.from(arrays.imageUv.subarray(0, 2)), [0.25, 0.25]);
   });
 
   it("winds every triangle to face +z", () => {
@@ -170,14 +171,24 @@ describe("buildSurfaceArrays", () => {
   });
 });
 
+describe("localY", () => {
+  it("puts row 0 on the near edge and the last row on the far edge", () => {
+    const layout = surfaceLayout(3, 3, 1);
+
+    assert.equal(localY(0, 3, layout), -0.5);
+    assert.equal(localY(1, 3, layout), 0);
+    assert.equal(localY(2, 3, layout), 0.5);
+  });
+});
+
 describe("pixelFromLocal", () => {
   it("inverts the layout, clamped to the frame", () => {
     const layout = surfaceLayout(1600, 200, 1);
     const x = (37 - 1599 / 2) * layout.scaleX;
-    const y = (199 / 2 - 150) * layout.scaleY;
+    const y = (150 - 199 / 2) * layout.scaleY;
 
     assert.deepEqual(pixelFromLocal(x, y, 1600, 200, layout), { column: 37, row: 150 });
-    assert.deepEqual(pixelFromLocal(9, -9, 1600, 200, layout), { column: 1599, row: 199 });
+    assert.deepEqual(pixelFromLocal(9, -9, 1600, 200, layout), { column: 1599, row: 0 });
   });
 });
 

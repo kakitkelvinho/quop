@@ -77,7 +77,7 @@ const NO_RAYCAST = () => null;
 
 const PRESET_DIRECTIONS: Record<CameraPreset, [number, number, number]> = {
   isometric: [0.85, -1.3, 1.05],
-  // a hair off the pole, so "up" on screen stays row 0 as in the Image view
+  // a hair off the pole, so "up" on screen is the last row, as in the Image view
   top: [0, -0.001, 1],
   "side-x": [0, -1, 0],
   "side-y": [-1, 0, 0],
