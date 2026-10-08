@@ -69,7 +69,8 @@ of a beam (not its first or last) turns so its face bisects the directions to
 the stops before and after it, and re-angles live as any of the three moves.
 Its yaw is then read-only in the inspector, and `R` does nothing. If two beams
 pass through it, the first in the beam list wins, and the inspector names it
-("Angle set by …"). A mirror on no beam, or only at a beam's end, turns by
+("Angle set by …"); moving a beam up or down the list hands the mirror to the
+other. A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
 **A detector at a beam's end faces the light.** A photodiode, camera or
@@ -129,7 +130,10 @@ is on screen until it is needed:
 - **Right**: the inspector, shown only while something is selected: a
   component, a beam, or a beam being drawn.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
-  name and path length; click a row to select that beam. It scrolls once there
+  name and path length; click a row to select that beam. Each row also has
+  buttons to move that beam up or down the list and to delete it (the beam
+  only: its parts stay). The list order is the setup's beam order, so it is
+  saved, and each move or delete is one undo step. It scrolls once there
   are more beams than fit. While the parts panel is open the box moves to sit
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes.
@@ -146,6 +150,7 @@ is on screen until it is needed:
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
+| Reorder or delete a beam | The up, down and trash buttons on its row in the beams box. A button that can't act (the first beam's up, the last beam's down) is disabled, and its label says why. Undo brings a deleted beam back in its place |
 | Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); reorder with up and down; `Enter` / `Esc` to finish |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then leaves Add stops, then deselects) |

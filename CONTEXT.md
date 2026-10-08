@@ -30,6 +30,10 @@ _Avoid_: optical axis
 An author-drawn, ordered path through components, recording where the light is meant to go. It is not a ray trace; a beam between two components at different heights slopes.
 _Avoid_: ray, trace
 
+**Beam list**:
+A setup's beams in the order the author keeps them, shown in the beams box and saved with the setup. The order is the author's to change; where two beams pass through one mirror, the first in the list sets its angle.
+_Avoid_: beam order, layer order
+
 **Path length**:
 The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight.
 
