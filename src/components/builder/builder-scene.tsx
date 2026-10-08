@@ -32,7 +32,6 @@ import {
   serializeScene,
   snapToGrid,
   type BuilderComponent,
-  type BuilderSceneData,
   type ComponentType,
 } from "@/components/builder/types";
 
@@ -40,8 +39,6 @@ type DragState = {
   id: string;
   offsetX: number;
   offsetZ: number;
-  /** scene as it was when the drag began — pushed to history on the first real move */
-  snapshot: BuilderSceneData;
   started: boolean;
 };
 
@@ -235,7 +232,6 @@ export default function BuilderScene() {
         id,
         offsetX: component.position[0] - event.point.x,
         offsetZ: component.position[2] - event.point.z,
-        snapshot: sceneRef.current,
         started: false,
       };
       setDragging(true);
@@ -269,9 +265,11 @@ export default function BuilderScene() {
       if (unchanged) return;
 
       // First real movement is what earns an undo entry — a plain click shouldn't.
+      // The scene is read now, not at pointer-down: the click may have settled a
+      // number field, and that edit is its own step, not part of the drag.
       if (!drag.started) {
         drag.started = true;
-        api.commitCheckpoint(drag.snapshot);
+        api.commitCheckpoint(sceneRef.current);
       }
       if (component.type === "particle") {
         api.updateComponent(
