@@ -1,6 +1,8 @@
 // The colormaps the Image view and the Surface view share, and the one
 // routine that paints a frame with them.
 
+import { flipRow } from "./image-axes.ts";
+
 export type ColorMapName = "gray" | "viridis" | "plasma" | "inferno" | "magma";
 
 export const COLOR_MAP_OPTIONS: Array<{ label: string; value: ColorMapName }> = [
@@ -90,7 +92,34 @@ export type ColormapFrame = {
   width: number;
 };
 
-/** Paints the whole frame into `canvas`, one canvas pixel per frame pixel. */
+/**
+ * The frame as RGBA bytes, one pixel each, in canvas order: scanlines run top
+ * to bottom, so the frame's row 0 is the last scanline.
+ */
+export function colormappedFrameRgba(frame: ColormapFrame, colorMap: ColorMapName) {
+  const { width, height, pixels, min, max } = frame;
+  const rgba = new Uint8ClampedArray(width * height * 4);
+  const span = max - min || 1;
+
+  for (let index = 0; index < pixels.length; index += 1) {
+    const value = pixels[index];
+    const normalized = Number.isFinite(value)
+      ? Math.max(0, Math.min(1, (value - min) / span))
+      : 0;
+    const scanline = flipRow(Math.floor(index / width), height);
+    const pixelIndex = (scanline * width + (index % width)) * 4;
+    const [red, green, blue] = interpolateColor(colorMap, normalized);
+
+    rgba[pixelIndex] = red;
+    rgba[pixelIndex + 1] = green;
+    rgba[pixelIndex + 2] = blue;
+    rgba[pixelIndex + 3] = 255;
+  }
+
+  return rgba;
+}
+
+/** Paints the whole frame into `canvas`, one canvas pixel per frame pixel, row 0 along the bottom. */
 export function renderColormappedFrame(
   canvas: HTMLCanvasElement,
   frame: ColormapFrame,
@@ -102,24 +131,10 @@ export function renderColormappedFrame(
     return;
   }
 
-  const { width, height, pixels, min, max } = frame;
+  const { width, height } = frame;
   const imageData = context.createImageData(width, height);
-  const span = max - min || 1;
 
-  for (let index = 0; index < pixels.length; index += 1) {
-    const value = pixels[index];
-    const normalized = Number.isFinite(value)
-      ? Math.max(0, Math.min(1, (value - min) / span))
-      : 0;
-    const pixelIndex = index * 4;
-    const [red, green, blue] = interpolateColor(colorMap, normalized);
-
-    imageData.data[pixelIndex] = red;
-    imageData.data[pixelIndex + 1] = green;
-    imageData.data[pixelIndex + 2] = blue;
-    imageData.data[pixelIndex + 3] = 255;
-  }
-
+  imageData.data.set(colormappedFrameRgba(frame, colorMap));
   canvas.width = width;
   canvas.height = height;
   context.putImageData(imageData, 0, 0);

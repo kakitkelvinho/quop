@@ -58,6 +58,10 @@ _Avoid_: heatmap, 2D view, colormap view
 A 2D frame drawn as a landscape in 3D: pixel position across the ground, pixel value as elevation, coloured with the same colormap as the Image view.
 _Avoid_: 3D view, height map, mesh plot
 
+**Row 0**:
+The first row stored in a FITS file. Both views draw it at the bottom, as DS9 and astropy's `origin='lower'` do, so a frame comes out the same way up as in those tools. The pointer readout, the Slice and the ticks use the file's numbers: the bottom row reads y = 0.
+_Avoid_: top row, first line
+
 **Slice**:
 One row or one column of a frame, plotted as a 1D profile.
 _Avoid_: cut, line-out, cross-section

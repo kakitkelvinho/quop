@@ -1653,6 +1653,41 @@ html[data-theme="dark"] .fitsColorControl__select {
   aspect-ratio: var(--fits-aspect, 1);
 }
 
+/* the pixel numbers hang off the plot's left and bottom edges, in room the
+   viewport keeps for them */
+.fitsImageViewport--ticked {
+  padding: 0 0 1.1rem 2.4rem;
+}
+
+.fitsImageTicks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.fitsImageTick {
+  position: absolute;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.fitsImageTick--x {
+  top: 100%;
+  margin-top: 0.35rem;
+  transform: translateX(-50%);
+}
+
+.fitsImageTick--y {
+  right: 100%;
+  margin-right: 0.45rem;
+  transform: translateY(-50%);
+}
+
 .fitsAspectControls__row {
   display: flex;
   flex-wrap: wrap;
