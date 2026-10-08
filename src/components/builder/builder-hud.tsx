@@ -12,6 +12,7 @@ import {
   ComponentInspector,
   ConnectionDraftInspector,
   ConnectionInspector,
+  GroupInspector,
 } from "@/components/builder/builder-inspector";
 import {
   COMPONENT_SPECS,
@@ -35,7 +36,8 @@ import { BetaMark } from "@/components/beta-badge";
 export type BuilderHudProps = {
   components: BuilderComponent[];
   beams: Beam[];
-  selected: BuilderComponent | null;
+  /** the selected parts, in the order they were picked */
+  selected: BuilderComponent[];
   selectedBeam: Beam | null;
   selectedConnection: Connection | null;
   /** set while the Connect tool is on */
@@ -63,6 +65,9 @@ export type BuilderHudProps = {
   onRotateSelected: (direction: 1 | -1) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
+  /** several parts: one height for all, or one mount colour for those with a mount */
+  onSetSelectedHeight: (height: number) => void;
+  onSetSelectedMountColor: (color: string) => void;
   onStartBeam: () => void;
   onFinishBeam: () => void;
   onCancelBeam: () => void;
@@ -320,12 +325,23 @@ export default function BuilderHud(props: BuilderHudProps) {
         onCancel={props.onCancelConnect}
       />
     );
-  } else if (selected) {
+  } else if (selected.length > 1) {
+    inspector = (
+      <GroupInspector
+        selected={selected}
+        onRotate={props.onRotateSelected}
+        onDuplicate={props.onDuplicateSelected}
+        onDelete={props.onDeleteSelected}
+        onSetHeight={props.onSetSelectedHeight}
+        onSetMountColor={props.onSetSelectedMountColor}
+      />
+    );
+  } else if (selected.length === 1) {
     inspector = (
       <ComponentInspector
-        component={selected}
+        component={selected[0]}
         components={components}
-        angleBeam={derivedAngleBeam(beams, selected)}
+        angleBeam={derivedAngleBeam(beams, selected[0])}
         onUpdate={props.onUpdateSelected}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
@@ -357,11 +373,14 @@ export default function BuilderHud(props: BuilderHudProps) {
     );
   }
   // Remount (and replay the entrance) when the inspected thing changes.
+  // A group keeps one inspector as parts join or leave it.
   const inspectorKey = beamMode
     ? "beam-draft"
     : connectDraft
       ? "connect-draft"
-      : (selected?.id ?? selectedBeam?.id ?? props.selectedConnection?.id);
+      : selected.length > 1
+        ? "group"
+        : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedConnection?.id);
   // the inspector's close button cancels a draft, or else deselects
   const cancelDraft = beamMode
     ? { label: "Cancel beam", run: props.onCancelBeam }
