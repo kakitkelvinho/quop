@@ -60,6 +60,10 @@ describe("a number field", () => {
     assert.deepEqual(play([...typed("99"), { type: "cancel" }, { type: "settle" }]), { commits: [], draft: null });
   });
 
+  it("commits a draft once when it is settled twice, as when blur and unmount both settle it", () => {
+    assert.deepEqual(play([...typed("-77"), { type: "settle" }, { type: "settle" }]), { commits: [-77], draft: null });
+  });
+
   it("commits nothing when settled without an edit", () => {
     assert.deepEqual(play([{ type: "settle" }]), { commits: [], draft: null });
   });

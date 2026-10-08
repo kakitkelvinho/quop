@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 
 /** The number a field's text spells, or null while it spells none: "", "-", "1e". */
 export function parseNumberDraft(text: string): number | null {
@@ -64,6 +64,11 @@ export function reduceDraft(
  * Props for an `<input type="number">` that keeps what is typed as a draft
  * until it is a number (see `reduceDraft`). Text that never becomes one is
  * dropped on blur and the field shows the value again.
+ *
+ * Leaving the field any other way settles it too: if the field unmounts with a
+ * draft pending (clicking another part swaps the inspector before the input
+ * blurs), the draft is committed. It goes to the `onCommit` of the field's last
+ * render, so it reaches whatever owned the field then, not what replaced it.
  */
 export function useNumberDraft(
   value: number,
@@ -71,12 +76,30 @@ export function useNumberDraft(
   { live = false }: { live?: boolean } = {},
 ) {
   const [draft, setDraft] = useState<string | null>(null);
+  // What the unmount below can read. The draft is written the moment it changes
+  // rather than on the next render, so blur and unmount settle it only once.
+  const latest = useRef({ draft: null as string | null, onCommit, live });
+  useEffect(() => {
+    latest.current.onCommit = onCommit;
+    latest.current.live = live;
+  });
 
   const send = (event: DraftEvent) => {
-    const next = reduceDraft(draft, event, live);
+    const next = reduceDraft(latest.current.draft, event, live);
+    latest.current.draft = next.draft;
     setDraft(next.draft);
     if (next.commit !== null) onCommit(next.commit);
   };
+
+  useEffect(
+    () => () => {
+      const field = latest.current;
+      const next = reduceDraft(field.draft, { type: "settle" }, field.live);
+      field.draft = null;
+      if (next.commit !== null) field.onCommit(next.commit);
+    },
+    [],
+  );
 
   return {
     value: draft ?? value,
