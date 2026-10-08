@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useReducer } from "react";
 import {
   BEAM_COLORS,
   BLOCK_SIZE_MM,
+  CONNECTION_KINDS,
   DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
@@ -16,8 +17,10 @@ import {
   clampToTable,
   createBeamId,
   createComponentId,
+  createConnectionId,
   defaultHeight,
   dropComponentFromBeams,
+  dropComponentFromConnections,
   parseScene,
   settleAngles,
   settleHosts,
@@ -26,10 +29,12 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
+  type Connection,
+  type ConnectionKind,
   type Vec3,
 } from "@/components/builder/types";
 
-// The key predates scene version 2; parseScene reads either version.
+// The key predates scene versions 2 and 3; parseScene reads every version.
 const STORAGE_KEY = "quop.builder.scene.v1";
 const HISTORY_LIMIT = 60;
 
@@ -256,6 +261,7 @@ export function useBuilderScene() {
         components: current.components.filter((component) => component.id !== id),
         // a beam that loses a stop keeps going; one left with a single stop is gone
         beams: dropComponentFromBeams(current.beams, id),
+        connections: dropComponentFromConnections(current.connections, id),
       }));
     },
     [commit],
@@ -332,6 +338,44 @@ export function useBuilderScene() {
   const clearScene = useCallback(() => commit(() => EMPTY_SCENE), [commit]);
   const resetToExample = useCallback(() => commit(() => DEFAULT_SCENE), [commit]);
 
+  // ---- connection edits ----------------------------------------------------
+
+  const addConnection = useCallback(
+    (kind: ConnectionKind, from: string, to: string): string => {
+      const id = createConnectionId(kind);
+      commit((current) => ({
+        ...current,
+        connections: [...current.connections, { id, kind, from, to, color: CONNECTION_KINDS[kind].color }],
+      }));
+      return id;
+    },
+    [commit],
+  );
+
+  const updateConnection = useCallback(
+    (id: string, patch: Partial<Omit<Connection, "id">>, record = true) => {
+      const apply: Mutation = (current) => ({
+        ...current,
+        connections: current.connections.map((connection) =>
+          connection.id === id ? { ...connection, ...patch } : connection,
+        ),
+      });
+      if (record) commit(apply);
+      else preview(apply);
+    },
+    [commit, preview],
+  );
+
+  const deleteConnection = useCallback(
+    (id: string) => {
+      commit((current) => ({
+        ...current,
+        connections: current.connections.filter((connection) => connection.id !== id),
+      }));
+    },
+    [commit],
+  );
+
   const canUndo = state.past.length > 0;
   const canRedo = state.future.length > 0;
 
@@ -356,6 +400,9 @@ export function useBuilderScene() {
       replaceScene,
       clearScene,
       resetToExample,
+      addConnection,
+      updateConnection,
+      deleteConnection,
       snapToGrid,
     }),
     [
@@ -378,6 +425,9 @@ export function useBuilderScene() {
       replaceScene,
       clearScene,
       resetToExample,
+      addConnection,
+      updateConnection,
+      deleteConnection,
     ],
   );
 }
