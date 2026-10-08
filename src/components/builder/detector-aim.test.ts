@@ -25,6 +25,7 @@ function scene(components: BuilderComponent[], paths: string[][]): BuilderSceneD
     version: SCENE_VERSION,
     components,
     beams: paths.map((path, index) => ({ id: `beam-${index}`, path, color: "#e33" })),
+    connections: [],
   };
 }
 
