@@ -22,7 +22,14 @@ import type {
   CameraPreset,
   SurfaceExport,
 } from "@/components/plotters/fits-surface-view";
-import { flipRow, pixelAtRatio, pixelAxisTicks } from "@/components/plotters/image-axes";
+import {
+  flipRow,
+  normalizeViewport,
+  pixelAtRatio,
+  pixelAxisTicks,
+  zoomViewport,
+  type Viewport,
+} from "@/components/plotters/image-axes";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import {
   clampPixelAspect,
@@ -49,13 +56,6 @@ type FitsImageSummary = {
   width: number;
   xLabel: string;
   yLabel: string;
-};
-
-type Viewport = {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
 };
 
 type DragSelection = {
@@ -85,24 +85,6 @@ function buildBaseViewport(summary: FitsImageSummary): Viewport {
     left: 0,
     top: 0,
     width: summary.width,
-  };
-}
-
-function normalizeViewport(
-  summary: FitsImageSummary,
-  left: number,
-  top: number,
-  width: number,
-  height: number,
-): Viewport {
-  const nextWidth = clamp(width, 1, summary.width);
-  const nextHeight = clamp(height, 1, summary.height);
-
-  return {
-    height: nextHeight,
-    left: clamp(left, 0, summary.width - nextWidth),
-    top: clamp(top, 0, summary.height - nextHeight),
-    width: nextWidth,
   };
 }
 
@@ -730,20 +712,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   }
 
   function zoomStep(factor: number) {
-    setViewport((current) => {
-      const nextWidth = current.width * factor;
-      const nextHeight = current.height * factor;
-      const centerX = current.left + current.width / 2;
-      const centerY = current.top + current.height / 2;
-
-      return normalizeViewport(
-        summary,
-        centerX - nextWidth / 2,
-        centerY - nextHeight / 2,
-        nextWidth,
-        nextHeight,
-      );
-    });
+    setViewport((current) => zoomViewport(summary, current, factor));
   }
 
   function handleSaveSliceCsv() {

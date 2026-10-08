@@ -27,3 +27,51 @@ export function pixelAtRatio(ratio: number, start: number, extent: number, count
 export function pixelAxisTicks(start: number, extent: number, target = 5) {
   return niceTicks(start - 0.5, start + extent - 0.5, target).filter((tick) => Number.isInteger(tick));
 }
+
+/** The part of the frame the Image view shows, in pixels counted from the frame's top-left corner. */
+export type Viewport = {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+};
+
+type FrameSize = { height: number; width: number };
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+export function normalizeViewport(
+  frame: FrameSize,
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+): Viewport {
+  const nextWidth = clamp(width, 1, frame.width);
+  const nextHeight = clamp(height, 1, frame.height);
+
+  return {
+    height: nextHeight,
+    left: clamp(left, 0, frame.width - nextWidth),
+    top: clamp(top, 0, frame.height - nextHeight),
+    width: nextWidth,
+  };
+}
+
+/** The viewport after one zoom step about its centre: `factor` below 1 zooms in, above 1 zooms out. */
+export function zoomViewport(frame: FrameSize, viewport: Viewport, factor: number): Viewport {
+  const nextWidth = viewport.width * factor;
+  const nextHeight = viewport.height * factor;
+  const centerX = viewport.left + viewport.width / 2;
+  const centerY = viewport.top + viewport.height / 2;
+
+  return normalizeViewport(
+    frame,
+    centerX - nextWidth / 2,
+    centerY - nextHeight / 2,
+    nextWidth,
+    nextHeight,
+  );
+}
