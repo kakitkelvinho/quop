@@ -130,6 +130,7 @@ export default function BuilderScene() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedBeamId, setSelectedBeamId] = useState<string | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
@@ -164,6 +165,10 @@ export default function BuilderScene() {
     [scene.beams, selectedBeamId],
   );
   const addingStops = selectedBeam !== null && addingStopsTo === selectedBeam.id;
+  const selectedConnection = useMemo(
+    () => scene.connections.find((connection) => connection.id === selectedConnectionId) ?? null,
+    [scene.connections, selectedConnectionId],
+  );
 
   // A transient line of feedback under the canvas — the builder does a lot of
   // things (export, load, clear) whose only evidence would otherwise be off-screen.
@@ -192,11 +197,13 @@ export default function BuilderScene() {
           host ? { host: host.id } : undefined,
         );
         setSelectedId(id);
+        setSelectedConnectionId(null);
         setPlacingType(null);
         return;
       }
       setSelectedId(null);
       setSelectedBeamId(null);
+      setSelectedConnectionId(null);
     },
     [addingStops, api, beamMode, placingType],
   );
@@ -227,6 +234,7 @@ export default function BuilderScene() {
       setPlacingType(null);
       setSelectedId(id);
       setSelectedBeamId(null);
+      setSelectedConnectionId(null);
       dragRef.current = {
         id,
         offsetX: component.position[0] - event.point.x,
@@ -298,6 +306,20 @@ export default function BuilderScene() {
       window.removeEventListener("pointercancel", endDrag);
     };
   }, []);
+
+  // ---- connections ---------------------------------------------------------
+
+  const handleConnectionPointerDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>) => {
+      // while placing or picking parts, the click goes on to the part or the table behind
+      if (event.nativeEvent.button !== 0 || placingType || beamMode || addingStops) return;
+      event.stopPropagation();
+      setSelectedConnectionId(id);
+      setSelectedId(null);
+      setSelectedBeamId(null);
+    },
+    [addingStops, beamMode, placingType],
+  );
 
   // ---- beams ---------------------------------------------------------------
 
@@ -373,6 +395,7 @@ export default function BuilderScene() {
           setFitToken((token) => token + 1);
           setSelectedId(null);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
           cancelBeam();
           announce(
             `Loaded ${parsed.components.length} parts from ${file.name}.`,
@@ -439,6 +462,7 @@ export default function BuilderScene() {
         else {
           setSelectedId(null);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
         }
         return;
       }
@@ -512,6 +536,7 @@ export default function BuilderScene() {
   const handleSelectBeam = useCallback((id: string) => {
     setSelectedBeamId((current) => (current === id ? null : id));
     setSelectedId(null);
+    setSelectedConnectionId(null);
   }, []);
 
   return (
@@ -522,9 +547,11 @@ export default function BuilderScene() {
         <BuilderCanvas
           components={scene.components}
           beams={scene.beams}
+          connections={scene.connections}
           palette={palette}
           selectedId={selectedId}
           selectedBeamId={selectedBeamId}
+          selectedConnectionId={selectedConnection?.id ?? null}
           hoveredId={hoveredId}
           beamDraft={beamDraft}
           showLabels={showLabels}
@@ -537,6 +564,7 @@ export default function BuilderScene() {
           onSurfaceDrag={handleSurfaceDrag}
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={setHoveredId}
+          onConnectionPointerDown={handleConnectionPointerDown}
           onCanvasReady={handleCanvasReady}
         />
       </div>
@@ -574,6 +602,7 @@ export default function BuilderScene() {
         onDeselect={() => {
           setSelectedId(null);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
         }}
         onUpdateSelected={updateSelected}
         onRotateSelected={rotateSelected}
@@ -622,12 +651,14 @@ export default function BuilderScene() {
         onResetExample={() => {
           api.resetToExample();
           setSelectedId(null);
+          setSelectedConnectionId(null);
           announce("Loaded the example pump + reference layout.");
         }}
         onClear={() => {
           api.clearScene();
           setSelectedId(null);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
           cancelBeam();
         }}
       />
