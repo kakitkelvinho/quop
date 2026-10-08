@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { parseNumberDraft, reduceDraft, type DraftEvent } from "./use-number-draft.ts";
+import { isStepInput, parseNumberDraft, reduceDraft, type DraftEvent } from "./use-number-draft.ts";
 
 /** Plays events against a field and returns what it handed on and what it shows. */
 function play(events: DraftEvent[], live = false) {
@@ -70,6 +70,23 @@ describe("a number field", () => {
 
   it("applies a step taken from a half-typed draft", () => {
     assert.deepEqual(play([...typed("-"), { type: "step", text: "5" }]), { commits: [5], draft: null });
+  });
+});
+
+/** The `inputType` of the `input` event a number field fires, as recorded by driving
+ *  the keyboard and the spinner in Chromium 1243, Firefox 1543 and WebKit 2359.
+ *  A plain `Event` has none. */
+describe("isStepInput", () => {
+  it("reads an arrow key or spinner step as a step in every engine", () => {
+    assert.equal(isStepInput({}), true, "Chromium and WebKit fire a plain Event");
+    assert.equal(isStepInput({ inputType: "insertReplacementText" }), true, "Firefox fires an InputEvent");
+  });
+
+  it("reads typing, deleting and composing as typing", () => {
+    assert.equal(isStepInput({ inputType: "insertText" }), false);
+    assert.equal(isStepInput({ inputType: "deleteContentBackward" }), false);
+    assert.equal(isStepInput({ inputType: "deleteContentForward" }), false);
+    assert.equal(isStepInput({ inputType: "insertCompositionText" }), false);
   });
 });
 

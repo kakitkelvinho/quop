@@ -10,6 +10,17 @@ export function parseNumberDraft(text: string): number | null {
   return Number.isFinite(number) ? number : null;
 }
 
+/**
+ * Whether the `input` event of a number field was a step (arrow key or spinner)
+ * and not an edit of its text. Chromium and WebKit fire a plain `Event`, which
+ * has no `inputType`. Firefox fires an `InputEvent` of type
+ * "insertReplacementText" for a step, while typing, deleting, pasting and
+ * dropping are insertText, deleteContent*, insertFromPaste and so on.
+ */
+export function isStepInput(event: { inputType?: string }): boolean {
+  return event.inputType === undefined || event.inputType === "insertReplacementText";
+}
+
 export type DraftEvent =
   /** the text changed because someone typed or pasted */
   | { type: "type"; text: string }
@@ -70,9 +81,10 @@ export function useNumberDraft(
   return {
     value: draft ?? value,
     onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      // browsers fire a plain Event for a step and an InputEvent for typing; where
-      // one reports a step as typing, it applies on blur like any other edit
-      send({ type: event.nativeEvent instanceof InputEvent ? "type" : "step", text: event.target.value }),
+      send({
+        type: isStepInput(event.nativeEvent as Event & { inputType?: string }) ? "step" : "type",
+        text: event.target.value,
+      }),
     onBlur: () => send({ type: "settle" }),
     onKeyDown: (event: KeyboardEvent<HTMLInputElement>) => {
       if (event.key === "Enter") send({ type: "settle" });
