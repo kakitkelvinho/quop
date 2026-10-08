@@ -50,7 +50,8 @@ describe("pixelAtRatio", () => {
   });
 
   it("offsets into a zoomed region", () => {
-    assert.equal(pixelAtRatio(0.5, 2, 3.5, 100), 3);
+    // the middle of pixels 2 to 5 is the edge between 3 and 4, so it reads 4
+    assert.equal(pixelAtRatio(0.5, 2, 4, 100), 4);
   });
 });
 
@@ -60,9 +61,9 @@ describe("pixelAxisTicks", () => {
     assert.deepEqual(pixelAxisTicks(0, 5, 5), [0, 1, 2, 3, 4]);
   });
 
-  it("ticks only the pixels whose centres are in a zoomed region", () => {
-    // pixels 10 to 15 have centres 10.5 to 15.5, inside 10.4 to 16.4
-    assert.deepEqual(pixelAxisTicks(10.4, 6, 5), [10, 11, 12, 13, 14, 15]);
+  it("ticks only the pixels in a zoomed region", () => {
+    // pixels 10 to 15 have centres 10.5 to 15.5
+    assert.deepEqual(pixelAxisTicks(10, 6, 5), [10, 11, 12, 13, 14, 15]);
   });
 
   it("starts a row axis at the region's bottom edge", () => {

@@ -99,8 +99,9 @@ function renderViewport(
     return;
   }
 
-  canvas.width = Math.max(1, Math.round(viewport.width));
-  canvas.height = Math.max(1, Math.round(viewport.height));
+  // one canvas cell per pixel of the viewport, which covers whole pixels
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
   context.imageSmoothingEnabled = false;
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.drawImage(
