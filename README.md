@@ -1,6 +1,12 @@
 # QUOP
 
-A website which was built to support laboratory work at Macroscopic Quantum Optics (MQO) at Aalto University headed by Prof. Anton Zasedatelev. It is currently hosted as a github static website on [https://kakitkelvinho.github.io/quop/](https://kakitkelvinho.github.io/quop/). It is currently divided into 4 sections:
+A website which was built to support laboratory work at Macroscopic Quantum Optics (MQO) at Aalto University headed by Prof. Anton Zasedatelev. It is currently hosted as a github static website on [https://kakitkelvinho.github.io/quop/](https://kakitkelvinho.github.io/quop/). 
+
+## Releases
+
+Version 1.0.0 is live! the builder is usable and can be used to sketch out experimental setups, and all the plotters are also usable and have been tested roughly in the lab. Please report any issues if you encounter them! We are also always open to feedback, so also feel free to drop a line to us via email.
+
+It is currently divided into 4 sections:
 
 ## Experiment
 
