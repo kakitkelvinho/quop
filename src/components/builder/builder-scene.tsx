@@ -412,7 +412,7 @@ export default function BuilderScene() {
       const component = componentById(sceneRef.current.components, selectedId);
       // a part whose angle a beam sets doesn't turn by hand
       if (!component || derivedAngleBeam(sceneRef.current.beams, component)) return;
-      api.rotateComponent(selectedId, direction);
+      api.rotateComponents([selectedId], direction);
     },
     [api, selectedId],
   );
@@ -461,24 +461,24 @@ export default function BuilderScene() {
       switch (event.key) {
         case "ArrowLeft":
           event.preventDefault();
-          api.nudgeComponent(selectedId, -step, 0);
+          api.nudgeComponents([selectedId], -step, 0);
           break;
         case "ArrowRight":
           event.preventDefault();
-          api.nudgeComponent(selectedId, step, 0);
+          api.nudgeComponents([selectedId], step, 0);
           break;
         case "ArrowUp":
           event.preventDefault();
-          api.nudgeComponent(selectedId, 0, -step);
+          api.nudgeComponents([selectedId], 0, -step);
           break;
         case "ArrowDown":
           event.preventDefault();
-          api.nudgeComponent(selectedId, 0, step);
+          api.nudgeComponents([selectedId], 0, step);
           break;
         case "Delete":
         case "Backspace":
           event.preventDefault();
-          api.deleteComponent(selectedId);
+          api.deleteComponents([selectedId]);
           setSelectedId(null);
           break;
         case "r":
@@ -488,7 +488,7 @@ export default function BuilderScene() {
         case "d":
         case "D": {
           if (meta) return;
-          const copyId = api.duplicateComponent(selectedId);
+          const [copyId] = api.duplicateComponents([selectedId]);
           if (copyId) setSelectedId(copyId);
           break;
         }
@@ -579,12 +579,12 @@ export default function BuilderScene() {
         onRotateSelected={rotateSelected}
         onDuplicateSelected={() => {
           if (!selectedId) return;
-          const copyId = api.duplicateComponent(selectedId);
+          const [copyId] = api.duplicateComponents([selectedId]);
           if (copyId) setSelectedId(copyId);
         }}
         onDeleteSelected={() => {
           if (!selectedId) return;
-          api.deleteComponent(selectedId);
+          api.deleteComponents([selectedId]);
           setSelectedId(null);
         }}
         onStartBeam={startBeam}
