@@ -39,7 +39,15 @@ A beam the author has switched off in the drawing, from its eye button in the be
 _Avoid_: deleted beam, disabled beam, muted beam
 
 **Path length**:
-The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
+The 3D length of a beam through its components' reference points, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
+
+**Reference point**:
+Where a beam meets a component, for drawing and for path length. For most components it is the optical centre. A detector's is its entrance: a photodiode's or single-photon detector's front window, a camera's lens-mount face, a spectrometer's entrance port. An objective's is its threaded plate, the pupil end, whichever side the beam comes from. Placement and grid snapping still use the centre.
+_Avoid_: aperture, anchor
+
+**Frame**:
+A labelled rectangle drawn on the table to mark an area, such as one breadboard or an enclosure. A drawing aid only: it constrains nothing and adds nothing to any path. A setup can have any number; each can be hidden from its eye button.
+_Avoid_: table, border, region, zone
 
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.
