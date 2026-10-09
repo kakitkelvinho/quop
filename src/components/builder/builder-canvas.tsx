@@ -53,6 +53,7 @@ import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
+  beamPoints,
   COMPONENT_SPECS,
   CONNECTION_KINDS,
   TABLE_GUARD_MM,
@@ -781,14 +782,8 @@ function BeamPath({
   );
 }
 
-function beamPoints(components: BuilderComponent[], path: string[]): Vector3[] {
-  return path
-    .map((id) => componentById(components, id))
-    .filter((component): component is BuilderComponent => Boolean(component))
-    .map(
-      (component) =>
-        new Vector3(...component.position),
-    );
+function beamVectors(components: BuilderComponent[], path: string[]): Vector3[] {
+  return beamPoints(components, path).map((point) => new Vector3(...point));
 }
 
 // ---------------------------------------------------------------------------
@@ -1007,7 +1002,7 @@ export default function BuilderCanvas({
       {beams.map((beam) => {
         const ghost = beam.hidden && beam.id === ghostBeamId;
         if (beam.hidden && !ghost) return null;
-        const points = beamPoints(components, beam.path);
+        const points = beamVectors(components, beam.path);
         if (points.length < 2) return null;
         return (
           <BeamPath
@@ -1025,7 +1020,7 @@ export default function BuilderCanvas({
 
       {beamDraft.length >= 2 ? (
         <BeamPath
-          points={beamPoints(components, beamDraft)}
+          points={beamVectors(components, beamDraft)}
           color={palette.accent}
         />
       ) : null}

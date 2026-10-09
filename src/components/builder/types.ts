@@ -172,6 +172,12 @@ export type ComponentSpec = {
   fixedHeight?: number;
   /** radius of the selection ring, mm */
   radius: number;
+  /**
+   * Where its reference point sits along its local x axis, mm from the
+   * optical centre, read off its model in component-models.tsx: the first
+   * surface a ruler laid along the beam touches. Missing means the centre.
+   */
+  referenceX?: number;
   /** one line of plain-language help for a visitor who has never met a bench */
   hint: string;
 };
@@ -285,6 +291,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 20,
     radius: 22,
+    referenceX: -2.15, // the chip's face: drawn 0.2 mm thick at x = -2.05
     hint: "Reads total power. Good for a reference arm.",
   },
   camera: {
@@ -293,6 +300,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 31,
     radius: 30,
+    referenceX: -23, // the C-mount ring's face: drawn 2 mm thick at x = -22
     hint: "Images the beam or the sample plane — the source of FITS frames.",
   },
   spectrometer: {
@@ -302,6 +310,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 100,
     fixedHeight: 100,
     radius: 70,
+    referenceX: -62, // the entrance port's outer end
     hint: "Disperses the light and records a spectrum.",
   },
   "single-photon-detector": {
@@ -311,6 +320,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 17,
     minHeight: 23,
     radius: 38,
+    referenceX: -30.5, // the FC receptacle's tip
     hint: "Counts single photons, each one a pulse out the back. Note SPCM or SNSPD in the label.",
   },
   "time-tagger": {
@@ -337,6 +347,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 17,
     minHeight: 24,
     radius: 32,
+    referenceX: -29, // the threaded plate's outer face: drawn at x = -23, 6 mm thick
     hint: "Focuses the beam tightly, tip toward the focus. Note magnification and NA in the label.",
   },
   block: {
@@ -508,18 +519,35 @@ export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): 
 }
 
 /**
- * Length of the beam, mm: the straight 3D run through its waypoints (optical
- * centres), plus the built-in path of the laser it starts at.
+ * Where a beam meets the component: its optical centre moved along its local
+ * x by the type's referenceX. A yaw θ maps local +x to world (cos θ, 0, −sin θ).
+ */
+export function referencePoint(component: BuilderComponent): Vec3 {
+  const [x, y, z] = component.position;
+  const offset = COMPONENT_SPECS[component.type].referenceX ?? 0;
+  const yaw = (component.rotation * Math.PI) / 180;
+  return [x + offset * Math.cos(yaw), y, z - offset * Math.sin(yaw)];
+}
+
+/** The reference points a beam runs through, skipping stops whose part is gone. */
+export function beamPoints(components: BuilderComponent[], path: string[]): Vec3[] {
+  return path
+    .map((id) => componentById(components, id))
+    .filter((component): component is BuilderComponent => Boolean(component))
+    .map(referencePoint);
+}
+
+/**
+ * Length of the beam, mm: the straight 3D run through its reference points,
+ * plus the built-in path of the laser it starts at.
  */
 export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
-  const points = beam.path
-    .map((id) => componentById(components, id))
-    .filter((component): component is BuilderComponent => Boolean(component));
+  const points = beamPoints(components, beam.path);
 
   let total = beamInternalPathMm(components, beam);
   for (let index = 1; index < points.length; index += 1) {
-    const [ax, ay, az] = points[index - 1].position;
-    const [bx, by, bz] = points[index].position;
+    const [ax, ay, az] = points[index - 1];
+    const [bx, by, bz] = points[index];
     total += Math.hypot(bx - ax, by - ay, bz - az);
   }
   return total;
