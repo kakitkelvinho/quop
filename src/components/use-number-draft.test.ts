@@ -105,3 +105,22 @@ describe("a live number field", () => {
     assert.deepEqual(play([...typed("12"), { type: "settle" }], true), { commits: [12], draft: null });
   });
 });
+
+describe("an optional number field", () => {
+  const settle = (draft: string | null) => reduceDraft(draft, { type: "settle" }, false, true);
+
+  it("hands on a clear when emptied and settled, and a number when settled on one", () => {
+    assert.deepEqual(settle(""), { draft: null, commit: null, clear: true });
+    assert.deepEqual(settle("  "), { draft: null, commit: null, clear: true });
+    assert.deepEqual(settle("2.5"), { draft: null, commit: 2.5 });
+  });
+
+  it("keeps its value when settled without an edit, or after Esc", () => {
+    assert.deepEqual(settle(null), { draft: null, commit: null });
+    assert.deepEqual(reduceDraft("", { type: "cancel" }, false, true), { draft: null, commit: null });
+  });
+
+  it("still reverts an emptied field that is not optional", () => {
+    assert.deepEqual(reduceDraft("", { type: "settle" }, false), { draft: null, commit: null });
+  });
+});

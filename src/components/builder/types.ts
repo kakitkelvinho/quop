@@ -23,6 +23,8 @@ export type ComponentType =
   | "photodiode"
   | "camera"
   | "spectrometer"
+  | "single-photon-detector"
+  | "time-tagger"
   | "beam-block"
   | "objective"
   | "block"
@@ -74,6 +76,12 @@ export type BuilderComponent = {
   particleRadius?: number;
   /** block only, mm along [beam (x), height (y), across (z)]; missing means BLOCK_SIZE_MM */
   size?: Vec3;
+  /**
+   * laser source only, mm: light the laser adds before it leaves the aperture
+   * (a folded or internal delay path); missing or 0 means none. A beam that
+   * starts here counts it toward its path length.
+   */
+  internalPathMm?: number;
 };
 
 export type Beam = {
@@ -90,12 +98,33 @@ export type Beam = {
   arrows?: boolean;
 };
 
-export const SCENE_VERSION = 2 as const;
+export type ConnectionKind = "fiber" | "cable";
+
+/** A fibre or cable between two components. Not a beam: see CONNECTION_KINDS. */
+export type Connection = {
+  id: string;
+  kind: ConnectionKind;
+  /** component id */
+  from: string;
+  /** component id, never equal to `from` */
+  to: string;
+  color: string;
+  label?: string;
+  /** m; missing means unknown, and no length or delay is shown */
+  lengthM?: number;
+  /** fiber only; missing means DEFAULT_FIBER_INDEX */
+  refractiveIndex?: number;
+  /** cable only, fraction of c; missing means DEFAULT_VELOCITY_FACTOR */
+  velocityFactor?: number;
+};
+
+export const SCENE_VERSION = 3 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
   components: BuilderComponent[];
   beams: Beam[];
+  connections: Connection[];
 };
 
 // ---------------------------------------------------------------------------
@@ -248,6 +277,25 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 70,
     hint: "Disperses the light and records a spectrum.",
   },
+  "single-photon-detector": {
+    label: "Single-photon detector",
+    tag: "SPCM",
+    aliases: ["SPCM", "SNSPD", "APD", "single photon counter"],
+    top: 17,
+    minHeight: 23,
+    radius: 38,
+    hint: "Counts single photons, each one a pulse out the back. Note SPCM or SNSPD in the label.",
+  },
+  "time-tagger": {
+    label: "Time tagger",
+    tag: "Tagger",
+    aliases: ["TDC", "time-to-digital converter", "counter", "coincidence counter"],
+    top: 23,
+    minHeight: 27,
+    fixedHeight: 27,
+    radius: 131,
+    hint: "Timestamps the detectors' pulses on each input, so coincidences can be counted. Sits on the table.",
+  },
   "beam-block": {
     label: "Beam block",
     tag: "Dump",
@@ -299,7 +347,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
   { name: "Modulation", types: ["aom", "eom"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
-  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "beam-block"] },
+  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "time-tagger", "beam-block"] },
   { name: "Other", types: ["block"] },
 ];
 
@@ -337,6 +385,8 @@ export const BEAM_WIDTH_MM = 2;
 export const BEAM_WIDTH_RANGE_MM: [number, number] = [0.5, 10];
 export const BEAM_OPACITY_RANGE: [number, number] = [0.1, 1];
 
+/** A laser's built-in path, mm: up to 100 m, far past any real folded delay. */
+export const INTERNAL_PATH_RANGE_MM: [number, number] = [0, 100000];
 export const DEFAULT_FOCAL_LENGTH_MM = 100;
 export const FOCAL_LENGTH_RANGE_MM: [number, number] = [10, 2000];
 export const DEFAULT_CAVITY_LENGTH_MM = 50;
@@ -400,6 +450,10 @@ export function createBeamId(): string {
   return `beam-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function createConnectionId(kind: ConnectionKind): string {
+  return `${kind}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function componentById(
   components: BuilderComponent[],
   id: string,
@@ -407,13 +461,26 @@ export function componentById(
   return components.find((component) => component.id === id);
 }
 
-/** Straight-line 3D length through the beam's waypoints (optical centres), in mm. */
+/**
+ * The built-in path of the laser a beam starts at, mm; 0 when its first stop is
+ * not a laser or the laser has none. A laser later in a path adds nothing: the
+ * light it passes was not made there.
+ */
+export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): number {
+  const first = beam.path.length ? componentById(components, beam.path[0]) : undefined;
+  return first?.type === "laser-source" ? (first.internalPathMm ?? 0) : 0;
+}
+
+/**
+ * Length of the beam, mm: the straight 3D run through its waypoints (optical
+ * centres), plus the built-in path of the laser it starts at.
+ */
 export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
   const points = beam.path
     .map((id) => componentById(components, id))
     .filter((component): component is BuilderComponent => Boolean(component));
 
-  let total = 0;
+  let total = beamInternalPathMm(components, beam);
   for (let index = 1; index < points.length; index += 1) {
     const [ax, ay, az] = points[index - 1].position;
     const [bx, by, bz] = points[index].position;
@@ -593,7 +660,7 @@ function mirrorAngleStop(
 }
 
 /** Detectors whose face (local −x) turns to the light arriving at them. */
-const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer"]);
+const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer", "single-photon-detector"]);
 
 /**
  * Where a detector's angle comes from: the first beam, in scene order, that
@@ -611,8 +678,9 @@ function detectorAngleStop(
 /**
  * The beam that sets a part's angle, or undefined when it is turned by hand.
  * A mirror takes its angle from a beam it sits in the middle of, and a
- * photodiode, camera or spectrometer from a beam that ends at it. Beam cubes
- * are never derived (they transmit and reflect, so need a different rule).
+ * photodiode, camera, spectrometer or single-photon detector from a beam that
+ * ends at it. Beam cubes are never derived (they transmit and reflect, so
+ * need a different rule).
  */
 export function derivedAngleBeam(
   beams: Beam[],
@@ -695,6 +763,110 @@ export function settleAngles(scene: BuilderSceneData): BuilderSceneData {
 }
 
 // ---------------------------------------------------------------------------
+// Connections
+// ---------------------------------------------------------------------------
+//
+// A fibre or cable is not a beam: no path length counts it, and no mirror or
+// detector takes its angle from it. Its delay comes from the length the author
+// types, never from the route drawn on the table.
+
+/** A silica fibre's group index. */
+export const DEFAULT_FIBER_INDEX = 1.468;
+/** Solid-polyethylene coax, such as RG-58. */
+export const DEFAULT_VELOCITY_FACTOR = 0.66;
+/** m: from a patch cord to a fibre delay spool */
+export const CONNECTION_LENGTH_RANGE_M: [number, number] = [0, 100_000];
+
+export type ConnectionSpec = {
+  label: string;
+  color: string;
+  /** a label it might carry, shown as the field's placeholder */
+  example: string;
+  /** drawn tube radius, mm */
+  radius: number;
+  /** what slows the signal down: a fibre's refractive index, a cable's velocity factor */
+  index: {
+    key: "refractiveIndex" | "velocityFactor";
+    label: string;
+    fallback: number;
+    range: [number, number];
+    step: number;
+    /** how many times longer than light in vacuum the signal takes over the same length */
+    slowdown: (value: number) => number;
+  };
+  /** at a part that draws its own fibre stub (a collimator, a photodiode), it leaves from that stub's connector */
+  usesFiberStub: boolean;
+};
+
+export const CONNECTION_KINDS: Record<ConnectionKind, ConnectionSpec> = {
+  fiber: {
+    label: "Fibre",
+    color: "#eab308",
+    example: "MMF 105 µm",
+    radius: 1.6,
+    index: {
+      key: "refractiveIndex",
+      label: "Refractive index",
+      fallback: DEFAULT_FIBER_INDEX,
+      range: [1, 3],
+      step: 0.001,
+      slowdown: (index) => index,
+    },
+    usesFiberStub: true,
+  },
+  cable: {
+    label: "Cable",
+    color: "#64748b",
+    example: "SMA coax",
+    radius: 2.4,
+    index: {
+      key: "velocityFactor",
+      label: "Velocity factor",
+      fallback: DEFAULT_VELOCITY_FACTOR,
+      range: [0.1, 1],
+      step: 0.01,
+      slowdown: (factor) => 1 / factor,
+    },
+    usesFiberStub: false,
+  },
+};
+
+export const CONNECTION_KIND_IDS = Object.keys(CONNECTION_KINDS) as ConnectionKind[];
+
+/** The connection's refractive index (fibre) or velocity factor (cable). */
+export function connectionIndex(connection: Connection): number {
+  const { index } = CONNECTION_KINDS[connection.kind];
+  return connection[index.key] ?? index.fallback;
+}
+
+/** The signal's delay along the connection, ps; undefined while its length is unknown. */
+export function connectionDelayPs(connection: Connection): number | undefined {
+  if (connection.lengthM === undefined) return undefined;
+  const { index } = CONNECTION_KINDS[connection.kind];
+  return lengthToPicoseconds(connection.lengthM * 1000) * index.slowdown(connectionIndex(connection));
+}
+
+/**
+ * The edit that turns a connection into the other kind. The old kind's index
+ * goes, and a colour still at the old kind's default follows the kind; one
+ * picked by hand stays.
+ */
+export function switchConnectionKind(connection: Connection, kind: ConnectionKind): Partial<Omit<Connection, "id">> {
+  if (kind === connection.kind) return {};
+  return {
+    kind,
+    refractiveIndex: undefined,
+    velocityFactor: undefined,
+    ...(connection.color === CONNECTION_KINDS[connection.kind].color ? { color: CONNECTION_KINDS[kind].color } : {}),
+  };
+}
+
+/** A deleted part takes its connections with it. */
+export function dropComponentFromConnections(connections: Connection[], id: string): Connection[] {
+  return connections.filter((connection) => connection.from !== id && connection.to !== id);
+}
+
+// ---------------------------------------------------------------------------
 // Serialisation
 // ---------------------------------------------------------------------------
 
@@ -761,6 +933,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     const radius = finiteNumber(raw.particleRadius);
     if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
   }
+  if (type === "laser-source") {
+    const internal = finiteNumber(raw.internalPathMm);
+    if (internal !== undefined) component.internalPathMm = clamp(internal, INTERNAL_PATH_RANGE_MM);
+  }
   if (type === "block" && isVec3(raw.size)) {
     component.size = raw.size.map((side) => clamp(side, BLOCK_SIZE_RANGE_MM)) as Vec3;
   }
@@ -796,10 +972,39 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   };
 }
 
+const KNOWN_CONNECTION_KINDS = new Set<string>(CONNECTION_KIND_IDS);
+
+function parseConnection(value: unknown, validIds: Set<string>): Connection | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.id !== "string" || typeof raw.kind !== "string") return null;
+  if (!KNOWN_CONNECTION_KINDS.has(raw.kind)) return null;
+  const { from, to } = raw;
+  if (typeof from !== "string" || typeof to !== "string") return null;
+  if (from === to || !validIds.has(from) || !validIds.has(to)) return null;
+
+  const kind = raw.kind as ConnectionKind;
+  const spec = CONNECTION_KINDS[kind];
+  const length = finiteNumber(raw.lengthM);
+  // only the kind's own index is read: a cable has no refractive index
+  const index = finiteNumber(raw[spec.index.key]);
+  return {
+    id: raw.id,
+    kind,
+    from,
+    to,
+    color: typeof raw.color === "string" ? raw.color : spec.color,
+    ...(typeof raw.label === "string" ? { label: raw.label } : {}),
+    ...(length !== undefined ? { lengthM: clamp(length, CONNECTION_LENGTH_RANGE_M) } : {}),
+    ...(index !== undefined ? { [spec.index.key]: clamp(index, spec.index.range) } : {}),
+  };
+}
+
 /**
  * Accepts anything (a dropped file, a localStorage blob) and returns a scene
  * or null. Unknown component types and dangling beam references are dropped
  * rather than throwing — a partially readable setup beats an error dialog.
+ * Setups from before version 3 have no connections and open with none.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -817,8 +1022,13 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         .map((beam) => parseBeam(beam, ids))
         .filter((beam): beam is Beam => beam !== null)
     : [];
+  const connections = Array.isArray(raw.connections)
+    ? raw.connections
+        .map((connection) => parseConnection(connection, ids))
+        .filter((connection): connection is Connection => connection !== null)
+    : [];
 
-  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams }));
+  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections }));
 }
 
 export function serializeScene(scene: BuilderSceneData): string {
@@ -829,6 +1039,7 @@ export const EMPTY_SCENE: BuilderSceneData = {
   version: SCENE_VERSION,
   components: [],
   beams: [],
+  connections: [],
 };
 
 // A pump + reference-arm layout so the table isn't blank on first load. It
@@ -869,4 +1080,5 @@ export const DEFAULT_SCENE: BuilderSceneData = {
       color: "#dc2626",
     },
   ],
+  connections: [],
 };

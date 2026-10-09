@@ -255,6 +255,8 @@ h2 {
 .sectionCard,
 .inputCard {
   display: grid;
+  /* minmax(0, …): a long unbroken status line must not widen the sidebar */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.85rem;
 }
 
@@ -962,6 +964,7 @@ html[data-theme="dark"] .visualizerOverlayState {
 
 .resultCard {
   padding: 0.95rem 1rem;
+  overflow-wrap: anywhere;
   border-radius: 0.9rem;
   background: var(--accent-soft);
   color: var(--foreground);

@@ -12,10 +12,14 @@ import {
   BLOCK_SIZE_MM,
   BLOCK_SIZE_RANGE_MM,
   COMPONENT_SPECS,
+  CONNECTION_KINDS,
+  CONNECTION_KIND_IDS,
+  CONNECTION_LENGTH_RANGE_M,
   DEFAULT_BLOCK_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
+  INTERNAL_PATH_RANGE_MM,
   PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
   clamp,
@@ -30,16 +34,22 @@ import {
   clampHeight,
   heightRange,
   beamDisplayName,
+  beamInternalPathMm,
   beamLengthMm,
   componentById,
   componentDisplayName,
   componentTag,
+  connectionDelayPs,
+  connectionIndex,
   lengthToPicoseconds,
   moveStop,
   moveStopTo,
   removeStop,
+  switchConnectionKind,
   type Beam,
   type BuilderComponent,
+  type Connection,
+  type ConnectionKind,
   type LensShape,
   type PathEdit,
 } from "@/components/builder/types";
@@ -56,7 +66,9 @@ type ComponentPatch = Partial<Omit<BuilderComponent, "id" | "type">>;
  * leaving the field (or at once for a step). A lone "-" or an empty field is
  * not a number: it reverts instead of snapping the part to 0, and typing "1"
  * on the way to "150" never moves the part to 1 first. The shown value is
- * rounded to a tenth so a typed -12.5 still reads -12.5.
+ * rounded to `decimals` places, a tenth by default, so a typed -12.5 still
+ * reads -12.5. With `onClear` the value is optional: missing, the field is
+ * empty, and emptying it calls `onClear` instead of reverting.
  */
 function NumberField({
   label,
@@ -67,24 +79,31 @@ function NumberField({
   max,
   title,
   disabled,
+  decimals = 1,
+  placeholder,
   onChange,
+  onClear,
 }: {
   label: string;
   unit: string;
-  value: number;
+  value: number | undefined;
   step: number;
   min?: number;
   max?: number;
   title?: string;
   disabled?: boolean;
+  decimals?: number;
+  placeholder?: string;
   onChange: (value: number) => void;
+  onClear?: () => void;
 }) {
-  const field = useNumberDraft(Math.round(value * 10) / 10, onChange);
+  const scale = 10 ** decimals;
+  const field = useNumberDraft(value === undefined ? undefined : Math.round(value * scale) / scale, onChange, { onClear });
   return (
     <label className="builderField" title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control">
-        <input type="number" step={step} min={min} max={max} disabled={disabled} {...field} />
+        <input type="number" step={step} min={min} max={max} disabled={disabled} placeholder={placeholder} {...field} />
         <span className="builderField__unit">{unit}</span>
       </span>
     </label>
@@ -456,6 +475,23 @@ export function ComponentInspector({
           Angle set by <strong>{beamDisplayName(angleBeam)}</strong>
         </p>
       ) : null}
+      {component.type === "laser-source" ? (
+        <>
+          <NumberField
+            label="Built-in path"
+            unit="mm"
+            step={50}
+            min={INTERNAL_PATH_RANGE_MM[0]}
+            max={INTERNAL_PATH_RANGE_MM[1]}
+            placeholder="none"
+            title="Light the laser adds before it leaves the aperture. Leave empty for none."
+            value={component.internalPathMm}
+            onChange={(next) => onUpdate({ internalPathMm: clamp(next, INTERNAL_PATH_RANGE_MM) })}
+            onClear={() => onUpdate({ internalPathMm: undefined })}
+          />
+          <p className="builderInspector__hint">Folded or internal delay, counted in a beam that starts here.</p>
+        </>
+      ) : null}
       {component.type === "lens" ? (
         <>
           <div className="builderChoice" role="group" aria-label="Lens shape">
@@ -707,6 +743,7 @@ export function BeamInspector({
   onToggleAddStops: () => void;
 }) {
   const length = beamLengthMm(components, beam);
+  const insideLaser = beamInternalPathMm(components, beam);
   const width = beam.width ?? BEAM_WIDTH_MM;
   const opacity = beam.opacity ?? 1;
 
@@ -774,6 +811,9 @@ export function BeamInspector({
           <dd>{lengthToPicoseconds(length).toFixed(1)} ps</dd>
         </div>
       </dl>
+      {insideLaser > 0 ? (
+        <p className="builderInspector__hint">Includes {Math.round(insideLaser)} mm inside the laser.</p>
+      ) : null}
       <EditableStopList components={components} path={beam.path} onChange={(path) => onUpdate({ path })} />
       <button
         type="button"
@@ -828,6 +868,152 @@ export function BeamDraftInspector({
         <button type="button" className="builderButton" onClick={onUndoStep} disabled={!draft.length}>
           Undo stop
         </button>
+        <button type="button" className="builderButton" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type ConnectionPatch = Partial<Omit<Connection, "id">>;
+
+/** Picoseconds under a nanosecond, nanoseconds above. */
+function formatDelay(picoseconds: number): string {
+  return picoseconds < 1000 ? `${picoseconds.toFixed(1)} ps` : `${(picoseconds / 1000).toFixed(2)} ns`;
+}
+
+function KindChoice({ value, onChange }: { value: ConnectionKind; onChange: (kind: ConnectionKind) => void }) {
+  return (
+    <div className="builderChoice" role="group" aria-label="Fibre or cable">
+      {CONNECTION_KIND_IDS.map((kind) => (
+        <button
+          key={kind}
+          type="button"
+          className="builderButton"
+          aria-pressed={value === kind}
+          onClick={() => onChange(kind)}
+        >
+          {CONNECTION_KINDS[kind].label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function endName(components: BuilderComponent[], id: string): string {
+  const component = componentById(components, id);
+  return component ? componentDisplayName(component) : "—";
+}
+
+export function ConnectionInspector({
+  connection,
+  components,
+  onUpdate,
+  onDelete,
+}: {
+  connection: Connection;
+  components: BuilderComponent[];
+  onUpdate: (patch: ConnectionPatch) => void;
+  onDelete: () => void;
+}) {
+  const spec = CONNECTION_KINDS[connection.kind];
+  const delay = connectionDelayPs(connection);
+
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>{spec.label}</h2>
+        <IconButton icon="trash" label={`Delete ${spec.label.toLowerCase()} (Delete)`} onClick={onDelete} />
+      </div>
+      <p className="builderInspector__hint">
+        From <strong>{endName(components, connection.from)}</strong> to{" "}
+        <strong>{endName(components, connection.to)}</strong>
+      </p>
+      <KindChoice value={connection.kind} onChange={(kind) => onUpdate(switchConnectionKind(connection, kind))} />
+      <label className="builderField">
+        <span className="builderField__label">Label</span>
+        <span className="builderField__control">
+          <input
+            type="text"
+            value={connection.label ?? ""}
+            placeholder={`e.g. ${spec.example}`}
+            onChange={(event) => onUpdate({ label: event.target.value })}
+          />
+        </span>
+      </label>
+      <ColorField label="Colour" value={connection.color} onChange={(color) => onUpdate({ color })} />
+      <div className="builderFieldRow">
+        <NumberField
+          label="Length"
+          unit="m"
+          step={0.1}
+          min={0}
+          decimals={2}
+          placeholder="unknown"
+          title="Leave empty when the length isn't known"
+          value={connection.lengthM}
+          onChange={(metres) => onUpdate({ lengthM: clamp(metres, CONNECTION_LENGTH_RANGE_M) })}
+          onClear={() => onUpdate({ lengthM: undefined })}
+        />
+        <NumberField
+          // remount on a kind switch: the field is a different quantity then
+          key={connection.kind}
+          label={spec.index.label}
+          unit=""
+          step={spec.index.step}
+          min={spec.index.range[0]}
+          max={spec.index.range[1]}
+          decimals={Math.round(-Math.log10(spec.index.step))}
+          value={connectionIndex(connection)}
+          onChange={(next) => onUpdate({ [spec.index.key]: clamp(next, spec.index.range) })}
+        />
+      </div>
+      {delay === undefined ? (
+        <p className="builderInspector__hint">Give a length to see the delay.</p>
+      ) : (
+        <dl className="builderMetrics">
+          <div>
+            <dt>Delay</dt>
+            <dd>{formatDelay(delay)}</dd>
+          </div>
+        </dl>
+      )}
+      <p className="builderInspector__hint">Not a beam: it adds nothing to any path length.</p>
+    </div>
+  );
+}
+
+export function ConnectionDraftInspector({
+  kind,
+  from,
+  components,
+  onKindChange,
+  onCancel,
+}: {
+  kind: ConnectionKind;
+  /** the part clicked first, once there is one */
+  from: string | null;
+  components: BuilderComponent[];
+  onKindChange: (kind: ConnectionKind) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>New {CONNECTION_KINDS[kind].label.toLowerCase()}</h2>
+      </div>
+      <KindChoice value={kind} onChange={onKindChange} />
+      <p className="builderInspector__hint">
+        {from ? (
+          <>
+            From <strong>{endName(components, from)}</strong>. Click the part it goes to.
+          </>
+        ) : (
+          "Click the part it leaves from, then the part it goes to."
+        )}
+      </p>
+      <div className="builderInspector__actions">
         <button type="button" className="builderButton" onClick={onCancel}>
           Cancel
         </button>

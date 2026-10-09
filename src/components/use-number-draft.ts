@@ -40,12 +40,16 @@ export type DraftEvent =
  * A field commits when the draft is settled (blur or Enter) and never mid-word,
  * unless it is `live`: then every typed text that parses commits at once, for a
  * field whose value is safe to apply half-typed.
+ *
+ * An `optional` field may have no value: settled empty, it hands on `clear`
+ * instead of reverting.
  */
 export function reduceDraft(
   draft: string | null,
   event: DraftEvent,
   live: boolean,
-): { draft: string | null; commit: number | null } {
+  optional = false,
+): { draft: string | null; commit: number | null; clear?: true } {
   switch (event.type) {
     case "type":
       return { draft: event.text, commit: live ? parseNumberDraft(event.text) : null };
@@ -54,6 +58,7 @@ export function reduceDraft(
       // the field goes back to showing the value, which may have been clamped
       return { draft: null, commit: parseNumberDraft(event.text) };
     case "settle":
+      if (optional && draft?.trim() === "") return { draft: null, commit: null, clear: true };
       return { draft: null, commit: !live && draft !== null ? parseNumberDraft(draft) : null };
     case "cancel":
       return { draft: null, commit: null };
@@ -69,40 +74,46 @@ export function reduceDraft(
  * draft pending (clicking another part swaps the inspector before the input
  * blurs), the draft is committed. It goes to the `onCommit` of the field's last
  * render, so it reaches whatever owned the field then, not what replaced it.
+ *
+ * With `onClear`, the field is optional: `value` may be undefined (it shows
+ * empty), and emptying the field calls `onClear` rather than reverting.
  */
 export function useNumberDraft(
-  value: number,
+  value: number | undefined,
   onCommit: (value: number) => void,
-  { live = false }: { live?: boolean } = {},
+  { live = false, onClear }: { live?: boolean; onClear?: () => void } = {},
 ) {
   const [draft, setDraft] = useState<string | null>(null);
   // What the unmount below can read. The draft is written the moment it changes
   // rather than on the next render, so blur and unmount settle it only once.
-  const latest = useRef({ draft: null as string | null, onCommit, live });
+  const latest = useRef({ draft: null as string | null, onCommit, onClear, live });
   useEffect(() => {
     latest.current.onCommit = onCommit;
+    latest.current.onClear = onClear;
     latest.current.live = live;
   });
 
   const send = (event: DraftEvent) => {
-    const next = reduceDraft(latest.current.draft, event, live);
+    const next = reduceDraft(latest.current.draft, event, live, onClear !== undefined);
     latest.current.draft = next.draft;
     setDraft(next.draft);
     if (next.commit !== null) onCommit(next.commit);
+    if (next.clear) onClear?.();
   };
 
   useEffect(
     () => () => {
       const field = latest.current;
-      const next = reduceDraft(field.draft, { type: "settle" }, field.live);
+      const next = reduceDraft(field.draft, { type: "settle" }, field.live, field.onClear !== undefined);
       field.draft = null;
       if (next.commit !== null) field.onCommit(next.commit);
+      if (next.clear) field.onClear?.();
     },
     [],
   );
 
   return {
-    value: draft ?? value,
+    value: draft ?? value ?? "",
     onChange: (event: ChangeEvent<HTMLInputElement>) =>
       send({
         type: isStepInput(event.nativeEvent as Event & { inputType?: string }) ? "step" : "type",

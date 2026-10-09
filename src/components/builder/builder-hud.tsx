@@ -10,17 +10,25 @@ import {
   BeamDraftInspector,
   BeamInspector,
   ComponentInspector,
+  ConnectionDraftInspector,
+  ConnectionInspector,
   GroupInspector,
 } from "@/components/builder/builder-inspector";
 import {
   COMPONENT_SPECS,
+  CONNECTION_KINDS,
   beamDisplayName,
   beamLengthMm,
   derivedAngleBeam,
   type Beam,
   type BuilderComponent,
   type ComponentType,
+  type Connection,
+  type ConnectionKind,
 } from "@/components/builder/types";
+
+/** Connect mode: the kind being drawn, and the part clicked first once there is one. */
+export type ConnectDraft = { kind: ConnectionKind; from: string | null };
 import { findTool } from "@/components/navigation";
 import { ReportLine } from "@/components/report-link";
 import { BetaMark } from "@/components/beta-badge";
@@ -31,6 +39,9 @@ export type BuilderHudProps = {
   /** the selected parts, in the order they were picked */
   selected: BuilderComponent[];
   selectedBeam: Beam | null;
+  selectedConnection: Connection | null;
+  /** set while the Connect tool is on */
+  connectDraft: ConnectDraft | null;
   placingType: ComponentType | null;
   trayOpen: boolean;
   beamMode: boolean;
@@ -62,6 +73,11 @@ export type BuilderHudProps = {
   onCancelBeam: () => void;
   onUndoBeamStep: () => void;
   onBeamColorChange: (color: string) => void;
+  onStartConnect: () => void;
+  onCancelConnect: () => void;
+  onConnectKindChange: (kind: ConnectionKind) => void;
+  onUpdateConnection: (id: string, patch: Partial<Omit<Connection, "id">>) => void;
+  onDeleteConnection: (id: string) => void;
   onSelectBeam: (id: string) => void;
   onToggleAddStops: () => void;
   onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
@@ -96,6 +112,14 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
         ["Esc", "cancel"],
       ],
     };
+  if (props.connectDraft)
+    return {
+      label: `Connecting a ${CONNECTION_KINDS[props.connectDraft.kind].label.toLowerCase()}`,
+      hints: [
+        ["Click", props.connectDraft.from ? "the part it goes to" : "the part it leaves from"],
+        ["Esc", "cancel"],
+      ],
+    };
   if (props.addingStops)
     return {
       label: "Adding stops",
@@ -122,6 +146,7 @@ const LIMITATIONS = [
   "Components can overlap; there is no collision check.",
   "Marking a beam line, by tinting its mounts the beam’s colour, is up to you. Nothing enforces it.",
   "There are no ruler or dimension annotations yet.",
+  "A fibre or cable’s route across the table is drawn for you and can pass under other parts. Its delay comes from the length you type, not from the route.",
 ];
 
 /** What the builder is for, from the navigation registry, then what it leaves to the author. */
@@ -263,10 +288,11 @@ export default function BuilderHud(props: BuilderHudProps) {
     placingType,
     trayOpen,
     beamMode,
+    connectDraft,
     view,
   } = props;
   const mode = modeHints(props);
-  const selecting = !beamMode && !placingType && !trayOpen;
+  const selecting = !beamMode && !connectDraft && !placingType && !trayOpen;
   // the about panel shares the parts panel's spot, so opening either closes the other
   const [aboutOpen, setAboutOpen] = useState(false);
   const closeAbout = useCallback(() => setAboutOpen(false), []);
@@ -287,6 +313,16 @@ export default function BuilderHud(props: BuilderHudProps) {
         onFinish={props.onFinishBeam}
         onUndoStep={props.onUndoBeamStep}
         onCancel={props.onCancelBeam}
+      />
+    );
+  } else if (connectDraft) {
+    inspector = (
+      <ConnectionDraftInspector
+        kind={connectDraft.kind}
+        from={connectDraft.from}
+        components={components}
+        onKindChange={props.onConnectKindChange}
+        onCancel={props.onCancelConnect}
       />
     );
   } else if (selected.length > 1) {
@@ -325,14 +361,32 @@ export default function BuilderHud(props: BuilderHudProps) {
         onToggleAddStops={props.onToggleAddStops}
       />
     );
+  } else if (props.selectedConnection) {
+    const connection = props.selectedConnection;
+    inspector = (
+      <ConnectionInspector
+        connection={connection}
+        components={components}
+        onUpdate={(patch) => props.onUpdateConnection(connection.id, patch)}
+        onDelete={() => props.onDeleteConnection(connection.id)}
+      />
+    );
   }
   // Remount (and replay the entrance) when the inspected thing changes.
   // A group keeps one inspector as parts join or leave it.
   const inspectorKey = beamMode
     ? "beam-draft"
-    : selected.length > 1
-      ? "group"
-      : (selected[0]?.id ?? selectedBeam?.id);
+    : connectDraft
+      ? "connect-draft"
+      : selected.length > 1
+        ? "group"
+        : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedConnection?.id);
+  // the inspector's close button cancels a draft, or else deselects
+  const cancelDraft = beamMode
+    ? { label: "Cancel beam", run: props.onCancelBeam }
+    : connectDraft
+      ? { label: "Cancel connection", run: props.onCancelConnect }
+      : null;
 
   return (
     <>
@@ -369,6 +423,13 @@ export default function BuilderHud(props: BuilderHudProps) {
           label="Draw a beam"
           active={beamMode}
           onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
+          disabled={components.length < 2}
+        />
+        <IconButton
+          icon="connect"
+          label="Connect two parts with a fibre or cable"
+          active={Boolean(connectDraft)}
+          onClick={connectDraft ? props.onCancelConnect : props.onStartConnect}
           disabled={components.length < 2}
         />
       </div>
@@ -425,9 +486,9 @@ export default function BuilderHud(props: BuilderHudProps) {
           <button
             type="button"
             className="builderHud__close"
-            aria-label={beamMode ? "Cancel beam" : "Deselect (Esc)"}
-            title={beamMode ? "Cancel beam (Esc)" : "Deselect (Esc)"}
-            onClick={beamMode ? props.onCancelBeam : props.onDeselect}
+            aria-label={cancelDraft ? cancelDraft.label : "Deselect (Esc)"}
+            title={cancelDraft ? `${cancelDraft.label} (Esc)` : "Deselect (Esc)"}
+            onClick={cancelDraft ? cancelDraft.run : props.onDeselect}
           >
             <Icon name="close" size={16} />
           </button>

@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues on kakitkelvinho/quop, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues are tracked in GitHub Issues on kitkatho/quop, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 

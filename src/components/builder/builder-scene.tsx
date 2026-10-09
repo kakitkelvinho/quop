@@ -15,13 +15,14 @@ import BuilderCanvas, {
   type CameraView,
   type CanvasApi,
 } from "@/components/builder/builder-canvas";
-import BuilderHud from "@/components/builder/builder-hud";
+import BuilderHud, { type ConnectDraft } from "@/components/builder/builder-hud";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
   BEAM_COLORS,
+  CONNECTION_KINDS,
   FINE_GRID_MM,
   GRID_SIZE_MM,
   clampToTable,
@@ -151,9 +152,11 @@ export default function BuilderScene() {
   const [selection, setSelection] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedBeamId, setSelectedBeamId] = useState<string | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
+  const [connectDraft, setConnectDraft] = useState<ConnectDraft | null>(null);
   // the beam "Add stops" is on for; it lapses as soon as another is selected
   const [addingStopsTo, setAddingStopsTo] = useState<string | null>(null);
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
@@ -196,6 +199,10 @@ export default function BuilderScene() {
     [scene.beams, selectedBeamId],
   );
   const addingStops = selectedBeam !== null && addingStopsTo === selectedBeam.id;
+  const selectedConnection = useMemo(
+    () => scene.connections.find((connection) => connection.id === selectedConnectionId) ?? null,
+    [scene.connections, selectedConnectionId],
+  );
 
   // A transient line of feedback under the canvas — the builder does a lot of
   // things (export, load, clear) whose only evidence would otherwise be off-screen.
@@ -211,7 +218,7 @@ export default function BuilderScene() {
 
   const handleSurfaceClick = useCallback(
     (x: number, z: number) => {
-      if (beamMode || addingStops) return;
+      if (beamMode || connectDraft || addingStops) return;
       if (placingType) {
         // a particle clicked onto a trap or cavity goes inside it
         const host =
@@ -224,13 +231,15 @@ export default function BuilderScene() {
           host ? { host: host.id } : undefined,
         );
         setSelection([id]);
+        setSelectedConnectionId(null);
         setPlacingType(null);
         return;
       }
       setSelection([]);
       setSelectedBeamId(null);
+      setSelectedConnectionId(null);
     },
-    [addingStops, api, beamMode, placingType],
+    [addingStops, api, beamMode, connectDraft, placingType],
   );
 
   const handleComponentPointerDown = useCallback(
@@ -246,6 +255,21 @@ export default function BuilderScene() {
       const component = componentById(sceneRef.current.components, id);
       if (!component) return;
 
+      if (connectDraft) {
+        // an undo may have taken away the part clicked first; then this click starts over
+        const from = connectDraft.from && componentById(sceneRef.current.components, connectDraft.from);
+        if (!from) {
+          setConnectDraft({ ...connectDraft, from: id });
+        } else if (from.id === id) {
+          announce(`Can't connect ${componentDisplayName(component)} to itself. Click another part.`);
+        } else {
+          setSelectedConnectionId(api.addConnection(connectDraft.kind, from.id, id));
+          setConnectDraft(null);
+          announce(`${CONNECTION_KINDS[connectDraft.kind].label} added.`);
+        }
+        return;
+      }
+
       if (addingStops && selectedBeamId) {
         // onto the end, in click order, one undo step per stop
         const beam = sceneRef.current.beams.find((entry) => entry.id === selectedBeamId);
@@ -258,6 +282,7 @@ export default function BuilderScene() {
 
       setPlacingType(null);
       setSelectedBeamId(null);
+      setSelectedConnectionId(null);
       // pressed as one of several selected parts, it drags them all
       const group = selectedIds.length > 1 && selectedIds.includes(id) ? selectedIds : null;
       if (!group) setSelection([id]);
@@ -273,7 +298,7 @@ export default function BuilderScene() {
       };
       setDragging(true);
     },
-    [addingStops, announce, api, beamMode, selectedBeamId, selectedIds],
+    [addingStops, announce, api, beamMode, connectDraft, selectedBeamId, selectedIds],
   );
 
   const handleComponentHover = useCallback((id: string | null) => {
@@ -289,6 +314,7 @@ export default function BuilderScene() {
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
     );
     setSelectedBeamId(null);
+    setSelectedConnectionId(null);
   }, []);
 
   // Ctrl/⌘ + drag selects every part whose optical centre falls in the box;
@@ -306,10 +332,11 @@ export default function BuilderScene() {
       adding ? [...current, ...inside.filter((id) => !current.includes(id))] : inside,
     );
     setSelectedBeamId(null);
+    setSelectedConnectionId(null);
   }, []);
 
   const selectionBox = useBoxSelect(hostRef, {
-    enabled: !placingType && !beamMode && !addingStops,
+    enabled: !placingType && !beamMode && !connectDraft && !addingStops,
     onClick: togglePointedPart,
     onBox: selectInBox,
   });
@@ -395,11 +422,41 @@ export default function BuilderScene() {
     };
   }, []);
 
+  // ---- connections ---------------------------------------------------------
+
+  const handleConnectionPointerDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>) => {
+      // while placing or picking parts, the click goes on to the part or the table behind
+      if (event.nativeEvent.button !== 0 || placingType || beamMode || connectDraft || addingStops) return;
+      event.stopPropagation();
+      setSelectedConnectionId(id);
+      setSelection([]);
+      setSelectedBeamId(null);
+    },
+    [addingStops, beamMode, connectDraft, placingType],
+  );
+
+  // Placing, drawing a beam and connecting are one mode at a time.
+  const startConnect = useCallback(() => {
+    setBeamMode(false);
+    setBeamDraft([]);
+    setPlacingType(null);
+    setTrayOpen(false);
+    setSelection([]);
+    setSelectedBeamId(null);
+    setSelectedConnectionId(null);
+    // a new connection starts as the kind of the last one drawn
+    setConnectDraft({ kind: sceneRef.current.connections.at(-1)?.kind ?? "fiber", from: null });
+  }, []);
+
+  const cancelConnect = useCallback(() => setConnectDraft(null), []);
+
   // ---- beams ---------------------------------------------------------------
 
   const startBeam = useCallback(() => {
     setBeamMode(true);
     setBeamDraft([]);
+    setConnectDraft(null);
     setPlacingType(null);
     setTrayOpen(false);
     setSelection([]);
@@ -469,7 +526,9 @@ export default function BuilderScene() {
           setFitToken((token) => token + 1);
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
           cancelBeam();
+          cancelConnect();
           announce(
             `Loaded ${parsed.components.length} parts from ${file.name}.`,
           );
@@ -479,7 +538,7 @@ export default function BuilderScene() {
       };
       reader.readAsText(file);
     },
-    [announce, api, cancelBeam],
+    [announce, api, cancelBeam, cancelConnect],
   );
 
   const handleExportPng = useCallback(() => {
@@ -549,10 +608,12 @@ export default function BuilderScene() {
         if (placingType) setPlacingType(null);
         else if (trayOpen) setTrayOpen(false);
         else if (beamMode) cancelBeam();
+        else if (connectDraft) cancelConnect();
         else if (addingStops) setAddingStopsTo(null);
         else {
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
         }
         return;
       }
@@ -566,6 +627,13 @@ export default function BuilderScene() {
       if (addingStops && event.key === "Enter") {
         event.preventDefault();
         setAddingStopsTo(null);
+        return;
+      }
+
+      if (selectedConnection && (event.key === "Delete" || event.key === "Backspace")) {
+        event.preventDefault();
+        api.deleteConnection(selectedConnection.id);
+        setSelectedConnectionId(null);
         return;
       }
 
@@ -615,11 +683,14 @@ export default function BuilderScene() {
     api,
     beamMode,
     cancelBeam,
+    cancelConnect,
+    connectDraft,
     deleteSelected,
     duplicateSelected,
     finishBeam,
     placingType,
     rotateSelected,
+    selectedConnection,
     selectedIds,
     trayOpen,
   ]);
@@ -635,22 +706,26 @@ export default function BuilderScene() {
   const handleSelectBeam = useCallback((id: string) => {
     setSelectedBeamId((current) => (current === id ? null : id));
     setSelection([]);
+    setSelectedConnectionId(null);
   }, []);
 
   return (
     <div className="builderWorkspace">
       <div
         ref={hostRef}
-        className={`builderCanvasHost${placingType || beamMode || addingStops ? " is-picking" : ""}`}
+        className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops ? " is-picking" : ""}`}
       >
         <BuilderCanvas
           components={scene.components}
           beams={scene.beams}
+          connections={scene.connections}
           palette={palette}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
+          selectedConnectionId={selectedConnection?.id ?? null}
           hoveredId={hoveredId}
-          beamDraft={beamDraft}
+          // the part a connection leaves from carries the "1" badge until the second click
+          beamDraft={connectDraft?.from ? [connectDraft.from] : beamDraft}
           showLabels={showLabels}
           showGrid={showGrid}
           showPosts={showPosts}
@@ -661,6 +736,7 @@ export default function BuilderScene() {
           onSurfaceDrag={handleSurfaceDrag}
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={handleComponentHover}
+          onConnectionPointerDown={handleConnectionPointerDown}
           onCanvasReady={handleCanvasReady}
         />
         {selectionBox ? (
@@ -681,6 +757,8 @@ export default function BuilderScene() {
         beams={scene.beams}
         selected={selectedComponents}
         selectedBeam={selectedBeam}
+        selectedConnection={selectedConnection}
+        connectDraft={connectDraft}
         placingType={placingType}
         trayOpen={trayOpen}
         beamMode={beamMode}
@@ -698,17 +776,20 @@ export default function BuilderScene() {
         onPickType={(type) => {
           // the panel stays open, so a run of parts goes down without reopening it
           cancelBeam();
+          cancelConnect();
           setPlacingType(type);
         }}
         onCloseTray={() => setTrayOpen(false)}
         onSelectTool={() => {
           cancelBeam();
+          cancelConnect();
           setPlacingType(null);
           setTrayOpen(false);
         }}
         onDeselect={() => {
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
         }}
         onUpdateSelected={updateSelected}
         onRotateSelected={rotateSelected}
@@ -721,6 +802,14 @@ export default function BuilderScene() {
         onCancelBeam={cancelBeam}
         onUndoBeamStep={undoBeamStep}
         onBeamColorChange={setBeamColor}
+        onStartConnect={startConnect}
+        onCancelConnect={cancelConnect}
+        onConnectKindChange={(kind) => setConnectDraft((current) => current && { ...current, kind })}
+        onUpdateConnection={api.updateConnection}
+        onDeleteConnection={(id) => {
+          api.deleteConnection(id);
+          setSelectedConnectionId(null);
+        }}
         onSelectBeam={handleSelectBeam}
         onToggleAddStops={() =>
           setAddingStopsTo((current) =>
@@ -751,13 +840,16 @@ export default function BuilderScene() {
         onResetExample={() => {
           api.resetToExample();
           setSelection([]);
+          setSelectedConnectionId(null);
           announce("Loaded the example pump + reference layout.");
         }}
         onClear={() => {
           api.clearScene();
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedConnectionId(null);
           cancelBeam();
+          cancelConnect();
         }}
       />
     </div>
