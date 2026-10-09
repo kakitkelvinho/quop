@@ -28,7 +28,7 @@ const beam = (path: string[]): Beam => ({ id: "b", path, color: "#7c3aed" });
 
 /** The scene as the builder keeps it: every detector turned to the light that ends at it. */
 function settled(components: BuilderComponent[], path: string[]) {
-  const scene = settleAngles({ version: SCENE_VERSION, components, beams: [beam(path)], connections: [] });
+  const scene = settleAngles({ version: SCENE_VERSION, components, beams: [beam(path)], connections: [], frames: [] });
   return { components: scene.components, beam: scene.beams[0] };
 }
 
