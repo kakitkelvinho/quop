@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 
-import { IconButton, type IconName } from "@/components/builder/builder-icons";
+import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
 import { useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
@@ -43,6 +43,7 @@ import {
   connectionIndex,
   lengthToPicoseconds,
   moveStop,
+  moveStopTo,
   removeStop,
   switchConnectionKind,
   type Beam,
@@ -202,9 +203,13 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+type StopDrag = { from: number; startY: number; dy: number; slot: number };
+
 /**
- * A saved beam's stops, editable: each row moves up or down or goes away.
- * A button is disabled when its edit isn't allowed, and its label says why.
+ * A saved beam's stops, editable: drag a row by its grip to a new place, or
+ * use its buttons to move it up or down or remove it. A button is disabled
+ * when its edit isn't allowed, and its label says why; a drop the rule
+ * forbids sends the row back and says why under the list.
  */
 function EditableStopList({
   components,
@@ -229,40 +234,133 @@ function EditableStopList({
     (wanted && !wanted.disabled ? wanted : buttons.find((button) => !button.disabled))?.focus();
   }, [path]);
 
+  const [drag, setDrag] = useState<StopDrag | null>(null);
+  // Tied to the path it was refused on, so any later edit clears it.
+  const [refusal, setRefusal] = useState<{ path: string[]; row: number; message: string } | null>(null);
+
+  // Esc cancels the drag; the scene's Esc chain would otherwise deselect the beam too.
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setDrag(null);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [dragging]);
+
+  // The gap the pointer is nearest: 0 above the first row, path.length below
+  // the last. The lifted row's rect has moved with the pointer, so its
+  // midpoint is taken back to where it started.
+  const slotAt = (y: number, held: StopDrag) => {
+    const rows = Array.from(listRef.current?.children ?? []);
+    return rows.filter((row, at) => {
+      const rect = row.getBoundingClientRect();
+      return rect.top + rect.height / 2 - (at === held.from ? held.dy : 0) < y;
+    }).length;
+  };
+  // The index the stop ends up at when dropped into a gap.
+  const landing = (held: StopDrag, slot: number) => (slot > held.from ? slot - 1 : slot);
+
+  const begin = (event: ReactPointerEvent<HTMLSpanElement>, from: number) => {
+    if (event.button !== 0 || drag) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setRefusal(null);
+    setDrag({ from, startY: event.clientY, dy: 0, slot: from });
+  };
+  const move = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!drag) return;
+    setDrag({ ...drag, dy: event.clientY - drag.startY, slot: slotAt(event.clientY, drag) });
+  };
+  const finish = (event: ReactPointerEvent<HTMLSpanElement>, dropped: boolean) => {
+    if (!drag) return;
+    setDrag(null);
+    const to = landing(drag, slotAt(event.clientY, drag));
+    if (!dropped || to === drag.from) return;
+    const edit = moveStopTo(path, drag.from, to);
+    if (edit.ok) {
+      onChange(edit.path);
+      return;
+    }
+    const held = componentById(components, path[drag.from]);
+    const name = held ? componentDisplayName(held) : "—";
+    setRefusal({ path, row: drag.from, message: `Can't move ${name} there: ${edit.reason}` });
+  };
+
+  // A gap that changes nothing (the row's own) gets no line.
+  const gap =
+    drag && landing(drag, drag.slot) !== drag.from
+      ? { slot: drag.slot, allowed: moveStopTo(path, drag.from, landing(drag, drag.slot)).ok }
+      : null;
+  const shownRefusal = refusal?.path === path ? refusal : null;
+
   return (
-    <ol ref={listRef} className="builderStops builderStops--editable">
-      {path.map((id, index) => {
-        const component = componentById(components, id);
-        const name = component ? componentDisplayName(component) : "—";
-        // [icon, action, edit, the row the stop ends up on]
-        const edits: [IconName, string, PathEdit, number][] = [
-          ["up", `move ${name} earlier`, moveStop(path, index, -1), index - 1],
-          ["down", `move ${name} later`, moveStop(path, index, 1), index + 1],
-          ["close", `remove ${name}`, removeStop(path, index), index],
-        ];
-        return (
-          // keyed by position: rows stay mounted, and focus is moved by hand above
-          <li key={index}>
-            <span className="builderStops__name">{name}</span>
-            <span className="builderStops__actions">
-              {edits.map(([icon, action, edit, row], button) => (
-                <IconButton
-                  key={icon}
-                  icon={icon}
-                  label={edit.ok ? capitalise(action) : `Can't ${action}: ${edit.reason}`}
-                  disabled={!edit.ok}
-                  onClick={() => {
-                    if (!edit.ok) return;
-                    focusAfter.current = { row, button };
-                    onChange(edit.path);
-                  }}
-                />
-              ))}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <>
+      <ol ref={listRef} className={`builderStops builderStops--editable${drag ? " is-reordering" : ""}`}>
+        {path.map((id, index) => {
+          const component = componentById(components, id);
+          const name = component ? componentDisplayName(component) : "—";
+          // [icon, action, edit, the row the stop ends up on]
+          const edits: [IconName, string, PathEdit, number][] = [
+            ["up", `move ${name} earlier`, moveStop(path, index, -1), index - 1],
+            ["down", `move ${name} later`, moveStop(path, index, 1), index + 1],
+            ["close", `remove ${name}`, removeStop(path, index), index],
+          ];
+          const lifted = drag?.from === index;
+          const line =
+            gap && (gap.slot === index ? "before" : gap.slot === path.length && index === path.length - 1 ? "after" : null);
+          const classes = [
+            lifted && "is-dragging",
+            shownRefusal?.row === index && "is-returning",
+            line && `is-drop-${line}`,
+            line && !gap.allowed && "is-refused",
+          ];
+          return (
+            // keyed by position: rows stay mounted, and focus is moved by hand above
+            <li
+              key={index}
+              className={classes.filter(Boolean).join(" ") || undefined}
+              style={lifted ? { transform: `translateY(${drag.dy}px)` } : undefined}
+            >
+              <span
+                className="builderStops__grip"
+                title="Drag to reorder"
+                aria-hidden="true"
+                onPointerDown={(event) => begin(event, index)}
+                onPointerMove={move}
+                onPointerUp={(event) => finish(event, true)}
+                onPointerCancel={(event) => finish(event, false)}
+              >
+                <Icon name="grip" />
+              </span>
+              <span className="builderStops__name">{name}</span>
+              <span className="builderStops__actions">
+                {edits.map(([icon, action, edit, row], button) => (
+                  <IconButton
+                    key={icon}
+                    icon={icon}
+                    label={edit.ok ? capitalise(action) : `Can't ${action}: ${edit.reason}`}
+                    disabled={!edit.ok}
+                    onClick={() => {
+                      if (!edit.ok) return;
+                      focusAfter.current = { row, button };
+                      onChange(edit.path);
+                    }}
+                  />
+                ))}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {shownRefusal ? (
+        <p className="builderInspector__hint" role="status">
+          {shownRefusal.message}
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -726,7 +824,7 @@ export function BeamInspector({
         {addingStops ? "Done adding stops" : "Add stops"}
       </button>
       {addingStops ? (
-        <p className="builderInspector__hint">Click parts to add them to the end, in order. Move a stop up or down to reorder.</p>
+        <p className="builderInspector__hint">Click parts to add them to the end, in order. Drag a stop, or move it up or down, to reorder.</p>
       ) : null}
     </div>
   );

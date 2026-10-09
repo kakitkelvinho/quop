@@ -607,14 +607,19 @@ export function removeStop(path: string[], index: number): PathEdit {
   return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
 }
 
+/** Lift the stop at `from` out and set it back so it sits at index `to` of the new path. */
+export function moveStopTo(path: string[], from: number, to: number): PathEdit {
+  if (from < 0 || from >= path.length) return { ok: false, reason: "it isn't on this beam" };
+  if (to < 0) return { ok: false, reason: "it's already first" };
+  if (to >= path.length) return { ok: false, reason: "it's already last" };
+  const next = path.filter((_, at) => at !== from);
+  next.splice(to, 0, path[from]);
+  return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
+}
+
 /** Swap a stop with its neighbour: -1 moves it toward the start. */
 export function moveStop(path: string[], index: number, direction: 1 | -1): PathEdit {
-  const other = index + direction;
-  if (other < 0) return { ok: false, reason: "it's already first" };
-  if (other >= path.length) return { ok: false, reason: "it's already last" };
-  const next = [...path];
-  [next[index], next[other]] = [next[other], next[index]];
-  return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
+  return moveStopTo(path, index, index + direction);
 }
 
 /**

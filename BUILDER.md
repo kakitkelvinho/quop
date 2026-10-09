@@ -177,7 +177,7 @@ is on screen until it is needed:
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
-| Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); reorder with up and down; `Enter` / `Esc` to finish |
+| Edit a beam's path | Select it; in its stop list, drag a stop by its grip to a new place (a line shows where it will land; `Esc` cancels), or move it up or down, or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
