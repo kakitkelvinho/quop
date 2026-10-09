@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
-import QuickGuide from "@/components/builder/builder-guide";
+import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import {
@@ -208,6 +208,7 @@ function BeamList({
       ref={listRef}
       role="list"
       aria-label="Beams"
+      data-guide="beams"
       className={`builderIsland builderHud__beams${besideParts ? " is-besideParts" : ""} ${listClass}`}
     >
       {beams.map((beam, index) => {
@@ -280,7 +281,7 @@ function FrameList({
   }, [frames]);
 
   return (
-    <section className="builderIsland builderHud__frames" aria-labelledby="builderFramesTitle">
+    <section className="builderIsland builderHud__frames" aria-labelledby="builderFramesTitle" data-guide="frames">
       <h2 id="builderFramesTitle" className="builderHud__listTitle">
         Frames
       </h2>
@@ -412,6 +413,7 @@ function FileMenu({
       <button
         type="button"
         className="builderMenu__trigger"
+        data-guide="file"
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((current) => !current)}
@@ -474,7 +476,10 @@ export default function BuilderHud(props: BuilderHudProps) {
   const selecting = !beamMode && !connectDraft && !placingType && !trayOpen;
   // the about panel shares the parts panel's spot, so opening either closes the other
   const [aboutOpen, setAboutOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const closeCoach = useCallback(() => setCoachOpen(false), []);
+  const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeAbout = useCallback(() => setAboutOpen(false), []);
   const { onCloseTray } = props;
   const showAbout = useCallback(() => {
@@ -601,6 +606,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton
           icon="add"
           label="Add a part"
+          guide="add"
           active={trayOpen}
           onClick={() => {
             setAboutOpen(false);
@@ -610,14 +616,16 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton
           icon="beam"
           label="Draw a beam"
+          guide="beam"
           active={beamMode}
           onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
           disabled={components.length < 2}
         />
-        <IconButton icon="frame" label="Add a frame to mark an area" onClick={props.onAddFrame} />
+        <IconButton icon="frame" label="Add a frame to mark an area" guide="frame" onClick={props.onAddFrame} />
         <IconButton
           icon="connect"
           label="Connect two parts with a fibre or cable"
+          guide="connect"
           active={Boolean(connectDraft)}
           onClick={connectDraft ? props.onCancelConnect : props.onStartConnect}
           disabled={components.length < 2}
@@ -625,15 +633,45 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
 
       <div className="builderHud__center">
-        <div className="builderIsland" role="toolbar" aria-label="Tools">
-          <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
-          <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
-          <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
-          <span className="builderIsland__sep" />
-          <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
-          <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
+        <div className="builderHud__toolRow">
+          <button
+            type="button"
+            className="builderGuideButton"
+            aria-haspopup="dialog"
+            aria-expanded={coachOpen}
+            title="Quick guide: what each control does"
+            // one size of the guide at a time: the coach marks would tag through the sheet
+            onClick={() => {
+              setSheetOpen(false);
+              setCoachOpen(true);
+            }}
+          >
+            <Icon name="info" size={16} />
+            Guide
+          </button>
+          <div className="builderHud__tools" data-guide="tools">
+            <div className="builderIsland" role="toolbar" aria-label="Tools">
+              <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
+              <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
+              <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
+              <span className="builderIsland__sep" />
+              <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
+              <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
+            </div>
+            <button
+              type="button"
+              className="builderSheetTab"
+              aria-expanded={sheetOpen}
+              aria-controls="builder-cheat-sheet"
+              onClick={() => setSheetOpen((open) => !open)}
+            >
+              Cheat sheet
+              <Icon name="chevron" size={12} />
+            </button>
+          </div>
         </div>
 
+        {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
 
         {mode ? (
           <p className="builderModeBadge">
@@ -671,7 +709,12 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {inspector ? (
-        <aside className="builderIsland builderHud__inspector" key={inspectorKey} aria-label="Inspector">
+        <aside
+          className="builderIsland builderHud__inspector"
+          key={inspectorKey}
+          aria-label="Inspector"
+          data-guide="inspector"
+        >
           {inspector}
           <button
             type="button"
@@ -711,7 +754,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         </div>
       ) : null}
 
-      <div className="builderIsland builderHud__view" role="toolbar" aria-label="View">
+      <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
         <span className="builderSegment">
           <IconButton icon="iso" label="Isometric view" active={view === "iso"} onClick={() => props.onViewChange("iso")} />
           <IconButton icon="top" label="Top-down view" active={view === "top"} onClick={() => props.onViewChange("top")} />
@@ -720,10 +763,8 @@ export default function BuilderHud(props: BuilderHudProps) {
         <span className="builderIsland__sep" />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        <span className="builderIsland__sep" />
-        <IconButton icon="info" label="Quick guide" onClick={() => setGuideOpen(true)} />
       </div>
-      {guideOpen ? <QuickGuide onClose={() => setGuideOpen(false)} /> : null}
+      {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
       <p className="builderStatus" role="status" aria-live="polite">
         {props.status}
