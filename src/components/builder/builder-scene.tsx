@@ -36,6 +36,7 @@ import {
   derivedAngleBeam,
   parseScene,
   serializeScene,
+  beamLineSnap,
   snapToGrid,
   type BuilderComponent,
   type ComponentType,
@@ -178,6 +179,8 @@ export default function BuilderScene() {
   const [view, setView] = useState<CameraView>("iso");
   const [fitToken, setFitToken] = useState(0);
   const [dragging, setDragging] = useState(false);
+  // the straight line a dragged part is locked onto, while it is
+  const [snapGuide, setSnapGuide] = useState<[Vec3, Vec3] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [trayOpen, setTrayOpen] = useState(false);
 
@@ -389,11 +392,33 @@ export default function BuilderScene() {
       if (!drag) return;
 
       const step = event.nativeEvent.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
-      const nextX = snapToGrid(x + drag.offsetX, step);
-      const nextZ = snapToGrid(z + drag.offsetZ, step);
+      let nextX = snapToGrid(x + drag.offsetX, step);
+      let nextZ = snapToGrid(z + drag.offsetZ, step);
 
       const component = componentById(sceneRef.current.components, drag.id);
       if (!component) return;
+
+      // A single part in the middle of a beam locks onto the straight line
+      // between its neighbours when it comes close, ahead of the grid.
+      const lock =
+        drag.group || component.type === "particle"
+          ? undefined
+          : beamLineSnap(
+              sceneRef.current.beams,
+              sceneRef.current.components,
+              drag.id,
+              x + drag.offsetX,
+              z + drag.offsetZ,
+              step,
+            );
+      if (lock) [nextX, nextZ] = lock.position;
+      setSnapGuide((current) =>
+        !lock
+          ? null
+          : current && current[0] === lock.guide[0] && current[1] === lock.guide[1]
+            ? current
+            : lock.guide,
+      );
 
       // The pressed part snaps to the grid and the rest of the group keeps its
       // offsets from it, measured from where the group stood at its first move.
@@ -454,6 +479,7 @@ export default function BuilderScene() {
       if (!drag) return;
       dragRef.current = null;
       setDragging(false);
+      setSnapGuide(null);
       // a click on one of several selected parts, with no drag, picks it alone
       const travelled = Math.hypot(event.clientX - drag.pressX, event.clientY - drag.pressY);
       if (drag.group && !drag.started && event.type === "pointerup" && travelled <= CLICK_SLOP_PX) {
@@ -917,6 +943,7 @@ export default function BuilderScene() {
           view={view}
           fitToken={fitToken}
           dragging={dragging}
+          snapGuide={snapGuide}
           onSurfaceClick={handleSurfaceClick}
           onSurfaceDrag={handleSurfaceDrag}
           onComponentPointerDown={handleComponentPointerDown}
