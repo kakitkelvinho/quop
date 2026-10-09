@@ -22,7 +22,7 @@ const ICONS = {
   select: <path d="m5 3 14 7-6 2-2 6-6-15Z" />,
   add: <path d="M12 5v14M5 12h14" />,
   // a laser spot: a starburst of rays round a bright dot, the beam coming in
-  // on the diagonal where the lower-left ray would be
+  // level from the left where the left-hand ray would be
   beam: (
     <>
       <circle cx="15" cy="12" r="2" fill="currentColor" />
