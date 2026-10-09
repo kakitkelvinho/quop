@@ -184,6 +184,7 @@ function Diagram() {
               <span className="builderReadout">{beam.mm} mm</span>
               <Button icon="up" />
               <Button icon="down" />
+              <Button icon="eye" />
               <Button icon="trash" />
             </span>
           ))}
