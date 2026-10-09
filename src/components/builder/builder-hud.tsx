@@ -459,13 +459,17 @@ export default function BuilderHud(props: BuilderHudProps) {
         ) : null}
       </div>
 
-      {/* always on and faint: the Shift orbit is the one nobody finds alone.
-          It sits above the inspector, which opens below it on the right. */}
-      <p className="builderControlsHint" aria-label="Camera controls">
+      {/* always on and faint: the Shift orbit and the ⌘ box are the ones
+          nobody finds alone. It sits above the inspector, which opens below
+          it on the right. */}
+      <p className="builderControlsHint" aria-label="Mouse controls">
         <span>
           <kbd>⇧</kbd> drag rotate · drag pan · scroll zoom
         </span>
         <span className="builderControlsHint__alt">or middle / right drag to rotate</span>
+        <span>
+          <kbd>⌘</kbd> drag or click to select several
+        </span>
       </p>
 
       {trayOpen ? (
