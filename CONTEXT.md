@@ -36,6 +36,10 @@ The 3D length of a beam through its components' optical centres, in mm; the basi
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.
 
+**Connection**:
+A fibre (optical) or a cable (electrical, such as coax) from one component to another, drawn as a tube lying on the table. It is not a beam: it adds nothing to any path length, and no mirror or detector takes its angle from it. Its delay comes from the length the author types, never from the drawn route.
+_Avoid_: link, wire, patch cord, fibre beam
+
 **Beam cube**:
 A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
 _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate

@@ -141,6 +141,7 @@ const LIMITATIONS = [
   "Components can overlap; there is no collision check.",
   "Marking a beam line, by tinting its mounts the beam’s colour, is up to you. Nothing enforces it.",
   "There are no ruler or dimension annotations yet.",
+  "A fibre or cable’s route across the table is drawn for you and can pass under other parts. Its delay comes from the length you type, not from the route.",
 ];
 
 /** What the builder is for, from the navigation registry, then what it leaves to the author. */
