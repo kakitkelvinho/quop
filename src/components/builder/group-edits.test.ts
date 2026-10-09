@@ -42,7 +42,7 @@ function bench(
   beams: Beam[] = [],
   connections: Connection[] = [],
 ): BuilderSceneData {
-  return { version: SCENE_VERSION, components, beams, connections };
+  return { version: SCENE_VERSION, components, beams, connections, frames: [] };
 }
 
 const at = (scene: BuilderSceneData, id: string) =>

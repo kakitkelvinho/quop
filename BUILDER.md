@@ -71,6 +71,17 @@ arrows, so you can see what you are editing; the export still leaves it out. Hid
 saved with the setup (scene version 4; older setups open with every beam
 shown) and each toggle is one undo step.
 
+**Frames mark areas.** A frame is a labelled rectangle drawn flat on the table
+under everything, to mark one breadboard or an enclosure. It is a drawing aid
+only: it constrains nothing, and parts need not be inside it. Add one with the
+dashed-rectangle button beside Draw a beam; it opens in the inspector, where
+you set its label, colour, width and depth. Drag its edge to move it (the
+inside lets clicks and drags through, so a frame never blocks the table or the
+parts in it). Each frame has a row in the Frames box under the beams box, with
+an eye to hide it from the view and the PNG and a trash button; a selected
+hidden frame shows as a faint outline on screen, not in the export. Frames are
+saved with the setup (scene version 5; older setups open with none).
+
 **Round beams.** A beam's core is drawn as a lit tube along each leg, so it
 reads as light passing through the parts rather than a flat stroke. Its halo
 is a wider translucent tube that is densest facing you and fades to nothing at
@@ -180,14 +191,18 @@ is on screen until it is needed:
   while they all stand at one (and none sits in a host), and a mount colour
   for those held in a mount.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
-  name and path length; click a row to select that beam. Each row also has
-  buttons to move that beam up or down the list, to hide or show it on the
-  table, and to delete it (the beam only: its parts stay). The list order is
+  name and path length; click a row to select that beam, or press anywhere on
+  it and drag it to a new place in the list (the rows around it open a gap; on
+  a touch screen, rest a finger on the row first, then drag; `Esc` cancels; a
+  focused row also moves with `Alt+↑` / `Alt+↓`). Each row also has buttons to
+  hide or show it on the table, and to delete it (the beam only: its parts
+  stay). The list order is
   the setup's beam order, so it is saved, and each move, hide or delete is one
   undo step. It scrolls once there
   are more beams than fit. While the parts panel is open the box moves to sit
   beside it; on a phone, where the panel spans the width, it hides until the
-  panel closes.
+  panel closes. The Frames box, when there are frames, sits under it: one row
+  per frame with its colour and label, an eye to hide or show it, and a trash button.
 - **Bottom right**: the view controls, and the ⓘ that opens the quick guide.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
@@ -210,9 +225,11 @@ is on screen until it is needed:
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam, beside the ＋ at the top left; click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
-| Reorder or delete a beam | The up, down and trash buttons on its row in the beams box. A button that can't act (the first beam's up, the last beam's down) is disabled, and its label says why. Undo brings a deleted beam back in its place |
+| Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Edit a beam's path | Select it; in its stop list, drag a stop by its grip to a new place (a line shows where it will land; `Esc` cancels), or move it up or down, or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
+| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds one and selects it; drag its edge to move it (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour, width and depth are in its inspector |
+| Hide, show or delete a frame | The eye and trash buttons on its row in the Frames box. A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
+| Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
@@ -284,6 +301,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
+| `src/components/builder/frame-mesh.tsx` | A frame: flat fill, edge, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the miniature of the builder and its numbered lines |

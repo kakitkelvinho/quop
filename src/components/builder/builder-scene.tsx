@@ -31,6 +31,8 @@ import {
   findHost,
   appendStop,
   beamDisplayName,
+  frameDisplayName,
+  moveBeamTo,
   derivedAngleBeam,
   parseScene,
   serializeScene,
@@ -53,6 +55,13 @@ type DragState = {
   group: string[] | null;
   /** the group's positions at its first move; every step is measured from these */
   origins: Record<string, Vec3> | null;
+};
+
+type FrameDragState = {
+  id: string;
+  offsetX: number;
+  offsetZ: number;
+  started: boolean;
 };
 
 function clampXZ(x: number, y: number, z: number): [number, number, number] {
@@ -155,6 +164,8 @@ export default function BuilderScene() {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedBeamId, setSelectedBeamId] = useState<string | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
+  // a frame is selected on its own, never along with parts
+  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
@@ -174,6 +185,7 @@ export default function BuilderScene() {
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
+  const frameDragRef = useRef<FrameDragState | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const projectRef = useRef<CanvasApi["project"] | null>(null);
@@ -205,6 +217,11 @@ export default function BuilderScene() {
   // a selected hidden beam shows on screen as a ghost, so it can be edited; a PNG leaves it out
   const [exporting, setExporting] = useState(false);
   const ghostBeamId = selectedBeam?.hidden && !exporting ? selectedBeam.id : null;
+  const selectedFrame = useMemo(
+    () => scene.frames.find((frame) => frame.id === selectedFrameId) ?? null,
+    [scene.frames, selectedFrameId],
+  );
+  const ghostFrameId = selectedFrame?.hidden && !exporting ? selectedFrame.id : null;
   const addingStops = selectedBeam !== null && addingStopsTo === selectedBeam.id;
   const selectedConnection = useMemo(
     () => scene.connections.find((connection) => connection.id === selectedConnectionId) ?? null,
@@ -239,11 +256,13 @@ export default function BuilderScene() {
         );
         setSelection([id]);
         setSelectedConnectionId(null);
+        setSelectedFrameId(null);
         setPlacingType(null);
         return;
       }
       setSelection([]);
       setSelectedBeamId(null);
+      setSelectedFrameId(null);
       setSelectedConnectionId(null);
     },
     [addingStops, api, beamMode, connectDraft, placingType],
@@ -289,6 +308,7 @@ export default function BuilderScene() {
 
       setPlacingType(null);
       setSelectedBeamId(null);
+      setSelectedFrameId(null);
       setSelectedConnectionId(null);
       // pressed as one of several selected parts, it drags them all
       const group = selectedIds.length > 1 && selectedIds.includes(id) ? selectedIds : null;
@@ -321,6 +341,7 @@ export default function BuilderScene() {
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
     );
     setSelectedBeamId(null);
+    setSelectedFrameId(null);
     setSelectedConnectionId(null);
   }, []);
 
@@ -339,6 +360,7 @@ export default function BuilderScene() {
       adding ? [...current, ...inside.filter((id) => !current.includes(id))] : inside,
     );
     setSelectedBeamId(null);
+    setSelectedFrameId(null);
     setSelectedConnectionId(null);
   }, []);
 
@@ -350,6 +372,22 @@ export default function BuilderScene() {
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: ThreeEvent<PointerEvent>) => {
+      const frameDrag = frameDragRef.current;
+      if (frameDrag) {
+        const frame = sceneRef.current.frames.find((entry) => entry.id === frameDrag.id);
+        if (!frame) return;
+        const step = event.nativeEvent.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+        const nextX = snapToGrid(x + frameDrag.offsetX, step);
+        const nextZ = snapToGrid(z + frameDrag.offsetZ, step);
+        if (frame.position[0] === nextX && frame.position[1] === nextZ) return;
+        // like a part, the first real movement earns the undo step
+        if (!frameDrag.started) {
+          frameDrag.started = true;
+          api.commitCheckpoint(sceneRef.current);
+        }
+        api.moveFrame(frameDrag.id, nextX, nextZ);
+        return;
+      }
       const drag = dragRef.current;
       if (!drag) return;
 
@@ -433,6 +471,10 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
+      if (frameDragRef.current) {
+        frameDragRef.current = null;
+        setDragging(false);
+      }
       const drag = dragRef.current;
       if (!drag) return;
       dragRef.current = null;
@@ -460,10 +502,74 @@ export default function BuilderScene() {
       if (event.nativeEvent.button !== 0 || placingType || beamMode || connectDraft || addingStops) return;
       event.stopPropagation();
       setSelectedConnectionId(id);
+      setSelectedFrameId(null);
       setSelection([]);
       setSelectedBeamId(null);
+      setSelectedFrameId(null);
     },
     [addingStops, beamMode, connectDraft, placingType],
+  );
+
+  // ---- frames --------------------------------------------------------------
+
+  // Pressing a frame's edge selects it and drags it; only its edge takes the press.
+  const handleFramePointerDown = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
+    if (event.nativeEvent.button !== 0) return;
+    const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+    if (!frame) return;
+    setSelectedFrameId(id);
+    setSelection([]);
+    setSelectedBeamId(null);
+    setSelectedConnectionId(null);
+    frameDragRef.current = {
+      id,
+      offsetX: frame.position[0] - event.point.x,
+      offsetZ: frame.position[1] - event.point.z,
+      started: false,
+    };
+    setDragging(true);
+  }, []);
+
+  const handleSelectFrame = useCallback((id: string) => {
+    setSelectedFrameId((current) => (current === id ? null : id));
+    setSelection([]);
+    setSelectedBeamId(null);
+    setSelectedConnectionId(null);
+  }, []);
+
+  const handleAddFrame = useCallback(() => {
+    // each new one a little off the last, so they don't land exactly on top of each other
+    const shift = (sceneRef.current.frames.length % 8) * GRID_SIZE_MM * 2;
+    const id = api.addFrame([snapToGrid(shift), snapToGrid(shift)]);
+    setSelectedFrameId(id);
+    setSelection([]);
+    setSelectedBeamId(null);
+    setSelectedConnectionId(null);
+    setBeamMode(false);
+    setBeamDraft([]);
+    setConnectDraft(null);
+    setPlacingType(null);
+    setTrayOpen(false);
+    announce("Added a frame. Drag its edge to move it.");
+  }, [announce, api]);
+
+  const handleDeleteFrame = useCallback(
+    (id: string) => {
+      const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+      api.deleteFrame(id);
+      setSelectedFrameId((current) => (current === id ? null : current));
+      if (frame) announce(`Deleted ${frameDisplayName(frame)}. ⌘Z brings it back.`);
+    },
+    [announce, api],
+  );
+
+  const handleSetFrameHidden = useCallback(
+    (id: string, hidden: boolean) => {
+      const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+      api.setFrameHidden(id, hidden);
+      if (frame) announce(`${hidden ? "Hid" : "Showed"} ${frameDisplayName(frame)} on the table.`);
+    },
+    [announce, api],
   );
 
   // Placing, drawing a beam and connecting are one mode at a time.
@@ -474,6 +580,7 @@ export default function BuilderScene() {
     setTrayOpen(false);
     setSelection([]);
     setSelectedBeamId(null);
+    setSelectedFrameId(null);
     setSelectedConnectionId(null);
     // a new connection starts as the kind of the last one drawn
     setConnectDraft({ kind: sceneRef.current.connections.at(-1)?.kind ?? "fiber", from: null });
@@ -490,6 +597,7 @@ export default function BuilderScene() {
     setPlacingType(null);
     setTrayOpen(false);
     setSelection([]);
+    setSelectedFrameId(null);
     setBeamColor(
       BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length],
     );
@@ -535,14 +643,18 @@ export default function BuilderScene() {
   );
 
   const handleMoveBeam = useCallback(
-    (id: string, direction: 1 | -1) => {
-      const beam = sceneRef.current.beams.find((entry) => entry.id === id);
-      const place = api.moveBeam(id, direction);
-      if (beam && place !== null) {
-        announce(
-          `Moved ${beamDisplayName(beam)} ${direction < 0 ? "up" : "down"}: ${place + 1} of ${sceneRef.current.beams.length}.`,
-        );
+    (id: string, to: number): boolean => {
+      const beams = sceneRef.current.beams;
+      const beam = beams.find((entry) => entry.id === id);
+      if (!beam) return false;
+      const place = api.moveBeam(id, to);
+      if (place === null) {
+        const edit = moveBeamTo(beams, id, to);
+        announce(`Can't move ${beamDisplayName(beam)}: ${edit.ok ? "it can't go there" : edit.reason}.`);
+        return false;
       }
+      announce(`Moved ${beamDisplayName(beam)} to ${place + 1} of ${beams.length}.`);
+      return true;
     },
     [announce, api],
   );
@@ -589,6 +701,7 @@ export default function BuilderScene() {
           setFitToken((token) => token + 1);
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedFrameId(null);
           setSelectedConnectionId(null);
           cancelBeam();
           cancelConnect();
@@ -608,7 +721,7 @@ export default function BuilderScene() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
-      if (ghostBeamId) {
+      if (ghostBeamId || ghostFrameId) {
         setExporting(true);
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       }
@@ -622,7 +735,7 @@ export default function BuilderScene() {
     } finally {
       setExporting(false);
     }
-  }, [announce, ghostBeamId]);
+  }, [announce, ghostBeamId, ghostFrameId]);
 
   const handleCanvasReady = useCallback((handle: CanvasApi) => {
     canvasRef.current = handle.canvas;
@@ -669,6 +782,7 @@ export default function BuilderScene() {
         event.preventDefault();
         setSelection(sceneRef.current.components.map((component) => component.id));
         setSelectedBeamId(null);
+        setSelectedFrameId(null);
         return;
       }
 
@@ -682,6 +796,7 @@ export default function BuilderScene() {
         else {
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedFrameId(null);
           setSelectedConnectionId(null);
         }
         return;
@@ -703,6 +818,25 @@ export default function BuilderScene() {
         event.preventDefault();
         api.deleteConnection(selectedConnection.id);
         setSelectedConnectionId(null);
+        return;
+      }
+
+      if (selectedFrame && selectedIds.length === 0) {
+        const nudge = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+        const [fx, fz] = selectedFrame.position;
+        const to: Record<string, [number, number]> = {
+          ArrowLeft: [fx - nudge, fz],
+          ArrowRight: [fx + nudge, fz],
+          ArrowUp: [fx, fz - nudge],
+          ArrowDown: [fx, fz + nudge],
+        };
+        if (to[event.key]) {
+          event.preventDefault();
+          api.updateFrame(selectedFrame.id, { position: clampToTable(...to[event.key]) });
+        } else if (event.key === "Delete" || event.key === "Backspace") {
+          event.preventDefault();
+          handleDeleteFrame(selectedFrame.id);
+        }
         return;
       }
 
@@ -757,9 +891,11 @@ export default function BuilderScene() {
     deleteSelected,
     duplicateSelected,
     finishBeam,
+    handleDeleteFrame,
     placingType,
     rotateSelected,
     selectedConnection,
+    selectedFrame,
     selectedIds,
     trayOpen,
   ]);
@@ -776,6 +912,7 @@ export default function BuilderScene() {
     setSelectedBeamId((current) => (current === id ? null : id));
     setSelection([]);
     setSelectedConnectionId(null);
+    setSelectedFrameId(null);
   }, []);
 
   return (
@@ -788,11 +925,15 @@ export default function BuilderScene() {
           components={scene.components}
           beams={scene.beams}
           connections={scene.connections}
+          frames={scene.frames}
           palette={palette}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
           ghostBeamId={ghostBeamId}
           selectedConnectionId={selectedConnection?.id ?? null}
+          selectedFrameId={selectedFrame?.id ?? null}
+          ghostFrameId={ghostFrameId}
+          framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops}
           hoveredId={hoveredId}
           // the part a connection leaves from carries the "1" badge until the second click
           beamDraft={connectDraft?.from ? [connectDraft.from] : beamDraft}
@@ -808,6 +949,7 @@ export default function BuilderScene() {
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={handleComponentHover}
           onConnectionPointerDown={handleConnectionPointerDown}
+          onFramePointerDown={handleFramePointerDown}
           onCanvasReady={handleCanvasReady}
         />
         {selectionBox ? (
@@ -826,8 +968,10 @@ export default function BuilderScene() {
       <BuilderHud
         components={scene.components}
         beams={scene.beams}
+        frames={scene.frames}
         selected={selectedComponents}
         selectedBeam={selectedBeam}
+        selectedFrame={selectedFrame}
         selectedConnection={selectedConnection}
         connectDraft={connectDraft}
         placingType={placingType}
@@ -860,6 +1004,7 @@ export default function BuilderScene() {
         onDeselect={() => {
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedFrameId(null);
           setSelectedConnectionId(null);
         }}
         onUpdateSelected={updateSelected}
@@ -892,6 +1037,11 @@ export default function BuilderScene() {
         onDeleteBeam={handleDeleteBeam}
         onMoveBeam={handleMoveBeam}
         onSetBeamHidden={handleSetBeamHidden}
+        onAddFrame={handleAddFrame}
+        onSelectFrame={handleSelectFrame}
+        onUpdateFrame={api.updateFrame}
+        onDeleteFrame={handleDeleteFrame}
+        onSetFrameHidden={handleSetFrameHidden}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}
@@ -911,12 +1061,14 @@ export default function BuilderScene() {
           api.resetToExample();
           setSelection([]);
           setSelectedConnectionId(null);
+          setSelectedFrameId(null);
           announce("Loaded the example pump + reference layout.");
         }}
         onClear={() => {
           api.clearScene();
           setSelection([]);
           setSelectedBeamId(null);
+          setSelectedFrameId(null);
           setSelectedConnectionId(null);
           cancelBeam();
           cancelConnect();
