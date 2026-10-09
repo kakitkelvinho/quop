@@ -83,6 +83,14 @@ layout. The halo is stronger then, and still follows the beam's width and
 opacity. It is saved with the beam; there is no table-wide switch. The beam
 being drawn always keeps its core and arrows.
 
+**A part in a beam snaps back onto its line.** Dragging a part that is a stop in
+the middle of a beam, it locks onto the straight line between the stops before
+and after it once it is within 5 mm of that line (in the table plane; its height
+is untouched), and a faint dashed guide shows while it is locked. This is what
+puts an off-grid lens back on the line the grid cannot reach. Elsewhere the
+grid still applies. With several beams through the part the first in the beam
+list is used, and dragging a group of parts skips the lock.
+
 **A mirror in a beam angles itself.** A mirror that is a stop in the middle
 of a beam (not its first or last) turns so its face bisects the directions to
 the stops before and after it, and re-angles live as any of the three moves.

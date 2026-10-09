@@ -678,6 +678,60 @@ export function setBeamHidden(beams: Beam[], id: string, hidden: boolean): Beam[
 }
 
 // ---------------------------------------------------------------------------
+// Beam-line snap
+// ---------------------------------------------------------------------------
+
+/** How close, mm, a dragged part must come to its beam's straight line to lock onto it. */
+export const BEAM_LINE_SNAP_MM = 5;
+
+/**
+ * Where a part dragged to (x, z) locks onto the straight line from `before` to
+ * `after`, in the table plane, or undefined when it is farther than
+ * `threshold` from that segment.
+ */
+export function snapToBeamLine(
+  x: number,
+  z: number,
+  before: Vec3,
+  after: Vec3,
+  threshold = BEAM_LINE_SNAP_MM,
+): [number, number] | undefined {
+  const dx = after[0] - before[0];
+  const dz = after[2] - before[2];
+  const lengthSq = dx * dx + dz * dz;
+  if (lengthSq === 0) return undefined;
+  const t = clamp(((x - before[0]) * dx + (z - before[2]) * dz) / lengthSq, [0, 1]);
+  const sx = before[0] + t * dx;
+  const sz = before[2] + t * dz;
+  return Math.hypot(x - sx, z - sz) <= threshold ? [sx, sz] : undefined;
+}
+
+/**
+ * The beam-line lock for a part being dragged: the stops before and after it
+ * in the first beam, in scene order, that has it in the middle (the same rule
+ * as mirror angles), and where (x, z) locks onto the line between them.
+ */
+export function beamLineSnap(
+  beams: Beam[],
+  components: BuilderComponent[],
+  id: string,
+  x: number,
+  z: number,
+  threshold = BEAM_LINE_SNAP_MM,
+): { position: [number, number]; guide: [Vec3, Vec3] } | undefined {
+  for (const beam of beams) {
+    const index = beam.path.indexOf(id, 1);
+    if (index <= 0 || index >= beam.path.length - 1) continue;
+    const before = componentById(components, beam.path[index - 1]);
+    const after = componentById(components, beam.path[index + 1]);
+    if (!before || !after) return undefined;
+    const position = snapToBeamLine(x, z, before.position, after.position, threshold);
+    return position ? { position, guide: [before.position, after.position] } : undefined;
+  }
+  return undefined;
+}
+
+// ---------------------------------------------------------------------------
 // Mirror angles
 // ---------------------------------------------------------------------------
 

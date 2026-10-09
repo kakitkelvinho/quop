@@ -4,6 +4,7 @@ import {
   Environment,
   Grid,
   Lightformer,
+  Line,
   OrbitControls,
 } from "@react-three/drei";
 import {
@@ -810,6 +811,8 @@ export type BuilderCanvasProps = {
   view: CameraView;
   fitToken: number;
   dragging: boolean;
+  /** the beam line a dragged part is locked onto, drawn faintly while it is */
+  snapGuide: [Vec3, Vec3] | null;
   onSurfaceClick: (x: number, z: number) => void;
   onSurfaceDrag: (
     x: number,
@@ -865,6 +868,7 @@ export default function BuilderCanvas({
   view,
   fitToken,
   dragging,
+  snapGuide,
   onSurfaceClick,
   onSurfaceDrag,
   onComponentPointerDown,
@@ -988,6 +992,19 @@ export default function BuilderCanvas({
         <BeamPath
           points={beamPoints(components, beamDraft)}
           color={palette.accent}
+        />
+      ) : null}
+
+      {snapGuide ? (
+        <Line
+          points={snapGuide}
+          color={palette.accent}
+          lineWidth={1}
+          transparent
+          opacity={0.45}
+          dashed
+          dashSize={12}
+          gapSize={8}
         />
       ) : null}
 
