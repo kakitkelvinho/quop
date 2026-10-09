@@ -23,6 +23,7 @@ const part = (id: string, type: ComponentType, x: number, z: number, rotation = 
 function scene(components: BuilderComponent[], paths: string[][]): BuilderSceneData {
   return {
     version: SCENE_VERSION,
+    frames: [],
     components,
     beams: paths.map((path, index) => ({ id: `beam-${index}`, path, color: "#e33" })),
     connections: [],

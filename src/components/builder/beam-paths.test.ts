@@ -5,7 +5,6 @@ import {
   appendStop,
   type Beam,
   dropComponentFromBeams,
-  moveStop,
   moveStopTo,
   parseScene,
   type PathEdit,
@@ -14,6 +13,10 @@ import {
 
 // #82: editing a beam's stops is predictable. Clicks append in click order;
 // a refused edit says why.
+
+/** One step toward the start (-1) or the end (1), the move the keyboard makes. */
+const moveStopStep = (path: string[], index: number, direction: 1 | -1) =>
+  moveStopTo(path, index, index + direction);
 
 describe("adding stops", () => {
   it("appends each click in order", () => {
@@ -54,16 +57,16 @@ describe("removing and moving stops", () => {
   });
 
   it("swaps a stop with its neighbour", () => {
-    assert.deepEqual(moveStop(["A", "B", "C"], 2, -1), { ok: true, path: ["A", "C", "B"] });
+    assert.deepEqual(moveStopStep(["A", "B", "C"], 2, -1), { ok: true, path: ["A", "C", "B"] });
   });
 
   it("refuses to move past either end", () => {
-    assert.match(reason(moveStop(["A", "B", "C"], 0, -1)), /already first/i);
-    assert.match(reason(moveStop(["A", "B", "C"], 2, 1)), /already last/i);
+    assert.match(reason(moveStopStep(["A", "B", "C"], 0, -1)), /already first/i);
+    assert.match(reason(moveStopStep(["A", "B", "C"], 2, 1)), /already last/i);
   });
 
   it("refuses a move that puts a part twice in a row", () => {
-    assert.match(reason(moveStop(["A", "B", "A", "C"], 1, 1)), /twice in a row/);
+    assert.match(reason(moveStopStep(["A", "B", "A", "C"], 1, 1)), /twice in a row/);
   });
 });
 

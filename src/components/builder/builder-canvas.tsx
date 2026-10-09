@@ -4,6 +4,7 @@ import {
   Environment,
   Grid,
   Lightformer,
+  Line,
   OrbitControls,
 } from "@react-three/drei";
 import {
@@ -47,6 +48,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { ComponentMesh } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
+import { FrameMesh } from "@/components/builder/frame-mesh";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
@@ -58,6 +60,7 @@ import {
   componentById,
   componentRadius,
   type Beam,
+  type Frame,
   type BuilderComponent,
   type Connection,
   type Vec3,
@@ -69,6 +72,8 @@ const GRID_CELL_MM = 25;
 const GRID_SECTION_MM = 100;
 /** how far from under the camera the grid fades out, mm: past the edge of the widest zoom */
 const GRID_FADE_MM = 9000;
+/** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
+const SNAP_GUIDE_Y_MM = 0.8;
 /** a press that travels further than this, in screen pixels, is a drag, not a click */
 export const CLICK_SLOP_PX = 4;
 const TABLE_THICKNESS_MM = 14;
@@ -789,6 +794,7 @@ export type BuilderCanvasProps = {
   components: BuilderComponent[];
   beams: Beam[];
   connections: Connection[];
+  frames: Frame[];
   palette: ScenePalette;
   /** the selected parts; the last is the one the orbit falls back to */
   selection: string[];
@@ -796,6 +802,11 @@ export type BuilderCanvasProps = {
   /** the one hidden beam drawn as a faint ghost, if any; every other hidden beam is not drawn */
   ghostBeamId: string | null;
   selectedConnectionId: string | null;
+  selectedFrameId: string | null;
+  /** the one hidden frame drawn as a faint ghost, if any; every other hidden frame is not drawn */
+  ghostFrameId: string | null;
+  /** the edges of frames take presses: off while placing a part or drawing a beam or connection */
+  framesInteractive: boolean;
   hoveredId: string | null;
   beamDraft: string[];
   showLabels: boolean;
@@ -805,6 +816,8 @@ export type BuilderCanvasProps = {
   view: CameraView;
   fitToken: number;
   dragging: boolean;
+  /** the beam line a dragged part is locked onto, drawn faintly while it is */
+  snapGuide: [Vec3, Vec3] | null;
   onSurfaceClick: (x: number, z: number) => void;
   onSurfaceDrag: (
     x: number,
@@ -814,6 +827,7 @@ export type BuilderCanvasProps = {
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onCanvasReady: (handle: CanvasApi) => void;
 };
 
@@ -847,11 +861,15 @@ export default function BuilderCanvas({
   components,
   beams,
   connections,
+  frames,
   palette,
   selection,
   selectedBeamId,
   ghostBeamId,
   selectedConnectionId,
+  selectedFrameId,
+  ghostFrameId,
+  framesInteractive,
   hoveredId,
   beamDraft,
   showLabels,
@@ -860,11 +878,13 @@ export default function BuilderCanvas({
   view,
   fitToken,
   dragging,
+  snapGuide,
   onSurfaceClick,
   onSurfaceDrag,
   onComponentPointerDown,
   onComponentHover,
   onConnectionPointerDown,
+  onFramePointerDown,
   onCanvasReady,
 }: BuilderCanvasProps) {
   // the orbit pivot: set when an orbit drag starts, cleared by a snap-back
@@ -937,6 +957,25 @@ export default function BuilderCanvas({
         />
       ) : null}
 
+      {frames.map((frame) => {
+        const ghost = Boolean(frame.hidden) && frame.id === ghostFrameId;
+        if (frame.hidden && !ghost) return null;
+        return (
+          <FrameMesh
+            key={frame.id}
+            frame={frame}
+            selected={frame.id === selectedFrameId}
+            ghost={ghost}
+            showLabel={showLabels}
+            interactive={framesInteractive}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              onFramePointerDown(frame.id, event);
+            }}
+          />
+        );
+      })}
+
       {components.map((component) => (
         <ComponentMesh
           key={component.id}
@@ -983,6 +1022,23 @@ export default function BuilderCanvas({
         <BeamPath
           points={beamVectors(components, beamDraft)}
           color={palette.accent}
+        />
+      ) : null}
+
+      {snapGuide ? (
+        // Laid on the table under the beam, not along it, where the beam's own
+        // tube would hide it, and drawn over the posts so it reads from above.
+        <Line
+          points={snapGuide.map(([x, , z]): Vec3 => [x, SNAP_GUIDE_Y_MM, z])}
+          color={palette.accent}
+          lineWidth={1.5}
+          transparent
+          opacity={0.85}
+          dashed
+          dashSize={10}
+          gapSize={6}
+          depthTest={false}
+          renderOrder={3}
         />
       ) : null}
 

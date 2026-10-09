@@ -10,6 +10,8 @@ import {
   DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
+  DEFAULT_FRAME_SIZE_MM,
+  FRAME_COLORS,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SCENE,
   EMPTY_SCENE,
@@ -17,10 +19,12 @@ import {
   createBeamId,
   createComponentId,
   createConnectionId,
+  createFrameId,
   defaultHeight,
-  moveBeam as moveBeamInList,
+  moveBeamTo as moveBeamInList,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
+  setFrameHidden as setFrameHiddenInList,
   settleAngles,
   settleHosts,
   snapToGrid,
@@ -30,6 +34,7 @@ import {
   type ComponentType,
   type Connection,
   type ConnectionKind,
+  type Frame,
   type Vec3,
 } from "@/components/builder/types";
 
@@ -325,16 +330,16 @@ export function useBuilderScene() {
     [commit],
   );
 
-  /** One step up or down the beam list; the beam's new place, or null when it can't go that way. */
+  /** Drop a beam at index `to` of the list; the beam's new place, or null when it can't go there. */
   const moveBeam = useCallback(
-    (id: string, direction: 1 | -1): number | null => {
-      const edit = moveBeamInList(scene.beams, id, direction);
+    (id: string, to: number): number | null => {
+      const edit = moveBeamInList(scene.beams, id, to);
       if (!edit.ok) return null;
       commit((current) => {
-        const moved = moveBeamInList(current.beams, id, direction);
+        const moved = moveBeamInList(current.beams, id, to);
         return moved.ok ? { ...current, beams: moved.beams } : current;
       });
-      return edit.beams.findIndex((beam) => beam.id === id);
+      return to;
     },
     [commit, scene.beams],
   );
@@ -343,6 +348,60 @@ export function useBuilderScene() {
   const setBeamHidden = useCallback(
     (id: string, hidden: boolean) =>
       commit((current) => ({ ...current, beams: setBeamHiddenInList(current.beams, id, hidden) })),
+    [commit],
+  );
+
+  // ---- frame edits ---------------------------------------------------------
+
+  /** A new frame of the default size, centred on (x, z); its id. */
+  const addFrame = useCallback(
+    ([x, z]: [number, number]): string => {
+      const id = createFrameId();
+      commit((current) => ({
+        ...current,
+        frames: [
+          ...current.frames,
+          {
+            id,
+            position: clampToTable(x, z),
+            width: DEFAULT_FRAME_SIZE_MM[0],
+            depth: DEFAULT_FRAME_SIZE_MM[1],
+            color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length],
+          },
+        ],
+      }));
+      return id;
+    },
+    [commit],
+  );
+
+  const updateFrame = useCallback(
+    (id: string, patch: Partial<Omit<Frame, "id">>, record = true) => {
+      const apply: Mutation = (current) => ({
+        ...current,
+        frames: current.frames.map((frame) => (frame.id === id ? { ...frame, ...patch } : frame)),
+      });
+      if (record) commit(apply);
+      else preview(apply);
+    },
+    [commit, preview],
+  );
+
+  const moveFrame = useCallback(
+    (id: string, x: number, z: number) => updateFrame(id, { position: clampToTable(x, z) }, false),
+    [updateFrame],
+  );
+
+  const deleteFrame = useCallback(
+    (id: string) =>
+      commit((current) => ({ ...current, frames: current.frames.filter((frame) => frame.id !== id) })),
+    [commit],
+  );
+
+  /** Hide or show a frame: one undo step, and nothing else about it changes. */
+  const setFrameHidden = useCallback(
+    (id: string, hidden: boolean) =>
+      commit((current) => ({ ...current, frames: setFrameHiddenInList(current.frames, id, hidden) })),
     [commit],
   );
 
@@ -416,6 +475,11 @@ export function useBuilderScene() {
       deleteBeam,
       moveBeam,
       setBeamHidden,
+      addFrame,
+      updateFrame,
+      moveFrame,
+      deleteFrame,
+      setFrameHidden,
       replaceScene,
       clearScene,
       resetToExample,
@@ -446,6 +510,11 @@ export function useBuilderScene() {
       deleteBeam,
       moveBeam,
       setBeamHidden,
+      addFrame,
+      updateFrame,
+      moveFrame,
+      deleteFrame,
+      setFrameHidden,
       replaceScene,
       clearScene,
       resetToExample,

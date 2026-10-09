@@ -8,7 +8,7 @@ import { beamLengthMm, parseScene, serializeScene } from "./types.ts";
 // dropped, in every later release. Each fixture is a setup file in the shape
 // one schema version saved; see setup-fixtures/README.md before touching them.
 
-const FIXTURES = ["setup-v1.json", "setup-v2.json", "setup-v3.json", "setup-v4.json"];
+const FIXTURES = ["setup-v1.json", "setup-v2.json", "setup-v3.json", "setup-v4.json", "setup-v5.json"];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
 const LEGACY_NAMES: Record<string, string> = {
@@ -133,6 +133,39 @@ describe("setup-v4.json, the first version with hidden beams", () => {
         [],
         name,
       );
+    }
+  });
+});
+
+describe("setup-v5.json, the first version with frames", () => {
+  it("opens both frames with their size, colour, label and place, the second hidden", () => {
+    assert.deepEqual(open("setup-v5.json").frames, [
+      { id: "breadboard", position: [0, 0], width: 900, depth: 600, color: "#0891b2", label: "Main breadboard" },
+      {
+        id: "enclosure",
+        position: [-700, 500],
+        width: 300,
+        depth: 250,
+        color: "#ea580c",
+        label: "Laser enclosure",
+        hidden: true,
+      },
+    ]);
+  });
+
+  it("keeps both frames, and the hidden one hidden, after being saved and opened again", () => {
+    const again = parseScene(JSON.parse(serializeScene(open("setup-v5.json"))));
+    assert.deepEqual(again?.frames, open("setup-v5.json").frames);
+  });
+
+  it("is v4's setup in every other way: its parts, and the reference arm still hidden", () => {
+    assert.deepEqual(open("setup-v5.json").components, open("setup-v4.json").components);
+    assert.equal(open("setup-v5.json").beams.find(({ id }) => id === "reference")?.hidden, true);
+  });
+
+  it("opens every older setup with no frames", () => {
+    for (const name of ["setup-v1.json", "setup-v2.json", "setup-v3.json", "setup-v4.json"]) {
+      assert.deepEqual(open(name).frames, [], name);
     }
   });
 });
