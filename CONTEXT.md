@@ -31,7 +31,7 @@ An author-drawn, ordered path through components, recording where the light is m
 _Avoid_: ray, trace
 
 **Path length**:
-The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight.
+The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
 
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.

@@ -44,7 +44,13 @@ get wrong.
 **Path length is the payoff.** Because a beam is a polyline with real
 millimetres, its length and vacuum time of flight fall out for free. Both are
 shown per beam, which is the number a pump–probe delay line is actually built
-around.
+around. A laser source can also carry a built-in path (0–100 000 mm, set in
+its inspector, empty for none): light it adds before the aperture, such as a
+folded or internal delay, so a long beam does not need the laser placed far
+along the table. It counts once, in a beam that starts at that laser; a laser
+anywhere later in a path adds nothing. The beam's length, its time of flight
+and its row in the beams box all include it, and its inspector says how much
+came from inside the laser. The beam is still drawn from the aperture.
 
 **Beams can be told apart.** Each beam has its own width (a drawn diameter in
 millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the
