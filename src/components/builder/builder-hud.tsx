@@ -20,6 +20,7 @@ import {
   beamDisplayName,
   beamLengthMm,
   derivedAngleBeam,
+  moveBeam,
   type Beam,
   type BuilderComponent,
   type ComponentType,
@@ -84,6 +85,8 @@ export type BuilderHudProps = {
   /** snapshot the scene before a run of unrecorded edits (a slider drag) */
   onCheckpoint: () => void;
   onDeleteBeam: (id: string) => void;
+  /** one step up (-1) or down (1) the beam list */
+  onMoveBeam: (id: string, direction: 1 | -1) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
@@ -138,6 +141,101 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
       ],
     };
   return null;
+}
+
+/**
+ * The beams box: one row per beam, in list order. A row selects its beam, moves
+ * it up or down the list, or deletes it. A move that isn't possible is
+ * disabled, and its label says why. Keyboard focus follows the edit: a moved
+ * beam keeps the button that moved it (or the opposite one when that is now
+ * disabled), and a deleted beam's row hands focus to the beam that took its place.
+ */
+function BeamList({
+  components,
+  beams,
+  selectedId,
+  besideParts,
+  onSelect,
+  onMove,
+  onDelete,
+}: {
+  components: BuilderComponent[];
+  beams: Beam[];
+  selectedId: string | null;
+  besideParts: boolean;
+  onSelect: (id: string) => void;
+  onMove: (id: string, direction: 1 | -1) => void;
+  onDelete: (id: string) => void;
+}) {
+  const listRef = useRef<HTMLOListElement>(null);
+  // a row's buttons, in order: select, up, down, delete; the first enabled one wanted gets focus
+  const focusAfter = useRef<{ row: number; wanted: number[] } | null>(null);
+  useEffect(() => {
+    const target = focusAfter.current;
+    focusAfter.current = null;
+    const rows = listRef.current?.children;
+    if (!target || !rows?.length) return;
+    const buttons = Array.from(rows[Math.min(target.row, rows.length - 1)].querySelectorAll("button"));
+    target.wanted.map((at) => buttons[at]).find((button) => button && !button.disabled)?.focus();
+  }, [beams]);
+
+  return (
+    <ol
+      ref={listRef}
+      role="list"
+      aria-label="Beams"
+      className={`builderIsland builderHud__beams${besideParts ? " is-besideParts" : ""}`}
+    >
+      {beams.map((beam, index) => {
+        const name = beamDisplayName(beam);
+        const selected = selectedId === beam.id;
+        const up = moveBeam(beams, beam.id, -1);
+        const down = moveBeam(beams, beam.id, 1);
+        return (
+          <li key={beam.id} className={`builderBeamRow${selected ? " is-selected" : ""}`}>
+            <button
+              type="button"
+              className="builderBeamRow__select"
+              aria-pressed={selected}
+              onClick={() => onSelect(beam.id)}
+            >
+              <span className="builderBeamRow__dot" style={{ background: beam.color }} />
+              <span className="builderBeamRow__name">{name}</span>
+              <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
+            </button>
+            <span className="builderBeamRow__actions">
+              <IconButton
+                icon="up"
+                label={up.ok ? `Move ${name} up` : `Can't move ${name} up: ${up.reason}`}
+                disabled={!up.ok}
+                onClick={() => {
+                  focusAfter.current = { row: index - 1, wanted: [1, 2] };
+                  onMove(beam.id, -1);
+                }}
+              />
+              <IconButton
+                icon="down"
+                label={down.ok ? `Move ${name} down` : `Can't move ${name} down: ${down.reason}`}
+                disabled={!down.ok}
+                onClick={() => {
+                  focusAfter.current = { row: index + 1, wanted: [2, 1] };
+                  onMove(beam.id, 1);
+                }}
+              />
+              <IconButton
+                icon="trash"
+                label={`Delete ${name}`}
+                onClick={() => {
+                  focusAfter.current = { row: index, wanted: [0] };
+                  onDelete(beam.id);
+                }}
+              />
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 /** What the builder leaves to the author: it is a notebook, not a simulator (BUILDER.md). */
@@ -496,25 +594,15 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length ? (
-        <div
-          className={`builderIsland builderHud__beams${trayOpen ? " is-besideParts" : ""}`}
-          role="group"
-          aria-label="Beams"
-        >
-          {beams.map((beam) => (
-            <button
-              key={beam.id}
-              type="button"
-              className={`builderBeamRow${selectedBeam?.id === beam.id ? " is-selected" : ""}`}
-              aria-pressed={selectedBeam?.id === beam.id}
-              onClick={() => props.onSelectBeam(beam.id)}
-            >
-              <span className="builderBeamRow__dot" style={{ background: beam.color }} />
-              <span className="builderBeamRow__name">{beamDisplayName(beam)}</span>
-              <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
-            </button>
-          ))}
-        </div>
+        <BeamList
+          components={components}
+          beams={beams}
+          selectedId={selectedBeam?.id ?? null}
+          besideParts={trayOpen}
+          onSelect={props.onSelectBeam}
+          onMove={props.onMoveBeam}
+          onDelete={props.onDeleteBeam}
+        />
       ) : null}
 
       <div className="builderIsland builderHud__view" role="toolbar" aria-label="View">

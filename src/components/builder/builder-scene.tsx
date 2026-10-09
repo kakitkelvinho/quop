@@ -30,6 +30,7 @@ import {
   componentDisplayName,
   findHost,
   appendStop,
+  beamDisplayName,
   derivedAngleBeam,
   parseScene,
   serializeScene,
@@ -493,6 +494,30 @@ export default function BuilderScene() {
     [],
   );
 
+  // A beam's row vanishes or jumps, so say what happened for those who can't see it.
+  const handleDeleteBeam = useCallback(
+    (id: string) => {
+      const beam = sceneRef.current.beams.find((entry) => entry.id === id);
+      api.deleteBeam(id);
+      setSelectedBeamId((current) => (current === id ? null : current));
+      if (beam) announce(`Deleted ${beamDisplayName(beam)}. ⌘Z brings it back.`);
+    },
+    [announce, api],
+  );
+
+  const handleMoveBeam = useCallback(
+    (id: string, direction: 1 | -1) => {
+      const beam = sceneRef.current.beams.find((entry) => entry.id === id);
+      const place = api.moveBeam(id, direction);
+      if (beam && place !== null) {
+        announce(
+          `Moved ${beamDisplayName(beam)} ${direction < 0 ? "up" : "down"}: ${place + 1} of ${sceneRef.current.beams.length}.`,
+        );
+      }
+    },
+    [announce, api],
+  );
+
   // ---- file & image --------------------------------------------------------
 
   const handleSave = useCallback(() => {
@@ -818,10 +843,8 @@ export default function BuilderScene() {
         }
         onUpdateBeam={api.updateBeam}
         onCheckpoint={() => api.commitCheckpoint(sceneRef.current)}
-        onDeleteBeam={(id) => {
-          api.deleteBeam(id);
-          setSelectedBeamId((current) => (current === id ? null : current));
-        }}
+        onDeleteBeam={handleDeleteBeam}
+        onMoveBeam={handleMoveBeam}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}
