@@ -2485,8 +2485,89 @@ html[data-theme="dark"] .builderIsland {
 }
 
 .builderStops--editable li {
+  position: relative;
   min-height: 1.6rem;
   line-height: 1.6rem;
+  border-radius: 0.4rem;
+}
+
+.builderStops__grip {
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.6rem;
+  margin-right: 0.15rem;
+  vertical-align: top;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.builderStops__grip:hover {
+  color: var(--foreground);
+}
+
+.builderStops__grip svg {
+  width: 16px;
+  height: 16px;
+}
+
+.builderStops--editable.is-reordering {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.builderStops--editable li.is-dragging {
+  z-index: 1;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+}
+
+.builderStops--editable li.is-dragging .builderStops__grip {
+  cursor: grabbing;
+}
+
+/* A refused drop slides the row home; an accepted one just lands, so the
+   row that stayed mounted doesn't glide back carrying a different stop. */
+.builderStops--editable li.is-returning {
+  transition: transform 160ms ease;
+}
+
+/* The insertion line sits on the boundary between rows, over the lifted row. */
+.builderStops--editable li.is-drop-before::before,
+.builderStops--editable li.is-drop-after::after {
+  content: "";
+  position: absolute;
+  left: -1.3rem;
+  right: 0;
+  z-index: 2;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.builderStops--editable li.is-drop-before::before {
+  top: -1px;
+}
+
+.builderStops--editable li.is-drop-after::after {
+  bottom: -1px;
+}
+
+.builderStops--editable li.is-refused::before,
+.builderStops--editable li.is-refused::after {
+  height: 0;
+  border-top: 2px dashed var(--muted);
+  border-radius: 0;
+  background: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .builderStops--editable li.is-returning {
+    transition: none;
+  }
 }
 
 .builderStops__name {
