@@ -641,6 +641,9 @@ const HALO = {
   aloneSelected: { width: 3.6, opacity: 1 },
 };
 
+/** A selected hidden beam's glow, × the halo's own opacity: enough to see where it runs, far short of a shown beam. */
+const GHOST_OPACITY = 0.5;
+
 /**
  * A beam, drawn in millimetres on the table: its width scales with the zoom
  * like the parts do. The core is a lit tube, one per leg with a ball at each
@@ -654,7 +657,8 @@ function BeamPath({
   width = BEAM_WIDTH_MM,
   opacity = 1,
   selected = false,
-  core = true,
+  core: coreWanted = true,
+  ghost = false,
 }: {
   points: Vector3[];
   color: string;
@@ -663,8 +667,11 @@ function BeamPath({
   selected?: boolean;
   /** off leaves only the halo: no tube core and no arrows */
   core?: boolean;
+  /** a hidden beam that is selected: only a faint glow, so it can be found and edited */
+  ghost?: boolean;
 }) {
-  const alpha = selected ? 1 : opacity;
+  const core = coreWanted && !ghost;
+  const alpha = ghost ? GHOST_OPACITY : selected ? 1 : opacity;
   const halo = core
     ? selected
       ? HALO.underCoreSelected
@@ -791,6 +798,8 @@ export type BuilderCanvasProps = {
   /** the selected parts; the last is the one the orbit falls back to */
   selection: string[];
   selectedBeamId: string | null;
+  /** the one hidden beam drawn as a faint ghost, if any; every other hidden beam is not drawn */
+  ghostBeamId: string | null;
   selectedConnectionId: string | null;
   hoveredId: string | null;
   beamDraft: string[];
@@ -846,6 +855,7 @@ export default function BuilderCanvas({
   palette,
   selection,
   selectedBeamId,
+  ghostBeamId,
   selectedConnectionId,
   hoveredId,
   beamDraft,
@@ -956,6 +966,8 @@ export default function BuilderCanvas({
       ))}
 
       {beams.map((beam) => {
+        const ghost = beam.hidden && beam.id === ghostBeamId;
+        if (beam.hidden && !ghost) return null;
         const points = beamPoints(components, beam.path);
         if (points.length < 2) return null;
         return (
@@ -967,6 +979,7 @@ export default function BuilderCanvas({
             opacity={beam.opacity}
             selected={beam.id === selectedBeamId}
             core={beam.arrows !== false}
+            ghost={ghost}
           />
         );
       })}

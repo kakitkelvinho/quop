@@ -87,6 +87,7 @@ export type BuilderHudProps = {
   onDeleteBeam: (id: string) => void;
   /** one step up (-1) or down (1) the beam list */
   onMoveBeam: (id: string, direction: 1 | -1) => void;
+  onSetBeamHidden: (id: string, hidden: boolean) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
@@ -145,7 +146,8 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
 
 /**
  * The beams box: one row per beam, in list order. A row selects its beam, moves
- * it up or down the list, or deletes it. A move that isn't possible is
+ * it up or down the list, hides or shows it on the table, or deletes it. A
+ * hidden beam's row stays, dimmed. A move that isn't possible is
  * disabled, and its label says why. Keyboard focus follows the edit: a moved
  * beam keeps the button that moved it (or the opposite one when that is now
  * disabled), and a deleted beam's row hands focus to the beam that took its place.
@@ -157,6 +159,7 @@ function BeamList({
   besideParts,
   onSelect,
   onMove,
+  onSetHidden,
   onDelete,
 }: {
   components: BuilderComponent[];
@@ -165,10 +168,11 @@ function BeamList({
   besideParts: boolean;
   onSelect: (id: string) => void;
   onMove: (id: string, direction: 1 | -1) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const listRef = useRef<HTMLOListElement>(null);
-  // a row's buttons, in order: select, up, down, delete; the first enabled one wanted gets focus
+  // a row's buttons, in order: select, up, down, hide, delete; the first enabled one wanted gets focus
   const focusAfter = useRef<{ row: number; wanted: number[] } | null>(null);
   useEffect(() => {
     const target = focusAfter.current;
@@ -192,7 +196,7 @@ function BeamList({
         const up = moveBeam(beams, beam.id, -1);
         const down = moveBeam(beams, beam.id, 1);
         return (
-          <li key={beam.id} className={`builderBeamRow${selected ? " is-selected" : ""}`}>
+          <li key={beam.id} className={`builderBeamRow${selected ? " is-selected" : ""}${beam.hidden ? " is-hidden" : ""}`}>
             <button
               type="button"
               className="builderBeamRow__select"
@@ -221,6 +225,12 @@ function BeamList({
                   focusAfter.current = { row: index + 1, wanted: [2, 1] };
                   onMove(beam.id, 1);
                 }}
+              />
+              <IconButton
+                icon={beam.hidden ? "eyeOff" : "eye"}
+                label={`${beam.hidden ? "Show" : "Hide"} ${name}`}
+                active={Boolean(beam.hidden)}
+                onClick={() => onSetHidden(beam.id, !beam.hidden)}
               />
               <IconButton
                 icon="trash"
@@ -601,6 +611,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           besideParts={trayOpen}
           onSelect={props.onSelectBeam}
           onMove={props.onMoveBeam}
+          onSetHidden={props.onSetBeamHidden}
           onDelete={props.onDeleteBeam}
         />
       ) : null}

@@ -20,6 +20,7 @@ import {
   defaultHeight,
   moveBeam as moveBeamInList,
   parseScene,
+  setBeamHidden as setBeamHiddenInList,
   settleAngles,
   settleHosts,
   snapToGrid,
@@ -338,6 +339,13 @@ export function useBuilderScene() {
     [commit, scene.beams],
   );
 
+  /** Hide or show a beam on the table: one undo step, and nothing else about the beam changes. */
+  const setBeamHidden = useCallback(
+    (id: string, hidden: boolean) =>
+      commit((current) => ({ ...current, beams: setBeamHiddenInList(current.beams, id, hidden) })),
+    [commit],
+  );
+
   // ---- whole-scene ---------------------------------------------------------
 
   const replaceScene = useCallback((next: BuilderSceneData) => commit(() => next), [commit]);
@@ -407,6 +415,7 @@ export function useBuilderScene() {
       updateBeam,
       deleteBeam,
       moveBeam,
+      setBeamHidden,
       replaceScene,
       clearScene,
       resetToExample,
@@ -436,6 +445,7 @@ export function useBuilderScene() {
       updateBeam,
       deleteBeam,
       moveBeam,
+      setBeamHidden,
       replaceScene,
       clearScene,
       resetToExample,
