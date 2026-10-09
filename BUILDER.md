@@ -29,8 +29,10 @@ height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or
 lowering a part changes the length of its post (or the plates a laser stands on); the part
 itself never scales. The lowest height is where the post runs out, or where a
-floating part meets the table; the ceiling is 300 mm. The spectrometer is the
-exception: its input port is fixed by the instrument. A beam between parts at
+floating part meets the table; the ceiling is 300 mm. The spectrometer and
+the time tagger are the exceptions: the spectrometer's input port is fixed by
+the instrument, and the time tagger sits on the table with its inputs at
+27 mm. A beam between parts at
 different heights slopes, and its path length and time of flight are 3D.
 
 **Beams are drawn, not traced.** A beam is an ordered list of the components it
@@ -96,7 +98,9 @@ them instead: a photodiode is a coloured dome behind a face with a small
 silicon chip set into a cup, a fiber off the dome's tip; an AOM or EOM is its
 bare crystal, with the transducer or electrodes that drive it. A single-photon
 detector is a black module on a post, with a fiber connector on its face and
-SMA outputs at the back; note SPCM or SNSPD in its label. Anything the
+SMA outputs at the back; note SPCM or SNSPD in its label. A time tagger is
+a dark bench-top box on the table with a row of SMA inputs across its front.
+Anything the
 builder has no model for is a generic block, sized, coloured and labelled by
 hand (a Faraday rotator is a block between two beam cubes). A lens's bulge
 is exaggerated so it can be seen, but still shrinks smoothly with focal

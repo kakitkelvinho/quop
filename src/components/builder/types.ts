@@ -24,6 +24,7 @@ export type ComponentType =
   | "camera"
   | "spectrometer"
   | "single-photon-detector"
+  | "time-tagger"
   | "beam-block"
   | "objective"
   | "block"
@@ -258,6 +259,16 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 38,
     hint: "Counts single photons, each one a pulse out the back. Note SPCM or SNSPD in the label.",
   },
+  "time-tagger": {
+    label: "Time tagger",
+    tag: "Tagger",
+    aliases: ["TDC", "time-to-digital converter", "counter", "coincidence counter"],
+    top: 23,
+    minHeight: 27,
+    fixedHeight: 27,
+    radius: 131,
+    hint: "Timestamps the detectors' pulses on each input, so coincidences can be counted. Sits on the table.",
+  },
   "beam-block": {
     label: "Beam block",
     tag: "Dump",
@@ -309,7 +320,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
   { name: "Modulation", types: ["aom", "eom"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
-  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "beam-block"] },
+  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "time-tagger", "beam-block"] },
   { name: "Other", types: ["block"] },
 ];
 

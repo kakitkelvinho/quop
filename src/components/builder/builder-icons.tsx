@@ -233,6 +233,16 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M15 15.5h3.5V9h3v6.5" />
     </>
   ),
+  // a low box with a row of inputs across its front
+  "time-tagger": (
+    <>
+      <rect x="2.5" y="8" width="19" height="9" rx="1.2" />
+      <circle cx="7" cy="12.5" r="1.1" />
+      <circle cx="10.5" cy="12.5" r="1.1" />
+      <circle cx="14" cy="12.5" r="1.1" />
+      <circle cx="17.5" cy="12.5" r="1.1" />
+    </>
+  ),
   // a beam running into a finned stack
   "beam-block": (
     <>

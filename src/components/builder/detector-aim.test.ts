@@ -119,3 +119,11 @@ describe("single-photon detectors", () => {
     assert.equal(derivedAngleBeam(data.beams, data.components[0]), undefined);
   });
 });
+
+describe("a time tagger", () => {
+  it("keeps its hand-set rotation at a beam's end: it is not aimed", () => {
+    const data = scene([part("laser", "laser-source", -200, 0), part("tagger", "time-tagger", 0, 0, 135)], [["laser", "tagger"]]);
+    assert.equal(yawOf(settleAngles(data), "tagger"), 135);
+    assert.equal(derivedAngleBeam(data.beams, data.components[1]), undefined);
+  });
+});
