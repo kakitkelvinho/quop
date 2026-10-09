@@ -14,6 +14,7 @@ import BuilderCanvas, {
   CLICK_SLOP_PX,
   type CameraView,
   type CanvasApi,
+  tablePoint,
 } from "@/components/builder/builder-canvas";
 import BuilderHud, { type ConnectDraft } from "@/components/builder/builder-hud";
 import { useScenePalette } from "@/components/builder/scene-theme";
@@ -313,10 +314,12 @@ export default function BuilderScene() {
       // pressed as one of several selected parts, it drags them all
       const group = selectedIds.length > 1 && selectedIds.includes(id) ? selectedIds : null;
       if (!group) setSelection([id]);
+      // the press hits the part up at its height; the drag follows the table
+      const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
       dragRef.current = {
         id,
-        offsetX: component.position[0] - event.point.x,
-        offsetZ: component.position[2] - event.point.z,
+        offsetX: component.position[0] - grabX,
+        offsetZ: component.position[2] - grabZ,
         started: false,
         pressX: event.nativeEvent.clientX,
         pressY: event.nativeEvent.clientY,
@@ -371,12 +374,12 @@ export default function BuilderScene() {
   });
 
   const handleSurfaceDrag = useCallback(
-    (x: number, z: number, event: ThreeEvent<PointerEvent>) => {
+    (x: number, z: number, event: PointerEvent) => {
       const frameDrag = frameDragRef.current;
       if (frameDrag) {
         const frame = sceneRef.current.frames.find((entry) => entry.id === frameDrag.id);
         if (!frame) return;
-        const step = event.nativeEvent.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+        const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
         const nextX = snapToGrid(x + frameDrag.offsetX, step);
         const nextZ = snapToGrid(z + frameDrag.offsetZ, step);
         if (frame.position[0] === nextX && frame.position[1] === nextZ) return;
@@ -391,7 +394,7 @@ export default function BuilderScene() {
       const drag = dragRef.current;
       if (!drag) return;
 
-      const step = event.nativeEvent.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+      const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
       let nextX = snapToGrid(x + drag.offsetX, step);
       let nextZ = snapToGrid(z + drag.offsetZ, step);
 
@@ -521,10 +524,11 @@ export default function BuilderScene() {
     setSelection([]);
     setSelectedBeamId(null);
     setSelectedConnectionId(null);
+    const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
     frameDragRef.current = {
       id,
-      offsetX: frame.position[0] - event.point.x,
-      offsetZ: frame.position[1] - event.point.z,
+      offsetX: frame.position[0] - grabX,
+      offsetZ: frame.position[1] - grabZ,
       started: false,
     };
     setDragging(true);

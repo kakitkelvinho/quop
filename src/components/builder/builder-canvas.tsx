@@ -37,6 +37,7 @@ import {
   OrthographicCamera,
   Plane,
   Quaternion,
+  type Ray,
   Raycaster,
   SRGBColorSpace,
   ShaderMaterial,
@@ -245,6 +246,59 @@ function isShown(object: Object3D | null): boolean {
 const TABLE_PLANE = new Plane(new Vector3(0, 1, 0), 0);
 
 /**
+ * Where a pointer ray meets the table top (y = 0), mm, as [x, z]; null when
+ * it never does. A drag follows this plane, so its grab offset is measured
+ * here too, not at the point the press hit, which on a part sits up at its
+ * height and, seen at a slant, lies over a different spot on the table.
+ */
+export function tablePoint(ray: Ray): [number, number] | null {
+  const hit = ray.intersectPlane(TABLE_PLANE, new Vector3());
+  return hit ? [hit.x, hit.z] : null;
+}
+
+/**
+ * While something is dragged, each pointer move over the canvas is turned into
+ * the table point under it. It listens on the canvas rather than on the table
+ * mesh: the part under the pointer stops its hover from propagating, so the
+ * table hears no moves until the pointer has left the part it picked up.
+ */
+function SurfaceDrag({
+  dragging,
+  onSurfaceDrag,
+}: {
+  dragging: boolean;
+  onSurfaceDrag: BuilderCanvasProps["onSurfaceDrag"];
+}) {
+  const gl = useThree((state) => state.gl);
+  const get = useThree((state) => state.get);
+  const latest = useRef(onSurfaceDrag);
+  useLayoutEffect(() => {
+    latest.current = onSurfaceDrag;
+  }, [onSurfaceDrag]);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const element = gl.domElement;
+    const raycaster = new Raycaster();
+    const pointer = new Vector2();
+    const onMove = (event: PointerEvent) => {
+      const rect = element.getBoundingClientRect();
+      pointer.set(
+        ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        -((event.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(pointer, get().camera);
+      const point = tablePoint(raycaster.ray);
+      if (point) latest.current(point[0], point[1], event);
+    };
+    element.addEventListener("pointermove", onMove);
+    return () => element.removeEventListener("pointermove", onMove);
+  }, [dragging, get, gl]);
+
+  return null;
+}
+
+/**
  * CAD-style orbit: a drag turns the view about the point under the cursor
  * when it starts (a part, or else the table), not about the controls' target
  * in the middle of the screen. OrbitControls can only turn about its target,
@@ -337,14 +391,9 @@ function OrbitPivot({
 type TableProps = {
   palette: ScenePalette;
   onSurfaceClick: (x: number, z: number) => void;
-  onSurfaceDrag: (
-    x: number,
-    z: number,
-    event: ThreeEvent<PointerEvent>,
-  ) => void;
 };
 
-function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
+function TableSurface({ palette, onSurfaceClick }: TableProps) {
   const downAt = useRef<{ x: number; y: number } | null>(null);
 
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
@@ -371,26 +420,18 @@ function TableSurface({ palette, onSurfaceClick, onSurfaceDrag }: TableProps) {
     [onSurfaceClick],
   );
 
-  const handlePointerMove = useCallback(
-    (event: ThreeEvent<PointerEvent>) => {
-      onSurfaceDrag(event.point.x, event.point.z, event);
-    },
-    [onSurfaceDrag],
-  );
-
   // The table is never drawn — parts stand on the studio sweep — but it is
-  // still the click/drag target, and it catches the key light's shadow so
+  // still the click target, and it catches the key light's shadow so
   // parts stay grounded. It spans the whole guard, so there is no edge to
   // find. One solid slab rather than a plane: a plane at y = 0 z-fights the
-  // grid on some GPUs. The top face sits exactly at y = 0, which is what the
-  // drag maths assumes.
+  // grid on some GPUs. The top face sits exactly at y = 0, on TABLE_PLANE,
+  // which a drag follows.
   return (
     <mesh
       receiveShadow
       position={[0, -TABLE_THICKNESS_MM / 2, 0]}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onPointerMove={handlePointerMove}
     >
       <boxGeometry
         args={[TABLE_SPAN_MM, TABLE_THICKNESS_MM, TABLE_SPAN_MM]}
@@ -819,11 +860,8 @@ export type BuilderCanvasProps = {
   /** the beam line a dragged part is locked onto, drawn faintly while it is */
   snapGuide: [Vec3, Vec3] | null;
   onSurfaceClick: (x: number, z: number) => void;
-  onSurfaceDrag: (
-    x: number,
-    z: number,
-    event: ThreeEvent<PointerEvent>,
-  ) => void;
+  /** the table point under the pointer, mm, on each move while dragging */
+  onSurfaceDrag: (x: number, z: number, event: PointerEvent) => void;
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
@@ -932,11 +970,8 @@ export default function BuilderCanvas({
       <RingRoom dark={palette.mode === "dark"} />
       <Backdrop stops={palette.backdrop} />
 
-      <TableSurface
-        palette={palette}
-        onSurfaceClick={onSurfaceClick}
-        onSurfaceDrag={onSurfaceDrag}
-      />
+      <TableSurface palette={palette} onSurfaceClick={onSurfaceClick} />
+      <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
 
       {/* with no table drawn, the grid is the one sign of the breadboard: it
           shows while the toolbar's grid toggle is on, follows the view, and
