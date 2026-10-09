@@ -17,6 +17,7 @@ import BuilderCanvas, {
 } from "@/components/builder/builder-canvas";
 import BuilderHud from "@/components/builder/builder-hud";
 import { useScenePalette } from "@/components/builder/scene-theme";
+import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
@@ -166,7 +167,11 @@ export default function BuilderScene() {
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const projectRef = useRef<CanvasApi["project"] | null>(null);
+  // the part under the pointer, for a Ctrl/⌘ click the canvas never sees
+  const hoveredRef = useRef<string | null>(null);
   // Pointer handlers run outside React's render pass and need the newest
   // scene without re-subscribing on every edit.
   const sceneRef = useRef(scene);
@@ -270,6 +275,44 @@ export default function BuilderScene() {
     },
     [addingStops, announce, api, beamMode, selectedBeamId, selectedIds],
   );
+
+  const handleComponentHover = useCallback((id: string | null) => {
+    hoveredRef.current = id;
+    setHoveredId(id);
+  }, []);
+
+  // Ctrl/⌘ + click adds the part under the pointer to the selection, or takes it out.
+  const togglePointedPart = useCallback(() => {
+    const id = hoveredRef.current;
+    if (!id) return;
+    setSelection((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
+    );
+    setSelectedBeamId(null);
+  }, []);
+
+  // Ctrl/⌘ + drag selects every part whose optical centre falls in the box;
+  // with Shift as well, it adds them to the selection.
+  const selectInBox = useCallback((box: ScreenBox, adding: boolean) => {
+    const project = projectRef.current;
+    if (!project) return;
+    const inside = sceneRef.current.components
+      .filter((component) => {
+        const [x, y] = project(component.position);
+        return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+      })
+      .map((component) => component.id);
+    setSelection((current) =>
+      adding ? [...current, ...inside.filter((id) => !current.includes(id))] : inside,
+    );
+    setSelectedBeamId(null);
+  }, []);
+
+  const selectionBox = useBoxSelect(hostRef, {
+    enabled: !placingType && !beamMode && !addingStops,
+    onClick: togglePointedPart,
+    onBox: selectInBox,
+  });
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: ThreeEvent<PointerEvent>) => {
@@ -455,6 +498,7 @@ export default function BuilderScene() {
 
   const handleCanvasReady = useCallback((handle: CanvasApi) => {
     canvasRef.current = handle.canvas;
+    projectRef.current = handle.project;
   }, []);
 
   // ---- keyboard ------------------------------------------------------------
@@ -596,6 +640,7 @@ export default function BuilderScene() {
   return (
     <div className="builderWorkspace">
       <div
+        ref={hostRef}
         className={`builderCanvasHost${placingType || beamMode || addingStops ? " is-picking" : ""}`}
       >
         <BuilderCanvas
@@ -615,9 +660,20 @@ export default function BuilderScene() {
           onSurfaceClick={handleSurfaceClick}
           onSurfaceDrag={handleSurfaceDrag}
           onComponentPointerDown={handleComponentPointerDown}
-          onComponentHover={setHoveredId}
+          onComponentHover={handleComponentHover}
           onCanvasReady={handleCanvasReady}
         />
+        {selectionBox ? (
+          <div
+            className="builderBoxSelect"
+            style={{
+              left: selectionBox.left,
+              top: selectionBox.top,
+              width: selectionBox.right - selectionBox.left,
+              height: selectionBox.bottom - selectionBox.top,
+            }}
+          />
+        ) : null}
       </div>
 
       <BuilderHud

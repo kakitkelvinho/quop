@@ -558,7 +558,9 @@ export function GroupInspector({
           onChange={onSetMountColor}
         />
       ) : null}
-      <p className="builderInspector__hint">Drag any one of them to move them all; they keep their spacing.</p>
+      <p className="builderInspector__hint">
+        Drag any one of them to move them all; they keep their spacing. ⌘-click a part to add or remove it.
+      </p>
     </div>
   );
 }

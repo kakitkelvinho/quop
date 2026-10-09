@@ -214,7 +214,10 @@ function CameraRig({
 /**
  * Which presses the controls turn into an orbit (see OrbitControls'
  * `onMouseDown`): middle or right, or Shift / Ctrl / ⌘ with the left button,
- * which is otherwise a pan. A modifier on middle or right pans instead.
+ * which is otherwise a pan. A modifier on middle or right pans instead. While
+ * selecting, a Ctrl / ⌘ left press never gets here: box select takes it first
+ * (use-box-select.ts), so Shift is the left-button orbit. Placing a part or
+ * drawing a beam, it still orbits.
  */
 function isOrbitPress(event: PointerEvent): boolean {
   if (event.pointerType === "touch") return false;
