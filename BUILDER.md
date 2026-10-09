@@ -170,9 +170,12 @@ is on screen until it is needed:
   while they all stand at one (and none sits in a host), and a mount colour
   for those held in a mount.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
-  name and path length; click a row to select that beam. Each row also has
-  buttons to move that beam up or down the list, to hide or show it on the
-  table, and to delete it (the beam only: its parts stay). The list order is
+  name and path length; click a row to select that beam, or press anywhere on
+  it and drag it to a new place in the list (the rows around it open a gap; on
+  a touch screen, rest a finger on the row first, then drag; `Esc` cancels; a
+  focused row also moves with `Alt+↑` / `Alt+↓`). Each row also has buttons to
+  hide or show it on the table, and to delete it (the beam only: its parts
+  stay). The list order is
   the setup's beam order, so it is saved, and each move, hide or delete is one
   undo step. It scrolls once there
   are more beams than fit. While the parts panel is open the box moves to sit
@@ -200,9 +203,9 @@ is on screen until it is needed:
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam, beside the ＋ at the top left; click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
-| Reorder or delete a beam | The up, down and trash buttons on its row in the beams box. A button that can't act (the first beam's up, the last beam's down) is disabled, and its label says why. Undo brings a deleted beam back in its place |
+| Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Edit a beam's path | Select it; in its stop list, drag a stop by its grip to a new place (a line shows where it will land; `Esc` cancels), or move it up or down, or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
+| Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |

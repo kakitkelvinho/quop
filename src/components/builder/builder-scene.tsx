@@ -31,6 +31,7 @@ import {
   findHost,
   appendStop,
   beamDisplayName,
+  moveBeamTo,
   derivedAngleBeam,
   parseScene,
   serializeScene,
@@ -509,14 +510,18 @@ export default function BuilderScene() {
   );
 
   const handleMoveBeam = useCallback(
-    (id: string, direction: 1 | -1) => {
-      const beam = sceneRef.current.beams.find((entry) => entry.id === id);
-      const place = api.moveBeam(id, direction);
-      if (beam && place !== null) {
-        announce(
-          `Moved ${beamDisplayName(beam)} ${direction < 0 ? "up" : "down"}: ${place + 1} of ${sceneRef.current.beams.length}.`,
-        );
+    (id: string, to: number): boolean => {
+      const beams = sceneRef.current.beams;
+      const beam = beams.find((entry) => entry.id === id);
+      if (!beam) return false;
+      const place = api.moveBeam(id, to);
+      if (place === null) {
+        const edit = moveBeamTo(beams, id, to);
+        announce(`Can't move ${beamDisplayName(beam)}: ${edit.ok ? "it can't go there" : edit.reason}.`);
+        return false;
       }
+      announce(`Moved ${beamDisplayName(beam)} to ${place + 1} of ${beams.length}.`);
+      return true;
     },
     [announce, api],
   );

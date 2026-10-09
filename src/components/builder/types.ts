@@ -623,11 +623,6 @@ export function moveStopTo(path: string[], from: number, to: number): PathEdit {
   return repeatsInARow(next) ? { ok: false, reason: TWICE_IN_A_ROW } : { ok: true, path: next };
 }
 
-/** Swap a stop with its neighbour: -1 moves it toward the start. */
-export function moveStop(path: string[], index: number, direction: 1 | -1): PathEdit {
-  return moveStopTo(path, index, index + direction);
-}
-
 /**
  * A path with the given parts taken out and the gaps closed: a part left
  * twice in a row is kept once. Null when fewer than 2 stops remain.
@@ -654,15 +649,14 @@ export function dropComponentFromBeams(beams: Beam[], id: string): Beam[] {
 
 export type BeamListEdit = { ok: true; beams: Beam[] } | { ok: false; reason: string };
 
-/** Swap a beam with its neighbour in the list: -1 moves it up, toward the first. */
-export function moveBeam(beams: Beam[], id: string, direction: 1 | -1): BeamListEdit {
-  const index = beams.findIndex((beam) => beam.id === id);
-  if (index < 0) return { ok: false, reason: "it isn't in the list" };
-  const other = index + direction;
-  if (other < 0) return { ok: false, reason: "it's already first" };
-  if (other >= beams.length) return { ok: false, reason: "it's already last" };
-  const next = [...beams];
-  [next[index], next[other]] = [next[other], next[index]];
+/** Lift the beam `id` out of the list and set it back so it sits at index `to` of the new list. */
+export function moveBeamTo(beams: Beam[], id: string, to: number): BeamListEdit {
+  const from = beams.findIndex((beam) => beam.id === id);
+  if (from < 0) return { ok: false, reason: "it isn't in the list" };
+  if (to < 0) return { ok: false, reason: "it's already first" };
+  if (to >= beams.length) return { ok: false, reason: "it's already last" };
+  const next = beams.filter((_, at) => at !== from);
+  next.splice(to, 0, beams[from]);
   return { ok: true, beams: next };
 }
 
