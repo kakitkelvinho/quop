@@ -6,7 +6,8 @@ component, beam and connection intact: the promise in
 `docs/adr/0001-setup-files-stay-compatible.md`.
 
 v1, v2 and v3 are hand-written. v3 is the first with fibre and cable
-connections; v1 and v2 open with none. v1 also carries the beam cube names from
+connections, and carries a laser with a built-in path; v1 and v2 open with
+no connections and no built-in paths. v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 
 - **Bumping the schema version?** Add a migration, then save a setup from the

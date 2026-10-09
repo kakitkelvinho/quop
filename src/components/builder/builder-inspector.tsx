@@ -19,6 +19,7 @@ import {
   DEFAULT_OBJECTIVE_COLOR,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
+  INTERNAL_PATH_RANGE_MM,
   PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
   clamp,
@@ -33,6 +34,7 @@ import {
   clampHeight,
   heightRange,
   beamDisplayName,
+  beamInternalPathMm,
   beamLengthMm,
   componentById,
   componentDisplayName,
@@ -375,6 +377,23 @@ export function ComponentInspector({
           Angle set by <strong>{beamDisplayName(angleBeam)}</strong>
         </p>
       ) : null}
+      {component.type === "laser-source" ? (
+        <>
+          <NumberField
+            label="Built-in path"
+            unit="mm"
+            step={50}
+            min={INTERNAL_PATH_RANGE_MM[0]}
+            max={INTERNAL_PATH_RANGE_MM[1]}
+            placeholder="none"
+            title="Light the laser adds before it leaves the aperture. Leave empty for none."
+            value={component.internalPathMm}
+            onChange={(next) => onUpdate({ internalPathMm: clamp(next, INTERNAL_PATH_RANGE_MM) })}
+            onClear={() => onUpdate({ internalPathMm: undefined })}
+          />
+          <p className="builderInspector__hint">Folded or internal delay, counted in a beam that starts here.</p>
+        </>
+      ) : null}
       {component.type === "lens" ? (
         <>
           <div className="builderChoice" role="group" aria-label="Lens shape">
@@ -626,6 +645,7 @@ export function BeamInspector({
   onToggleAddStops: () => void;
 }) {
   const length = beamLengthMm(components, beam);
+  const insideLaser = beamInternalPathMm(components, beam);
   const width = beam.width ?? BEAM_WIDTH_MM;
   const opacity = beam.opacity ?? 1;
 
@@ -693,6 +713,9 @@ export function BeamInspector({
           <dd>{lengthToPicoseconds(length).toFixed(1)} ps</dd>
         </div>
       </dl>
+      {insideLaser > 0 ? (
+        <p className="builderInspector__hint">Includes {Math.round(insideLaser)} mm inside the laser.</p>
+      ) : null}
       <EditableStopList components={components} path={beam.path} onChange={(path) => onUpdate({ path })} />
       <button
         type="button"

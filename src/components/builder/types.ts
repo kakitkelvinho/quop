@@ -74,6 +74,12 @@ export type BuilderComponent = {
   particleRadius?: number;
   /** block only, mm along [beam (x), height (y), across (z)]; missing means BLOCK_SIZE_MM */
   size?: Vec3;
+  /**
+   * laser source only, mm: light the laser adds before it leaves the aperture
+   * (a folded or internal delay path); missing or 0 means none. A beam that
+   * starts here counts it toward its path length.
+   */
+  internalPathMm?: number;
 };
 
 export type Beam = {
@@ -358,6 +364,8 @@ export const BEAM_WIDTH_MM = 2;
 export const BEAM_WIDTH_RANGE_MM: [number, number] = [0.5, 10];
 export const BEAM_OPACITY_RANGE: [number, number] = [0.1, 1];
 
+/** A laser's built-in path, mm: up to 100 m, far past any real folded delay. */
+export const INTERNAL_PATH_RANGE_MM: [number, number] = [0, 100000];
 export const DEFAULT_FOCAL_LENGTH_MM = 100;
 export const FOCAL_LENGTH_RANGE_MM: [number, number] = [10, 2000];
 export const DEFAULT_CAVITY_LENGTH_MM = 50;
@@ -432,13 +440,26 @@ export function componentById(
   return components.find((component) => component.id === id);
 }
 
-/** Straight-line 3D length through the beam's waypoints (optical centres), in mm. */
+/**
+ * The built-in path of the laser a beam starts at, mm; 0 when its first stop is
+ * not a laser or the laser has none. A laser later in a path adds nothing: the
+ * light it passes was not made there.
+ */
+export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): number {
+  const first = beam.path.length ? componentById(components, beam.path[0]) : undefined;
+  return first?.type === "laser-source" ? (first.internalPathMm ?? 0) : 0;
+}
+
+/**
+ * Length of the beam, mm: the straight 3D run through its waypoints (optical
+ * centres), plus the built-in path of the laser it starts at.
+ */
 export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
   const points = beam.path
     .map((id) => componentById(components, id))
     .filter((component): component is BuilderComponent => Boolean(component));
 
-  let total = 0;
+  let total = beamInternalPathMm(components, beam);
   for (let index = 1; index < points.length; index += 1) {
     const [ax, ay, az] = points[index - 1].position;
     const [bx, by, bz] = points[index].position;
@@ -884,6 +905,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     if (typeof raw.host === "string") component.host = raw.host;
     const radius = finiteNumber(raw.particleRadius);
     if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
+  }
+  if (type === "laser-source") {
+    const internal = finiteNumber(raw.internalPathMm);
+    if (internal !== undefined) component.internalPathMm = clamp(internal, INTERNAL_PATH_RANGE_MM);
   }
   if (type === "block" && isVec3(raw.size)) {
     component.size = raw.size.map((side) => clamp(side, BLOCK_SIZE_RANGE_MM)) as Vec3;
