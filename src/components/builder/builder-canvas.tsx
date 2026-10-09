@@ -69,6 +69,8 @@ const GRID_CELL_MM = 25;
 const GRID_SECTION_MM = 100;
 /** how far from under the camera the grid fades out, mm: past the edge of the widest zoom */
 const GRID_FADE_MM = 9000;
+/** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
+const SNAP_GUIDE_Y_MM = 0.8;
 /** a press that travels further than this, in screen pixels, is a drag, not a click */
 export const CLICK_SLOP_PX = 4;
 const TABLE_THICKNESS_MM = 14;
@@ -996,15 +998,19 @@ export default function BuilderCanvas({
       ) : null}
 
       {snapGuide ? (
+        // Laid on the table under the beam, not along it, where the beam's own
+        // tube would hide it, and drawn over the posts so it reads from above.
         <Line
-          points={snapGuide}
+          points={snapGuide.map(([x, , z]): Vec3 => [x, SNAP_GUIDE_Y_MM, z])}
           color={palette.accent}
-          lineWidth={1}
+          lineWidth={1.5}
           transparent
-          opacity={0.45}
+          opacity={0.85}
           dashed
-          dashSize={12}
-          gapSize={8}
+          dashSize={10}
+          gapSize={6}
+          depthTest={false}
+          renderOrder={3}
         />
       ) : null}
 

@@ -684,26 +684,48 @@ export function setBeamHidden(beams: Beam[], id: string, hidden: boolean): Beam[
 /** How close, mm, a dragged part must come to its beam's straight line to lock onto it. */
 export const BEAM_LINE_SNAP_MM = 5;
 
+/** Rounds a length to 0.01 mm, so a float wobble is never saved as a position. */
+function roundMm(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 /**
- * Where a part dragged to (x, z) locks onto the straight line from `before` to
- * `after`, in the table plane, or undefined when it is farther than
- * `threshold` from that segment.
+ * Where (x, z) falls on the straight line from `before` to `after`, in the
+ * table plane and clamped to the stops, or undefined when they coincide.
  */
-export function snapToBeamLine(
+function projectOntoBeamLine(
   x: number,
   z: number,
   before: Vec3,
   after: Vec3,
-  threshold = BEAM_LINE_SNAP_MM,
 ): [number, number] | undefined {
   const dx = after[0] - before[0];
   const dz = after[2] - before[2];
   const lengthSq = dx * dx + dz * dz;
   if (lengthSq === 0) return undefined;
   const t = clamp(((x - before[0]) * dx + (z - before[2]) * dz) / lengthSq, [0, 1]);
-  const sx = before[0] + t * dx;
-  const sz = before[2] + t * dz;
-  return Math.hypot(x - sx, z - sz) <= threshold ? [sx, sz] : undefined;
+  return [before[0] + t * dx, before[2] + t * dz];
+}
+
+/**
+ * Where a part dragged to (x, z) locks onto the straight line from `before` to
+ * `after`, in the table plane, or undefined when it is farther than
+ * `threshold` from that segment. The point is snapped to the `step` grid
+ * before it is projected and the result rounded to 0.01 mm, so on a beam that
+ * runs along a grid axis the part keeps a grid value along the line.
+ */
+export function snapToBeamLine(
+  x: number,
+  z: number,
+  before: Vec3,
+  after: Vec3,
+  step = GRID_SIZE_MM,
+  threshold = BEAM_LINE_SNAP_MM,
+): [number, number] | undefined {
+  const nearest = projectOntoBeamLine(x, z, before, after);
+  if (!nearest || Math.hypot(x - nearest[0], z - nearest[1]) > threshold) return undefined;
+  const locked = projectOntoBeamLine(snapToGrid(x, step), snapToGrid(z, step), before, after);
+  return locked && [roundMm(locked[0]), roundMm(locked[1])];
 }
 
 /**
@@ -717,6 +739,7 @@ export function beamLineSnap(
   id: string,
   x: number,
   z: number,
+  step = GRID_SIZE_MM,
   threshold = BEAM_LINE_SNAP_MM,
 ): { position: [number, number]; guide: [Vec3, Vec3] } | undefined {
   for (const beam of beams) {
@@ -725,7 +748,7 @@ export function beamLineSnap(
     const before = componentById(components, beam.path[index - 1]);
     const after = componentById(components, beam.path[index + 1]);
     if (!before || !after) return undefined;
-    const position = snapToBeamLine(x, z, before.position, after.position, threshold);
+    const position = snapToBeamLine(x, z, before.position, after.position, step, threshold);
     return position ? { position, guide: [before.position, after.position] } : undefined;
   }
   return undefined;

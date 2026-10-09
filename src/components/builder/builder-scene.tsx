@@ -371,6 +371,7 @@ export default function BuilderScene() {
               drag.id,
               x + drag.offsetX,
               z + drag.offsetZ,
+              step,
             );
       if (lock) [nextX, nextZ] = lock.position;
       setSnapGuide((current) =>

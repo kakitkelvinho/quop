@@ -29,6 +29,24 @@ describe("snapToBeamLine", () => {
     assert.equal(snapToBeamLine(-50, -25, a, b), undefined);
   });
 
+  it("keeps a grid value along a beam that runs along a grid axis", () => {
+    const left: [number, number, number] = [0, 100, 40.37];
+    const right: [number, number, number] = [300, 100, 40.37];
+    assert.deepEqual(snapToBeamLine(12.6, 43.1, left, right, 1), [13, 40.37]);
+    assert.deepEqual(snapToBeamLine(12.6, 43.1, left, right, 5), [15, 40.37]);
+    const up: [number, number, number] = [-17.5, 100, 0];
+    const down: [number, number, number] = [-17.5, 100, 250];
+    assert.deepEqual(snapToBeamLine(-14, 126, up, down), [-17.5, 125]);
+  });
+
+  it("rounds a slanted lock to 0.01 mm", () => {
+    const from: [number, number, number] = [0, 100, 0];
+    const to: [number, number, number] = [300, 100, 70];
+    const snapped = snapToBeamLine(101, 24, from, to, 1);
+    assert.ok(snapped);
+    for (const value of snapped) assert.equal(Math.round(value * 100) / 100, value);
+  });
+
   it("ignores coincident stops", () => {
     assert.equal(snapToBeamLine(1, 1, a, a), undefined);
   });

@@ -86,8 +86,10 @@ being drawn always keeps its core and arrows.
 **A part in a beam snaps back onto its line.** Dragging a part that is a stop in
 the middle of a beam, it locks onto the straight line between the stops before
 and after it once it is within 5 mm of that line (in the table plane; its height
-is untouched), and a faint dashed guide shows while it is locked. This is what
-puts an off-grid lens back on the line the grid cannot reach. Elsewhere the
+is untouched), and a dashed guide is laid on the table under the line while it
+is locked. The grid point is projected onto the line and rounded to 0.01 mm, so
+on a beam that runs along a grid axis the part keeps a grid value along it. This
+is what puts an off-grid lens back on the line the grid cannot reach. Elsewhere the
 grid still applies. With several beams through the part the first in the beam
 list is used, and dragging a group of parts skips the lock.
 
