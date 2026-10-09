@@ -1445,6 +1445,154 @@ function Spectrometer({ palette, axis }: ModelProps) {
   );
 }
 
+/**
+ * A fiber-coupled single-photon counter, drawn as the real ones look: a black
+ * module on a post, so it never reads as the white camera. An FC receptacle on
+ * the face (-x) takes the fiber, and each count leaves as a pulse on one of two
+ * SMA jacks out the back (+x). Fibers and cables are drawn as connections, not
+ * as part of the module.
+ */
+const SPCM_FACE_X = -20;
+const SPCM_DEPTH_MM = 48;
+const SPCM_HALF_MM = 17;
+const SPCM_WIDTH_MM = 30;
+const SPCM_JACK_DROP_MM = 6;
+const SPCM_JACK_Z_MM = [-7, 7];
+const FC_FLANGE_MM = 13;
+const FC_FLANGE_DEPTH_MM = 1.5;
+const FC_BARREL_RADIUS_MM = 4.5;
+const FC_BARREL_LENGTH_MM = 7;
+const FC_TIP_RADIUS_MM = 2.8;
+const FC_TIP_LENGTH_MM = 2;
+/** where the thread ridges sit on the barrel, mm out from the flange */
+const FC_THREAD_MM = [1.5, 3.5, 5.5];
+
+function SinglePhotonDetector({ palette, axis }: ModelProps) {
+  const flangeOut = SPCM_FACE_X - FC_FLANGE_DEPTH_MM;
+  const barrelEnd = flangeOut - FC_BARREL_LENGTH_MM;
+  const tipEnd = barrelEnd - FC_TIP_LENGTH_MM;
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - SPCM_HALF_MM} />
+      <RoundedBox
+        args={[SPCM_DEPTH_MM, 2 * SPCM_HALF_MM, SPCM_WIDTH_MM]}
+        radius={0.8}
+        smoothness={3}
+        position={[SPCM_FACE_X + SPCM_DEPTH_MM / 2, axis, 0]}
+      >
+        <Enamel color={palette.anodise} />
+      </RoundedBox>
+      {/* the FC receptacle: a square flange flat on the face, a threaded
+          barrel, and the ceramic sleeve with the dark bore the fiber meets */}
+      <mesh position={[SPCM_FACE_X - FC_FLANGE_DEPTH_MM / 2, axis, 0]}>
+        <boxGeometry args={[FC_FLANGE_DEPTH_MM, FC_FLANGE_MM, FC_FLANGE_MM]} />
+        <Stainless palette={palette} />
+      </mesh>
+      <mesh position={[flangeOut - FC_BARREL_LENGTH_MM / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[FC_BARREL_RADIUS_MM, FC_BARREL_RADIUS_MM, FC_BARREL_LENGTH_MM, 24]} />
+        <Stainless palette={palette} />
+      </mesh>
+      {FC_THREAD_MM.map((out) => (
+        <mesh key={out} position={[flangeOut - out, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[FC_BARREL_RADIUS_MM + 0.4, FC_BARREL_RADIUS_MM + 0.4, 0.7, 24]} />
+          <Stainless palette={palette} />
+        </mesh>
+      ))}
+      <mesh position={[barrelEnd - FC_TIP_LENGTH_MM / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[FC_TIP_RADIUS_MM, FC_TIP_RADIUS_MM, FC_TIP_LENGTH_MM, 20]} />
+        <Enamel color={CERAMIC} />
+      </mesh>
+      <mesh position={[tipEnd - 0.05, axis, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <circleGeometry args={[1.1, 16]} />
+        <Enamel color="#12161d" />
+      </mesh>
+      {/* the pulse outputs: two SMA jacks out the back, a little below the axis */}
+      {SPCM_JACK_Z_MM.map((z) => (
+        <group
+          key={z}
+          position={[SPCM_FACE_X + SPCM_DEPTH_MM, axis - SPCM_JACK_DROP_MM, z]}
+          rotation={[0, 0, -Math.PI / 2]}
+        >
+          <SmaConnector palette={palette} at={[0, 0, 0]} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * A bench-top time tagger: a dark case on four feet, sitting on the table,
+ * with a row of SMA inputs across its front panel (-x) at its fixed height and
+ * a status light at one end. Cables from the detectors end here.
+ */
+const TAGGER_DEPTH_MM = 150;
+const TAGGER_HALF_MM = 23;
+const TAGGER_WIDTH_MM = 200;
+const TAGGER_PANEL_MM = 1.5;
+const TAGGER_INPUTS = 8;
+const TAGGER_PITCH_MM = 18;
+/** the row of inputs is shifted toward +z, leaving the -z end for the status light */
+const TAGGER_ROW_Z_MM = 22;
+const TAGGER_LED_Z_MM = -78;
+const TAGGER_LED = "#36c26b";
+const TAGGER_FOOT_INSET_MM = 18;
+const TAGGER_VENTS_X_MM = [24, 32, 40, 48, 56];
+
+function TimeTagger({ palette, axis }: ModelProps) {
+  const front = -TAGGER_DEPTH_MM / 2;
+  const panel = front - TAGGER_PANEL_MM;
+  const underside = axis - TAGGER_HALF_MM;
+  const footX = TAGGER_DEPTH_MM / 2 - TAGGER_FOOT_INSET_MM;
+  const footZ = TAGGER_WIDTH_MM / 2 - TAGGER_FOOT_INSET_MM;
+  return (
+    <group>
+      {[-1, 1].flatMap((sx) =>
+        [-1, 1].map((sz) => (
+          <mesh key={`${sx}${sz}`} position={[sx * footX, underside / 2, sz * footZ]}>
+            <cylinderGeometry args={[6, 6, Math.max(1, underside), 20]} />
+            <Enamel color="#12161d" />
+          </mesh>
+        )),
+      )}
+      <RoundedBox
+        args={[TAGGER_DEPTH_MM, 2 * TAGGER_HALF_MM, TAGGER_WIDTH_MM]}
+        radius={2}
+        smoothness={3}
+        position={[0, axis, 0]}
+      >
+        <Enamel color={palette.anodise} />
+      </RoundedBox>
+      <mesh position={[front - TAGGER_PANEL_MM / 2, axis, 0]}>
+        <boxGeometry args={[TAGGER_PANEL_MM, 2 * TAGGER_HALF_MM - 6, TAGGER_WIDTH_MM - 6]} />
+        <Hardware palette={palette} />
+      </mesh>
+      {Array.from({ length: TAGGER_INPUTS }, (_, index) => {
+        const z = TAGGER_ROW_Z_MM + (index - (TAGGER_INPUTS - 1) / 2) * TAGGER_PITCH_MM;
+        return (
+          <group key={index} position={[panel, axis, z]} rotation={[0, 0, Math.PI / 2]}>
+            {/* the bulkhead nut, then the jack */}
+            <mesh position={[0, 0.75, 0]}>
+              <cylinderGeometry args={[4.2, 4.2, 1.5, 6]} />
+              <Stainless palette={palette} />
+            </mesh>
+            <SmaConnector palette={palette} at={[0, 1.5, 0]} />
+          </group>
+        );
+      })}
+      <mesh position={[panel - 0.6, axis, TAGGER_LED_Z_MM]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[2, 2, 1.2, 16]} />
+        <Enamel color={TAGGER_LED} />
+      </mesh>
+      {TAGGER_VENTS_X_MM.map((x) => (
+        <mesh key={x} position={[x, axis + TAGGER_HALF_MM + 0.05, 0]}>
+          <boxGeometry args={[3, 0.2, TAGGER_WIDTH_MM - 60]} />
+          <Enamel color="#12161d" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function SelectionRing({ radius, color }: { radius: number; color: string }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.6, 0]}>
@@ -1611,6 +1759,10 @@ export function ComponentMesh({
       {component.type === "spectrometer" ? (
         <Spectrometer {...modelProps} />
       ) : null}
+      {component.type === "single-photon-detector" ? (
+        <SinglePhotonDetector {...modelProps} />
+      ) : null}
+      {component.type === "time-tagger" ? <TimeTagger {...modelProps} /> : null}
 
       {hovered && !selected ? (
         <HoverRing radius={radius} color={palette.hover} />

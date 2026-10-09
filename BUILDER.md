@@ -29,8 +29,10 @@ height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or
 lowering a part changes the length of its post (or the plates a laser stands on); the part
 itself never scales. The lowest height is where the post runs out, or where a
-floating part meets the table; the ceiling is 300 mm. The spectrometer is the
-exception: its input port is fixed by the instrument. A beam between parts at
+floating part meets the table; the ceiling is 300 mm. The spectrometer and
+the time tagger are the exceptions: the spectrometer's input port is fixed by
+the instrument, and the time tagger sits on the table with its inputs at
+27 mm. A beam between parts at
 different heights slopes, and its path length and time of flight are 3D.
 
 **Beams are drawn, not traced.** A beam is an ordered list of the components it
@@ -78,10 +80,10 @@ pass through it, the first in the beam list wins, and the inspector names it
 ("Angle set by …"). A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
-**A detector at a beam's end faces the light.** A photodiode, camera or
-spectrometer that is a beam's last stop turns its face to the stop before it,
-and re-aims live as either moves. Like a mirror, its yaw is then read-only and
-names the beam. At a beam's start, or on no beam, it turns by hand.
+**A detector at a beam's end faces the light.** A photodiode, camera,
+spectrometer or single-photon detector that is a beam's last stop turns its
+face to the stop before it, and re-aims live as either moves. Like a mirror,
+its yaw is then read-only and names the beam. At a beam's start, or on no beam, it turns by hand.
 
 **Mount colour marks the beam line.** Any part held in a mount (mirror, beam
 cube, waveplate, filter, iris, fiber collimator) can have its mount tinted; the
@@ -100,7 +102,11 @@ particle) are drawn larger than life and float at their height.
 Parts whose hardware hides what they do are drawn the way lab diagrams draw
 them instead: a photodiode is a coloured dome behind a face with a small
 silicon chip set into a cup, a fiber off the dome's tip; an AOM or EOM is its
-bare crystal, with the transducer or electrodes that drive it. Anything the
+bare crystal, with the transducer or electrodes that drive it. A single-photon
+detector is a black module on a post, with a fiber connector on its face and
+SMA outputs at the back; note SPCM or SNSPD in its label. A time tagger is
+a dark bench-top box on the table with a row of SMA inputs across its front.
+Anything the
 builder has no model for is a generic block, sized, coloured and labelled by
 hand (a Faraday rotator is a block between two beam cubes). A lens's bulge
 is exaggerated so it can be seen, but still shrinks smoothly with focal

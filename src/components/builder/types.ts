@@ -23,6 +23,8 @@ export type ComponentType =
   | "photodiode"
   | "camera"
   | "spectrometer"
+  | "single-photon-detector"
+  | "time-tagger"
   | "beam-block"
   | "objective"
   | "block"
@@ -275,6 +277,25 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 70,
     hint: "Disperses the light and records a spectrum.",
   },
+  "single-photon-detector": {
+    label: "Single-photon detector",
+    tag: "SPCM",
+    aliases: ["SPCM", "SNSPD", "APD", "single photon counter"],
+    top: 17,
+    minHeight: 23,
+    radius: 38,
+    hint: "Counts single photons, each one a pulse out the back. Note SPCM or SNSPD in the label.",
+  },
+  "time-tagger": {
+    label: "Time tagger",
+    tag: "Tagger",
+    aliases: ["TDC", "time-to-digital converter", "counter", "coincidence counter"],
+    top: 23,
+    minHeight: 27,
+    fixedHeight: 27,
+    radius: 131,
+    hint: "Timestamps the detectors' pulses on each input, so coincidences can be counted. Sits on the table.",
+  },
   "beam-block": {
     label: "Beam block",
     tag: "Dump",
@@ -326,7 +347,7 @@ export const COMPONENT_GROUPS: ComponentGroup[] = [
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
   { name: "Modulation", types: ["aom", "eom"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
-  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "beam-block"] },
+  { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "time-tagger", "beam-block"] },
   { name: "Other", types: ["block"] },
 ];
 
@@ -634,7 +655,7 @@ function mirrorAngleStop(
 }
 
 /** Detectors whose face (local −x) turns to the light arriving at them. */
-const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer"]);
+const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer", "single-photon-detector"]);
 
 /**
  * Where a detector's angle comes from: the first beam, in scene order, that
@@ -652,8 +673,9 @@ function detectorAngleStop(
 /**
  * The beam that sets a part's angle, or undefined when it is turned by hand.
  * A mirror takes its angle from a beam it sits in the middle of, and a
- * photodiode, camera or spectrometer from a beam that ends at it. Beam cubes
- * are never derived (they transmit and reflect, so need a different rule).
+ * photodiode, camera, spectrometer or single-photon detector from a beam that
+ * ends at it. Beam cubes are never derived (they transmit and reflect, so
+ * need a different rule).
  */
 export function derivedAngleBeam(
   beams: Beam[],
