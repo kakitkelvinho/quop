@@ -124,13 +124,34 @@ export type Connection = {
   velocityFactor?: number;
 };
 
-export const SCENE_VERSION = 4 as const;
+/**
+ * A labelled rectangle drawn flat on the table to mark an area, such as one
+ * breadboard or an enclosure. A drawing aid only: it constrains nothing, adds
+ * nothing to any path, and parts need not be inside it.
+ */
+export type Frame = {
+  id: string;
+  /** the centre on the table: [x, z], mm */
+  position: [number, number];
+  /** along the table's x axis, mm */
+  width: number;
+  /** along the table's z axis, mm */
+  depth: number;
+  color: string;
+  label?: string;
+  /** true keeps the frame out of the drawing, and so out of a PNG; stored only when true */
+  hidden?: true;
+};
+
+export const SCENE_VERSION = 5 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
   components: BuilderComponent[];
   beams: Beam[];
   connections: Connection[];
+  /** drawn under everything, in list order; missing in setups from before version 5 */
+  frames: Frame[];
 };
 
 // ---------------------------------------------------------------------------
@@ -439,6 +460,11 @@ export const BEAM_COLORS = [
   "#db2777",
 ] as const;
 
+/** A frame's width and depth, mm. The default is a small breadboard's footprint. */
+export const FRAME_SIZE_RANGE_MM: [number, number] = [10, 5000];
+export const DEFAULT_FRAME_SIZE_MM: [number, number] = [600, 450];
+export const FRAME_COLORS = ["#0891b2", "#ea580c", "#16a34a", "#db2777", "#7c3aed", "#ca8a04"] as const;
+
 export function snapToGrid(value: number, step = GRID_SIZE_MM): number {
   return Math.round(value / step) * step;
 }
@@ -454,6 +480,10 @@ export function createComponentId(type: ComponentType): string {
 
 export function createBeamId(): string {
   return `beam-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export function createFrameId(): string {
+  return `frame-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function createConnectionId(kind: ConnectionKind): string {
@@ -1005,6 +1035,41 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   };
 }
 
+/** A frame needs only an id; what is missing or out of range gets the default or the nearest allowed value. */
+function parseFrame(value: unknown): Frame | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.id !== "string") return null;
+  const at = Array.isArray(raw.position) ? raw.position : [];
+  const [x, z] = clampToTable(finiteNumber(at[0]) ?? 0, finiteNumber(at[1]) ?? 0);
+  return {
+    id: raw.id,
+    position: [x, z],
+    width: clamp(finiteNumber(raw.width) ?? DEFAULT_FRAME_SIZE_MM[0], FRAME_SIZE_RANGE_MM),
+    depth: clamp(finiteNumber(raw.depth) ?? DEFAULT_FRAME_SIZE_MM[1], FRAME_SIZE_RANGE_MM),
+    color: typeof raw.color === "string" ? raw.color : FRAME_COLORS[0],
+    ...(typeof raw.label === "string" ? { label: raw.label } : {}),
+    ...(raw.hidden === true ? { hidden: true } : {}),
+  };
+}
+
+/** Hide or show one frame. Stored only when hidden, like a beam's flag. */
+export function setFrameHidden(frames: Frame[], id: string, hidden: boolean): Frame[] {
+  return frames.map((frame) => {
+    if (frame.id !== id) return frame;
+    const next = { ...frame };
+    if (hidden) next.hidden = true;
+    else delete next.hidden;
+    return next;
+  });
+}
+
+/** What a frame is called in the list and the inspector: its label, else its size. */
+export function frameDisplayName(frame: Frame): string {
+  const label = frame.label?.trim();
+  return label || `Frame ${Math.round(frame.width)} × ${Math.round(frame.depth)} mm`;
+}
+
 const KNOWN_CONNECTION_KINDS = new Set<string>(CONNECTION_KIND_IDS);
 
 function parseConnection(value: unknown, validIds: Set<string>): Connection | null {
@@ -1038,7 +1103,8 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
  * or null. Unknown component types and dangling beam references are dropped
  * rather than throwing — a partially readable setup beats an error dialog.
  * Setups from before version 3 have no connections and open with none;
- * those from before version 4 have no hidden beams and open with every beam shown.
+ * those from before version 4 have no hidden beams and open with every beam shown;
+ * those from before version 5 have no frames and open with none.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -1062,7 +1128,11 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         .filter((connection): connection is Connection => connection !== null)
     : [];
 
-  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections }));
+  const frames = Array.isArray(raw.frames)
+    ? raw.frames.map(parseFrame).filter((frame): frame is Frame => frame !== null)
+    : [];
+
+  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames }));
 }
 
 export function serializeScene(scene: BuilderSceneData): string {
@@ -1074,6 +1144,7 @@ export const EMPTY_SCENE: BuilderSceneData = {
   components: [],
   beams: [],
   connections: [],
+  frames: [],
 };
 
 // A pump + reference-arm layout so the table isn't blank on first load. It
@@ -1115,4 +1186,5 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     },
   ],
   connections: [],
+  frames: [],
 };

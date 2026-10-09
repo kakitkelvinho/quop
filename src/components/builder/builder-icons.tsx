@@ -112,6 +112,7 @@ const ICONS = {
       <path d="M4 4l16 16" />
     </>
   ),
+  frame: <rect x="4" y="6" width="16" height="12" rx="1.5" strokeDasharray="3 2.5" />,
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
   grip: (

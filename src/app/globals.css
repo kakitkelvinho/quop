@@ -3287,16 +3287,32 @@ html[data-theme="dark"] .builderButton--primary {
   cursor: default;
 }
 
-/* bottom: the beams box (left), view controls (right), status */
-.builderHud__beams {
+/* bottom: the beams box and the frames box under it (left), view controls (right), status */
+.builderHud__lists {
+  position: absolute;
+  z-index: 5;
   left: 0.9rem;
   bottom: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  max-width: min(22rem, calc(100% - 1.8rem));
+}
+
+.builderHud__lists > .builderIsland {
+  position: static;
+}
+
+.builderHud__beams {
   flex-direction: column;
   align-items: stretch;
   gap: 0.1rem;
   width: max-content;
   min-width: 11rem;
-  max-width: min(22rem, calc(100% - 1.8rem));
+  /* the lists column holds the cap; a percentage less a gutter here would
+     shrink the box below its names, as the column wraps to the box */
+  max-width: 100%;
   max-height: min(14rem, 40vh);
   margin: 0;
   list-style: none;
@@ -3304,8 +3320,8 @@ html[data-theme="dark"] .builderButton--primary {
   scrollbar-width: thin;
 }
 
-/* the parts panel holds the left edge while it is open; the box steps out beside it */
-.builderHud__beams.is-besideParts {
+/* the parts panel holds the left edge while it is open; the boxes step out beside it */
+.builderHud__lists.is-besideParts {
   left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
 }
 
@@ -3390,6 +3406,38 @@ html[data-theme="dark"] .builderButton--primary {
   text-overflow: ellipsis;
 }
 
+.builderHud__frames {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.1rem;
+  min-width: 11rem;
+  max-height: min(9rem, 28vh);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.builderHud__listTitle {
+  margin: 0;
+  padding: 0.2rem 0.55rem 0.1rem;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.builderHud__frameRows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.builderBeamRow__dot--square {
+  border-radius: 0.15rem;
+}
+
 .builderHud__view {
   right: 0.9rem;
   bottom: 0.9rem;
@@ -3460,7 +3508,7 @@ html[data-theme="dark"] .builderButton--primary {
 }
 
 @media (max-width: 900px) {
-  .builderHud__beams {
+  .builderHud__lists {
     bottom: 4.1rem;
   }
 
@@ -3493,7 +3541,7 @@ html[data-theme="dark"] .builderButton--primary {
   }
 
   /* no room beside a full-width parts panel: the box returns when it closes */
-  .builderHud__beams.is-besideParts {
+  .builderHud__lists.is-besideParts {
     display: none;
   }
 
@@ -3502,6 +3550,8 @@ html[data-theme="dark"] .builderButton--primary {
     left: 0.9rem;
     right: 0.9rem;
     bottom: 7.2rem;
+    /* over the beams and frames boxes, which reach up past its foot: editing is the job in hand */
+    z-index: 6;
     width: auto;
     max-height: 45vh;
   }
@@ -3529,6 +3579,12 @@ html[data-theme="dark"] .builderButton--primary {
   letter-spacing: 0.02em;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* a frame's label sits in the frame's corner, in its colour, rather than lifted above a part */
+.builderLabel--frame {
+  transform: none;
+  border-width: 2px;
 }
 
 .builderLabel.is-selected {

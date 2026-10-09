@@ -122,6 +122,7 @@ describe("switching a connection's kind", () => {
 describe("a photodiode at the end of a connection", () => {
   const scene = (beams: string[][]): BuilderSceneData => ({
     version: SCENE_VERSION,
+    frames: [],
     components: [part("fc", "fiber-collimator", -200, 0), part("pd", "photodiode", 0, 0, 135)],
     beams: beams.map((path, index) => ({ id: `beam-${index}`, path, color: "#e33" })),
     connections: [fibre("fc", "pd")],

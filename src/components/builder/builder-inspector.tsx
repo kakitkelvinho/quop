@@ -29,6 +29,8 @@ import {
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SAMPLE_COLOR,
+  FRAME_COLORS,
+  FRAME_SIZE_RANGE_MM,
   MOUNTED_TYPES,
   SAMPLE_OPACITY,
   SAMPLE_OPACITY_RANGE,
@@ -40,6 +42,7 @@ import {
   componentById,
   componentDisplayName,
   componentTag,
+  frameDisplayName,
   connectionDelayPs,
   connectionIndex,
   lengthToPicoseconds,
@@ -50,6 +53,7 @@ import {
   type BuilderComponent,
   type Connection,
   type ConnectionKind,
+  type Frame,
   type LensShape,
 } from "@/components/builder/types";
 
@@ -940,6 +944,80 @@ export function ConnectionDraftInspector({
           Cancel
         </button>
       </div>
+    </div>
+  );
+}
+
+export function FrameInspector({
+  frame,
+  onUpdate,
+  onDelete,
+}: {
+  frame: Frame;
+  onUpdate: (patch: Partial<Omit<Frame, "id">>) => void;
+  onDelete: () => void;
+}) {
+  const [min, max] = FRAME_SIZE_RANGE_MM;
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>Frame</h2>
+        <IconButton icon="trash" label="Delete frame" onClick={onDelete} />
+      </div>
+      <label className="builderField">
+        <span className="builderField__label">Label</span>
+        <span className="builderField__control">
+          <input
+            type="text"
+            value={frame.label ?? ""}
+            placeholder="Breadboard, enclosure…"
+            onChange={(event) => onUpdate({ label: event.target.value })}
+          />
+        </span>
+      </label>
+      <div className="builderSwatches">
+        {FRAME_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            aria-label={`Frame colour ${color}`}
+            aria-pressed={frame.color === color}
+            className={`builderSwatch${frame.color === color ? " is-active" : ""}`}
+            style={{ background: color }}
+            onClick={() => onUpdate({ color })}
+          />
+        ))}
+        <input
+          type="color"
+          aria-label="Custom frame colour"
+          className="builderSwatch builderSwatch--custom"
+          value={frame.color}
+          onChange={(event) => onUpdate({ color: event.target.value })}
+        />
+      </div>
+      <NumberField
+        label="Width"
+        unit="mm"
+        step={25}
+        min={min}
+        max={max}
+        title="Along the table's x axis"
+        value={frame.width}
+        onChange={(width) => onUpdate({ width: clamp(width, FRAME_SIZE_RANGE_MM) })}
+      />
+      <NumberField
+        label="Depth"
+        unit="mm"
+        step={25}
+        min={min}
+        max={max}
+        title="Along the table's z axis"
+        value={frame.depth}
+        onChange={(depth) => onUpdate({ depth: clamp(depth, FRAME_SIZE_RANGE_MM) })}
+      />
+      <p className="builderInspector__hint">
+        {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag its edge to move it.
+      </p>
     </div>
   );
 }
