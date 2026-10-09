@@ -12,9 +12,10 @@ import {
   settleAngles,
 } from "./types.ts";
 
-// #125: a beam meets each part at its reference point. A detector's is its
-// entrance and an objective's its threaded plate; everything else's is its
-// optical centre. Path length and the drawn beam both use it.
+// #125: a beam meets each part at its reference point, the first surface a
+// ruler laid along the beam touches: a photodiode's chip, a camera's C-mount
+// ring face, an objective's threaded plate's outer face. Everything else's is
+// its optical centre. Path length and the drawn beam both use it.
 
 const part = (id: string, type: ComponentType, [x, z]: [number, number], rotation = 0): BuilderComponent => ({
   id,
@@ -33,16 +34,16 @@ function settled(components: BuilderComponent[], path: string[]) {
 
 const rounded = (points: Vec3[]) => points.map((point) => point.map((value) => Math.round(value * 1000) / 1000));
 
-describe("a beam that ends at a detector stops at its entrance", () => {
+describe("a beam that ends at a detector stops at its reference point", () => {
   const cases: [ComponentType, number][] = [
-    ["photodiode", 496],
+    ["photodiode", 497.85],
     ["camera", 477],
     ["spectrometer", 438],
     ["single-photon-detector", 469.5],
   ];
 
   for (const [type, length] of cases) {
-    it(`${type}: 500 mm between centres, ${length} mm to its entrance`, () => {
+    it(`${type}: 500 mm between centres, ${length} mm to its reference point`, () => {
       const { components, beam: ending } = settled(
         [part("m", "mirror-mount", [0, 0]), part("d", type, [300, 400])],
         ["m", "d"],
@@ -51,36 +52,36 @@ describe("a beam that ends at a detector stops at its entrance", () => {
     });
   }
 
-  it("turns with the part: a photodiode straight down +z from the mirror stops 4 mm short of its centre", () => {
+  it("turns with the part: a photodiode straight down +z from the mirror stops at its chip, 2.15 mm short of its centre", () => {
     const { components, beam: ending } = settled(
       [part("m", "mirror-mount", [0, 0]), part("d", "photodiode", [0, 300])],
       ["m", "d"],
     );
     assert.deepEqual(rounded(beamPoints(components, ending.path)), [
       [0, 100, 0],
-      [0, 100, 296],
+      [0, 100, 297.85],
     ]);
   });
 });
 
-describe("a beam through an objective turns at its threaded plate", () => {
+describe("a beam through an objective turns at its threaded plate's outer face", () => {
   it("from the plate's side: 300 mm in and 400 mm out, 700 mm", () => {
     const components = [
-      part("in", "mirror-mount", [-326, 0]),
+      part("in", "mirror-mount", [-329, 0]),
       part("obj", "objective", [0, 0]),
-      part("out", "mirror-mount", [-26, 400]),
+      part("out", "mirror-mount", [-29, 400]),
     ];
-    assert.deepEqual(rounded(beamPoints(components, ["in", "obj", "out"]))[1], [-26, 100, 0]);
+    assert.deepEqual(rounded(beamPoints(components, ["in", "obj", "out"]))[1], [-29, 100, 0]);
     assert.equal(Math.round(beamLengthMm(components, beam(["in", "obj", "out"])) * 1000) / 1000, 700);
   });
 
   it("from the tip's side, the objective turned 180°: still the plate, 700 mm", () => {
     const components = [
-      part("in", "mirror-mount", [326, 0]),
+      part("in", "mirror-mount", [329, 0]),
       part("obj", "objective", [0, 0], 180),
-      part("out", "mirror-mount", [26, 400]),
+      part("out", "mirror-mount", [29, 400]),
     ];
-    assert.deepEqual(rounded(beamPoints(components, ["in", "obj", "out"]))[1], [26, 100, 0]);
+    assert.deepEqual(rounded(beamPoints(components, ["in", "obj", "out"]))[1], [29, 100, 0]);
     assert.equal(Math.round(beamLengthMm(components, beam(["in", "obj", "out"])) * 1000) / 1000, 700);
   });
 });

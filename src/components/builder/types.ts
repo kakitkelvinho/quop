@@ -153,8 +153,8 @@ export type ComponentSpec = {
   radius: number;
   /**
    * Where its reference point sits along its local x axis, mm from the
-   * optical centre, read off its model in component-models.tsx. Missing means
-   * the centre.
+   * optical centre, read off its model in component-models.tsx: the first
+   * surface a ruler laid along the beam touches. Missing means the centre.
    */
   referenceX?: number;
   /** one line of plain-language help for a visitor who has never met a bench */
@@ -270,7 +270,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 20,
     radius: 22,
-    referenceX: -4, // the face plate's front
+    referenceX: -2.15, // the chip's face: drawn 0.2 mm thick at x = -2.05
     hint: "Reads total power. Good for a reference arm.",
   },
   camera: {
@@ -279,7 +279,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 31,
     radius: 30,
-    referenceX: -23, // the C-mount's outer face
+    referenceX: -23, // the C-mount ring's face: drawn 2 mm thick at x = -22
     hint: "Images the beam or the sample plane — the source of FITS frames.",
   },
   spectrometer: {
@@ -326,7 +326,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 17,
     minHeight: 24,
     radius: 32,
-    referenceX: -26, // the threaded plate's middle
+    referenceX: -29, // the threaded plate's outer face: drawn at x = -23, 6 mm thick
     hint: "Focuses the beam tightly, tip toward the focus. Note magnification and NA in the label.",
   },
   block: {

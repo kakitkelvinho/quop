@@ -55,12 +55,14 @@ and its row in the beams box all include it, and its inspector says how much
 came from inside the laser. The beam is still drawn from the aperture.
 
 **A beam meets each part at its reference point.** The beam is drawn to, and
-measured to, where light really meets the part. For most parts that is the
-optical centre. A detector's is its entrance: a photodiode's front window
-(4 mm in front of its centre), a camera's lens-mount face (23 mm), a
-spectrometer's entrance port (62 mm), a single-photon detector's fibre
-receptacle (30.5 mm). An objective's is its threaded plate (26 mm behind its
-centre, on the side away from the tip), whichever side the beam comes from.
+measured to, a fixed point on the part. For most parts that is the optical
+centre. Where it isn't, the rule is the ruler's: the reference point is the
+first surface a ruler laid along the beam touches. A photodiode's is its chip
+(2.15 mm in front of its centre, at the back of its cup), a camera's the front
+of the camera, its C-mount ring face (23 mm), a spectrometer's its entrance
+port (62 mm), a single-photon detector's its fibre receptacle (30.5 mm). An
+objective's is the outer face of its threaded plate (29 mm behind its centre,
+on the side away from the tip), whichever side the beam comes from.
 Each offset is fixed per type and turns with the part. Placement, grid
 snapping and the angle a mirror or detector takes still use the centre.
 Setups saved before this can measure a few millimetres differently wherever
