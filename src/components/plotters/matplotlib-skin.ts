@@ -2,6 +2,7 @@ import localFont from "next/font/local";
 import type { CartesianScaleOptions, Chart, ChartType, FontSpec, Plugin, Scale, TRBL } from "chart.js";
 import { toFont, toPadding } from "chart.js/helpers";
 
+import type { PdfFont } from "./pdf-export.ts";
 import { fontFamilyNames, type FontAliases } from "./svg-export.ts";
 
 // The plotters' shared look: matplotlib's defaults, drawn over Chart.js. A
@@ -23,6 +24,9 @@ const [cmuWebFamily, cmuMetricFallback] = fontFamilyNames(MATPLOTLIB_FONT_FAMILY
 
 /** In a file those names mean nothing; the web font is CMU Serif, which a paper's machine may have. */
 export const SVG_FONT_ALIASES: FontAliases = { [cmuWebFamily]: "CMU Serif", [cmuMetricFallback]: null };
+
+/** A PDF carries the web font itself, under that same name. */
+export const PDF_FONT: PdfFont = { family: "CMU Serif", webFamily: cmuWebFamily };
 
 /** matplotlib's default colour cycle, `tab10`. */
 export const TAB10 = [
