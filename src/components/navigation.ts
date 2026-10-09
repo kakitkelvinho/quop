@@ -89,7 +89,7 @@ export const navSections: NavSection[] = [
         href: "/plotters/fits-plotter",
         label: "FITS Plotter",
         description:
-          "Upload a FITS file and plot its first frame: 1D data as a trace, 2D as an image or a 3D surface.",
+          "Upload a FITS file and plot its first frame: 1D data as a trace, 2D as an image or a 3D surface. Its camera settings and full header are listed with the plot.",
       },
       {
         href: "/plotters/csv-fits-viewer",
