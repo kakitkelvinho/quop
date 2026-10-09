@@ -2,6 +2,8 @@ import localFont from "next/font/local";
 import type { CartesianScaleOptions, Chart, ChartType, FontSpec, Plugin, Scale, TRBL } from "chart.js";
 import { toFont, toPadding } from "chart.js/helpers";
 
+import { fontFamilyNames, type FontAliases } from "./svg-export.ts";
+
 // The plotters' shared look: matplotlib's defaults, drawn over Chart.js. A
 // boxed frame with inward ticks on all four spines (major and minor), the
 // Computer Modern serif, the tab10 colour cycle, no grid, and axis labels
@@ -15,6 +17,12 @@ const cmuSerif = localFont({
 
 /** Computer Modern (CMU Serif), as a family string the canvas can use. */
 export const MATPLOTLIB_FONT_FAMILY = cmuSerif.style.fontFamily;
+
+// next/font's own names lead the stack: the web font, then the metric-matched fallback it generates
+const [cmuWebFamily, cmuMetricFallback] = fontFamilyNames(MATPLOTLIB_FONT_FAMILY);
+
+/** In a file those names mean nothing; the web font is CMU Serif, which a paper's machine may have. */
+export const SVG_FONT_ALIASES: FontAliases = { [cmuWebFamily]: "CMU Serif", [cmuMetricFallback]: null };
 
 /** matplotlib's default colour cycle, `tab10`. */
 export const TAB10 = [
@@ -103,28 +111,41 @@ export function plainLabel(source: string): string {
     .join("");
 }
 
+/** A run as drawn: its font size, and its baseline's offset from the label's middle. */
+export type PlacedRun = { text: string; size: number; y: number };
+
+/** The SVG export's context sets a label's runs as one line of text itself. */
+type RunsContext = CanvasRenderingContext2D & { fillTextRuns?: (runs: PlacedRun[]) => void };
+
 /** Draw runs centred on (0, 0), on a middle baseline, in the current transform. */
 function drawRuns(
-  ctx: CanvasRenderingContext2D,
+  ctx: RunsContext,
   runs: LabelRun[],
   family: string,
   size: number,
   color: string,
 ) {
-  const fontFor = (run: LabelRun) =>
-    `${run.shift ? size * SCRIPT_SCALE : size}px ${family}`;
-  const widths = runs.map((run) => {
-    ctx.font = fontFor(run);
+  const placed: PlacedRun[] = runs.map((run) => ({
+    text: run.text,
+    size: run.shift ? size * SCRIPT_SCALE : size,
+    y: run.shift === 1 ? -0.38 * size : run.shift === -1 ? 0.26 * size : 0,
+  }));
+  ctx.fillStyle = color;
+  ctx.textBaseline = "middle";
+  ctx.font = `${size}px ${family}`;
+  if (ctx.fillTextRuns) {
+    ctx.fillTextRuns(placed);
+    return;
+  }
+  const widths = placed.map((run) => {
+    ctx.font = `${run.size}px ${family}`;
     return ctx.measureText(run.text).width;
   });
   let x = -widths.reduce((sum, width) => sum + width, 0) / 2;
-  ctx.fillStyle = color;
-  ctx.textBaseline = "middle";
   ctx.textAlign = "left";
-  runs.forEach((run, index) => {
-    ctx.font = fontFor(run);
-    const y = run.shift === 1 ? -0.38 * size : run.shift === -1 ? 0.26 * size : 0;
-    ctx.fillText(run.text, x, y);
+  placed.forEach((run, index) => {
+    ctx.font = `${run.size}px ${family}`;
+    ctx.fillText(run.text, x, run.y);
     x += widths[index];
   });
 }
