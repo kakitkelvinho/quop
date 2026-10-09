@@ -42,7 +42,8 @@ export function FrameMesh({
   const { width, depth, color } = frame;
   const edge = selected ? SELECTED_EDGE_MM : EDGE_MM;
   const strength = ghost ? GHOST : 1;
-  const fill = (selected ? 0.2 : 0.11) * strength;
+  // a faint tint: the frame marks an area, it should not colour the table
+  const fill = (selected ? 0.07 : 0.035) * strength;
 
   // the four edges, centred on the frame
   const edges: Strip[] = [

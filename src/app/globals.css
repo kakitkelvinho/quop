@@ -3347,7 +3347,9 @@ html[data-theme="dark"] .builderButton--primary {
   gap: 0.1rem;
   width: max-content;
   min-width: 11rem;
-  max-width: min(22rem, calc(100% - 1.8rem));
+  /* the lists column holds the cap; a percentage less a gutter here would
+     shrink the box below its names, as the column wraps to the box */
+  max-width: 100%;
   max-height: min(14rem, 40vh);
   margin: 0;
   list-style: none;
