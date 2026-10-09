@@ -17,6 +17,7 @@ import {
   PointElement,
   Title,
   Tooltip,
+  type ChartConfiguration,
   type ChartData,
   type ChartOptions,
 } from "chart.js";
@@ -40,9 +41,11 @@ import {
   MATPLOTLIB_FONT_FAMILY,
   matplotlibFrame,
   plainLabel,
+  SVG_FONT_ALIASES,
   type MatplotlibFrameOptions,
   type SkinColors,
 } from "@/components/plotters/matplotlib-skin";
+import { renderChartSvg } from "@/components/plotters/svg-export";
 
 ChartJS.register(
   LinearScale,
@@ -71,6 +74,13 @@ const FONT_OPTIONS = [
   { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
   { label: "Courier New", value: '"Courier New", Courier, monospace' },
 ];
+
+function downloadUrl(href: string, fileName: string) {
+  const link = document.createElement("a");
+  link.href = href;
+  link.download = fileName;
+  link.click();
+}
 
 type DragSelection =
   | {
@@ -1504,20 +1514,8 @@ function InteractiveScatterChartInner({
     return baseName || "scatter-chart";
   }
 
-  function handleSave() {
-    const chart = chartRef.current;
-
-    if (!chart) {
-      return;
-    }
-
-    const scaleFactor = saveHighQuality ? 3 : 1;
-    const exportWidth = Math.max(1, Math.round(chart.width * scaleFactor));
-    const exportHeight = Math.max(1, Math.round(chart.height * scaleFactor));
-    const exportCanvas = document.createElement("canvas");
-    exportCanvas.width = exportWidth;
-    exportCanvas.height = exportHeight;
-
+  /** The chart as an export draws it, every pixel measure times `scaleFactor`. */
+  function buildExportConfig(scaleFactor: number): ChartConfiguration<"scatter"> {
     // an export is always the light, paper-ready figure, whatever the screen shows
     const exportTextColor = isMatplotlib ? LIGHT_SKIN.text : CLASSIC_EXPORT.text;
     const exportFrame: MatplotlibFrameOptions = {
@@ -1662,12 +1660,21 @@ function InteractiveScatterChartInner({
         ]
       : [matplotlibFrame];
 
-    const exportChart = new ChartJS(exportCanvas, {
-      type: "scatter",
-      data: exportData,
-      options: exportOptions,
-      plugins: exportPlugins,
-    });
+    return { type: "scatter", data: exportData, options: exportOptions, plugins: exportPlugins };
+  }
+
+  function handleSave() {
+    const chart = chartRef.current;
+
+    if (!chart) {
+      return;
+    }
+
+    const scaleFactor = saveHighQuality ? 3 : 1;
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = Math.max(1, Math.round(chart.width * scaleFactor));
+    exportCanvas.height = Math.max(1, Math.round(chart.height * scaleFactor));
+    const exportChart = new ChartJS(exportCanvas, buildExportConfig(scaleFactor));
 
     try {
       const imageUrl = exportChart.toBase64Image("image/png", 1);
@@ -1676,13 +1683,21 @@ function InteractiveScatterChartInner({
         return;
       }
 
-      const link = document.createElement("a");
-      link.href = imageUrl;
-      link.download = `${getExportFileName()}${saveHighQuality ? "-hq" : ""}.png`;
-      link.click();
+      downloadUrl(imageUrl, `${getExportFileName()}${saveHighQuality ? "-hq" : ""}.png`);
     } finally {
       exportChart.destroy();
     }
+  }
+
+  async function handleSaveSvg() {
+    const chart = chartRef.current;
+
+    if (!chart) {
+      return;
+    }
+
+    const svg = await renderChartSvg(buildExportConfig(1), chart.width, chart.height, SVG_FONT_ALIASES);
+    downloadUrl(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, `${getExportFileName()}.svg`);
   }
 
   const selectionStyle =
@@ -2357,6 +2372,13 @@ function InteractiveScatterChartInner({
             type="button"
           >
             Save PNG
+          </button>
+          <button
+            className="interactiveChart__applyButton"
+            onClick={handleSaveSvg}
+            type="button"
+          >
+            Save SVG
           </button>
         </div>
       ) : null}
