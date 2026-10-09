@@ -90,6 +90,7 @@ const bench = (beams: Beam[]): BuilderSceneData => ({
     part("south", "beam-block", 0, 200),
   ],
   beams,
+  connections: [],
 });
 
 describe("the beam list in a setup", () => {
