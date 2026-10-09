@@ -18,6 +18,7 @@ export type ImageSummary = {
   min: number;
   pixels: Float32Array;
   sourceLabel: string;
+  valueLabel: string;
   width: number;
   xLabel: string;
   yLabel: string;
@@ -173,6 +174,7 @@ export async function parseFitsFile(file: File): Promise<FitsSummary> {
     min: range.min,
     pixels,
     sourceLabel: file.name,
+    valueLabel: readHeaderString(hdu.header, "BUNIT") ?? "value",
     width,
     xLabel: buildAxisLabel(hdu.header, "x", 1),
     yLabel: buildAxisLabel(hdu.header, "y", 2),
