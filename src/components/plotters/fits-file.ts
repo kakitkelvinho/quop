@@ -1,6 +1,7 @@
 import { BlobReader, openFits, readImage, type Hdu, type FitsImage } from "@fits-js/core";
 
 import { NO_IMAGE_MESSAGE } from "@/components/plotters/fits-errors";
+import { headerChips, headerSections, type FitsHeaderInfo } from "@/components/plotters/fits-header";
 
 type HeaderAccessor = {
   get: (key: string) => unknown;
@@ -10,7 +11,8 @@ export type ImageSummary = {
   kind: "image";
   bitpix: number;
   frameCount: number;
-  headerSummary: Array<{ label: string; value: string }>;
+  header: FitsHeaderInfo;
+  shapeSummary: Array<{ label: string; value: string }>;
   height: number;
   max: number;
   min: number;
@@ -25,7 +27,8 @@ export type SeriesSummary = {
   kind: "series";
   bitpix: number;
   frameCount: number;
-  headerSummary: Array<{ label: string; value: string }>;
+  header: FitsHeaderInfo;
+  shapeSummary: Array<{ label: string; value: string }>;
   max: number;
   min: number;
   points: Array<{ x: number; y: number }>;
@@ -99,28 +102,13 @@ function buildAxisValues(length: number, header: HeaderAccessor) {
   });
 }
 
-function buildHeaderSummary(header: HeaderAccessor, shape: readonly number[], bitpix: number) {
-  const width = shape[0] ?? 0;
-  const height = shape[1] ?? 1;
-  const frameCount = shape[2] ?? 1;
-  const values = [
+function buildShapeSummary(shape: readonly number[], bitpix: number) {
+  return [
     { label: "BITPIX", value: String(bitpix) },
-    { label: "Width", value: String(width) },
-    { label: "Height", value: String(height) },
-    { label: "Frames", value: String(frameCount) },
+    { label: "Width", value: String(shape[0] ?? 0) },
+    { label: "Height", value: String(shape[1] ?? 1) },
+    { label: "Frames", value: String(shape[2] ?? 1) },
   ];
-
-  for (const key of ["BUNIT", "OBJECT", "DATE-OBS", "TELESCOP"]) {
-    const value = header.get(key);
-
-    if (value === undefined || value === null || value === "") {
-      continue;
-    }
-
-    values.push({ label: key, value: String(value) });
-  }
-
-  return values;
 }
 
 function normalizeImageArray(image: FitsImage) {
@@ -147,7 +135,8 @@ export async function parseFitsFile(file: File): Promise<FitsSummary> {
   const range = computeRange(pixels);
   const bitpix = image.bitpix;
   const shape = image.shape;
-  const headerSummary = buildHeaderSummary(hdu.header, shape, bitpix);
+  const header = { chips: headerChips(hdu.header.cards), sections: headerSections(hdus, hdu) };
+  const shapeSummary = buildShapeSummary(shape, bitpix);
   const width = shape[0] ?? pixels.length;
   const height = shape[1] ?? 1;
   const frameCount = shape[2] ?? 1;
@@ -162,7 +151,8 @@ export async function parseFitsFile(file: File): Promise<FitsSummary> {
       kind: "series",
       bitpix,
       frameCount,
-      headerSummary,
+      header,
+      shapeSummary,
       max: range.max,
       min: range.min,
       points: xValues.map((x, index) => ({ x, y: pixels[index] })),
@@ -176,7 +166,8 @@ export async function parseFitsFile(file: File): Promise<FitsSummary> {
     kind: "image",
     bitpix,
     frameCount,
-    headerSummary,
+    header,
+    shapeSummary,
     height,
     max: range.max,
     min: range.min,

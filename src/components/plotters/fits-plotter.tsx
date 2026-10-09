@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import { describeFitsError } from "@/components/plotters/fits-errors";
 import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file";
+import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
@@ -199,7 +200,7 @@ export default function FitsPlotter() {
 
           {summary ? (
             <div className="fitsMetaGrid">
-              {summary.headerSummary.map((item) => (
+              {summary.shapeSummary.map((item) => (
                 <div className="fitsMetaCard" key={item.label}>
                   <span className="fitsMetaCard__label">{item.label}</span>
                   <strong>{item.value}</strong>
@@ -220,20 +221,22 @@ export default function FitsPlotter() {
               : "2D FITS image data are shown with a linear colormap, flat or as a Surface view."}
           </p>
         </div>
-        <div className="visualizerChartSurface">
-          {!summary && !error && !isLoading ? (
-            <div className="visualizerEmptyState">
-              Upload a FITS file to render a preview.
-            </div>
-          ) : null}
-          {summary?.kind === "series" ? (
-            <InteractiveScatterChart data={seriesData} options={seriesOptions} sourceLabel={summary.sourceLabel} />
-          ) : null}
-          {summary?.kind === "image" ? (
-            <FitsImageViewer key={summary.sourceLabel} summary={summary} />
-          ) : null}
-          {error ? <div className="visualizerEmptyState">{error}</div> : null}
-        </div>
+        <FitsHeaderDisplay header={summary?.header ?? null}>
+          <div className="visualizerChartSurface">
+            {!summary && !error && !isLoading ? (
+              <div className="visualizerEmptyState">
+                Upload a FITS file to render a preview.
+              </div>
+            ) : null}
+            {summary?.kind === "series" ? (
+              <InteractiveScatterChart data={seriesData} options={seriesOptions} sourceLabel={summary.sourceLabel} />
+            ) : null}
+            {summary?.kind === "image" ? (
+              <FitsImageViewer key={summary.sourceLabel} summary={summary} />
+            ) : null}
+            {error ? <div className="visualizerEmptyState">{error}</div> : null}
+          </div>
+        </FitsHeaderDisplay>
       </div>
     </div>
   );

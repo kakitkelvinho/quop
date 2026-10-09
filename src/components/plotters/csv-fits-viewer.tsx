@@ -17,6 +17,7 @@ import {
 import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
 import { describeFitsError } from "@/components/plotters/fits-errors";
 import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file";
+import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
@@ -358,7 +359,7 @@ function FitsCompactPanel() {
 
         {summary ? (
           <div className="fitsMetaGrid comparisonMetaGrid">
-            {summary.headerSummary.map((item) => (
+            {summary.shapeSummary.map((item) => (
               <div className="fitsMetaCard" key={item.label}>
                 <span className="fitsMetaCard__label">{item.label}</span>
                 <strong>{item.value}</strong>
@@ -368,20 +369,22 @@ function FitsCompactPanel() {
         ) : null}
       </div>
 
-      <div className="comparisonPanel__viewer visualizerChartSurface">
-        {!summary && !error && !isLoading ? (
-          <div className="visualizerEmptyState">
-            Upload a FITS file to render a preview.
-          </div>
-        ) : null}
-        {summary?.kind === "series" ? (
-          <InteractiveScatterChart data={seriesData} options={seriesOptions} sourceLabel={summary.sourceLabel} />
-        ) : null}
-        {summary?.kind === "image" ? (
-          <FitsImageViewer summary={summary} />
-        ) : null}
-        {error ? <div className="visualizerEmptyState">{error}</div> : null}
-      </div>
+      <FitsHeaderDisplay header={summary?.header ?? null}>
+        <div className="comparisonPanel__viewer visualizerChartSurface">
+          {!summary && !error && !isLoading ? (
+            <div className="visualizerEmptyState">
+              Upload a FITS file to render a preview.
+            </div>
+          ) : null}
+          {summary?.kind === "series" ? (
+            <InteractiveScatterChart data={seriesData} options={seriesOptions} sourceLabel={summary.sourceLabel} />
+          ) : null}
+          {summary?.kind === "image" ? (
+            <FitsImageViewer summary={summary} />
+          ) : null}
+          {error ? <div className="visualizerEmptyState">{error}</div> : null}
+        </div>
+      </FitsHeaderDisplay>
     </article>
   );
 }
