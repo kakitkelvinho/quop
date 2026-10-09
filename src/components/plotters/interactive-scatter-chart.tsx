@@ -40,11 +40,13 @@ import {
   LIGHT_SKIN,
   MATPLOTLIB_FONT_FAMILY,
   matplotlibFrame,
+  PDF_FONT,
   plainLabel,
   SVG_FONT_ALIASES,
   type MatplotlibFrameOptions,
   type SkinColors,
 } from "@/components/plotters/matplotlib-skin";
+import { renderChartPdf } from "@/components/plotters/pdf-export";
 import { renderChartSvg } from "@/components/plotters/svg-export";
 
 ChartJS.register(
@@ -1700,6 +1702,17 @@ function InteractiveScatterChartInner({
     downloadUrl(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`, `${getExportFileName()}.svg`);
   }
 
+  async function handleSavePdf() {
+    const chart = chartRef.current;
+
+    if (!chart) {
+      return;
+    }
+
+    const svg = await renderChartSvg(buildExportConfig(1), chart.width, chart.height, SVG_FONT_ALIASES);
+    downloadUrl(await renderChartPdf(svg, chart.width, chart.height, PDF_FONT), `${getExportFileName()}.pdf`);
+  }
+
   const selectionStyle =
     dragSelection?.axis === "x"
       ? {
@@ -2379,6 +2392,13 @@ function InteractiveScatterChartInner({
             type="button"
           >
             Save SVG
+          </button>
+          <button
+            className="interactiveChart__applyButton"
+            onClick={handleSavePdf}
+            type="button"
+          >
+            Save PDF
           </button>
         </div>
       ) : null}
