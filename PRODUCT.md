@@ -29,7 +29,7 @@ Used in two distinct modes: (1) mid-experiment, at a lab computer, for a fast ca
 
 ## Capabilities and Constraints
 
-- **Static hosting is a hard constraint**: deployed as a static export to GitHub Pages (`https://kakitkelvinho.github.io/quop/`). No server, no backend, no API routes — every calculator and plotter must run entirely client-side.
+- **Static hosting is a hard constraint**: deployed as a static export to GitHub Pages (`https://kitkatho.github.io/quop/`). No server, no backend, no API routes — every calculator and plotter must run entirely client-side.
 - **Calculators (live)**: energy-wavelength, LIDT (laser-induced damage threshold), light travel time, pace.
 - **Plotters (live)**: array plotter, generic CSV plotter, time-axis CSV plotter, FITS plotter, side-by-side CSV+FITS viewer. FITS parsing goes through a custom `@fits-js/core` package; charting via Chart.js.
 - **Experiment (live)**: an interactive optical-table builder — place, drag and rotate bench parts on a
