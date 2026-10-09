@@ -14,8 +14,10 @@ import {
   componentById,
   createBeamId,
   createComponentId,
+  createConnectionId,
   dropComponentFromBeams,
   type Beam,
+  type Connection,
   type BuilderComponent,
   type BuilderSceneData,
   type Vec3,
@@ -127,7 +129,10 @@ export function rotateComponents(
   });
 }
 
-/** The parts gone, and every beam without them; a beam left with one stop is gone too. */
+/**
+ * The parts gone, and every beam without them; a beam left with one stop is
+ * gone too, and so is every fibre or cable to them.
+ */
 export function deleteComponents(scene: BuilderSceneData, ids: string[]): BuilderSceneData {
   const gone = new Set(ids);
   const components = scene.components.filter((component) => !gone.has(component.id));
@@ -136,22 +141,25 @@ export function deleteComponents(scene: BuilderSceneData, ids: string[]): Builde
     ...scene,
     components,
     beams: ids.reduce((beams, id) => dropComponentFromBeams(beams, id), scene.beams),
+    connections: scene.connections.filter(({ from, to }) => !gone.has(from) && !gone.has(to)),
   };
 }
 
 export type IdMaker = {
   component: (source: BuilderComponent) => string;
   beam: (source: Beam) => string;
+  connection: (source: Connection) => string;
 };
 
 const FRESH_IDS: IdMaker = {
   component: (source) => createComponentId(source.type),
   beam: () => createBeamId(),
+  connection: (source) => createConnectionId(source.kind),
 };
 
 /**
- * A copy of each part, one grid step along x and z, and of every beam that
- * runs only between them. The copies' ids come back in the order asked for. A
+ * A copy of each part, one grid step along x and z, and of every beam, fibre
+ * and cable that runs only between them. The copies' ids come back in the order asked for. A
  * copied particle stays in its host only when the host is copied too.
  */
 export function duplicateComponents(
@@ -177,12 +185,21 @@ export function duplicateComponents(
   const beams = scene.beams
     .filter((beam) => beam.path.every((id) => copyOf.has(id)))
     .map((beam) => ({ ...beam, id: makeId.beam(beam), path: beam.path.map((id) => copyOf.get(id)!) }));
+  const connections = scene.connections
+    .filter(({ from, to }) => copyOf.has(from) && copyOf.has(to))
+    .map((connection) => ({
+      ...connection,
+      id: makeId.connection(connection),
+      from: copyOf.get(connection.from)!,
+      to: copyOf.get(connection.to)!,
+    }));
 
   return {
     scene: {
       ...scene,
       components: [...scene.components, ...copies],
       beams: [...scene.beams, ...beams],
+      connections: [...scene.connections, ...connections],
     },
     ids: [...copyOf.values()],
   };

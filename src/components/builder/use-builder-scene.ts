@@ -260,6 +260,7 @@ export function useBuilderScene() {
           groupEdits.duplicateComponents(current, ids, {
             component: (source) => copies.get(source.id) ?? createComponentId(source.type),
             beam: () => createBeamId(),
+            connection: (source) => createConnectionId(source.kind),
           }).scene,
       );
       return [...copies.values()];
