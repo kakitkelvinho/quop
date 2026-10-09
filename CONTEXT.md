@@ -34,6 +34,10 @@ _Avoid_: ray, trace
 A setup's beams in the order the author keeps them, shown in the beams box and saved with the setup. The order is the author's to change; where two beams pass through one mirror, the first in the list sets its angle.
 _Avoid_: beam order, layer order
 
+**Hidden beam**:
+A beam the author has switched off in the drawing, from its eye button in the beams box, so it is left out of the view and of a PNG export. Only the drawing changes: it keeps its row in the beam list, still counts in path lengths, and still angles the mirrors and detectors it passes. Saved with the setup. Selecting a hidden beam shows it on screen as a faint glow so it can still be edited; the export still leaves it out.
+_Avoid_: deleted beam, disabled beam, muted beam
+
 **Path length**:
 The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
 

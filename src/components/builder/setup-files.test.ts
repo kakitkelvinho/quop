@@ -8,7 +8,7 @@ import { beamLengthMm, parseScene, serializeScene } from "./types.ts";
 // dropped, in every later release. Each fixture is a setup file in the shape
 // one schema version saved; see setup-fixtures/README.md before touching them.
 
-const FIXTURES = ["setup-v1.json", "setup-v2.json", "setup-v3.json"];
+const FIXTURES = ["setup-v1.json", "setup-v2.json", "setup-v3.json", "setup-v4.json"];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
 const LEGACY_NAMES: Record<string, string> = {
@@ -101,6 +101,38 @@ describe("setup-v3.json, a laser with a built-in path", () => {
       const lasers = open(name).components.filter(({ type }) => type === "laser-source");
       assert.ok(lasers.length > 0);
       assert.deepEqual(lasers.map(({ internalPathMm }) => internalPathMm), lasers.map(() => undefined));
+    }
+  });
+});
+
+describe("setup-v4.json, the first version with hidden beams", () => {
+  it("opens the reference arm hidden and every other beam shown", () => {
+    assert.deepEqual(
+      open("setup-v4.json").beams.map(({ id, hidden }) => [id, hidden]),
+      [
+        ["probe", undefined],
+        ["imaging", undefined],
+        ["lock", undefined],
+        ["leak", undefined],
+        ["folded", undefined],
+        ["reference", true],
+      ],
+    );
+  });
+
+  it("keeps the arm hidden after being saved and opened again", () => {
+    const again = parseScene(JSON.parse(serializeScene(open("setup-v4.json"))));
+    assert.equal(again?.beams.find(({ id }) => id === "reference")?.hidden, true);
+    assert.equal(again?.beams.filter(({ hidden }) => hidden).length, 1);
+  });
+
+  it("opens every older setup with every beam shown", () => {
+    for (const name of ["setup-v1.json", "setup-v2.json", "setup-v3.json"]) {
+      assert.deepEqual(
+        open(name).beams.filter((beam) => "hidden" in beam),
+        [],
+        name,
+      );
     }
   });
 });

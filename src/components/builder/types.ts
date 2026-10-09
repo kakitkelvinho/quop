@@ -96,6 +96,12 @@ export type Beam = {
   opacity?: number;
   /** false draws the beam as glow only: no core and no direction arrows; missing means shown */
   arrows?: boolean;
+  /**
+   * true keeps the beam out of the drawing, and so out of a PNG. Everything
+   * else treats it as any beam: it angles mirrors and detectors, has its path
+   * length, and can be selected. Stored only when true; missing means shown.
+   */
+  hidden?: true;
 };
 
 export type ConnectionKind = "fiber" | "cable";
@@ -118,7 +124,7 @@ export type Connection = {
   velocityFactor?: number;
 };
 
-export const SCENE_VERSION = 3 as const;
+export const SCENE_VERSION = 4 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -660,6 +666,17 @@ export function moveBeam(beams: Beam[], id: string, direction: 1 | -1): BeamList
   return { ok: true, beams: next };
 }
 
+/** Hide or show one beam. The flag is stored only when hidden, so showing it takes the key away. */
+export function setBeamHidden(beams: Beam[], id: string, hidden: boolean): Beam[] {
+  return beams.map((beam) => {
+    if (beam.id !== id) return beam;
+    const next = { ...beam };
+    if (hidden) next.hidden = true;
+    else delete next.hidden;
+    return next;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mirror angles
 // ---------------------------------------------------------------------------
@@ -990,6 +1007,7 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
       ? { opacity: clamp(finiteNumber(raw.opacity)!, BEAM_OPACITY_RANGE) }
       : {}),
     ...(raw.arrows === false ? { arrows: false } : {}),
+    ...(raw.hidden === true ? { hidden: true } : {}),
   };
 }
 
@@ -1025,7 +1043,8 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
  * Accepts anything (a dropped file, a localStorage blob) and returns a scene
  * or null. Unknown component types and dangling beam references are dropped
  * rather than throwing — a partially readable setup beats an error dialog.
- * Setups from before version 3 have no connections and open with none.
+ * Setups from before version 3 have no connections and open with none;
+ * those from before version 4 have no hidden beams and open with every beam shown.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;

@@ -2686,6 +2686,11 @@ html[data-theme="dark"] .builderButton--primary {
   color: var(--accent-strong);
 }
 
+/* a hidden beam keeps its row, dimmed; the buttons stay full so it can be shown again */
+.builderBeamRow.is-hidden .builderBeamRow__select {
+  opacity: 0.5;
+}
+
 .builderBeamRow__select {
   display: flex;
   flex: 1;

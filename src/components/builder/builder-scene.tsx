@@ -199,6 +199,9 @@ export default function BuilderScene() {
     () => scene.beams.find((beam) => beam.id === selectedBeamId) ?? null,
     [scene.beams, selectedBeamId],
   );
+  // a selected hidden beam shows on screen as a ghost, so it can be edited; a PNG leaves it out
+  const [exporting, setExporting] = useState(false);
+  const ghostBeamId = selectedBeam?.hidden && !exporting ? selectedBeam.id : null;
   const addingStops = selectedBeam !== null && addingStopsTo === selectedBeam.id;
   const selectedConnection = useMemo(
     () => scene.connections.find((connection) => connection.id === selectedConnectionId) ?? null,
@@ -518,6 +521,15 @@ export default function BuilderScene() {
     [announce, api],
   );
 
+  const handleSetBeamHidden = useCallback(
+    (id: string, hidden: boolean) => {
+      const beam = sceneRef.current.beams.find((entry) => entry.id === id);
+      api.setBeamHidden(id, hidden);
+      if (beam) announce(`${hidden ? "Hid" : "Showed"} ${beamDisplayName(beam)} on the table.`);
+    },
+    [announce, api],
+  );
+
   // ---- file & image --------------------------------------------------------
 
   const handleSave = useCallback(() => {
@@ -566,10 +578,14 @@ export default function BuilderScene() {
     [announce, api, cancelBeam, cancelConnect],
   );
 
-  const handleExportPng = useCallback(() => {
+  const handleExportPng = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
+      if (ghostBeamId) {
+        setExporting(true);
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
       const link = document.createElement("a");
       link.href = exportViewPng(canvas);
       link.download = setupFileName("png");
@@ -577,8 +593,10 @@ export default function BuilderScene() {
       announce("Exported the view as a PNG.");
     } catch {
       announce("Couldn't export the canvas in this browser.");
+    } finally {
+      setExporting(false);
     }
-  }, [announce]);
+  }, [announce, ghostBeamId]);
 
   const handleCanvasReady = useCallback((handle: CanvasApi) => {
     canvasRef.current = handle.canvas;
@@ -747,6 +765,7 @@ export default function BuilderScene() {
           palette={palette}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
+          ghostBeamId={ghostBeamId}
           selectedConnectionId={selectedConnection?.id ?? null}
           hoveredId={hoveredId}
           // the part a connection leaves from carries the "1" badge until the second click
@@ -845,6 +864,7 @@ export default function BuilderScene() {
         onCheckpoint={() => api.commitCheckpoint(sceneRef.current)}
         onDeleteBeam={handleDeleteBeam}
         onMoveBeam={handleMoveBeam}
+        onSetBeamHidden={handleSetBeamHidden}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}

@@ -60,6 +60,17 @@ parts) and opacity (10–100%), set with the sliders in its inspector. A
 selected beam is drawn fully opaque with a stronger halo, however faint it
 is, so clicking its row in the beams box always finds it.
 
+**Hide a beam for a figure.** Each beam's row in the beams box has an eye
+button that hides or shows it on the table, to drop a reference arm out of a
+PNG without deleting it. Hiding changes the drawing only: a hidden beam is not
+drawn and is not in the export, but its row stays in the box, dimmed, with its
+length, and it still counts in path lengths, still angles the mirrors and
+detectors it passes, and can still be selected and edited from its row.
+Selecting a hidden beam draws it on screen as a faint glow, with no core and no
+arrows, so you can see what you are editing; the export still leaves it out. Hidden is
+saved with the setup (scene version 4; older setups open with every beam
+shown) and each toggle is one undo step.
+
 **Round beams.** A beam's core is drawn as a lit tube along each leg, so it
 reads as light passing through the parts rather than a flat stroke. Its halo
 is a wider translucent tube that is densest facing you and fades to nothing at
@@ -160,9 +171,10 @@ is on screen until it is needed:
   for those held in a mount.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
   name and path length; click a row to select that beam. Each row also has
-  buttons to move that beam up or down the list and to delete it (the beam
-  only: its parts stay). The list order is the setup's beam order, so it is
-  saved, and each move or delete is one undo step. It scrolls once there
+  buttons to move that beam up or down the list, to hide or show it on the
+  table, and to delete it (the beam only: its parts stay). The list order is
+  the setup's beam order, so it is saved, and each move, hide or delete is one
+  undo step. It scrolls once there
   are more beams than fit. While the parts panel is open the box moves to sit
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes.
@@ -182,6 +194,7 @@ is on screen until it is needed:
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | The up, down and trash buttons on its row in the beams box. A button that can't act (the first beam's up, the last beam's down) is disabled, and its label says why. Undo brings a deleted beam back in its place |
+| Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop by its grip to a new place (a line shows where it will land; `Esc` cancels), or move it up or down, or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
