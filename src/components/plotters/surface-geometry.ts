@@ -3,9 +3,9 @@
 // it runs (and is tested) without WebGL; fits-surface-view.tsx wraps the
 // arrays in a BufferGeometry.
 //
-// Local coordinates: x runs along the frame's columns, y against its rows
-// (row 0 is the far edge, as it is the top edge of the Image view), and z is
-// the value normalised to 0..1 between the frame's min and max. The footprint
+// Local coordinates: x runs along the frame's columns, y along its rows (row 0
+// is the near edge, as it is the bottom edge of the Image view), and z is the
+// value normalised to 0..1 between the frame's min and max. The footprint
 // is centred on the origin, its longer side is 1 long, and each pixel is drawn
 // `pixelAspect` times as long along y as along x (1 is true pixels).
 
@@ -142,7 +142,7 @@ export function localX(column: number, width: number, layout: SurfaceLayout) {
 }
 
 export function localY(row: number, height: number, layout: SurfaceLayout) {
-  return ((height - 1) / 2 - row) * layout.scaleY;
+  return (row - (height - 1) / 2) * layout.scaleY;
 }
 
 /** A value's elevation, 0 at the frame's min and 1 at its max; NaN sits on the floor. */
@@ -181,7 +181,8 @@ export function buildSurfaceArrays(
 
   for (let row = 0; row < rows; row += 1) {
     const y = localY(centreY[row], height, layout);
-    const v = 1 - (centreY[row] + 0.5) / height;
+    // the image texture has row 0 on its bottom scanline, which is v = 0
+    const v = (centreY[row] + 0.5) / height;
 
     for (let column = 0; column < columns; column += 1) {
       const vertex = row * columns + column;
@@ -208,14 +209,14 @@ export function buildSurfaceArrays(
       const c = a + columns;
       const d = c + 1;
 
-      // x grows with the column and y falls with the row, so (a, c, b) winds
+      // x grows with the column and y grows with the row, so (a, b, c) winds
       // counter-clockwise seen from +z
       index[cursor++] = a;
-      index[cursor++] = c;
-      index[cursor++] = b;
       index[cursor++] = b;
       index[cursor++] = c;
+      index[cursor++] = b;
       index[cursor++] = d;
+      index[cursor++] = c;
     }
   }
 
@@ -231,7 +232,7 @@ export function pixelFromLocal(
   layout: SurfaceLayout,
 ) {
   const column = Math.round(x / layout.scaleX + (width - 1) / 2);
-  const row = Math.round((height - 1) / 2 - y / layout.scaleY);
+  const row = Math.round(y / layout.scaleY + (height - 1) / 2);
 
   return {
     column: Math.min(Math.max(column, 0), width - 1),

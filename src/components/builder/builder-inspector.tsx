@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 
-import { IconButton, type IconName } from "@/components/builder/builder-icons";
+import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
 import { useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
@@ -12,10 +12,14 @@ import {
   BLOCK_SIZE_MM,
   BLOCK_SIZE_RANGE_MM,
   COMPONENT_SPECS,
+  CONNECTION_KINDS,
+  CONNECTION_KIND_IDS,
+  CONNECTION_LENGTH_RANGE_M,
   DEFAULT_BLOCK_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
+  INTERNAL_PATH_RANGE_MM,
   PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
   clamp,
@@ -30,15 +34,22 @@ import {
   clampHeight,
   heightRange,
   beamDisplayName,
+  beamInternalPathMm,
   beamLengthMm,
   componentById,
   componentDisplayName,
   componentTag,
+  connectionDelayPs,
+  connectionIndex,
   lengthToPicoseconds,
   moveStop,
+  moveStopTo,
   removeStop,
+  switchConnectionKind,
   type Beam,
   type BuilderComponent,
+  type Connection,
+  type ConnectionKind,
   type LensShape,
   type PathEdit,
 } from "@/components/builder/types";
@@ -55,7 +66,9 @@ type ComponentPatch = Partial<Omit<BuilderComponent, "id" | "type">>;
  * leaving the field (or at once for a step). A lone "-" or an empty field is
  * not a number: it reverts instead of snapping the part to 0, and typing "1"
  * on the way to "150" never moves the part to 1 first. The shown value is
- * rounded to a tenth so a typed -12.5 still reads -12.5.
+ * rounded to `decimals` places, a tenth by default, so a typed -12.5 still
+ * reads -12.5. With `onClear` the value is optional: missing, the field is
+ * empty, and emptying it calls `onClear` instead of reverting.
  */
 function NumberField({
   label,
@@ -66,24 +79,31 @@ function NumberField({
   max,
   title,
   disabled,
+  decimals = 1,
+  placeholder,
   onChange,
+  onClear,
 }: {
   label: string;
   unit: string;
-  value: number;
+  value: number | undefined;
   step: number;
   min?: number;
   max?: number;
   title?: string;
   disabled?: boolean;
+  decimals?: number;
+  placeholder?: string;
   onChange: (value: number) => void;
+  onClear?: () => void;
 }) {
-  const field = useNumberDraft(Math.round(value * 10) / 10, onChange);
+  const scale = 10 ** decimals;
+  const field = useNumberDraft(value === undefined ? undefined : Math.round(value * scale) / scale, onChange, { onClear });
   return (
     <label className="builderField" title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control">
-        <input type="number" step={step} min={min} max={max} disabled={disabled} {...field} />
+        <input type="number" step={step} min={min} max={max} disabled={disabled} placeholder={placeholder} {...field} />
         <span className="builderField__unit">{unit}</span>
       </span>
     </label>
@@ -183,9 +203,13 @@ function capitalise(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+type StopDrag = { from: number; startY: number; dy: number; slot: number };
+
 /**
- * A saved beam's stops, editable: each row moves up or down or goes away.
- * A button is disabled when its edit isn't allowed, and its label says why.
+ * A saved beam's stops, editable: drag a row by its grip to a new place, or
+ * use its buttons to move it up or down or remove it. A button is disabled
+ * when its edit isn't allowed, and its label says why; a drop the rule
+ * forbids sends the row back and says why under the list.
  */
 function EditableStopList({
   components,
@@ -210,40 +234,133 @@ function EditableStopList({
     (wanted && !wanted.disabled ? wanted : buttons.find((button) => !button.disabled))?.focus();
   }, [path]);
 
+  const [drag, setDrag] = useState<StopDrag | null>(null);
+  // Tied to the path it was refused on, so any later edit clears it.
+  const [refusal, setRefusal] = useState<{ path: string[]; row: number; message: string } | null>(null);
+
+  // Esc cancels the drag; the scene's Esc chain would otherwise deselect the beam too.
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setDrag(null);
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [dragging]);
+
+  // The gap the pointer is nearest: 0 above the first row, path.length below
+  // the last. The lifted row's rect has moved with the pointer, so its
+  // midpoint is taken back to where it started.
+  const slotAt = (y: number, held: StopDrag) => {
+    const rows = Array.from(listRef.current?.children ?? []);
+    return rows.filter((row, at) => {
+      const rect = row.getBoundingClientRect();
+      return rect.top + rect.height / 2 - (at === held.from ? held.dy : 0) < y;
+    }).length;
+  };
+  // The index the stop ends up at when dropped into a gap.
+  const landing = (held: StopDrag, slot: number) => (slot > held.from ? slot - 1 : slot);
+
+  const begin = (event: ReactPointerEvent<HTMLSpanElement>, from: number) => {
+    if (event.button !== 0 || drag) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setRefusal(null);
+    setDrag({ from, startY: event.clientY, dy: 0, slot: from });
+  };
+  const move = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!drag) return;
+    setDrag({ ...drag, dy: event.clientY - drag.startY, slot: slotAt(event.clientY, drag) });
+  };
+  const finish = (event: ReactPointerEvent<HTMLSpanElement>, dropped: boolean) => {
+    if (!drag) return;
+    setDrag(null);
+    const to = landing(drag, slotAt(event.clientY, drag));
+    if (!dropped || to === drag.from) return;
+    const edit = moveStopTo(path, drag.from, to);
+    if (edit.ok) {
+      onChange(edit.path);
+      return;
+    }
+    const held = componentById(components, path[drag.from]);
+    const name = held ? componentDisplayName(held) : "—";
+    setRefusal({ path, row: drag.from, message: `Can't move ${name} there: ${edit.reason}` });
+  };
+
+  // A gap that changes nothing (the row's own) gets no line.
+  const gap =
+    drag && landing(drag, drag.slot) !== drag.from
+      ? { slot: drag.slot, allowed: moveStopTo(path, drag.from, landing(drag, drag.slot)).ok }
+      : null;
+  const shownRefusal = refusal?.path === path ? refusal : null;
+
   return (
-    <ol ref={listRef} className="builderStops builderStops--editable">
-      {path.map((id, index) => {
-        const component = componentById(components, id);
-        const name = component ? componentDisplayName(component) : "—";
-        // [icon, action, edit, the row the stop ends up on]
-        const edits: [IconName, string, PathEdit, number][] = [
-          ["up", `move ${name} earlier`, moveStop(path, index, -1), index - 1],
-          ["down", `move ${name} later`, moveStop(path, index, 1), index + 1],
-          ["close", `remove ${name}`, removeStop(path, index), index],
-        ];
-        return (
-          // keyed by position: rows stay mounted, and focus is moved by hand above
-          <li key={index}>
-            <span className="builderStops__name">{name}</span>
-            <span className="builderStops__actions">
-              {edits.map(([icon, action, edit, row], button) => (
-                <IconButton
-                  key={icon}
-                  icon={icon}
-                  label={edit.ok ? capitalise(action) : `Can't ${action}: ${edit.reason}`}
-                  disabled={!edit.ok}
-                  onClick={() => {
-                    if (!edit.ok) return;
-                    focusAfter.current = { row, button };
-                    onChange(edit.path);
-                  }}
-                />
-              ))}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <>
+      <ol ref={listRef} className={`builderStops builderStops--editable${drag ? " is-reordering" : ""}`}>
+        {path.map((id, index) => {
+          const component = componentById(components, id);
+          const name = component ? componentDisplayName(component) : "—";
+          // [icon, action, edit, the row the stop ends up on]
+          const edits: [IconName, string, PathEdit, number][] = [
+            ["up", `move ${name} earlier`, moveStop(path, index, -1), index - 1],
+            ["down", `move ${name} later`, moveStop(path, index, 1), index + 1],
+            ["close", `remove ${name}`, removeStop(path, index), index],
+          ];
+          const lifted = drag?.from === index;
+          const line =
+            gap && (gap.slot === index ? "before" : gap.slot === path.length && index === path.length - 1 ? "after" : null);
+          const classes = [
+            lifted && "is-dragging",
+            shownRefusal?.row === index && "is-returning",
+            line && `is-drop-${line}`,
+            line && !gap.allowed && "is-refused",
+          ];
+          return (
+            // keyed by position: rows stay mounted, and focus is moved by hand above
+            <li
+              key={index}
+              className={classes.filter(Boolean).join(" ") || undefined}
+              style={lifted ? { transform: `translateY(${drag.dy}px)` } : undefined}
+            >
+              <span
+                className="builderStops__grip"
+                title="Drag to reorder"
+                aria-hidden="true"
+                onPointerDown={(event) => begin(event, index)}
+                onPointerMove={move}
+                onPointerUp={(event) => finish(event, true)}
+                onPointerCancel={(event) => finish(event, false)}
+              >
+                <Icon name="grip" />
+              </span>
+              <span className="builderStops__name">{name}</span>
+              <span className="builderStops__actions">
+                {edits.map(([icon, action, edit, row], button) => (
+                  <IconButton
+                    key={icon}
+                    icon={icon}
+                    label={edit.ok ? capitalise(action) : `Can't ${action}: ${edit.reason}`}
+                    disabled={!edit.ok}
+                    onClick={() => {
+                      if (!edit.ok) return;
+                      focusAfter.current = { row, button };
+                      onChange(edit.path);
+                    }}
+                  />
+                ))}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      {shownRefusal ? (
+        <p className="builderInspector__hint" role="status">
+          {shownRefusal.message}
+        </p>
+      ) : null}
+    </>
   );
 }
 
@@ -357,6 +474,23 @@ export function ComponentInspector({
         <p className="builderInspector__hint">
           Angle set by <strong>{beamDisplayName(angleBeam)}</strong>
         </p>
+      ) : null}
+      {component.type === "laser-source" ? (
+        <>
+          <NumberField
+            label="Built-in path"
+            unit="mm"
+            step={50}
+            min={INTERNAL_PATH_RANGE_MM[0]}
+            max={INTERNAL_PATH_RANGE_MM[1]}
+            placeholder="none"
+            title="Light the laser adds before it leaves the aperture. Leave empty for none."
+            value={component.internalPathMm}
+            onChange={(next) => onUpdate({ internalPathMm: clamp(next, INTERNAL_PATH_RANGE_MM) })}
+            onClear={() => onUpdate({ internalPathMm: undefined })}
+          />
+          <p className="builderInspector__hint">Folded or internal delay, counted in a beam that starts here.</p>
+        </>
       ) : null}
       {component.type === "lens" ? (
         <>
@@ -493,21 +627,98 @@ export function ComponentInspector({
   );
 }
 
+/**
+ * Several parts at once. They turn, copy and delete together, and share the
+ * fields that mean the same for each: height while they all stand at one
+ * (and none sits in a host, which sets its particle's), and the mount colour
+ * of those held in a mount.
+ */
+export function GroupInspector({
+  selected,
+  onRotate,
+  onDuplicate,
+  onDelete,
+  onSetHeight,
+  onSetMountColor,
+}: {
+  selected: BuilderComponent[];
+  onRotate: (direction: 1 | -1) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onSetHeight: (height: number) => void;
+  onSetMountColor: (color: string) => void;
+}) {
+  const height = selected[0].position[1];
+  const sharedHeight = selected.every((component) => component.position[1] === height && !component.host);
+  const ranges = selected.map((component) => heightRange(component.type));
+  const min = Math.min(...ranges.map(([low]) => low));
+  const max = Math.max(...ranges.map(([, high]) => high));
+  const mounted = selected.filter((component) => MOUNTED_TYPES.has(component.type));
+  const mountColors = new Set(mounted.map((component) => component.color ?? DEFAULT_MOUNT_COLOR));
+
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>{selected.length} parts selected</h2>
+        <IconButton icon="duplicate" label="Duplicate (D)" onClick={onDuplicate} />
+        <IconButton icon="trash" label="Delete (Delete)" onClick={onDelete} />
+      </div>
+      <div className="builderInspector__turn">
+        <span>Rotate about their centre</span>
+        <span className="builderInspector__rotate">
+          <IconButton icon="rotateLeft" label="Rotate −15° (Shift R)" onClick={() => onRotate(-1)} />
+          <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
+        </span>
+      </div>
+      {sharedHeight ? (
+        <NumberField
+          key={selected.map((component) => component.id).join()}
+          label="Height"
+          unit="mm"
+          step={5}
+          min={min}
+          max={max}
+          title={`Optical centre above the breadboard, ${min}–${max} mm; each part stops at its own limits`}
+          value={height}
+          onChange={onSetHeight}
+        />
+      ) : null}
+      {mounted.length ? (
+        <ColorField
+          label={mounted.length === selected.length ? "Mount colour" : `Mount colour (${mounted.length} of ${selected.length})`}
+          title="Tint the mounts the colour of the beam they serve"
+          value={mounted[0].color ?? DEFAULT_MOUNT_COLOR}
+          readout={mountColors.size > 1 ? "mixed" : undefined}
+          onChange={onSetMountColor}
+        />
+      ) : null}
+      <p className="builderInspector__hint">
+        Drag any one of them to move them all; they keep their spacing. ⌘-click a part to add or remove it.
+      </p>
+    </div>
+  );
+}
+
 function ColorField({
   label,
   value,
+  title,
+  readout = value,
   onChange,
 }: {
   label: string;
   value: string;
+  title?: string;
+  /** what the field reads, when that isn't the value */
+  readout?: string;
   onChange: (color: string) => void;
 }) {
   return (
-    <label className="builderField">
+    <label className="builderField" title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control builderField__control--color">
         <input type="color" value={value} onChange={(event) => onChange(event.target.value)} />
-        <span className="builderReadout">{value}</span>
+        <span className="builderReadout">{readout}</span>
       </span>
     </label>
   );
@@ -532,6 +743,7 @@ export function BeamInspector({
   onToggleAddStops: () => void;
 }) {
   const length = beamLengthMm(components, beam);
+  const insideLaser = beamInternalPathMm(components, beam);
   const width = beam.width ?? BEAM_WIDTH_MM;
   const opacity = beam.opacity ?? 1;
 
@@ -599,6 +811,9 @@ export function BeamInspector({
           <dd>{lengthToPicoseconds(length).toFixed(1)} ps</dd>
         </div>
       </dl>
+      {insideLaser > 0 ? (
+        <p className="builderInspector__hint">Includes {Math.round(insideLaser)} mm inside the laser.</p>
+      ) : null}
       <EditableStopList components={components} path={beam.path} onChange={(path) => onUpdate({ path })} />
       <button
         type="button"
@@ -609,7 +824,7 @@ export function BeamInspector({
         {addingStops ? "Done adding stops" : "Add stops"}
       </button>
       {addingStops ? (
-        <p className="builderInspector__hint">Click parts to add them to the end, in order. Move a stop up or down to reorder.</p>
+        <p className="builderInspector__hint">Click parts to add them to the end, in order. Drag a stop, or move it up or down, to reorder.</p>
       ) : null}
     </div>
   );
@@ -653,6 +868,152 @@ export function BeamDraftInspector({
         <button type="button" className="builderButton" onClick={onUndoStep} disabled={!draft.length}>
           Undo stop
         </button>
+        <button type="button" className="builderButton" onClick={onCancel}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type ConnectionPatch = Partial<Omit<Connection, "id">>;
+
+/** Picoseconds under a nanosecond, nanoseconds above. */
+function formatDelay(picoseconds: number): string {
+  return picoseconds < 1000 ? `${picoseconds.toFixed(1)} ps` : `${(picoseconds / 1000).toFixed(2)} ns`;
+}
+
+function KindChoice({ value, onChange }: { value: ConnectionKind; onChange: (kind: ConnectionKind) => void }) {
+  return (
+    <div className="builderChoice" role="group" aria-label="Fibre or cable">
+      {CONNECTION_KIND_IDS.map((kind) => (
+        <button
+          key={kind}
+          type="button"
+          className="builderButton"
+          aria-pressed={value === kind}
+          onClick={() => onChange(kind)}
+        >
+          {CONNECTION_KINDS[kind].label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function endName(components: BuilderComponent[], id: string): string {
+  const component = componentById(components, id);
+  return component ? componentDisplayName(component) : "—";
+}
+
+export function ConnectionInspector({
+  connection,
+  components,
+  onUpdate,
+  onDelete,
+}: {
+  connection: Connection;
+  components: BuilderComponent[];
+  onUpdate: (patch: ConnectionPatch) => void;
+  onDelete: () => void;
+}) {
+  const spec = CONNECTION_KINDS[connection.kind];
+  const delay = connectionDelayPs(connection);
+
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>{spec.label}</h2>
+        <IconButton icon="trash" label={`Delete ${spec.label.toLowerCase()} (Delete)`} onClick={onDelete} />
+      </div>
+      <p className="builderInspector__hint">
+        From <strong>{endName(components, connection.from)}</strong> to{" "}
+        <strong>{endName(components, connection.to)}</strong>
+      </p>
+      <KindChoice value={connection.kind} onChange={(kind) => onUpdate(switchConnectionKind(connection, kind))} />
+      <label className="builderField">
+        <span className="builderField__label">Label</span>
+        <span className="builderField__control">
+          <input
+            type="text"
+            value={connection.label ?? ""}
+            placeholder={`e.g. ${spec.example}`}
+            onChange={(event) => onUpdate({ label: event.target.value })}
+          />
+        </span>
+      </label>
+      <ColorField label="Colour" value={connection.color} onChange={(color) => onUpdate({ color })} />
+      <div className="builderFieldRow">
+        <NumberField
+          label="Length"
+          unit="m"
+          step={0.1}
+          min={0}
+          decimals={2}
+          placeholder="unknown"
+          title="Leave empty when the length isn't known"
+          value={connection.lengthM}
+          onChange={(metres) => onUpdate({ lengthM: clamp(metres, CONNECTION_LENGTH_RANGE_M) })}
+          onClear={() => onUpdate({ lengthM: undefined })}
+        />
+        <NumberField
+          // remount on a kind switch: the field is a different quantity then
+          key={connection.kind}
+          label={spec.index.label}
+          unit=""
+          step={spec.index.step}
+          min={spec.index.range[0]}
+          max={spec.index.range[1]}
+          decimals={Math.round(-Math.log10(spec.index.step))}
+          value={connectionIndex(connection)}
+          onChange={(next) => onUpdate({ [spec.index.key]: clamp(next, spec.index.range) })}
+        />
+      </div>
+      {delay === undefined ? (
+        <p className="builderInspector__hint">Give a length to see the delay.</p>
+      ) : (
+        <dl className="builderMetrics">
+          <div>
+            <dt>Delay</dt>
+            <dd>{formatDelay(delay)}</dd>
+          </div>
+        </dl>
+      )}
+      <p className="builderInspector__hint">Not a beam: it adds nothing to any path length.</p>
+    </div>
+  );
+}
+
+export function ConnectionDraftInspector({
+  kind,
+  from,
+  components,
+  onKindChange,
+  onCancel,
+}: {
+  kind: ConnectionKind;
+  /** the part clicked first, once there is one */
+  from: string | null;
+  components: BuilderComponent[];
+  onKindChange: (kind: ConnectionKind) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>New {CONNECTION_KINDS[kind].label.toLowerCase()}</h2>
+      </div>
+      <KindChoice value={kind} onChange={onKindChange} />
+      <p className="builderInspector__hint">
+        {from ? (
+          <>
+            From <strong>{endName(components, from)}</strong>. Click the part it goes to.
+          </>
+        ) : (
+          "Click the part it leaves from, then the part it goes to."
+        )}
+      </p>
+      <div className="builderInspector__actions">
         <button type="button" className="builderButton" onClick={onCancel}>
           Cancel
         </button>

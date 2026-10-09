@@ -6,6 +6,7 @@ import {
   type Beam,
   dropComponentFromBeams,
   moveStop,
+  moveStopTo,
   parseScene,
   type PathEdit,
   removeStop,
@@ -63,6 +64,36 @@ describe("removing and moving stops", () => {
 
   it("refuses a move that puts a part twice in a row", () => {
     assert.match(reason(moveStop(["A", "B", "A", "C"], 1, 1)), /twice in a row/);
+  });
+});
+
+describe("dragging a stop to a new place", () => {
+  const path = ["A", "B", "C", "D"];
+
+  it("drops a stop two places later", () => {
+    assert.deepEqual(moveStopTo(path, 1, 3), { ok: true, path: ["A", "C", "D", "B"] });
+  });
+
+  it("drops a stop to the front", () => {
+    assert.deepEqual(moveStopTo(path, 3, 0), { ok: true, path: ["D", "A", "B", "C"] });
+  });
+
+  it("leaves the path as it was when the stop is dropped where it stood", () => {
+    assert.deepEqual(moveStopTo(path, 2, 2), { ok: true, path });
+  });
+
+  it("refuses a drop that puts a part twice in a row, with the button wording", () => {
+    assert.deepEqual(moveStopTo(["A", "B", "A", "C"], 1, 3), {
+      ok: false,
+      reason: "it would put the same part twice in a row",
+    });
+    assert.match(reason(moveStopTo(["A", "B", "C", "B"], 2, 3)), /twice in a row/);
+  });
+
+  it("refuses a stop that isn't there, and a place past either end", () => {
+    assert.match(reason(moveStopTo(path, 4, 0)), /isn't on this beam/);
+    assert.match(reason(moveStopTo(path, 0, -1)), /already first/);
+    assert.match(reason(moveStopTo(path, 0, 4)), /already last/);
   });
 });
 

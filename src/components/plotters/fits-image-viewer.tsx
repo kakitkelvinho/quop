@@ -22,6 +22,14 @@ import type {
   CameraPreset,
   SurfaceExport,
 } from "@/components/plotters/fits-surface-view";
+import {
+  flipRow,
+  normalizeViewport,
+  pixelAtRatio,
+  pixelAxisTicks,
+  zoomViewport,
+  type Viewport,
+} from "@/components/plotters/image-axes";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import {
   clampPixelAspect,
@@ -49,13 +57,6 @@ type FitsImageSummary = {
   width: number;
   xLabel: string;
   yLabel: string;
-};
-
-type Viewport = {
-  height: number;
-  left: number;
-  top: number;
-  width: number;
 };
 
 type DragSelection = {
@@ -88,24 +89,6 @@ function buildBaseViewport(summary: FitsImageSummary): Viewport {
   };
 }
 
-function normalizeViewport(
-  summary: FitsImageSummary,
-  left: number,
-  top: number,
-  width: number,
-  height: number,
-): Viewport {
-  const nextWidth = clamp(width, 1, summary.width);
-  const nextHeight = clamp(height, 1, summary.height);
-
-  return {
-    height: nextHeight,
-    left: clamp(left, 0, summary.width - nextWidth),
-    top: clamp(top, 0, summary.height - nextHeight),
-    width: nextWidth,
-  };
-}
-
 function renderViewport(
   canvas: HTMLCanvasElement,
   sourceCanvas: HTMLCanvasElement,
@@ -117,8 +100,9 @@ function renderViewport(
     return;
   }
 
-  canvas.width = Math.max(1, Math.round(viewport.width));
-  canvas.height = Math.max(1, Math.round(viewport.height));
+  // one canvas cell per pixel of the viewport, which covers whole pixels
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
   context.imageSmoothingEnabled = false;
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.drawImage(
@@ -157,15 +141,11 @@ function getPointerDetails(
   const bounds = canvas.getBoundingClientRect();
   const ratioX = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
   const ratioY = clamp((event.clientY - bounds.top) / bounds.height, 0, 1);
-  const x = clamp(
-    Math.floor(viewport.left + ratioX * Math.max(viewport.width - 1, 0)),
-    0,
-    summary.width - 1,
-  );
-  const y = clamp(
-    Math.floor(viewport.top + ratioY * Math.max(viewport.height - 1, 0)),
-    0,
-    summary.height - 1,
+  const x = pixelAtRatio(ratioX, viewport.left, viewport.width, summary.width);
+  // the viewport counts canvas rows from the top; the frame's row 0 is its bottom row
+  const y = flipRow(
+    pixelAtRatio(ratioY, viewport.top, viewport.height, summary.height),
+    summary.height,
   );
 
   return {
@@ -218,11 +198,13 @@ function buildSliceBandStyle(
   summary: FitsImageSummary,
 ): CSSProperties | null {
   if (sliceAxis === "horizontal") {
-    if (sliceIndex < viewport.top || sliceIndex >= viewport.top + viewport.height) {
+    const canvasRow = flipRow(sliceIndex, summary.height);
+
+    if (canvasRow < viewport.top || canvasRow >= viewport.top + viewport.height) {
       return null;
     }
 
-    const top = ((sliceIndex - viewport.top) / viewport.height) * 100;
+    const top = ((canvasRow - viewport.top) / viewport.height) * 100;
     const height = Math.max(100 / viewport.height, 0.4);
 
     return {
@@ -732,20 +714,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   }
 
   function zoomStep(factor: number) {
-    setViewport((current) => {
-      const nextWidth = current.width * factor;
-      const nextHeight = current.height * factor;
-      const centerX = current.left + current.width / 2;
-      const centerY = current.top + current.height / 2;
-
-      return normalizeViewport(
-        summary,
-        centerX - nextWidth / 2,
-        centerY - nextHeight / 2,
-        nextWidth,
-        nextHeight,
-      );
-    });
+    setViewport((current) => zoomViewport(summary, current, factor));
   }
 
   function handleSaveSliceCsv() {
@@ -805,11 +774,10 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
 
     context.imageSmoothingEnabled = false;
 
-    if (viewMode === "surface") {
-      surfaceExportRef.current?.drawInto(context, plotRect, scaleFactor);
-      // the tick labels and axis titles are HTML over the 3D canvas, so they
-      // are drawn from their rects like the rest of the figure's chrome
-      plotElement.querySelectorAll<HTMLElement>("[data-surface-label]").forEach((label) => {
+    // tick labels and axis titles are HTML over the plot, so they are drawn
+    // from their rects like the rest of the figure's chrome
+    const drawPlotLabels = (labels: NodeListOf<HTMLElement>) => {
+      labels.forEach((label) => {
         const labelRect = getRelativeRect(label, figureRect, scaleFactor);
         const labelStyle = getComputedStyle(label);
         context.fillStyle = saveBlackText ? exportTextColor : labelStyle.color;
@@ -822,6 +790,11 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           labelRect.y + labelRect.height / 2,
         );
       });
+    };
+
+    if (viewMode === "surface") {
+      surfaceExportRef.current?.drawInto(context, plotRect, scaleFactor);
+      drawPlotLabels(plotElement.querySelectorAll<HTMLElement>("[data-surface-label]"));
     } else {
       context.drawImage(
         sourceCanvas,
@@ -834,6 +807,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
         plotRect.width,
         plotRect.height,
       );
+      drawPlotLabels(figure.querySelectorAll<HTMLElement>("[data-axis-tick]"));
     }
 
     context.strokeStyle = borderColor;
@@ -967,6 +941,19 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     { live: true },
   );
   const sliceBandStyle = buildSliceBandStyle(viewport, sliceAxis, activeSliceIndex, summary);
+  // the longer side of the shown region gets the most ticks
+  const shownAspect = displayAspect(viewport.width, viewport.height, pixelAspect);
+  const xTicks = pixelAxisTicks(
+    viewport.left,
+    viewport.width,
+    Math.max(2, Math.round(5 * Math.min(shownAspect, 1))),
+  );
+  // the viewport counts canvas rows from the top; the ticks count frame rows from the bottom
+  const yTicks = pixelAxisTicks(
+    summary.height - viewport.top - viewport.height,
+    viewport.height,
+    Math.max(2, Math.round(5 * Math.min(1 / shownAspect, 1))),
+  );
   const selectionStyle = dragSelection
     ? {
         height: `${Math.abs(dragSelection.currentY - dragSelection.startY) * 100}%`,
@@ -1056,7 +1043,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
               </span>
             </div>
           ) : null}
-          <div className="fitsImageViewport">
+          <div className={`fitsImageViewport${isSurface ? "" : " fitsImageViewport--ticked"}`}>
             {isSurface ? (
               <div className="fitsSurfaceHost" ref={surfaceHostRef}>
                 <FitsSurfaceView
@@ -1121,6 +1108,30 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                   </div>
                 </>
               ) : null}
+              <div aria-hidden="true" className="fitsImageTicks">
+                {xTicks.map((tick) => (
+                  <span
+                    className="fitsImageTick fitsImageTick--x"
+                    data-axis-tick=""
+                    key={`x${tick}`}
+                    style={{ left: `${((tick + 0.5 - viewport.left) / viewport.width) * 100}%` }}
+                  >
+                    {tick}
+                  </span>
+                ))}
+                {yTicks.map((tick) => (
+                  <span
+                    className="fitsImageTick fitsImageTick--y"
+                    data-axis-tick=""
+                    key={`y${tick}`}
+                    style={{
+                      top: `${((flipRow(tick, summary.height) + 0.5 - viewport.top) / viewport.height) * 100}%`,
+                    }}
+                  >
+                    {tick}
+                  </span>
+                ))}
+              </div>
             </div>
             )}
           </div>

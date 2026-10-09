@@ -35,10 +35,14 @@ A setup's beams in the order the author keeps them, shown in the beams box and s
 _Avoid_: beam order, layer order
 
 **Path length**:
-The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight.
+The 3D length of a beam through its components' optical centres, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
 
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.
+
+**Connection**:
+A fibre (optical) or a cable (electrical, such as coax) from one component to another, drawn as a tube lying on the table. It is not a beam: it adds nothing to any path length, and no mirror or detector takes its angle from it. Its delay comes from the length the author types, never from the drawn route.
+_Avoid_: link, wire, patch cord, fibre beam
 
 **Beam cube**:
 A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
@@ -61,6 +65,10 @@ _Avoid_: heatmap, 2D view, colormap view
 **Surface view**:
 A 2D frame drawn as a landscape in 3D: pixel position across the ground, pixel value as elevation, coloured with the same colormap as the Image view.
 _Avoid_: 3D view, height map, mesh plot
+
+**Row 0**:
+The first row stored in a FITS file. Both views draw it at the bottom, as DS9 and astropy's `origin='lower'` do, so a frame comes out the same way up as in those tools. The pointer readout, the Slice and the ticks use the file's numbers: the bottom row reads y = 0.
+_Avoid_: top row, first line
 
 **Slice**:
 One row or one column of a frame, plotted as a 1D profile.

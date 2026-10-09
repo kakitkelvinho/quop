@@ -25,10 +25,18 @@ const ICONS = {
   // on the diagonal where the lower-left ray would be
   beam: (
     <>
-      <circle cx="14" cy="10" r="2" fill="currentColor" />
-      <path d="M17.5 10H21M14 13.5V17M10.5 10H7M14 6.5V3" />
-      <path d="m16.5 12.5 1.4 1.4M11.5 7.5l-1.4-1.4M16.5 7.5l1.4-1.4" />
-      <path d="M3 21l8.5-8.5" />
+      <circle cx="15" cy="12" r="2" fill="currentColor" />
+      <path d="M18.5 12H22M15 8.5V5M15 15.5V19" />
+      <path d="m17.5 9.5 1.4-1.4M17.5 14.5l1.4 1.4M12.5 9.5l-1.4-1.4M12.5 14.5l-1.4 1.4" />
+      <path d="M2 12h9.5" />
+    </>
+  ),
+  // a patch cord: a plug at each end and the cable slack between them
+  connect: (
+    <>
+      <rect x="3.5" y="3" width="4" height="6" rx="1" />
+      <rect x="16.5" y="15" width="4" height="6" rx="1" />
+      <path d="M5.5 9c0 8 13 -2 13 6" />
     </>
   ),
   iso: (
@@ -87,6 +95,16 @@ const ICONS = {
   trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />,
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
+  grip: (
+    <>
+      <circle cx="9" cy="6" r="1" />
+      <circle cx="15" cy="6" r="1" />
+      <circle cx="9" cy="12" r="1" />
+      <circle cx="15" cy="12" r="1" />
+      <circle cx="9" cy="18" r="1" />
+      <circle cx="15" cy="18" r="1" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;
@@ -223,6 +241,24 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
     <>
       <rect x="3" y="6" width="18" height="12" rx="1.5" />
       <path d="M7 15l4-6M10.5 15.5 13 9M14 16l1.8-7" />
+    </>
+  ),
+  // a beam into a box through a connector, and a pulse out the back
+  "single-photon-detector": (
+    <>
+      <path d="M2.5 12h3M5.5 9.5v5" />
+      <rect x="7" y="6" width="8" height="12" rx="1.2" />
+      <path d="M15 15.5h3.5V9h3v6.5" />
+    </>
+  ),
+  // a low box with a row of inputs across its front
+  "time-tagger": (
+    <>
+      <rect x="2.5" y="8" width="19" height="9" rx="1.2" />
+      <circle cx="7" cy="12.5" r="1.1" />
+      <circle cx="10.5" cy="12.5" r="1.1" />
+      <circle cx="14" cy="12.5" r="1.1" />
+      <circle cx="17.5" cy="12.5" r="1.1" />
     </>
   ),
   // a beam running into a finned stack

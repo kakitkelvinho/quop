@@ -29,8 +29,10 @@ height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or
 lowering a part changes the length of its post (or the plates a laser stands on); the part
 itself never scales. The lowest height is where the post runs out, or where a
-floating part meets the table; the ceiling is 300 mm. The spectrometer is the
-exception: its input port is fixed by the instrument. A beam between parts at
+floating part meets the table; the ceiling is 300 mm. The spectrometer and
+the time tagger are the exceptions: the spectrometer's input port is fixed by
+the instrument, and the time tagger sits on the table with its inputs at
+27 mm. A beam between parts at
 different heights slopes, and its path length and time of flight are 3D.
 
 **Beams are drawn, not traced.** A beam is an ordered list of the components it
@@ -44,7 +46,13 @@ get wrong.
 **Path length is the payoff.** Because a beam is a polyline with real
 millimetres, its length and vacuum time of flight fall out for free. Both are
 shown per beam, which is the number a pump–probe delay line is actually built
-around.
+around. A laser source can also carry a built-in path (0–100 000 mm, set in
+its inspector, empty for none): light it adds before the aperture, such as a
+folded or internal delay, so a long beam does not need the laser placed far
+along the table. It counts once, in a beam that starts at that laser; a laser
+anywhere later in a path adds nothing. The beam's length, its time of flight
+and its row in the beams box all include it, and its inspector says how much
+came from inside the laser. The beam is still drawn from the aperture.
 
 **Beams can be told apart.** Each beam has its own width (a drawn diameter in
 millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the
@@ -73,10 +81,10 @@ pass through it, the first in the beam list wins, and the inspector names it
 other. A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
-**A detector at a beam's end faces the light.** A photodiode, camera or
-spectrometer that is a beam's last stop turns its face to the stop before it,
-and re-aims live as either moves. Like a mirror, its yaw is then read-only and
-names the beam. At a beam's start, or on no beam, it turns by hand.
+**A detector at a beam's end faces the light.** A photodiode, camera,
+spectrometer or single-photon detector that is a beam's last stop turns its
+face to the stop before it, and re-aims live as either moves. Like a mirror,
+its yaw is then read-only and names the beam. At a beam's start, or on no beam, it turns by hand.
 
 **Mount colour marks the beam line.** Any part held in a mount (mirror, beam
 cube, waveplate, filter, iris, fiber collimator) can have its mount tinted; the
@@ -95,7 +103,11 @@ particle) are drawn larger than life and float at their height.
 Parts whose hardware hides what they do are drawn the way lab diagrams draw
 them instead: a photodiode is a coloured dome behind a face with a small
 silicon chip set into a cup, a fiber off the dome's tip; an AOM or EOM is its
-bare crystal, with the transducer or electrodes that drive it. Anything the
+bare crystal, with the transducer or electrodes that drive it. A single-photon
+detector is a black module on a post, with a fiber connector on its face and
+SMA outputs at the back; note SPCM or SNSPD in its label. A time tagger is
+a dark bench-top box on the table with a row of SMA inputs across its front.
+Anything the
 builder has no model for is a generic block, sized, coloured and labelled by
 hand (a Faraday rotator is a block between two beam cubes). A lens's bulge
 is exaggerated so it can be seen, but still shrinks smoothly with focal
@@ -105,6 +117,20 @@ length, so f = 50 and f = 500 never look alike.
 snaps to its centre and moves with it; dragged or nudged clear, it lets go.
 The cavity's glowing mode is part of the cavity, not a beam: it counts toward
 no path length.
+
+**Connections are not beams.** A fibre or a cable joins two components: a
+fibre coupler to a single-photon detector, a detector's coax to a time
+tagger. It is drawn as a tube that leaves one part, drops to the table, lies
+on it in a loose bend, and rises into the other, with no arrows and no glow,
+so it never reads as light in free space. A fibre at a fibre collimator or a
+photodiode takes the place of the yellow stub the part draws, leaving from
+the same connector. A connection has its own colour and an optional label.
+Its length, in metres, is optional too, and it is the only length it has: the
+drawn route is not measured. With a length, the inspector shows the delay:
+L·n/c along a fibre (n defaults to 1.468, a silica fibre) and L/(VF·c) along
+a cable (VF defaults to 0.66, solid-PE coax). With none, no delay is shown. A
+connection counts toward no path length, and no mirror or detector takes its
+angle from one. Setups from before version 3 open with no connections.
 
 **Static, client-side only.** Like everything else on the site, the builder runs
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
@@ -116,19 +142,22 @@ The builder is a full-window workspace: the site nav steps aside and the canvas
 fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
-- **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel,
-  and the File menu (save/open JSON, export PNG, load the example, clear the
+- **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
+  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, export PNG, load the example, clear the
   table, about the builder).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and one-line hint, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
   reopening it. The about panel (what the builder is for, then its known
   limitations) opens in the same spot, so opening either closes the other.
-- **Top centre**: the tool pill (Select, Draw a beam, Undo, Redo). While
-  placing or drawing, a mode badge under the pill carries that mode's key
+- **Top centre**: the tool pill (Select, Posts, Grid, Undo, Redo). While
+  placing, drawing or connecting, a mode badge under the pill carries that mode's key
   hints.
 - **Right**: the inspector, shown only while something is selected: a
-  component, a beam, or a beam being drawn.
+  component, several components, a beam, or a beam being drawn. For several
+  it reads "N parts selected", with rotate, duplicate and delete, a height
+  while they all stand at one (and none sits in a host), and a mount colour
+  for those held in a mount.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
   name and path length; click a row to select that beam. Each row also has
   buttons to move that beam up or down the list and to delete it (the beam
@@ -144,16 +173,20 @@ is on screen until it is needed:
 | --- | --- |
 | Add a part | ＋ at the top left, pick it in the panel (or search, then `Enter`), click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
+| Select several | `Ctrl`/`⌘` + click a part to add or remove it, `Ctrl`/`⌘` + drag a box around them (add `Shift` to add to the selection), or `⌘A` for every part. A plain click on one of them picks it alone |
+| Move several | Drag any selected part: it snaps to the grid and the rest keep their spacing from it. Arrow keys nudge them all. One undo step either way. A particle moves with its host when both are selected; selected without its host, it lets go |
 | Raise / lower | Type a height in the inspector |
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
-| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves) |
-| Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
+| Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | The up, down and trash buttons on its row in the beams box. A button that can't act (the first beam's up, the last beam's down) is disabled, and its label says why. Undo brings a deleted beam back in its place |
-| Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); reorder with up and down; `Enter` / `Esc` to finish |
+| Edit a beam's path | Select it; in its stop list, drag a stop by its grip to a new place (a line shows where it will land; `Esc` cancels), or move it up or down, or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
+| Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
+| Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then leaves Add stops, then deselects) |
+| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge, not in a panel of
 their own.
@@ -163,8 +196,11 @@ travels more than a few pixels is a pan, not a click, so panning never drops a
 component by accident. Middle-drag, right-drag or Shift + left-drag on empty
 table orbits, CAD-style, about the point under the cursor when the drag starts
 (the part there, or else the table), so a Magic Mouse can orbit too. Shift +
-drag on a part still moves it on the fine grid. A faint hint in the top-right
-corner lists these. The camera is orthographic. It orbits a full turn as a
+drag on a part still moves it on the fine grid. Ctrl/⌘ + click adds a part to
+the selection or takes it out, and Ctrl/⌘ + drag draws a box that selects
+every part whose optical centre falls inside it (hold Shift too to add them);
+while placing or drawing a beam, Ctrl/⌘ + drag orbits instead. A faint hint
+in the top-right corner lists these. The camera is orthographic. It orbits a full turn as a
 turntable (up stays up) but never dips below the table, and Iso / Top jump straight back
 to the isometric or top-down view (no animation). Placing and dragging still
 work from any angle: they land on the table plane.
@@ -213,9 +249,12 @@ The render-style exploration that led here is kept on the
 | --- | --- |
 | `src/components/builder/types.ts` | Data model, component specs, table geometry, JSON parsing |
 | `src/components/builder/use-builder-scene.ts` | Scene state, undo/redo, autosave |
+| `src/components/builder/group-edits.ts` | Edits to several components at once: move, turn, copy, delete, height, mount colour |
+| `src/components/builder/use-box-select.ts` | Ctrl/⌘ + click and box select on the canvas |
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
+| `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
@@ -233,3 +272,6 @@ Visitors see these in the builder under File › About the builder
 - Marking a beam line, by tinting its mounts the beam's colour, is up to you.
   Nothing enforces it.
 - There are no ruler or dimension annotations yet.
+- A fibre or cable's route across the table is drawn for you and can pass
+  under other parts. Its delay comes from the length you type, not from the
+  route.
