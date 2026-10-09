@@ -1430,6 +1430,81 @@ function Spectrometer({ palette, axis }: ModelProps) {
   );
 }
 
+/**
+ * A fiber-coupled single-photon counter, drawn as the real ones look: a black
+ * module on a post, so it never reads as the white camera. An FC receptacle on
+ * the face (-x) takes the fiber, and each count leaves as a pulse on one of two
+ * SMA jacks out the back (+x). Fibers and cables are drawn as connections, not
+ * as part of the module.
+ */
+const SPCM_FACE_X = -20;
+const SPCM_DEPTH_MM = 48;
+const SPCM_HALF_MM = 17;
+const SPCM_WIDTH_MM = 30;
+const SPCM_JACK_DROP_MM = 6;
+const SPCM_JACK_Z_MM = [-7, 7];
+const FC_FLANGE_MM = 13;
+const FC_FLANGE_DEPTH_MM = 1.5;
+const FC_BARREL_RADIUS_MM = 4.5;
+const FC_BARREL_LENGTH_MM = 7;
+const FC_TIP_RADIUS_MM = 2.8;
+const FC_TIP_LENGTH_MM = 2;
+/** where the thread ridges sit on the barrel, mm out from the flange */
+const FC_THREAD_MM = [1.5, 3.5, 5.5];
+
+function SinglePhotonDetector({ palette, axis }: ModelProps) {
+  const flangeOut = SPCM_FACE_X - FC_FLANGE_DEPTH_MM;
+  const barrelEnd = flangeOut - FC_BARREL_LENGTH_MM;
+  const tipEnd = barrelEnd - FC_TIP_LENGTH_MM;
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - SPCM_HALF_MM} />
+      <RoundedBox
+        args={[SPCM_DEPTH_MM, 2 * SPCM_HALF_MM, SPCM_WIDTH_MM]}
+        radius={0.8}
+        smoothness={3}
+        position={[SPCM_FACE_X + SPCM_DEPTH_MM / 2, axis, 0]}
+      >
+        <Enamel color={palette.anodise} />
+      </RoundedBox>
+      {/* the FC receptacle: a square flange flat on the face, a threaded
+          barrel, and the ceramic sleeve with the dark bore the fiber meets */}
+      <mesh position={[SPCM_FACE_X - FC_FLANGE_DEPTH_MM / 2, axis, 0]}>
+        <boxGeometry args={[FC_FLANGE_DEPTH_MM, FC_FLANGE_MM, FC_FLANGE_MM]} />
+        <Stainless palette={palette} />
+      </mesh>
+      <mesh position={[flangeOut - FC_BARREL_LENGTH_MM / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[FC_BARREL_RADIUS_MM, FC_BARREL_RADIUS_MM, FC_BARREL_LENGTH_MM, 24]} />
+        <Stainless palette={palette} />
+      </mesh>
+      {FC_THREAD_MM.map((out) => (
+        <mesh key={out} position={[flangeOut - out, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[FC_BARREL_RADIUS_MM + 0.4, FC_BARREL_RADIUS_MM + 0.4, 0.7, 24]} />
+          <Stainless palette={palette} />
+        </mesh>
+      ))}
+      <mesh position={[barrelEnd - FC_TIP_LENGTH_MM / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[FC_TIP_RADIUS_MM, FC_TIP_RADIUS_MM, FC_TIP_LENGTH_MM, 20]} />
+        <Enamel color={CERAMIC} />
+      </mesh>
+      <mesh position={[tipEnd - 0.05, axis, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <circleGeometry args={[1.1, 16]} />
+        <Enamel color="#12161d" />
+      </mesh>
+      {/* the pulse outputs: two SMA jacks out the back, a little below the axis */}
+      {SPCM_JACK_Z_MM.map((z) => (
+        <group
+          key={z}
+          position={[SPCM_FACE_X + SPCM_DEPTH_MM, axis - SPCM_JACK_DROP_MM, z]}
+          rotation={[0, 0, -Math.PI / 2]}
+        >
+          <SmaConnector palette={palette} at={[0, 0, 0]} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function SelectionRing({ radius, color }: { radius: number; color: string }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.6, 0]}>
@@ -1592,6 +1667,9 @@ export function ComponentMesh({
       {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
       {component.type === "spectrometer" ? (
         <Spectrometer {...modelProps} />
+      ) : null}
+      {component.type === "single-photon-detector" ? (
+        <SinglePhotonDetector {...modelProps} />
       ) : null}
 
       {hovered && !selected ? (

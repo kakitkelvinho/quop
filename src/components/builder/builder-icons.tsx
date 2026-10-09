@@ -225,6 +225,14 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M7 15l4-6M10.5 15.5 13 9M14 16l1.8-7" />
     </>
   ),
+  // a beam into a box through a connector, and a pulse out the back
+  "single-photon-detector": (
+    <>
+      <path d="M2.5 12h3M5.5 9.5v5" />
+      <rect x="7" y="6" width="8" height="12" rx="1.2" />
+      <path d="M15 15.5h3.5V9h3v6.5" />
+    </>
+  ),
   // a beam running into a finned stack
   "beam-block": (
     <>

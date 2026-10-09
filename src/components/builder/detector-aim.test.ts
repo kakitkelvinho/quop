@@ -96,3 +96,26 @@ describe("cameras and spectrometers", () => {
     assert.equal(yawOf(settled, "spec"), 303.69);
   });
 });
+
+describe("single-photon detectors", () => {
+  it("face a laser due south (+z) of them", () => {
+    const settled = settleAngles(scene([part("laser", "laser-source", 0, 200), part("spcm", "single-photon-detector", 0, 0, 45)], [["laser", "spcm"]]));
+    assert.equal(yawOf(settled, "spcm"), 90);
+  });
+
+  it("face a laser due west of them", () => {
+    const settled = settleAngles(scene([part("laser", "laser-source", -200, 0), part("spcm", "single-photon-detector", 0, 0, 45)], [["laser", "spcm"]]));
+    assert.equal(yawOf(settled, "spcm"), 0);
+  });
+
+  it("are locked to the beam that ends at them", () => {
+    const data = scene([part("laser", "laser-source", -200, 0), part("spcm", "single-photon-detector", 0, 0)], [["laser", "spcm"]]);
+    assert.equal(derivedAngleBeam(data.beams, data.components[1])?.id, "beam-0");
+  });
+
+  it("keep their rotation at a beam's start", () => {
+    const data = scene([part("spcm", "single-photon-detector", 0, 0, 135), part("block", "beam-block", 200, 0)], [["spcm", "block"]]);
+    assert.equal(yawOf(settleAngles(data), "spcm"), 135);
+    assert.equal(derivedAngleBeam(data.beams, data.components[0]), undefined);
+  });
+});
