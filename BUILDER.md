@@ -127,7 +127,10 @@ is on screen until it is needed:
   placing or drawing, a mode badge under the pill carries that mode's key
   hints.
 - **Right**: the inspector, shown only while something is selected: a
-  component, a beam, or a beam being drawn.
+  component, several components, a beam, or a beam being drawn. For several
+  it reads "N parts selected", with rotate, duplicate and delete, a height
+  while they all stand at one (and none sits in a host), and a mount colour
+  for those held in a mount.
 - **Bottom left**: the beams box, one stacked row per beam with its colour,
   name and path length; click a row to select that beam. It scrolls once there
   are more beams than fit. While the parts panel is open the box moves to sit
@@ -140,10 +143,12 @@ is on screen until it is needed:
 | --- | --- |
 | Add a part | ＋ at the top left, pick it in the panel (or search, then `Enter`), click the table |
 | Move | Drag it (snaps to 25 mm; hold Shift for 5 mm), or type x/z, or arrow keys |
+| Select several | `Ctrl`/`⌘` + click a part to add or remove it, `Ctrl`/`⌘` + drag a box around them (add `Shift` to add to the selection), or `⌘A` for every part. A plain click on one of them picks it alone |
+| Move several | Drag any selected part: it snaps to the grid and the rest keep their spacing from it. Arrow keys nudge them all. One undo step either way. A particle moves with its host when both are selected; selected without its host, it lets go |
 | Raise / lower | Type a height in the inspector |
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
-| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves) |
-| Duplicate / delete | `D` / `Delete`, or the inspector's buttons |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
+| Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
 | Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); reorder with up and down; `Enter` / `Esc` to finish |
@@ -158,8 +163,11 @@ travels more than a few pixels is a pan, not a click, so panning never drops a
 component by accident. Middle-drag, right-drag or Shift + left-drag on empty
 table orbits, CAD-style, about the point under the cursor when the drag starts
 (the part there, or else the table), so a Magic Mouse can orbit too. Shift +
-drag on a part still moves it on the fine grid. A faint hint in the top-right
-corner lists these. The camera is orthographic. It orbits a full turn as a
+drag on a part still moves it on the fine grid. Ctrl/⌘ + click adds a part to
+the selection or takes it out, and Ctrl/⌘ + drag draws a box that selects
+every part whose optical centre falls inside it (hold Shift too to add them);
+while placing or drawing a beam, Ctrl/⌘ + drag orbits instead. A faint hint
+in the top-right corner lists these. The camera is orthographic. It orbits a full turn as a
 turntable (up stays up) but never dips below the table, and Iso / Top jump straight back
 to the isometric or top-down view (no animation). Placing and dragging still
 work from any angle: they land on the table plane.
@@ -208,6 +216,8 @@ The render-style exploration that led here is kept on the
 | --- | --- |
 | `src/components/builder/types.ts` | Data model, component specs, table geometry, JSON parsing |
 | `src/components/builder/use-builder-scene.ts` | Scene state, undo/redo, autosave |
+| `src/components/builder/group-edits.ts` | Edits to several components at once: move, turn, copy, delete, height, mount colour |
+| `src/components/builder/use-box-select.ts` | Ctrl/⌘ + click and box select on the canvas |
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
