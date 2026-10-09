@@ -21,7 +21,7 @@ import {
   createConnectionId,
   createFrameId,
   defaultHeight,
-  moveBeam as moveBeamInList,
+  moveBeamTo as moveBeamInList,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
@@ -330,16 +330,16 @@ export function useBuilderScene() {
     [commit],
   );
 
-  /** One step up or down the beam list; the beam's new place, or null when it can't go that way. */
+  /** Drop a beam at index `to` of the list; the beam's new place, or null when it can't go there. */
   const moveBeam = useCallback(
-    (id: string, direction: 1 | -1): number | null => {
-      const edit = moveBeamInList(scene.beams, id, direction);
+    (id: string, to: number): number | null => {
+      const edit = moveBeamInList(scene.beams, id, to);
       if (!edit.ok) return null;
       commit((current) => {
-        const moved = moveBeamInList(current.beams, id, direction);
+        const moved = moveBeamInList(current.beams, id, to);
         return moved.ok ? { ...current, beams: moved.beams } : current;
       });
-      return edit.beams.findIndex((beam) => beam.id === id);
+      return to;
     },
     [commit, scene.beams],
   );

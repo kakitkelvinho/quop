@@ -7,17 +7,21 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
-  moveBeam,
+  moveBeamTo,
   parseScene,
   SCENE_VERSION,
   serializeScene,
   settleAngles,
 } from "./types.ts";
 
-// #96: the beam list is ordered, saved in that order, and reordered one step
-// at a time from the beams box.
+// #96, #126: the beam list is ordered, saved in that order, and reordered by
+// dragging a row in the beams box to a new place.
 
 const beam = (id: string, path: string[] = ["L", "M"]): Beam => ({ id, path, color: "#e33" });
+
+/** One step up or down from the beam's place, the move the keyboard makes. */
+const moveBeam = (beams: Beam[], id: string, direction: 1 | -1) =>
+  moveBeamTo(beams, id, beams.findIndex((entry) => entry.id === id) + direction);
 
 const ids = (beams: Beam[]) => beams.map((entry) => entry.id);
 
@@ -40,6 +44,18 @@ describe("moving a beam in the list", () => {
 
   it("moves a beam down past its neighbour", () => {
     assert.deepEqual(moved(moveBeam(beams, "a", 1)), ["b", "a", "c"]);
+  });
+
+  it("drops a beam several places away", () => {
+    const four = [beam("a"), beam("b"), beam("c"), beam("d")];
+    assert.deepEqual(moved(moveBeamTo(four, "a", 3)), ["b", "c", "d", "a"]);
+    assert.deepEqual(moved(moveBeamTo(four, "d", 0)), ["d", "a", "b", "c"]);
+    assert.deepEqual(moved(moveBeamTo(four, "b", 1)), ["a", "b", "c", "d"]);
+  });
+
+  it("refuses a place past either end", () => {
+    assert.match(reason(moveBeamTo(beams, "b", -1)), /already first/);
+    assert.match(reason(moveBeamTo(beams, "b", 3)), /already last/);
   });
 
   it("undoes itself when moved back the other way", () => {

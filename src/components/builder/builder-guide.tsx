@@ -50,7 +50,7 @@ const GUIDE = [
   {
     spot: "beams",
     title: "Beams",
-    text: "Click a row to select its beam, or use the row’s buttons to move, hide or delete it.",
+    text: "Click a row to select its beam, drag it to reorder the list, or use the row’s buttons to hide or delete it.",
   },
   {
     spot: "several",
@@ -182,8 +182,7 @@ function Diagram() {
               <span className="builderBeamRow__dot" style={{ background: beam.color }} />
               <span className="builderGuide__beamName">{beam.name}</span>
               <span className="builderReadout">{beam.mm} mm</span>
-              <Button icon="up" />
-              <Button icon="down" />
+              <Button icon="eye" />
               <Button icon="trash" />
             </span>
           ))}
