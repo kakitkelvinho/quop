@@ -25,10 +25,10 @@ const ICONS = {
   // on the diagonal where the lower-left ray would be
   beam: (
     <>
-      <circle cx="14" cy="10" r="2" fill="currentColor" />
-      <path d="M17.5 10H21M14 13.5V17M10.5 10H7M14 6.5V3" />
-      <path d="m16.5 12.5 1.4 1.4M11.5 7.5l-1.4-1.4M16.5 7.5l1.4-1.4" />
-      <path d="M3 21l8.5-8.5" />
+      <circle cx="15" cy="12" r="2" fill="currentColor" />
+      <path d="M18.5 12H22M15 8.5V5M15 15.5V19" />
+      <path d="m17.5 9.5 1.4-1.4M17.5 14.5l1.4 1.4M12.5 9.5l-1.4-1.4M12.5 14.5l-1.4 1.4" />
+      <path d="M2 12h9.5" />
     </>
   ),
   // a patch cord: a plug at each end and the cable slack between them
