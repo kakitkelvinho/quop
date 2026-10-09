@@ -2274,6 +2274,460 @@ html[data-theme="dark"] .builderIsland {
   font-size: 0.8rem;
 }
 
+/* the quick guide: a modal with a miniature of the builder and one line per control */
+.builderGuide {
+  width: min(62rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--surface);
+  color: var(--foreground);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.builderGuide[open] {
+  animation: builderGuideIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.builderGuide::backdrop {
+  background: rgb(17 17 17 / 0.28);
+  animation: builderGuideFade 240ms ease-out;
+}
+
+html[data-theme="dark"] .builderGuide::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+@keyframes builderGuideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@keyframes builderGuideFade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .builderGuide[open],
+  .builderGuide::backdrop {
+    animation: none;
+  }
+}
+
+.builderGuide__body {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 1.1rem 1.6rem;
+  max-height: calc(100dvh - 2rem);
+  padding: 1.1rem 1.3rem 1.3rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.builderGuide > .builderHud__close {
+  top: 0.85rem;
+  right: 0.85rem;
+}
+
+.builderGuide__head {
+  grid-column: 1 / -1;
+  /* clear of the close button */
+  padding-right: 2rem;
+}
+
+.builderGuide__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.builderGuide__lead {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.builderGuide__list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.builderGuide__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.builderGuide__list p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.42;
+}
+
+.builderGuide__mark {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fffaf1;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+html[data-theme="dark"] .builderGuide__mark {
+  color: #1a1d26;
+}
+
+/* the miniature: everything in it is sized off --m, its rem, so it scales with its width */
+.builderGuide__diagram {
+  align-self: center;
+  container-type: inline-size;
+}
+
+.builderGuide__frame {
+  --m: 1.9cqw;
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  font-size: calc(var(--m) * 0.82);
+  line-height: 1.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.builderGuide__frame .builderIsland {
+  gap: calc(var(--m) * 0.15);
+  padding: calc(var(--m) * 0.25);
+  border-radius: calc(var(--m) * 0.8);
+  box-shadow:
+    0 calc(var(--m) * 0.7) calc(var(--m) * 1.7) rgb(31 41 51 / 0.12),
+    0 calc(var(--m) * 0.1) calc(var(--m) * 0.3) rgb(31 41 51 / 0.06);
+  backdrop-filter: none;
+}
+
+html[data-theme="dark"] .builderGuide__frame .builderIsland {
+  box-shadow:
+    0 calc(var(--m) * 0.9) calc(var(--m) * 2) rgb(0 0 0 / 0.5),
+    0 calc(var(--m) * 0.1) calc(var(--m) * 0.3) rgb(0 0 0 / 0.4);
+}
+
+.builderGuide__frame .builderIsland__sep {
+  height: calc(var(--m) * 1.2);
+  margin: 0 calc(var(--m) * 0.3);
+}
+
+.builderGuide__frame .builderIconBtn {
+  position: relative;
+  width: calc(var(--m) * 2);
+  height: calc(var(--m) * 2);
+  border-radius: calc(var(--m) * 0.55);
+}
+
+.builderGuide__frame .builderIconBtn.is-dim {
+  opacity: 0.35;
+}
+
+.builderGuide__frame svg {
+  width: calc(var(--m) * 1.125);
+  height: calc(var(--m) * 1.125);
+}
+
+.builderGuide__frame .builderSegment {
+  padding: calc(var(--m) * 0.12);
+  border-radius: calc(var(--m) * 0.65);
+}
+
+.builderGuide__frame .builderSegment .builderIconBtn {
+  width: calc(var(--m) * 1.8);
+  height: calc(var(--m) * 1.8);
+}
+
+.builderGuide__frame .builderReadout {
+  font-size: calc(var(--m) * 0.7);
+}
+
+/* a mark sits just outside the edge it names; the frame scales, the marks stay legible */
+.builderGuide__frame .builderGuide__mark {
+  position: absolute;
+  z-index: 1;
+  width: max(1rem, calc(var(--m) * 1.5));
+  height: max(1rem, calc(var(--m) * 1.5));
+  font-size: max(0.56rem, calc(var(--m) * 0.8));
+  box-shadow:
+    0 0 0 max(1.5px, calc(var(--m) * 0.14)) var(--surface-strong),
+    0 calc(var(--m) * 0.2) calc(var(--m) * 0.5) rgb(31 41 51 / 0.25);
+}
+
+.builderGuide__mark.is-top {
+  bottom: calc(100% + var(--m) * 0.45);
+  left: 50%;
+  translate: -50% 0;
+}
+
+.builderGuide__mark.is-bottom {
+  top: calc(100% + var(--m) * 0.45);
+  left: 50%;
+  translate: -50% 0;
+}
+
+.builderGuide__mark.is-left {
+  top: 50%;
+  right: calc(100% + var(--m) * 0.45);
+  translate: 0 -50%;
+}
+
+.builderGuide__mark.is-right {
+  top: 50%;
+  left: calc(100% + var(--m) * 0.45);
+  translate: 0 -50%;
+}
+
+.builderGuide__frame .builderGuide__beam {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 0.45;
+}
+
+.builderGuide__halo {
+  stroke-width: 1.6;
+  opacity: 0.22;
+}
+
+/* a part: its glyph on a tile, centred on its spot, its label lifted above */
+.builderGuide__part {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: calc(var(--m) * 2.4);
+  height: calc(var(--m) * 2.4);
+  translate: -50% -50%;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--m) * 0.55);
+  background: var(--surface);
+  color: var(--foreground);
+  box-shadow: 0 calc(var(--m) * 0.3) calc(var(--m) * 0.8) rgb(31 41 51 / 0.14);
+}
+
+.builderGuide__part.is-selected {
+  border-color: var(--accent);
+}
+
+.builderGuide__frame .builderGuide__part svg {
+  width: calc(var(--m) * 1.6);
+  height: calc(var(--m) * 1.6);
+}
+
+.builderGuide__label {
+  position: absolute;
+  bottom: calc(100% + var(--m) * 0.35);
+  padding: calc(var(--m) * 0.1) calc(var(--m) * 0.4);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--m) * 0.35);
+  background: var(--surface);
+  font-size: calc(var(--m) * 0.62);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.builderGuide__part.is-selected .builderGuide__label {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fffaf1;
+}
+
+html[data-theme="dark"] .builderGuide__part.is-selected .builderGuide__label {
+  color: #1a1d26;
+}
+
+/* the box a ⌘ drag draws, mid-drag, round the laser and the mirror */
+.builderGuide__box {
+  position: absolute;
+  top: 49%;
+  left: 13%;
+  width: 36%;
+  height: 24%;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--accent-soft);
+}
+
+.builderGuide__cursor {
+  position: absolute;
+  top: calc(100% - var(--m) * 0.25);
+  left: calc(100% - var(--m) * 0.3);
+  color: var(--foreground);
+}
+
+.builderGuide__file {
+  top: var(--m);
+  left: var(--m);
+}
+
+.builderGuide__back {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--m) * 0.2);
+  height: calc(var(--m) * 2);
+  padding: 0 calc(var(--m) * 0.55) 0 calc(var(--m) * 0.35);
+  color: var(--muted);
+  font-size: calc(var(--m) * 0.72);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.builderGuide__menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--m) * 0.25);
+  padding: 0 calc(var(--m) * 0.45) 0 calc(var(--m) * 0.6);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.builderGuide__frame .builderGuide__back svg,
+.builderGuide__frame .builderGuide__menu svg {
+  width: calc(var(--m) * 0.9);
+  height: calc(var(--m) * 0.9);
+}
+
+/* its three marks sit side by side under it: on a small frame they are wider than the buttons */
+.builderGuide__frame .builderGuide__add {
+  top: calc(var(--m) * 4.1);
+  left: var(--m);
+  gap: max(calc(var(--m) * 0.15), calc(1rem + 4px - var(--m) * 2));
+}
+
+.builderGuide__tools {
+  top: var(--m);
+  left: 50%;
+  translate: -50% 0;
+}
+
+.builderGuide__hint {
+  position: absolute;
+  top: calc(var(--m) * 1.05);
+  right: calc(var(--m) * 1.1);
+  display: grid;
+  justify-items: end;
+  gap: calc(var(--m) * 0.1);
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(var(--m) * 0.68);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.builderGuide__hint kbd {
+  padding: 0 calc(var(--m) * 0.22);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--m) * 0.25);
+  font-family: inherit;
+}
+
+.builderGuide__frame .builderGuide__inspector {
+  top: calc(var(--m) * 4.6);
+  right: var(--m);
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(var(--m) * 0.5);
+  width: calc(var(--m) * 11);
+  padding: calc(var(--m) * 0.7) calc(var(--m) * 0.75);
+}
+
+.builderGuide__inspectorTitle {
+  font-weight: 700;
+}
+
+.builderGuide__field {
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--m) * 0.35) calc(var(--m) * 0.5);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--m) * 0.5);
+  background: var(--surface-strong);
+  color: var(--muted);
+}
+
+.builderGuide__actions {
+  display: flex;
+  gap: calc(var(--m) * 0.15);
+}
+
+.builderGuide__beams {
+  bottom: var(--m);
+  left: var(--m);
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.builderGuide__beamRow {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--m) * 0.5);
+  padding-left: calc(var(--m) * 0.55);
+  font-weight: 600;
+}
+
+.builderGuide__frame .builderBeamRow__dot {
+  width: calc(var(--m) * 0.6);
+  height: calc(var(--m) * 0.6);
+}
+
+.builderGuide__beamName {
+  min-width: calc(var(--m) * 3.4);
+}
+
+.builderGuide__beamRow .builderIconBtn {
+  width: calc(var(--m) * 1.6);
+  height: calc(var(--m) * 1.6);
+}
+
+.builderGuide__frame .builderGuide__beamRow svg {
+  width: calc(var(--m) * 0.875);
+  height: calc(var(--m) * 0.875);
+}
+
+.builderGuide__view {
+  right: var(--m);
+  bottom: var(--m);
+}
+
+/* a phone: the miniature stacks above the list */
+@media (max-width: 720px) {
+  .builderGuide__body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1rem;
+  }
+}
+
 /* right: the inspector, only while something is selected */
 .builderHud__inspector {
   top: 4.2rem;

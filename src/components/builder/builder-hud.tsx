@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
+import QuickGuide from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
 import {
   BeamDraftInspector,
@@ -393,6 +394,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   const selecting = !beamMode && !connectDraft && !placingType && !trayOpen;
   // the about panel shares the parts panel's spot, so opening either closes the other
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const closeAbout = useCallback(() => setAboutOpen(false), []);
   const { onCloseTray } = props;
   const showAbout = useCallback(() => {
@@ -614,7 +616,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         <span className="builderIsland__sep" />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
+        <span className="builderIsland__sep" />
+        <IconButton icon="info" label="Quick guide" onClick={() => setGuideOpen(true)} />
       </div>
+      {guideOpen ? <QuickGuide onClose={() => setGuideOpen(false)} /> : null}
 
       <p className="builderStatus" role="status" aria-live="polite">
         {props.status}
