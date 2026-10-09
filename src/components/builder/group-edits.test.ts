@@ -16,6 +16,7 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
+  type Connection,
   type Vec3,
   SCENE_VERSION,
   settleAngles,
@@ -34,8 +35,14 @@ const part = (
 
 const beam = (id: string, path: string[]): Beam => ({ id, path, color: "#e33" });
 
-function bench(components: BuilderComponent[], beams: Beam[] = []): BuilderSceneData {
-  return { version: SCENE_VERSION, components, beams };
+const fiber = (id: string, from: string, to: string): Connection => ({ id, kind: "fiber", from, to, color: "#eab308" });
+
+function bench(
+  components: BuilderComponent[],
+  beams: Beam[] = [],
+  connections: Connection[] = [],
+): BuilderSceneData {
+  return { version: SCENE_VERSION, components, beams, connections };
 }
 
 const at = (scene: BuilderSceneData, id: string) =>
@@ -178,12 +185,18 @@ describe("deleting a group", () => {
   const scene = bench(
     [part("a", "laser-source", 0, 0), part("b", "mirror-mount", 100, 0), part("c", "photodiode", 100, 100)],
     [beam("ab", ["a", "b"]), beam("abc", ["a", "b", "c"])],
+    [fiber("bc", "b", "c")],
   );
 
   it("takes the parts off the table and off every beam", () => {
     const after = deleteComponents(scene, ["a", "c"]);
     assert.deepEqual(after.components.map(({ id }) => id), ["b"]);
     assert.deepEqual(after.beams, []);
+  });
+
+  it("takes away every fibre or cable to them, and keeps the rest", () => {
+    assert.deepEqual(deleteComponents(scene, ["c"]).connections, []);
+    assert.deepEqual(deleteComponents(scene, ["a"]).connections, [fiber("bc", "b", "c")]);
   });
 
   it("keeps a beam that still has 2 stops", () => {
@@ -200,6 +213,7 @@ describe("duplicating a group", () => {
   const labelled: IdMaker = {
     component: (source) => `${source.id}-copy`,
     beam: (source) => `${source.id}-copy`,
+    connection: (source) => `${source.id}-copy`,
   };
   const scene = bench(
     [
@@ -208,6 +222,7 @@ describe("duplicating a group", () => {
       part("c", "photodiode", 100, 100),
     ],
     [beam("ab", ["a", "b"]), beam("abc", ["a", "b", "c"])],
+    [fiber("ab", "a", "b"), fiber("bc", "b", "c")],
   );
 
   it("copies each part one grid step along x and z, and returns the copies' ids in order", () => {
@@ -230,6 +245,15 @@ describe("duplicating a group", () => {
       beam("ab", ["a", "b"]),
       beam("abc", ["a", "b", "c"]),
       beam("ab-copy", ["a-copy", "b-copy"]),
+    ]);
+  });
+
+  it("copies only the fibres and cables that run between copied parts", () => {
+    const { scene: after } = duplicateComponents(scene, ["a", "b"], labelled);
+    assert.deepEqual(after.connections, [
+      fiber("ab", "a", "b"),
+      fiber("bc", "b", "c"),
+      fiber("ab-copy", "a-copy", "b-copy"),
     ]);
   });
 

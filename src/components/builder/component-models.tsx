@@ -43,6 +43,7 @@ import {
   componentRadius,
   componentTop,
   type BuilderComponent,
+  type ComponentType,
   type LensShape,
   type Vec3,
 } from "@/components/builder/types";
@@ -814,7 +815,7 @@ function Sample({
  * connector out the back and the jacket curling down to the table. A beam can
  * start here (fiber out) or end here (fiber in).
  */
-function FiberCollimator({ palette, color, axis }: ModelProps) {
+function FiberCollimator({ palette, color, axis, stub }: ModelProps & { stub: boolean }) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
   const jacket = useMemo(() => fiberJacketCurve(axis), [axis]);
   return (
@@ -843,10 +844,12 @@ function FiberCollimator({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[2.2, 3, 12, 14]} />
         <Enamel color={FIBER_JACKET} />
       </mesh>
-      <mesh>
-        <tubeGeometry args={[jacket, 48, 1.6, 10]} />
-        <Enamel color={FIBER_JACKET} />
-      </mesh>
+      {stub ? (
+        <mesh>
+          <tubeGeometry args={[jacket, 48, 1.6, 10]} />
+          <Enamel color={FIBER_JACKET} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
@@ -1234,7 +1237,7 @@ function photodiodeFiberCurve(axis: number) {
   ]);
 }
 
-function Photodiode({ palette, color, axis }: ModelProps) {
+function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean }) {
   const fiber = useMemo(() => photodiodeFiberCurve(axis), [axis]);
   return (
     <group>
@@ -1271,13 +1274,25 @@ function Photodiode({ palette, color, axis }: ModelProps) {
           <Hardware palette={palette} />
         </mesh>
       </group>
-      <mesh>
-        <tubeGeometry args={[fiber, 48, 1.6, 10]} />
-        <Enamel color={FIBER_JACKET} />
-      </mesh>
+      {stub ? (
+        <mesh>
+          <tubeGeometry args={[fiber, 48, 1.6, 10]} />
+          <Enamel color={FIBER_JACKET} />
+        </mesh>
+      ) : null}
     </group>
   );
 }
+
+/**
+ * The parts that draw a fibre stub down to the table, and its curve from the
+ * connector out. A fibre connected to one takes the stub's place: it leaves
+ * the same connector along the same curve, in the connection's colour.
+ */
+export const FIBER_STUBS: Partial<Record<ComponentType, (axis: number) => CatmullRomCurve3>> = {
+  "fiber-collimator": fiberJacketCurve,
+  photodiode: photodiodeFiberCurve,
+};
 
 /**
  * An acousto-optic modulator, drawn bare: the crystal with the beam along x
@@ -1487,6 +1502,8 @@ export type ComponentMeshProps = {
   showPosts: boolean;
   /** 1-based position in the beam currently being drawn, if any */
   beamOrder?: number;
+  /** a fibre connection leaves from this part's fibre stub, so the stub is not drawn */
+  fiberConnected?: boolean;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOver: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut: (event: ThreeEvent<PointerEvent>) => void;
@@ -1500,6 +1517,7 @@ export function ComponentMesh({
   showLabel,
   showPosts,
   beamOrder,
+  fiberConnected = false,
   onPointerDown,
   onPointerOver,
   onPointerOut,
@@ -1542,7 +1560,7 @@ export function ComponentMesh({
         <LaserSource {...modelProps} />
       ) : null}
       {component.type === "fiber-collimator" ? (
-        <FiberCollimator {...modelProps} />
+        <FiberCollimator {...modelProps} stub={!fiberConnected} />
       ) : null}
       {component.type === "mirror-mount" ? (
         <MirrorMount {...modelProps} />
@@ -1581,7 +1599,7 @@ export function ComponentMesh({
           radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
         />
       ) : null}
-      {component.type === "photodiode" ? <Photodiode {...modelProps} /> : null}
+      {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!fiberConnected} /> : null}
       {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
       {component.type === "objective" ? <Objective {...modelProps} /> : null}
       {component.type === "block" ? (

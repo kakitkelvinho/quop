@@ -31,6 +31,14 @@ const ICONS = {
       <path d="M3 21l8.5-8.5" />
     </>
   ),
+  // a patch cord: a plug at each end and the cable slack between them
+  connect: (
+    <>
+      <rect x="3.5" y="3" width="4" height="6" rx="1" />
+      <rect x="16.5" y="15" width="4" height="6" rx="1" />
+      <path d="M5.5 9c0 8 13 -2 13 6" />
+    </>
+  ),
   iso: (
     <>
       <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />

@@ -90,12 +90,33 @@ export type Beam = {
   arrows?: boolean;
 };
 
-export const SCENE_VERSION = 2 as const;
+export type ConnectionKind = "fiber" | "cable";
+
+/** A fibre or cable between two components. Not a beam: see CONNECTION_KINDS. */
+export type Connection = {
+  id: string;
+  kind: ConnectionKind;
+  /** component id */
+  from: string;
+  /** component id, never equal to `from` */
+  to: string;
+  color: string;
+  label?: string;
+  /** m; missing means unknown, and no length or delay is shown */
+  lengthM?: number;
+  /** fiber only; missing means DEFAULT_FIBER_INDEX */
+  refractiveIndex?: number;
+  /** cable only, fraction of c; missing means DEFAULT_VELOCITY_FACTOR */
+  velocityFactor?: number;
+};
+
+export const SCENE_VERSION = 3 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
   components: BuilderComponent[];
   beams: Beam[];
+  connections: Connection[];
 };
 
 // ---------------------------------------------------------------------------
@@ -400,6 +421,10 @@ export function createBeamId(): string {
   return `beam-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function createConnectionId(kind: ConnectionKind): string {
+  return `${kind}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function componentById(
   components: BuilderComponent[],
   id: string,
@@ -690,6 +715,110 @@ export function settleAngles(scene: BuilderSceneData): BuilderSceneData {
 }
 
 // ---------------------------------------------------------------------------
+// Connections
+// ---------------------------------------------------------------------------
+//
+// A fibre or cable is not a beam: no path length counts it, and no mirror or
+// detector takes its angle from it. Its delay comes from the length the author
+// types, never from the route drawn on the table.
+
+/** A silica fibre's group index. */
+export const DEFAULT_FIBER_INDEX = 1.468;
+/** Solid-polyethylene coax, such as RG-58. */
+export const DEFAULT_VELOCITY_FACTOR = 0.66;
+/** m: from a patch cord to a fibre delay spool */
+export const CONNECTION_LENGTH_RANGE_M: [number, number] = [0, 100_000];
+
+export type ConnectionSpec = {
+  label: string;
+  color: string;
+  /** a label it might carry, shown as the field's placeholder */
+  example: string;
+  /** drawn tube radius, mm */
+  radius: number;
+  /** what slows the signal down: a fibre's refractive index, a cable's velocity factor */
+  index: {
+    key: "refractiveIndex" | "velocityFactor";
+    label: string;
+    fallback: number;
+    range: [number, number];
+    step: number;
+    /** how many times longer than light in vacuum the signal takes over the same length */
+    slowdown: (value: number) => number;
+  };
+  /** at a part that draws its own fibre stub (a collimator, a photodiode), it leaves from that stub's connector */
+  usesFiberStub: boolean;
+};
+
+export const CONNECTION_KINDS: Record<ConnectionKind, ConnectionSpec> = {
+  fiber: {
+    label: "Fibre",
+    color: "#eab308",
+    example: "MMF 105 µm",
+    radius: 1.6,
+    index: {
+      key: "refractiveIndex",
+      label: "Refractive index",
+      fallback: DEFAULT_FIBER_INDEX,
+      range: [1, 3],
+      step: 0.001,
+      slowdown: (index) => index,
+    },
+    usesFiberStub: true,
+  },
+  cable: {
+    label: "Cable",
+    color: "#64748b",
+    example: "SMA coax",
+    radius: 2.4,
+    index: {
+      key: "velocityFactor",
+      label: "Velocity factor",
+      fallback: DEFAULT_VELOCITY_FACTOR,
+      range: [0.1, 1],
+      step: 0.01,
+      slowdown: (factor) => 1 / factor,
+    },
+    usesFiberStub: false,
+  },
+};
+
+export const CONNECTION_KIND_IDS = Object.keys(CONNECTION_KINDS) as ConnectionKind[];
+
+/** The connection's refractive index (fibre) or velocity factor (cable). */
+export function connectionIndex(connection: Connection): number {
+  const { index } = CONNECTION_KINDS[connection.kind];
+  return connection[index.key] ?? index.fallback;
+}
+
+/** The signal's delay along the connection, ps; undefined while its length is unknown. */
+export function connectionDelayPs(connection: Connection): number | undefined {
+  if (connection.lengthM === undefined) return undefined;
+  const { index } = CONNECTION_KINDS[connection.kind];
+  return lengthToPicoseconds(connection.lengthM * 1000) * index.slowdown(connectionIndex(connection));
+}
+
+/**
+ * The edit that turns a connection into the other kind. The old kind's index
+ * goes, and a colour still at the old kind's default follows the kind; one
+ * picked by hand stays.
+ */
+export function switchConnectionKind(connection: Connection, kind: ConnectionKind): Partial<Omit<Connection, "id">> {
+  if (kind === connection.kind) return {};
+  return {
+    kind,
+    refractiveIndex: undefined,
+    velocityFactor: undefined,
+    ...(connection.color === CONNECTION_KINDS[connection.kind].color ? { color: CONNECTION_KINDS[kind].color } : {}),
+  };
+}
+
+/** A deleted part takes its connections with it. */
+export function dropComponentFromConnections(connections: Connection[], id: string): Connection[] {
+  return connections.filter((connection) => connection.from !== id && connection.to !== id);
+}
+
+// ---------------------------------------------------------------------------
 // Serialisation
 // ---------------------------------------------------------------------------
 
@@ -791,10 +920,39 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   };
 }
 
+const KNOWN_CONNECTION_KINDS = new Set<string>(CONNECTION_KIND_IDS);
+
+function parseConnection(value: unknown, validIds: Set<string>): Connection | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.id !== "string" || typeof raw.kind !== "string") return null;
+  if (!KNOWN_CONNECTION_KINDS.has(raw.kind)) return null;
+  const { from, to } = raw;
+  if (typeof from !== "string" || typeof to !== "string") return null;
+  if (from === to || !validIds.has(from) || !validIds.has(to)) return null;
+
+  const kind = raw.kind as ConnectionKind;
+  const spec = CONNECTION_KINDS[kind];
+  const length = finiteNumber(raw.lengthM);
+  // only the kind's own index is read: a cable has no refractive index
+  const index = finiteNumber(raw[spec.index.key]);
+  return {
+    id: raw.id,
+    kind,
+    from,
+    to,
+    color: typeof raw.color === "string" ? raw.color : spec.color,
+    ...(typeof raw.label === "string" ? { label: raw.label } : {}),
+    ...(length !== undefined ? { lengthM: clamp(length, CONNECTION_LENGTH_RANGE_M) } : {}),
+    ...(index !== undefined ? { [spec.index.key]: clamp(index, spec.index.range) } : {}),
+  };
+}
+
 /**
  * Accepts anything (a dropped file, a localStorage blob) and returns a scene
  * or null. Unknown component types and dangling beam references are dropped
  * rather than throwing — a partially readable setup beats an error dialog.
+ * Setups from before version 3 have no connections and open with none.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -812,8 +970,13 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         .map((beam) => parseBeam(beam, ids))
         .filter((beam): beam is Beam => beam !== null)
     : [];
+  const connections = Array.isArray(raw.connections)
+    ? raw.connections
+        .map((connection) => parseConnection(connection, ids))
+        .filter((connection): connection is Connection => connection !== null)
+    : [];
 
-  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams }));
+  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections }));
 }
 
 export function serializeScene(scene: BuilderSceneData): string {
@@ -824,6 +987,7 @@ export const EMPTY_SCENE: BuilderSceneData = {
   version: SCENE_VERSION,
   components: [],
   beams: [],
+  connections: [],
 };
 
 // A pump + reference-arm layout so the table isn't blank on first load. It
@@ -864,4 +1028,5 @@ export const DEFAULT_SCENE: BuilderSceneData = {
       color: "#dc2626",
     },
   ],
+  connections: [],
 };

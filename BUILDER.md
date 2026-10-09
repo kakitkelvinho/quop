@@ -105,6 +105,20 @@ snaps to its centre and moves with it; dragged or nudged clear, it lets go.
 The cavity's glowing mode is part of the cavity, not a beam: it counts toward
 no path length.
 
+**Connections are not beams.** A fibre or a cable joins two components: a
+fibre coupler to a single-photon detector, a detector's coax to a time
+tagger. It is drawn as a tube that leaves one part, drops to the table, lies
+on it in a loose bend, and rises into the other, with no arrows and no glow,
+so it never reads as light in free space. A fibre at a fibre collimator or a
+photodiode takes the place of the yellow stub the part draws, leaving from
+the same connector. A connection has its own colour and an optional label.
+Its length, in metres, is optional too, and it is the only length it has: the
+drawn route is not measured. With a length, the inspector shows the delay:
+L·n/c along a fibre (n defaults to 1.468, a silica fibre) and L/(VF·c) along
+a cable (VF defaults to 0.66, solid-PE coax). With none, no delay is shown. A
+connection counts toward no path length, and no mirror or detector takes its
+angle from one. Setups from before version 3 open with no connections.
+
 **Static, client-side only.** Like everything else on the site, the builder runs
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
@@ -115,16 +129,16 @@ The builder is a full-window workspace: the site nav steps aside and the canvas
 fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
-- **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel,
-  and the File menu (save/open JSON, export PNG, load the example, clear the
+- **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
+  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, export PNG, load the example, clear the
   table, about the builder).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and one-line hint, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
   reopening it. The about panel (what the builder is for, then its known
   limitations) opens in the same spot, so opening either closes the other.
-- **Top centre**: the tool pill (Select, Draw a beam, Undo, Redo). While
-  placing or drawing, a mode badge under the pill carries that mode's key
+- **Top centre**: the tool pill (Select, Posts, Grid, Undo, Redo). While
+  placing, drawing or connecting, a mode badge under the pill carries that mode's key
   hints.
 - **Right**: the inspector, shown only while something is selected: a
   component, several components, a beam, or a beam being drawn. For several
@@ -152,8 +166,10 @@ is on screen until it is needed:
 | Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
 | Edit a beam's path | Select it; in its stop list, move a stop up or down or remove it (a beam keeps 2 stops). **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); reorder with up and down; `Enter` / `Esc` to finish |
+| Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
+| Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, then leaves Add stops, then deselects) |
+| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge, not in a panel of
 their own.
@@ -221,6 +237,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
+| `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
@@ -238,3 +255,6 @@ Visitors see these in the builder under File › About the builder
 - Marking a beam line, by tinting its mounts the beam's colour, is up to you.
   Nothing enforces it.
 - There are no ruler or dimension annotations yet.
+- A fibre or cable's route across the table is drawn for you and can pass
+  under other parts. Its delay comes from the length you type, not from the
+  route.
