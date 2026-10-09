@@ -54,6 +54,7 @@ type FitsImageSummary = {
   min: number;
   pixels: Float32Array;
   sourceLabel: string;
+  valueLabel: string;
   width: number;
   xLabel: string;
   yLabel: string;
@@ -1056,7 +1057,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                   pixelAspect={pixelAspect}
                   shading={shading}
                   slice={sliceControlsOpen ? { axis: sliceAxis, index: activeSliceIndex } : null}
-                  valueLabel="value"
+                  valueLabel={summary.valueLabel}
                   xLabel={xAxisLabel}
                   yLabel={yAxisLabel}
                 />
