@@ -54,6 +54,18 @@ anywhere later in a path adds nothing. The beam's length, its time of flight
 and its row in the beams box all include it, and its inspector says how much
 came from inside the laser. The beam is still drawn from the aperture.
 
+**A beam meets each part at its reference point.** The beam is drawn to, and
+measured to, where light really meets the part. For most parts that is the
+optical centre. A detector's is its entrance: a photodiode's front window
+(4 mm in front of its centre), a camera's lens-mount face (23 mm), a
+spectrometer's entrance port (62 mm), a single-photon detector's fibre
+receptacle (30.5 mm). An objective's is its threaded plate (26 mm behind its
+centre, on the side away from the tip), whichever side the beam comes from.
+Each offset is fixed per type and turns with the part. Placement, grid
+snapping and the angle a mirror or detector takes still use the centre.
+Setups saved before this can measure a few millimetres differently wherever
+a beam reaches one of these parts.
+
 **Beams can be told apart.** Each beam has its own width (a drawn diameter in
 millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the
 parts) and opacity (10–100%), set with the sliders in its inspector. A
