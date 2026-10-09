@@ -110,7 +110,7 @@ function FullHeader({ header }: { header: FitsHeaderInfo }) {
           <span className="sr-only">Filter the header</span>
           <span className="field__control">
             <input
-              placeholder="Filter by keyword, value or comment"
+              placeholder="Filter keyword, value, comment"
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}

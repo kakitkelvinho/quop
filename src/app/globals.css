@@ -1190,6 +1190,11 @@ html[data-theme="dark"] .field__control:focus-within {
   font-weight: 700;
 }
 
+/* a keyword is one token: keep it whole unless it truly cannot fit */
+.fitsFullHeader__table tbody th {
+  overflow-wrap: break-word;
+}
+
 .fitsFullHeader__comment,
 .fitsFullHeader__text {
   color: var(--muted);
