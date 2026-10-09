@@ -1124,7 +1124,7 @@ function Objective({ palette, color, axis }: ModelProps) {
         <Anodised color={palette.anodise} />
       </mesh>
       <mesh position={[-26, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[10, 10, 8, 32]} />
+        <cylinderGeometry args={[10, 10, 6, 32]} />
         <meshStandardMaterial color={OBJECTIVE_BRASS} roughness={0.35} metalness={0.9} />
       </mesh>
       <mesh position={[-21, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
