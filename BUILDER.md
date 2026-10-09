@@ -178,8 +178,15 @@ is on screen until it is needed:
   are more beams than fit. While the parts panel is open the box moves to sit
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes.
-- **Bottom right**: the view controls. There is no readout: the inspector and
-  the beams box already carry every number worth reading.
+- **Bottom right**: the view controls, and the ⓘ that opens the quick guide.
+  There is no readout: the inspector and the beams box already carry every
+  number worth reading.
+- **Quick guide**: a modal opened only from the ⓘ. A miniature of this
+  layout, drawn from the builder's own icons and island styles so it follows
+  the theme, carries a numbered mark on each control, and a list beside it
+  says in one line what each does. Marks and lines come from one array
+  (`GUIDE` in `builder-guide.tsx`); a control that moves or changes is
+  updated there. Esc, the close button or a click outside closes it.
 
 | Action | How |
 | --- | --- |
@@ -191,7 +198,7 @@ is on screen until it is needed:
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
-| Draw a beam | Draw a beam in the tool pill, click parts in order, `Enter` |
+| Draw a beam | Draw a beam, beside the ＋ at the top left; click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | The up, down and trash buttons on its row in the beams box. A button that can't act (the first beam's up, the last beam's down) is disabled, and its label says why. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
@@ -269,6 +276,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
+| `src/components/builder/builder-guide.tsx` | The quick guide: the miniature of the builder and its numbered lines |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
 | `src/components/builder/builder-icons.tsx` | The builder's icon set, icon button, and one glyph per part |
