@@ -65,7 +65,8 @@ const GRID_CELL_MM = 25;
 const GRID_SECTION_MM = 100;
 /** how far from under the camera the grid fades out, mm: past the edge of the widest zoom */
 const GRID_FADE_MM = 9000;
-const CLICK_SLOP_PX = 4;
+/** a press that travels further than this, in screen pixels, is a drag, not a click */
+export const CLICK_SLOP_PX = 4;
 const TABLE_THICKNESS_MM = 14;
 /**
  * The surface reaches far past the guard: its edge must stay off-screen even
@@ -213,7 +214,10 @@ function CameraRig({
 /**
  * Which presses the controls turn into an orbit (see OrbitControls'
  * `onMouseDown`): middle or right, or Shift / Ctrl / ⌘ with the left button,
- * which is otherwise a pan. A modifier on middle or right pans instead.
+ * which is otherwise a pan. A modifier on middle or right pans instead. While
+ * selecting, a Ctrl / ⌘ left press never gets here: box select takes it first
+ * (use-box-select.ts), so Shift is the left-button orbit. Placing a part or
+ * drawing a beam, it still orbits.
  */
 function isOrbitPress(event: PointerEvent): boolean {
   if (event.pointerType === "touch") return false;
@@ -780,7 +784,8 @@ export type BuilderCanvasProps = {
   components: BuilderComponent[];
   beams: Beam[];
   palette: ScenePalette;
-  selectedId: string | null;
+  /** the selected parts; the last is the one the orbit falls back to */
+  selection: string[];
   selectedBeamId: string | null;
   hoveredId: string | null;
   beamDraft: string[];
@@ -799,18 +804,32 @@ export type BuilderCanvasProps = {
   ) => void;
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
-  onCanvasReady: (canvas: HTMLCanvasElement) => void;
+  onCanvasReady: (handle: CanvasApi) => void;
 };
 
-function CanvasHandle({
-  onReady,
-}: {
-  onReady: (canvas: HTMLCanvasElement) => void;
-}) {
+export type CanvasApi = {
+  canvas: HTMLCanvasElement;
+  /** where a point in the scene, mm, is on screen now, in client pixels */
+  project: (point: Vec3) => [number, number];
+};
+
+function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
   const gl = useThree((state) => state.gl);
+  const get = useThree((state) => state.get);
   useEffect(() => {
-    onReady(gl.domElement);
-  }, [gl, onReady]);
+    const scratch = new Vector3();
+    onReady({
+      canvas: gl.domElement,
+      project: (point) => {
+        const rect = gl.domElement.getBoundingClientRect();
+        scratch.set(...point).project(get().camera);
+        return [
+          rect.left + ((scratch.x + 1) / 2) * rect.width,
+          rect.top + ((1 - scratch.y) / 2) * rect.height,
+        ];
+      },
+    });
+  }, [get, gl, onReady]);
   return null;
 }
 
@@ -818,7 +837,7 @@ export default function BuilderCanvas({
   components,
   beams,
   palette,
-  selectedId,
+  selection,
   selectedBeamId,
   hoveredId,
   beamDraft,
@@ -836,12 +855,11 @@ export default function BuilderCanvas({
 }: BuilderCanvasProps) {
   // the orbit pivot: set when an orbit drag starts, cleared by a snap-back
   const pivotRef = useRef<Vector3 | null>(null);
+  const selected = useMemo(() => new Set(selection), [selection]);
+  const primary = selection.at(-1);
   const selectedPosition = useMemo(
-    () =>
-      selectedId
-        ? (componentById(components, selectedId)?.position ?? null)
-        : null,
-    [components, selectedId],
+    () => (primary ? (componentById(components, primary)?.position ?? null) : null),
+    [components, primary],
   );
   const draftOrder = useMemo(() => {
     const map = new Map<string, number>();
@@ -901,7 +919,7 @@ export default function BuilderCanvas({
           key={component.id}
           component={component}
           palette={palette}
-          selected={component.id === selectedId}
+          selected={selected.has(component.id)}
           hovered={component.id === hoveredId}
           showLabel={showLabels}
           showPosts={showPosts}

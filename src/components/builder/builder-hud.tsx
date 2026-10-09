@@ -10,6 +10,7 @@ import {
   BeamDraftInspector,
   BeamInspector,
   ComponentInspector,
+  GroupInspector,
 } from "@/components/builder/builder-inspector";
 import {
   COMPONENT_SPECS,
@@ -27,7 +28,8 @@ import { BetaMark } from "@/components/beta-badge";
 export type BuilderHudProps = {
   components: BuilderComponent[];
   beams: Beam[];
-  selected: BuilderComponent | null;
+  /** the selected parts, in the order they were picked */
+  selected: BuilderComponent[];
   selectedBeam: Beam | null;
   placingType: ComponentType | null;
   trayOpen: boolean;
@@ -52,6 +54,9 @@ export type BuilderHudProps = {
   onRotateSelected: (direction: 1 | -1) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
+  /** several parts: one height for all, or one mount colour for those with a mount */
+  onSetSelectedHeight: (height: number) => void;
+  onSetSelectedMountColor: (color: string) => void;
   onStartBeam: () => void;
   onFinishBeam: () => void;
   onCancelBeam: () => void;
@@ -284,12 +289,23 @@ export default function BuilderHud(props: BuilderHudProps) {
         onCancel={props.onCancelBeam}
       />
     );
-  } else if (selected) {
+  } else if (selected.length > 1) {
+    inspector = (
+      <GroupInspector
+        selected={selected}
+        onRotate={props.onRotateSelected}
+        onDuplicate={props.onDuplicateSelected}
+        onDelete={props.onDeleteSelected}
+        onSetHeight={props.onSetSelectedHeight}
+        onSetMountColor={props.onSetSelectedMountColor}
+      />
+    );
+  } else if (selected.length === 1) {
     inspector = (
       <ComponentInspector
-        component={selected}
+        component={selected[0]}
         components={components}
-        angleBeam={derivedAngleBeam(beams, selected)}
+        angleBeam={derivedAngleBeam(beams, selected[0])}
         onUpdate={props.onUpdateSelected}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
@@ -311,7 +327,12 @@ export default function BuilderHud(props: BuilderHudProps) {
     );
   }
   // Remount (and replay the entrance) when the inspected thing changes.
-  const inspectorKey = beamMode ? "beam-draft" : (selected?.id ?? selectedBeam?.id);
+  // A group keeps one inspector as parts join or leave it.
+  const inspectorKey = beamMode
+    ? "beam-draft"
+    : selected.length > 1
+      ? "group"
+      : (selected[0]?.id ?? selectedBeam?.id);
 
   return (
     <>
@@ -377,13 +398,17 @@ export default function BuilderHud(props: BuilderHudProps) {
         ) : null}
       </div>
 
-      {/* always on and faint: the Shift orbit is the one nobody finds alone.
-          It sits above the inspector, which opens below it on the right. */}
-      <p className="builderControlsHint" aria-label="Camera controls">
+      {/* always on and faint: the Shift orbit and the ⌘ box are the ones
+          nobody finds alone. It sits above the inspector, which opens below
+          it on the right. */}
+      <p className="builderControlsHint" aria-label="Mouse controls">
         <span>
           <kbd>⇧</kbd> drag rotate · drag pan · scroll zoom
         </span>
         <span className="builderControlsHint__alt">or middle / right drag to rotate</span>
+        <span>
+          <kbd>⌘</kbd> drag or click to select several
+        </span>
       </p>
 
       {trayOpen ? (

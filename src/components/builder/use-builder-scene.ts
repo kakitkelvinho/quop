@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer } from "react";
 
+import * as groupEdits from "@/components/builder/group-edits";
 import {
   BEAM_COLORS,
   BLOCK_SIZE_MM,
@@ -11,13 +12,10 @@ import {
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SCENE,
   EMPTY_SCENE,
-  GRID_SIZE_MM,
-  ROTATION_STEP_DEG,
   clampToTable,
   createBeamId,
   createComponentId,
   defaultHeight,
-  dropComponentFromBeams,
   parseScene,
   settleAngles,
   settleHosts,
@@ -217,70 +215,64 @@ export function useBuilderScene() {
     [commit, preview],
   );
 
-  const nudgeComponent = useCallback(
-    (id: string, dx: number, dz: number) => {
-      commit((current) => ({
-        ...current,
-        components: current.components.map((component) => {
-          if (component.id !== id) return component;
-          const [x, z] = clampToTable(component.position[0] + dx, component.position[2] + dz);
-          // nudging a particle out of its host lets go of it
-          return { ...component, position: [x, component.position[1], z] as Vec3, host: undefined };
-        }),
-      }));
-    },
+  // ---- group edits: one undo step each, for one part or several -----------
+
+  /** A drag in flight: each part at its origin plus (dx, dz), with no undo step. */
+  const translateComponents = useCallback(
+    (origins: Record<string, Vec3>, dx: number, dz: number) =>
+      preview((current) => groupEdits.translateComponents(current, origins, dx, dz)),
+    [preview],
+  );
+
+  const nudgeComponents = useCallback(
+    (ids: string[], dx: number, dz: number) =>
+      commit((current) => groupEdits.nudgeComponents(current, ids, dx, dz)),
     [commit],
   );
 
-  const rotateComponent = useCallback(
-    (id: string, direction: 1 | -1 = 1) => {
-      commit((current) => ({
-        ...current,
-        components: current.components.map((component) =>
-          component.id === id
-            ? {
-                ...component,
-                rotation: (component.rotation + direction * ROTATION_STEP_DEG + 360) % 360,
-              }
-            : component,
-        ),
-      }));
-    },
+  const rotateComponents = useCallback(
+    (ids: string[], direction: 1 | -1 = 1) =>
+      commit((current) => groupEdits.rotateComponents(current, ids, direction)),
     [commit],
   );
 
-  const deleteComponent = useCallback(
-    (id: string) => {
-      commit((current) => ({
-        ...current,
-        components: current.components.filter((component) => component.id !== id),
-        // a beam that loses a stop keeps going; one left with a single stop is gone
-        beams: dropComponentFromBeams(current.beams, id),
-      }));
-    },
+  const deleteComponents = useCallback(
+    (ids: string[]) => commit((current) => groupEdits.deleteComponents(current, ids)),
     [commit],
   );
 
-  const duplicateComponent = useCallback(
-    (id: string): string | null => {
-      const source = scene.components.find((component) => component.id === id);
-      if (!source) return null;
-      const newId = createComponentId(source.type);
-      const [x, z] = clampToTable(
-        source.position[0] + GRID_SIZE_MM,
-        source.position[2] + GRID_SIZE_MM,
+  /** The copies' ids, in the order of `ids`. */
+  const duplicateComponents = useCallback(
+    (ids: string[]): string[] => {
+      // made here, not in the reducer, so they can be handed back
+      const copies = new Map<string, string>();
+      for (const id of ids) {
+        const source = scene.components.find((component) => component.id === id);
+        if (source) copies.set(id, createComponentId(source.type));
+      }
+      if (copies.size === 0) return [];
+      commit(
+        (current) =>
+          groupEdits.duplicateComponents(current, ids, {
+            component: (source) => copies.get(source.id) ?? createComponentId(source.type),
+            beam: () => createBeamId(),
+          }).scene,
       );
-      commit((current) => ({
-        ...current,
-        // a copy of a hosted particle lands beside the host, not inside it
-        components: [
-          ...current.components,
-          { ...source, id: newId, position: [x, source.position[1], z], host: undefined },
-        ],
-      }));
-      return newId;
+      return [...copies.values()];
     },
     [commit, scene.components],
+  );
+
+  const setComponentsHeight = useCallback(
+    (ids: string[], height: number) =>
+      commit((current) => groupEdits.setComponentsHeight(current, ids, height)),
+    [commit],
+  );
+
+  const setMountColor = useCallback(
+    (ids: string[], color: string) =>
+      commit((current) => groupEdits.setMountColor(current, ids, color)),
+    [commit],
   );
 
   // ---- beam edits ----------------------------------------------------------
@@ -346,10 +338,13 @@ export function useBuilderScene() {
       addComponent,
       updateComponent,
       moveComponent,
-      nudgeComponent,
-      rotateComponent,
-      deleteComponent,
-      duplicateComponent,
+      translateComponents,
+      nudgeComponents,
+      rotateComponents,
+      deleteComponents,
+      duplicateComponents,
+      setComponentsHeight,
+      setMountColor,
       addBeam,
       updateBeam,
       deleteBeam,
@@ -368,10 +363,13 @@ export function useBuilderScene() {
       addComponent,
       updateComponent,
       moveComponent,
-      nudgeComponent,
-      rotateComponent,
-      deleteComponent,
-      duplicateComponent,
+      translateComponents,
+      nudgeComponents,
+      rotateComponents,
+      deleteComponents,
+      duplicateComponents,
+      setComponentsHeight,
+      setMountColor,
       addBeam,
       updateBeam,
       deleteBeam,

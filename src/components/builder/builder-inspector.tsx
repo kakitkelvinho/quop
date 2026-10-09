@@ -493,21 +493,98 @@ export function ComponentInspector({
   );
 }
 
+/**
+ * Several parts at once. They turn, copy and delete together, and share the
+ * fields that mean the same for each: height while they all stand at one
+ * (and none sits in a host, which sets its particle's), and the mount colour
+ * of those held in a mount.
+ */
+export function GroupInspector({
+  selected,
+  onRotate,
+  onDuplicate,
+  onDelete,
+  onSetHeight,
+  onSetMountColor,
+}: {
+  selected: BuilderComponent[];
+  onRotate: (direction: 1 | -1) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onSetHeight: (height: number) => void;
+  onSetMountColor: (color: string) => void;
+}) {
+  const height = selected[0].position[1];
+  const sharedHeight = selected.every((component) => component.position[1] === height && !component.host);
+  const ranges = selected.map((component) => heightRange(component.type));
+  const min = Math.min(...ranges.map(([low]) => low));
+  const max = Math.max(...ranges.map(([, high]) => high));
+  const mounted = selected.filter((component) => MOUNTED_TYPES.has(component.type));
+  const mountColors = new Set(mounted.map((component) => component.color ?? DEFAULT_MOUNT_COLOR));
+
+  return (
+    <div className="builderInspector">
+      <div className="builderInspector__head">
+        <h2>{selected.length} parts selected</h2>
+        <IconButton icon="duplicate" label="Duplicate (D)" onClick={onDuplicate} />
+        <IconButton icon="trash" label="Delete (Delete)" onClick={onDelete} />
+      </div>
+      <div className="builderInspector__turn">
+        <span>Rotate about their centre</span>
+        <span className="builderInspector__rotate">
+          <IconButton icon="rotateLeft" label="Rotate −15° (Shift R)" onClick={() => onRotate(-1)} />
+          <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
+        </span>
+      </div>
+      {sharedHeight ? (
+        <NumberField
+          key={selected.map((component) => component.id).join()}
+          label="Height"
+          unit="mm"
+          step={5}
+          min={min}
+          max={max}
+          title={`Optical centre above the breadboard, ${min}–${max} mm; each part stops at its own limits`}
+          value={height}
+          onChange={onSetHeight}
+        />
+      ) : null}
+      {mounted.length ? (
+        <ColorField
+          label={mounted.length === selected.length ? "Mount colour" : `Mount colour (${mounted.length} of ${selected.length})`}
+          title="Tint the mounts the colour of the beam they serve"
+          value={mounted[0].color ?? DEFAULT_MOUNT_COLOR}
+          readout={mountColors.size > 1 ? "mixed" : undefined}
+          onChange={onSetMountColor}
+        />
+      ) : null}
+      <p className="builderInspector__hint">
+        Drag any one of them to move them all; they keep their spacing. ⌘-click a part to add or remove it.
+      </p>
+    </div>
+  );
+}
+
 function ColorField({
   label,
   value,
+  title,
+  readout = value,
   onChange,
 }: {
   label: string;
   value: string;
+  title?: string;
+  /** what the field reads, when that isn't the value */
+  readout?: string;
   onChange: (color: string) => void;
 }) {
   return (
-    <label className="builderField">
+    <label className="builderField" title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control builderField__control--color">
         <input type="color" value={value} onChange={(event) => onChange(event.target.value)} />
-        <span className="builderReadout">{value}</span>
+        <span className="builderReadout">{readout}</span>
       </span>
     </label>
   );

@@ -1809,6 +1809,16 @@ html[data-theme="dark"] .fitsColorControl__select {
   touch-action: none;
 }
 
+/* the box a Ctrl/⌘ drag draws: every part whose centre it covers is selected */
+.builderBoxSelect {
+  position: absolute;
+  z-index: 1;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--accent-soft);
+  pointer-events: none;
+}
+
 /* --- islands ------------------------------------------------------------- */
 
 .builderIsland {
@@ -2536,7 +2546,8 @@ html[data-theme="dark"] .builderButton--primary {
   gap: 0.35rem;
 }
 
-.builderInspector__host {
+.builderInspector__host,
+.builderInspector__turn {
   display: flex;
   align-items: center;
   justify-content: space-between;
