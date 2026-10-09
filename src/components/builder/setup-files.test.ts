@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import { parseScene, serializeScene } from "./types.ts";
+import { beamLengthMm, parseScene, serializeScene } from "./types.ts";
 
 // ADR 0001: a setup file saved by a release keeps opening, with nothing
 // dropped, in every later release. Each fixture is a setup file in the shape
@@ -86,5 +86,21 @@ describe("setup-v3.json, the first version with connections", () => {
     assert.equal(open("setup-v3.json").connections[2].velocityFactor, 0.7);
     assert.deepEqual(open("setup-v1.json").connections, []);
     assert.deepEqual(open("setup-v2.json").connections, []);
+  });
+});
+
+describe("setup-v3.json, a laser with a built-in path", () => {
+  it("opens with the path and counts it in its beam: 4000 mm inside plus 450 mm on the table", () => {
+    const setup = open("setup-v3.json");
+    assert.equal(setup.components.find(({ id }) => id === "laser-folded")?.internalPathMm, 4000);
+    assert.equal(beamLengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4450);
+  });
+
+  it("is on no laser in older setups", () => {
+    for (const name of ["setup-v1.json", "setup-v2.json"]) {
+      const lasers = open(name).components.filter(({ type }) => type === "laser-source");
+      assert.ok(lasers.length > 0);
+      assert.deepEqual(lasers.map(({ internalPathMm }) => internalPathMm), lasers.map(() => undefined));
+    }
   });
 });
