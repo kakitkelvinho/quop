@@ -228,7 +228,8 @@ function BeamList({
               />
               <IconButton
                 icon={beam.hidden ? "eyeOff" : "eye"}
-                label={`${beam.hidden ? "Show" : "Hide"} ${name}`}
+                // a toggle: the label stays put and aria-pressed carries the state
+                label={`Hide ${name}`}
                 active={Boolean(beam.hidden)}
                 onClick={() => onSetHidden(beam.id, !beam.hidden)}
               />
