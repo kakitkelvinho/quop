@@ -7,6 +7,7 @@ import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
 import QuickGuide from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
+import { useRowDrag } from "@/components/builder/use-row-drag";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -21,7 +22,6 @@ import {
   beamDisplayName,
   beamLengthMm,
   derivedAngleBeam,
-  moveBeam,
   type Beam,
   type BuilderComponent,
   type ComponentType,
@@ -87,7 +87,8 @@ export type BuilderHudProps = {
   onCheckpoint: () => void;
   onDeleteBeam: (id: string) => void;
   /** one step up (-1) or down (1) the beam list */
-  onMoveBeam: (id: string, direction: 1 | -1) => void;
+  /** drop a beam at index `to` of the list; true when it moved */
+  onMoveBeam: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetBeamHidden: (id: string, hidden: boolean) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
@@ -146,12 +147,12 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
 }
 
 /**
- * The beams box: one row per beam, in list order. A row selects its beam, moves
- * it up or down the list, hides or shows it on the table, or deletes it. A
- * hidden beam's row stays, dimmed. A move that isn't possible is
- * disabled, and its label says why. Keyboard focus follows the edit: a moved
- * beam keeps the button that moved it (or the opposite one when that is now
- * disabled), and a deleted beam's row hands focus to the beam that took its place.
+ * The beams box: one row per beam, in list order. Press a row to select its
+ * beam, or drag it to a new place in the list (Alt+↑ / Alt+↓ moves a focused
+ * row one place); its buttons hide or show it on the table, or delete it. A
+ * hidden beam's row stays, dimmed. Keyboard focus follows the edit: a moved
+ * beam's row keeps focus on its select button, and a deleted beam's row hands
+ * focus to the beam that took its place.
  */
 function BeamList({
   components,
@@ -168,12 +169,12 @@ function BeamList({
   selectedId: string | null;
   besideParts: boolean;
   onSelect: (id: string) => void;
-  onMove: (id: string, direction: 1 | -1) => void;
+  onMove: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const listRef = useRef<HTMLOListElement>(null);
-  // a row's buttons, in order: select, up, down, hide, delete; the first enabled one wanted gets focus
+  // a row's buttons, in order: select, hide, delete; the first enabled one wanted gets focus
   const focusAfter = useRef<{ row: number; wanted: number[] } | null>(null);
   useEffect(() => {
     const target = focusAfter.current;
@@ -184,20 +185,32 @@ function BeamList({
     target.wanted.map((at) => buttons[at]).find((button) => button && !button.disabled)?.focus();
   }, [beams]);
 
+  const { listClass, rowProps } = useRowDrag({
+    listRef,
+    count: beams.length,
+    onMove: (from, to, how) => {
+      if (how === "keyboard") focusAfter.current = { row: to, wanted: [0] };
+      return onMove(beams[from].id, to, how);
+    },
+  });
+
   return (
     <ol
       ref={listRef}
       role="list"
       aria-label="Beams"
-      className={`builderIsland builderHud__beams${besideParts ? " is-besideParts" : ""}`}
+      className={`builderIsland builderHud__beams${besideParts ? " is-besideParts" : ""} ${listClass}`}
     >
       {beams.map((beam, index) => {
         const name = beamDisplayName(beam);
         const selected = selectedId === beam.id;
-        const up = moveBeam(beams, beam.id, -1);
-        const down = moveBeam(beams, beam.id, 1);
+        const drag = rowProps(index);
         return (
-          <li key={beam.id} className={`builderBeamRow${selected ? " is-selected" : ""}${beam.hidden ? " is-hidden" : ""}`}>
+          <li
+            key={beam.id}
+            {...drag}
+            className={`builderBeamRow${selected ? " is-selected" : ""}${beam.hidden ? " is-hidden" : ""} ${drag.className}`}
+          >
             <button
               type="button"
               className="builderBeamRow__select"
@@ -208,25 +221,7 @@ function BeamList({
               <span className="builderBeamRow__name">{name}</span>
               <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
             </button>
-            <span className="builderBeamRow__actions">
-              <IconButton
-                icon="up"
-                label={up.ok ? `Move ${name} up` : `Can't move ${name} up: ${up.reason}`}
-                disabled={!up.ok}
-                onClick={() => {
-                  focusAfter.current = { row: index - 1, wanted: [1, 2] };
-                  onMove(beam.id, -1);
-                }}
-              />
-              <IconButton
-                icon="down"
-                label={down.ok ? `Move ${name} down` : `Can't move ${name} down: ${down.reason}`}
-                disabled={!down.ok}
-                onClick={() => {
-                  focusAfter.current = { row: index + 1, wanted: [2, 1] };
-                  onMove(beam.id, 1);
-                }}
-              />
+            <span className="builderBeamRow__actions" data-no-drag>
               <IconButton
                 icon={beam.hidden ? "eyeOff" : "eye"}
                 // a toggle: the label stays put and aria-pressed carries the state
