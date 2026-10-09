@@ -154,12 +154,15 @@ export function IconButton({
   onClick,
   active,
   disabled,
+  guide,
 }: {
   icon: IconName;
   label: string;
   onClick: () => void;
   active?: boolean;
   disabled?: boolean;
+  /** its key in the quick guide's coach marks */
+  guide?: string;
 }) {
   return (
     <button
@@ -170,6 +173,7 @@ export function IconButton({
       aria-label={label}
       aria-pressed={active}
       title={label}
+      data-guide={guide}
     >
       <Icon name={icon} />
     </button>

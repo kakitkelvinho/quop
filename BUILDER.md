@@ -196,9 +196,11 @@ is on screen until it is needed:
   on top. It stays open while placing, so a run of parts goes down without
   reopening it. The about panel (what the builder is for, then its known
   limitations) opens in the same spot, so opening either closes the other.
-- **Top centre**: the tool pill (Select, Posts, Grid, Undo, Redo). While
-  placing, drawing or connecting, a mode badge under the pill carries that mode's key
-  hints.
+- **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
+  Undo, Redo) with the Cheat sheet tab hung under it. While placing, drawing
+  or connecting, a mode badge under the pill carries that mode's key hints. On
+  a phone the column moves to the right edge, clear of the + island: the Guide
+  pill sits level with the file island and the tool pill drops below it.
 - **Right**: the inspector, shown only while something is selected: a
   component, several components, a beam, or a beam being drawn. For several
   it reads "N parts selected", with rotate, duplicate and delete, a height
@@ -217,15 +219,26 @@ is on screen until it is needed:
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
-- **Bottom right**: the view controls, and the ⓘ that opens the quick guide.
+- **Bottom right**: the view controls.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
-- **Quick guide**: a modal opened only from the ⓘ. A miniature of this
-  layout, drawn from the builder's own icons and island styles so it follows
-  the theme, carries a numbered mark on each control, and a list beside it
-  says in one line what each does. Marks and lines come from one array
-  (`GUIDE` in `builder-guide.tsx`); a control that moves or changes is
-  updated there. Esc, the close button or a click outside closes it.
+- **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
+  builder dims and each control on screen is ringed and tagged in place, in
+  a few words ("Draw a beam", "Frame an area", "Beams: drag a row to
+  reorder"), with the camera and selection keys in a card. A control under
+  another island, or with no free spot for its tag, goes untagged; its
+  tooltip still names it. Any click, Esc or "Got it" closes them, and focus
+  returns to the pill. The Cheat sheet tab opens the *cheat sheet*: a strip
+  under the tool pill of one-line how-tos in four groups (build, edit,
+  reorder and hide, camera), covering frames, dragging beam and stop rows,
+  `Alt+↑` / `Alt+↓` and the snap back onto a beam line. It doesn't block the
+  table, so it can stay open while you work; its close button, Esc inside
+  it, or the tab closes it, and the coach marks' card can open it. The Guide
+  pill closes it, so only one size is up at a time. Below 1350 px wide it
+  folds to two columns, clear of the inspector. A control the coach marks
+  tag carries `data-guide` with its key in `TAGS` (`builder-guide.tsx`); the
+  cheat sheet's lines are `SHEET` there. A control that moves or changes is
+  updated in both.
 
 | Action | How |
 | --- | --- |
@@ -249,8 +262,8 @@ is on screen until it is needed:
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
-Shortcuts live in button tooltips and in the mode badge, not in a panel of
-their own.
+Shortcuts live in button tooltips and in the mode badge; the cheat sheet
+gathers the ones worth learning, and stays shut until asked for.
 
 Left-drag pans the table and the wheel zooms toward the cursor; a press that
 travels more than a few pixels is a pan, not a click, so panning never drops a
@@ -270,8 +283,9 @@ work from any angle: they land on the table plane.
 
 The floating islands stay in the site's notebook
 language: surface cards with a hairline border, lifted shadows, the
-oxblood/amber ink accent, measured values in mono. Only the transient mode badge
-borrows the instrument toolbar amber. A darker, instrument-console look for the islands was tried and
+oxblood/amber ink accent, measured values in mono. Only the transient mode badge, and the coach marks
+drawn in its dark and amber, borrow the instrument toolbar amber. The Guide
+pill is the one filled ink button, so a newcomer finds it first. A darker, instrument-console look for the islands was tried and
 rejected (see the `prototype/builder-panels` branch).
 
 The scene itself is lit like a *2001* interior shot as a miniature (think
@@ -318,7 +332,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill, edge, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
-| `src/components/builder/builder-guide.tsx` | The quick guide: the miniature of the builder and its numbered lines |
+| `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
 | `src/components/builder/builder-icons.tsx` | The builder's icon set, icon button, and one glyph per part |
