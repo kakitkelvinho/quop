@@ -13,6 +13,7 @@ import {
   ComponentInspector,
   ConnectionDraftInspector,
   ConnectionInspector,
+  FrameInspector,
   GroupInspector,
 } from "@/components/builder/builder-inspector";
 import {
@@ -21,12 +22,14 @@ import {
   beamDisplayName,
   beamLengthMm,
   derivedAngleBeam,
+  frameDisplayName,
   moveBeam,
   type Beam,
   type BuilderComponent,
   type ComponentType,
   type Connection,
   type ConnectionKind,
+  type Frame,
 } from "@/components/builder/types";
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
@@ -38,10 +41,12 @@ import { BetaMark } from "@/components/beta-badge";
 export type BuilderHudProps = {
   components: BuilderComponent[];
   beams: Beam[];
+  frames: Frame[];
   /** the selected parts, in the order they were picked */
   selected: BuilderComponent[];
   selectedBeam: Beam | null;
   selectedConnection: Connection | null;
+  selectedFrame: Frame | null;
   /** set while the Connect tool is on */
   connectDraft: ConnectDraft | null;
   placingType: ComponentType | null;
@@ -89,6 +94,11 @@ export type BuilderHudProps = {
   /** one step up (-1) or down (1) the beam list */
   onMoveBeam: (id: string, direction: 1 | -1) => void;
   onSetBeamHidden: (id: string, hidden: boolean) => void;
+  onAddFrame: () => void;
+  onSelectFrame: (id: string) => void;
+  onUpdateFrame: (id: string, patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
+  onDeleteFrame: (id: string) => void;
+  onSetFrameHidden: (id: string, hidden: boolean) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
@@ -247,6 +257,71 @@ function BeamList({
         );
       })}
     </ol>
+  );
+}
+
+/** The frames section, under the beams box: one row per frame, to select it, hide or show it, or delete it. */
+function FrameList({
+  frames,
+  selectedId,
+  onSelect,
+  onSetHidden,
+  onDelete,
+}: {
+  frames: Frame[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  const listRef = useRef<HTMLUListElement>(null);
+  // a deleted frame's row hands focus to the one that took its place
+  const focusRow = useRef<number | null>(null);
+  useEffect(() => {
+    const row = focusRow.current;
+    focusRow.current = null;
+    const rows = listRef.current?.children;
+    if (row === null || !rows?.length) return;
+    rows[Math.min(row, rows.length - 1)].querySelector("button")?.focus();
+  }, [frames]);
+
+  return (
+    <section className="builderIsland builderHud__frames" aria-labelledby="builderFramesTitle">
+      <h2 id="builderFramesTitle" className="builderHud__listTitle">
+        Frames
+      </h2>
+      <ul ref={listRef} role="list" className="builderHud__frameRows">
+        {frames.map((frame, index) => {
+          const name = frameDisplayName(frame);
+          const selected = selectedId === frame.id;
+          return (
+            <li key={frame.id} className={`builderBeamRow${selected ? " is-selected" : ""}${frame.hidden ? " is-hidden" : ""}`}>
+              <button type="button" className="builderBeamRow__select" aria-pressed={selected} onClick={() => onSelect(frame.id)}>
+                <span className="builderBeamRow__dot builderBeamRow__dot--square" style={{ background: frame.color }} />
+                <span className="builderBeamRow__name">{name}</span>
+              </button>
+              <span className="builderBeamRow__actions">
+                <IconButton
+                  icon={frame.hidden ? "eyeOff" : "eye"}
+                  // a toggle: the label stays put and aria-pressed carries the state
+                  label={`Hide ${name}`}
+                  active={Boolean(frame.hidden)}
+                  onClick={() => onSetHidden(frame.id, !frame.hidden)}
+                />
+                <IconButton
+                  icon="trash"
+                  label={`Delete ${name}`}
+                  onClick={() => {
+                    focusRow.current = index;
+                    onDelete(frame.id);
+                  }}
+                />
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -472,6 +547,15 @@ export default function BuilderHud(props: BuilderHudProps) {
         onToggleAddStops={props.onToggleAddStops}
       />
     );
+  } else if (props.selectedFrame) {
+    const frame = props.selectedFrame;
+    inspector = (
+      <FrameInspector
+        frame={frame}
+        onUpdate={(patch) => props.onUpdateFrame(frame.id, patch)}
+        onDelete={() => props.onDeleteFrame(frame.id)}
+      />
+    );
   } else if (props.selectedConnection) {
     const connection = props.selectedConnection;
     inspector = (
@@ -491,7 +575,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       ? "connect-draft"
       : selected.length > 1
         ? "group"
-        : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedConnection?.id);
+        : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedFrame?.id ?? props.selectedConnection?.id);
   // the inspector's close button cancels a draft, or else deselects
   const cancelDraft = beamMode
     ? { label: "Cancel beam", run: props.onCancelBeam }
@@ -536,6 +620,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
           disabled={components.length < 2}
         />
+        <IconButton icon="frame" label="Add a frame to mark an area" onClick={props.onAddFrame} />
         <IconButton
           icon="connect"
           label="Connect two parts with a fibre or cable"
@@ -606,6 +691,8 @@ export default function BuilderHud(props: BuilderHudProps) {
         </aside>
       ) : null}
 
+      {beams.length || props.frames.length ? (
+        <div className={`builderHud__lists${trayOpen ? " is-besideParts" : ""}`}>
       {beams.length ? (
         <BeamList
           components={components}
@@ -617,6 +704,17 @@ export default function BuilderHud(props: BuilderHudProps) {
           onSetHidden={props.onSetBeamHidden}
           onDelete={props.onDeleteBeam}
         />
+      ) : null}
+      {props.frames.length ? (
+        <FrameList
+          frames={props.frames}
+          selectedId={props.selectedFrame?.id ?? null}
+          onSelect={props.onSelectFrame}
+          onSetHidden={props.onSetFrameHidden}
+          onDelete={props.onDeleteFrame}
+        />
+      ) : null}
+        </div>
       ) : null}
 
       <div className="builderIsland builderHud__view" role="toolbar" aria-label="View">

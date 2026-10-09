@@ -83,6 +83,7 @@ const part = (id: string, type: ComponentType, x: number, z: number): BuilderCom
 
 const bench = (beams: Beam[]): BuilderSceneData => ({
   version: SCENE_VERSION,
+  frames: [],
   components: [
     part("L", "laser-source", -200, 0),
     part("M", "mirror-mount", 0, 0),
