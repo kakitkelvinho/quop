@@ -22,6 +22,7 @@ import {
   createFrameId,
   defaultHeight,
   moveBeamTo as moveBeamInList,
+  moveFrameTo as moveFrameInList,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
@@ -398,6 +399,20 @@ export function useBuilderScene() {
     [commit],
   );
 
+  /** Drop a frame at index `to` of the list; the frame's new place, or null when it can't go there. */
+  const reorderFrame = useCallback(
+    (id: string, to: number): number | null => {
+      const edit = moveFrameInList(scene.frames, id, to);
+      if (!edit.ok) return null;
+      commit((current) => {
+        const moved = moveFrameInList(current.frames, id, to);
+        return moved.ok ? { ...current, frames: moved.frames } : current;
+      });
+      return to;
+    },
+    [commit, scene.frames],
+  );
+
   /** Hide or show a frame: one undo step, and nothing else about it changes. */
   const setFrameHidden = useCallback(
     (id: string, hidden: boolean) =>
@@ -479,6 +494,7 @@ export function useBuilderScene() {
       updateFrame,
       moveFrame,
       deleteFrame,
+      reorderFrame,
       setFrameHidden,
       replaceScene,
       clearScene,
@@ -514,6 +530,7 @@ export function useBuilderScene() {
       updateFrame,
       moveFrame,
       deleteFrame,
+      reorderFrame,
       setFrameHidden,
       replaceScene,
       clearScene,

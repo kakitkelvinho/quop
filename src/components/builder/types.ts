@@ -1168,6 +1168,19 @@ function parseFrame(value: unknown, version: number): Frame | null {
   };
 }
 
+export type FrameListEdit = { ok: true; frames: Frame[] } | { ok: false; reason: string };
+
+/** Lift the frame `id` out of the list and set it back so it sits at index `to`, as a beam moves in its list. */
+export function moveFrameTo(frames: Frame[], id: string, to: number): FrameListEdit {
+  const from = frames.findIndex((frame) => frame.id === id);
+  if (from < 0) return { ok: false, reason: "it isn't in the list" };
+  if (to < 0) return { ok: false, reason: "it's already first" };
+  if (to >= frames.length) return { ok: false, reason: "it's already last" };
+  const next = frames.filter((_, at) => at !== from);
+  next.splice(to, 0, frames[from]);
+  return { ok: true, frames: next };
+}
+
 /** Hide or show one frame. Stored only when hidden, like a beam's flag. */
 export function setFrameHidden(frames: Frame[], id: string, hidden: boolean): Frame[] {
   return frames.map((frame) => {
