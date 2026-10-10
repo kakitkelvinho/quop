@@ -3305,9 +3305,61 @@ html[data-theme="dark"] .builderButton--primary {
   border-radius: 0.15rem;
 }
 
-.builderHud__view {
+/* bottom right: the setup brief's island, then the view controls */
+.builderHud__corner {
+  position: absolute;
+  z-index: 5;
   right: 0.9rem;
   bottom: 0.9rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.builderHud__corner > .builderIsland {
+  position: static;
+}
+
+/* a text button in an icon button's square */
+.builderBriefButton {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* the brief: the parts panel's spot and size, so the beams and frames boxes
+   move beside it as they do for the parts; the Markdown scrolls in its box */
+.builderBrief {
+  bottom: 3.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: clamp(16rem, 25vw, 24rem);
+  max-height: none;
+  overflow: hidden;
+}
+
+.builderBrief__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.builderBrief__text {
+  flex: 1 1 auto;
+  min-height: 6rem;
+  margin: 0.7rem 0 0;
+  padding: 0.6rem 0.7rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--background);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .builderStatus {
@@ -3436,6 +3488,10 @@ html[data-theme="dark"] .builderButton--primary {
   .builderAbout {
     right: 0.9rem;
     width: auto;
+  }
+
+  .builderBrief {
+    bottom: 7.2rem;
   }
 
   /* no room beside a full-width parts panel: the box returns when it closes */

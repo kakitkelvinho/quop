@@ -35,6 +35,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "beams", text: "Beams: drag a row to reorder", sides: ["above", "right"] },
   { key: "frames", text: "Frames: hide or delete", sides: ["right", "above"] },
   { key: "view", text: "Iso / top · fit · labels · day / night", sides: ["above", "left"] },
+  { key: "brief", text: "Brief an AI to write a setup", sides: ["above", "left"] },
 ];
 
 const GAP = 10;
@@ -293,6 +294,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Beam: click parts, Enter" },
       { icon: "frame", text: "Frame: drag its edge to move" },
       { icon: "connect", text: "Fibre or cable: from, then to" },
+      { keys: ".md", text: "Brief an AI to write a setup" },
     ],
   },
   {

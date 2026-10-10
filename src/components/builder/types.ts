@@ -6,6 +6,9 @@
 //     ray trace. The builder is a layout notebook, not a simulator — a drawn
 //     beam records the author's intent, which is what a lab diagram needs.
 //   * Yaw snaps to ROTATION_STEP_DEG so mirrors land on sane bench angles.
+//
+// setup-brief.ts describes the setup file to an AI assistant from this file;
+// a new saved field won't typecheck there until the brief has a line for it.
 
 export type ComponentType =
   | "laser-source"
