@@ -141,6 +141,8 @@ export type Frame = {
   label?: string;
   /** true keeps the frame out of the drawing, and so out of a PNG; stored only when true */
   hidden?: true;
+  /** PROTOTYPE (#146): corners in order, relative to `position` (then the first corner); absent = centred rectangle */
+  outline?: [number, number][];
 };
 
 export const SCENE_VERSION = 5 as const;
@@ -1137,6 +1139,8 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
       : {}),
     ...(raw.arrows === false ? { arrows: false } : {}),
     ...(raw.hidden === true ? { hidden: true } : {}),
+    // PROTOTYPE (#146): kept as-is, unchecked
+    ...(Array.isArray(raw.outline) ? { outline: raw.outline as [number, number][] } : {}),
   };
 }
 

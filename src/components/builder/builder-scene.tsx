@@ -22,11 +22,27 @@ import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-selec
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
+  combineRect,
+  dropZeroSides,
+  frameCorners,
+  isJoint,
+  isRectilinear,
+  mergeCollinear,
+  same,
+  sideAxis,
+  withCorners,
+  type P,
+  type ProtoMode,
+  type ProtoTarget,
+} from "@/components/builder/PROTOTYPE-shaped-frames";
+import {
   BEAM_COLORS,
   CONNECTION_KINDS,
   FINE_GRID_MM,
+  FRAME_COLORS,
   GRID_SIZE_MM,
   clampToTable,
+  createFrameId,
   componentById,
   componentDisplayName,
   findHost,
@@ -41,6 +57,7 @@ import {
   snapToGrid,
   type BuilderComponent,
   type ComponentType,
+  type Frame,
   type Vec3,
 } from "@/components/builder/types";
 
@@ -57,6 +74,67 @@ type DragState = {
   /** the group's positions at its first move; every step is measured from these */
   origins: Record<string, Vec3> | null;
 };
+
+/** PROTOTYPE (#146): a side or corner of a selected frame being dragged */
+type ShapeDragState = {
+  id: string;
+  /** corners at the press, rotated and with any joints the drag needs put in */
+  corners: P[];
+  kind: "edge" | "corner";
+  /** the side's first corner, or the corner */
+  k: number;
+  offsetX: number;
+  offsetZ: number;
+  started: boolean;
+};
+
+function rotate(corners: P[], by: number): P[] {
+  const n = corners.length;
+  const s = ((by % n) + n) % n;
+  return [...corners.slice(s), ...corners.slice(0, s)].map((c): P => [c[0], c[1]]);
+}
+
+const other = (axis: "x" | "z" | null) => (axis === "x" ? "z" : axis === "z" ? "x" : null);
+
+/**
+ * Get a drag ready: rotate so the side runs 1 -> 2 (or the corner sits at 2),
+ * and put a joint in wherever a neighbouring side runs straight on, so moving
+ * the side grows a step instead of slanting its neighbour.
+ */
+function prepareShapeDrag(all: P[], target: ProtoTarget): { corners: P[]; k: number } {
+  if (target.kind === "edge") {
+    const c = rotate(all, target.index - 1);
+    const axis = sideAxis(c[1], c[2]);
+    const n = c.length;
+    if (sideAxis(c[2], c[3 % n]) !== other(axis)) c.splice(3, 0, [c[2][0], c[2][1]]);
+    if (sideAxis(c[0], c[1]) !== other(axis)) {
+      c.splice(1, 0, [c[1][0], c[1][1]]);
+      return { corners: c, k: 2 };
+    }
+    return { corners: c, k: 1 };
+  }
+  const c = rotate(all, target.index - 2);
+  if (isJoint(c, 2)) return { corners: c, k: 2 };
+  const n = c.length;
+  const sA = sideAxis(c[1], c[2]);
+  const sB = sideAxis(c[2], c[3]);
+  if (sideAxis(c[3], c[4 % n]) !== other(sB)) c.splice(4, 0, [c[3][0], c[3][1]]);
+  if (sideAxis(c[0], c[1]) !== other(sA)) {
+    c.splice(1, 0, [c[1][0], c[1][1]]);
+    return { corners: c, k: 3 };
+  }
+  return { corners: c, k: 2 };
+}
+
+/** Where the drawn outline (b) goes back to its first corner: an elbow if needed. */
+function closingElbow(points: P[]): P[] {
+  if (points.length < 2) return [];
+  const first = points[0];
+  const last = points[points.length - 1];
+  if (last[0] === first[0] || last[1] === first[1]) return [];
+  const axis = sideAxis(points[points.length - 2], last);
+  return axis === "x" ? [[last[0], first[1]]] : [[first[0], last[1]]];
+}
 
 type FrameDragState = {
   id: string;
@@ -185,6 +263,30 @@ export default function BuilderScene() {
   const [status, setStatus] = useState<string | null>(null);
   const [trayOpen, setTrayOpen] = useState(false);
 
+  // ---- PROTOTYPE (#146) state ----------------------------------------------
+  const [protoMode, setProtoMode] = useState<ProtoMode>("edit");
+  const [protoPoints, setProtoPoints] = useState<P[]>([]);
+  const [protoHover, setProtoHover] = useState<P | null>(null);
+  const protoKeys = useRef({ shift: false, alt: false });
+  const shapeDragRef = useRef<ShapeDragState | null>(null);
+  useEffect(() => {
+    const track = (event: KeyboardEvent | PointerEvent) => {
+      protoKeys.current = { shift: event.shiftKey, alt: event.altKey };
+    };
+    window.addEventListener("keydown", track, true);
+    window.addEventListener("keyup", track, true);
+    window.addEventListener("pointerdown", track, true);
+    return () => {
+      window.removeEventListener("keydown", track, true);
+      window.removeEventListener("keyup", track, true);
+      window.removeEventListener("pointerdown", track, true);
+    };
+  }, []);
+  const protoSnap = useCallback(
+    (value: number) => snapToGrid(value, protoKeys.current.shift ? FINE_GRID_MM : GRID_SIZE_MM),
+    [],
+  );
+
   const dragRef = useRef<DragState | null>(null);
   const frameDragRef = useRef<FrameDragState | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -241,8 +343,90 @@ export default function BuilderScene() {
 
   // ---- placing & selection -------------------------------------------------
 
+  // PROTOTYPE (#146): where a click would put the next corner (b)
+  const drawCandidate = useCallback(
+    (points: P[], x: number, z: number): P => {
+      const last = points[points.length - 1];
+      if (!last) return [protoSnap(x), protoSnap(z)];
+      return Math.abs(x - last[0]) >= Math.abs(z - last[1]) ? [protoSnap(x), last[1]] : [last[0], protoSnap(z)];
+    },
+    [protoSnap],
+  );
+
+  const addShapedFrame = useCallback(
+    (corners: P[]) => {
+      const id = createFrameId();
+      const current = sceneRef.current;
+      api.replaceScene({
+        ...current,
+        frames: [
+          ...current.frames,
+          { id, color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length], ...withCorners(corners) },
+        ],
+      });
+      setSelectedFrameId(id);
+      return id;
+    },
+    [api],
+  );
+
+  const finishDrawing = useCallback(
+    (points: P[]) => {
+      const full = mergeCollinear([...points, ...closingElbow(points)]);
+      if (full.length < 4 || !isRectilinear(full)) {
+        announce("Not enough corners for an outline yet.");
+        return;
+      }
+      addShapedFrame(full);
+      setProtoPoints([]);
+      announce(`Drew a frame with ${full.length} corners. Click to start another, Esc to stop drawing.`);
+    },
+    [addShapedFrame, announce],
+  );
+
   const handleSurfaceClick = useCallback(
     (x: number, z: number) => {
+      if (protoMode === "draw") {
+        const first = protoPoints[0];
+        if (first && protoPoints.length >= 3 && Math.hypot(x - first[0], z - first[1]) < 20) {
+          finishDrawing(protoPoints);
+          return;
+        }
+        const next = drawCandidate(protoPoints, x, z);
+        if (first && protoPoints.length >= 3 && same(next, first)) {
+          finishDrawing(protoPoints);
+          return;
+        }
+        const last = protoPoints[protoPoints.length - 1];
+        if (last && same(last, next)) return;
+        setProtoPoints([...protoPoints, next]);
+        return;
+      }
+      if (protoMode === "rects") {
+        const point: P = [protoSnap(x), protoSnap(z)];
+        if (!protoPoints.length) {
+          setProtoPoints([point]);
+          return;
+        }
+        const start = protoPoints[0];
+        setProtoPoints([]);
+        if (start[0] === point[0] || start[1] === point[1]) return;
+        const cut = protoKeys.current.alt;
+        const target = selectedFrameId ? sceneRef.current.frames.find((f) => f.id === selectedFrameId) : undefined;
+        if (!target) {
+          if (cut) return announce("Select a frame to cut from.");
+          addShapedFrame(mergeCollinear([start, [point[0], start[1]], point, [start[0], point[1]]]));
+          announce("New frame from a rectangle. Click two more corners to add to it; Alt on the second click cuts.");
+          return;
+        }
+        const result = combineRect(frameCorners(target), [start, point], cut ? "cut" : "add");
+        if (!result.corners) return announce("That would leave nothing of the frame.");
+        api.updateFrame(target.id, withCorners(result.corners));
+        if (result.pieces > 1) {
+          announce(`That made ${result.pieces} loops (pieces or a hole); kept only the largest outline.`);
+        }
+        return;
+      }
       if (beamMode || connectDraft || addingStops) return;
       if (placingType) {
         // a particle clicked onto a trap or cavity goes inside it
@@ -266,13 +450,14 @@ export default function BuilderScene() {
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
     },
-    [addingStops, api, beamMode, connectDraft, placingType],
+    [addingStops, addShapedFrame, announce, api, beamMode, connectDraft, drawCandidate, finishDrawing, placingType, protoMode, protoPoints, protoSnap, selectedFrameId],
   );
 
   const handleComponentPointerDown = useCallback(
     (id: string, event: ThreeEvent<PointerEvent>) => {
       // middle and right drags orbit the camera, even when they start on a part
       if (event.nativeEvent.button !== 0) return;
+      if (protoMode !== "edit") return;
       if (beamMode) {
         setBeamDraft((current) =>
           current[current.length - 1] === id ? current : [...current, id],
@@ -328,7 +513,7 @@ export default function BuilderScene() {
       };
       setDragging(true);
     },
-    [addingStops, announce, api, beamMode, connectDraft, selectedBeamId, selectedIds],
+    [addingStops, announce, api, beamMode, connectDraft, protoMode, selectedBeamId, selectedIds],
   );
 
   const handleComponentHover = useCallback((id: string | null) => {
@@ -375,6 +560,40 @@ export default function BuilderScene() {
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: PointerEvent) => {
+      const shapeDrag = shapeDragRef.current;
+      if (shapeDrag) {
+        const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+        const X = snapToGrid(x + shapeDrag.offsetX, step);
+        const Z = snapToGrid(z + shapeDrag.offsetZ, step);
+        const c = shapeDrag.corners.map((p): P => [p[0], p[1]]);
+        const n = c.length;
+        const k = shapeDrag.k;
+        const moveSide = (i: number) => {
+          const j = (i + 1) % n;
+          if (sideAxis(shapeDrag.corners[i], shapeDrag.corners[j]) === "x") c[i][1] = c[j][1] = Z;
+          else c[i][0] = c[j][0] = X;
+        };
+        if (shapeDrag.kind === "edge") moveSide(k);
+        else if (isJoint(shapeDrag.corners, k)) {
+          if (sideAxis(shapeDrag.corners[k], shapeDrag.corners[(k + 1) % n]) === "x") c[k][0] = X;
+          else c[k][1] = Z;
+        } else {
+          moveSide((k - 1 + n) % n);
+          moveSide(k);
+        }
+        if (!shapeDrag.started && c.every((p, i) => same(p, shapeDrag.corners[i]))) return;
+        if (!shapeDrag.started) {
+          shapeDrag.started = true;
+          api.commitCheckpoint(sceneRef.current);
+        }
+        api.updateFrame(shapeDrag.id, withCorners(c), false);
+        return;
+      }
+      if (!frameDragRef.current && !dragRef.current) {
+        // PROTOTYPE (#146): hovering while drawing
+        setProtoHover([x, z]);
+        return;
+      }
       const frameDrag = frameDragRef.current;
       if (frameDrag) {
         const frame = sceneRef.current.frames.find((entry) => entry.id === frameDrag.id);
@@ -474,6 +693,13 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
+      const shapeDrag = shapeDragRef.current;
+      if (shapeDrag) {
+        shapeDragRef.current = null;
+        setDragging(false);
+        const frame = sceneRef.current.frames.find((entry) => entry.id === shapeDrag.id);
+        if (shapeDrag.started && frame) api.updateFrame(frame.id, withCorners(dropZeroSides(frameCorners(frame))), false);
+      }
       if (frameDragRef.current) {
         frameDragRef.current = null;
         setDragging(false);
@@ -495,7 +721,7 @@ export default function BuilderScene() {
       window.removeEventListener("pointerup", endDrag);
       window.removeEventListener("pointercancel", endDrag);
     };
-  }, []);
+  }, [api]);
 
   // ---- connections ---------------------------------------------------------
 
@@ -516,10 +742,26 @@ export default function BuilderScene() {
   // ---- frames --------------------------------------------------------------
 
   // Pressing a frame's edge selects it and drags it; only its edge takes the press.
-  const handleFramePointerDown = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
+  const handleFramePointerDown = useCallback((id: string, event: ThreeEvent<PointerEvent>, target: ProtoTarget) => {
     if (event.nativeEvent.button !== 0) return;
     const frame = sceneRef.current.frames.find((entry) => entry.id === id);
     if (!frame) return;
+    const [px, pz] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
+    // PROTOTYPE (#146): a selected frame reshapes from its sides and corners; Alt moves it whole
+    if (id === selectedFrameId && !event.nativeEvent.altKey) {
+      const { corners, k } = prepareShapeDrag(frameCorners(frame), target);
+      shapeDragRef.current = {
+        id,
+        corners,
+        kind: target.kind,
+        k,
+        offsetX: corners[k][0] - px,
+        offsetZ: corners[k][1] - pz,
+        started: false,
+      };
+      setDragging(true);
+      return;
+    }
     setSelectedFrameId(id);
     setSelection([]);
     setSelectedBeamId(null);
@@ -532,7 +774,35 @@ export default function BuilderScene() {
       started: false,
     };
     setDragging(true);
-  }, []);
+  }, [selectedFrameId]);
+
+  // PROTOTYPE (#146): double-click a side to put a joint in it, a joint to take it out
+  const handleFrameDoublePress = useCallback(
+    (id: string, event: ThreeEvent<MouseEvent>, target: ProtoTarget) => {
+      const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+      if (!frame || id !== selectedFrameId) return;
+      const corners = frameCorners(frame);
+      const n = corners.length;
+      if (target.kind === "corner") {
+        if (!isJoint(corners, target.index)) return announce("Only a joint (white diamond) comes out on a double-click.");
+        api.updateFrame(id, withCorners(corners.filter((_, i) => i !== target.index)));
+        return;
+      }
+      const a = corners[target.index];
+      const b = corners[(target.index + 1) % n];
+      const horizontal = sideAxis(a, b) === "x";
+      const at: P = horizontal ? [protoSnap(event.point.x), a[1]] : [a[0], protoSnap(event.point.z)];
+      const lo = horizontal ? Math.min(a[0], b[0]) : Math.min(a[1], b[1]);
+      const hi = horizontal ? Math.max(a[0], b[0]) : Math.max(a[1], b[1]);
+      const v = horizontal ? at[0] : at[1];
+      if (v <= lo || v >= hi) return;
+      const next = [...corners];
+      next.splice(target.index + 1, 0, at);
+      api.updateFrame(id, withCorners(next));
+      announce("Put a joint in that side. Drag either half out to make a step; two joints for a notch.");
+    },
+    [announce, api, protoSnap, selectedFrameId],
+  );
 
   const handleSelectFrame = useCallback((id: string) => {
     setSelectedFrameId((current) => (current === id ? null : id));
@@ -741,9 +1011,60 @@ export default function BuilderScene() {
     }
   }, [announce, ghostBeamId, ghostFrameId]);
 
+  // PROTOTYPE (#146): keys while drawing (b) or adding rectangles (c)
+  useEffect(() => {
+    if (protoMode === "edit") return;
+    const onKey = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) return;
+      if (event.key === "Escape") {
+        event.stopImmediatePropagation();
+        if (protoPoints.length) setProtoPoints([]);
+        else setProtoMode("edit");
+      } else if (event.key === "Enter" && protoMode === "draw") {
+        event.stopImmediatePropagation();
+        finishDrawing(protoPoints);
+      } else if (event.key === "Backspace") {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        setProtoPoints(protoPoints.slice(0, -1));
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [finishDrawing, protoMode, protoPoints]);
+
+  const protoDraft = useMemo(() => {
+    if (protoMode === "draw") {
+      const candidate = protoHover ? drawCandidate(protoPoints, protoHover[0], protoHover[1]) : null;
+      const points = candidate ? [...protoPoints, candidate] : protoPoints;
+      const closing = points.length >= 3 ? [points[points.length - 1], ...closingElbow(points), points[0]] : null;
+      return { points, closing };
+    }
+    if (protoMode === "rects" && protoPoints.length && protoHover) {
+      const a = protoPoints[0];
+      const b: P = [protoSnap(protoHover[0]), protoSnap(protoHover[1])];
+      return { points: [a, [b[0], a[1]] as P, b, [a[0], b[1]] as P, a], closing: null };
+    }
+    return null;
+  }, [drawCandidate, protoHover, protoMode, protoPoints, protoSnap]);
+
+  const switchProtoMode = useCallback((mode: ProtoMode) => {
+    setProtoMode(mode);
+    setProtoPoints([]);
+    setPlacingType(null);
+    setBeamMode(false);
+    setBeamDraft([]);
+    setConnectDraft(null);
+    setSelection([]);
+    setSelectedBeamId(null);
+    if (mode === "draw") setSelectedFrameId(null);
+  }, []);
+
   const handleCanvasReady = useCallback((handle: CanvasApi) => {
     canvasRef.current = handle.canvas;
     projectRef.current = handle.project;
+    // PROTOTYPE (#146): lets a test script find table points on screen
+    (window as unknown as { __protoProject?: CanvasApi["project"] }).__protoProject = handle.project;
   }, []);
 
   // ---- keyboard ------------------------------------------------------------
@@ -923,7 +1244,7 @@ export default function BuilderScene() {
     <div className="builderWorkspace">
       <div
         ref={hostRef}
-        className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops ? " is-picking" : ""}`}
+        className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || protoMode !== "edit" ? " is-picking" : ""}`}
       >
         <BuilderCanvas
           components={scene.components}
@@ -937,7 +1258,7 @@ export default function BuilderScene() {
           selectedConnectionId={selectedConnection?.id ?? null}
           selectedFrameId={selectedFrame?.id ?? null}
           ghostFrameId={ghostFrameId}
-          framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops}
+          framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops && protoMode === "edit"}
           hoveredId={hoveredId}
           // the part a connection leaves from carries the "1" badge until the second click
           beamDraft={connectDraft?.from ? [connectDraft.from] : beamDraft}
@@ -954,7 +1275,19 @@ export default function BuilderScene() {
           onComponentHover={handleComponentHover}
           onConnectionPointerDown={handleConnectionPointerDown}
           onFramePointerDown={handleFramePointerDown}
+          onFrameDoublePress={handleFrameDoublePress}
+          protoDraft={protoDraft}
+          protoTracking={protoMode !== "edit"}
           onCanvasReady={handleCanvasReady}
+        />
+        <ProtoBar
+          mode={protoMode}
+          onMode={switchProtoMode}
+          drafted={protoPoints.length}
+          selectedFrame={selectedFrame}
+          onTidy={() => {
+            if (selectedFrame) api.updateFrame(selectedFrame.id, withCorners(mergeCollinear(frameCorners(selectedFrame))));
+          }}
         />
         {selectionBox ? (
           <div
@@ -1078,6 +1411,92 @@ export default function BuilderScene() {
           cancelConnect();
         }}
       />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PROTOTYPE (#146): the floating mode switch, throwaway
+// ---------------------------------------------------------------------------
+
+const PROTO_HELP: Record<ProtoMode, string> = {
+  edit:
+    "(a) Edge editing. Click a frame's edge to select it, then drag a side in or out, or drag a corner. Double-click a side to put a joint (white diamond) in it; drag either half out for a step, use two joints for a notch. Double-click a joint to take it out. Alt-drag moves the whole frame. Shift = 5 mm steps.",
+  draw:
+    "(b) Corner drawing. Click corners on the table; each side snaps to x or z, whichever the pointer is further along. Click the first corner (or press Enter) to close; a missing elbow is added for you. Backspace drops the last corner, Esc cancels. Shift = 5 mm steps.",
+  rects:
+    "(c) Rectangles. Click two opposite corners. With no frame selected it makes a new frame; with one selected it adds to it, or cuts from it if Alt is held on the second click. Shift = 5 mm steps.",
+};
+
+function ProtoBar({
+  mode,
+  onMode,
+  drafted,
+  selectedFrame,
+  onTidy,
+}: {
+  mode: ProtoMode;
+  onMode: (mode: ProtoMode) => void;
+  drafted: number;
+  selectedFrame: Frame | null;
+  onTidy: () => void;
+}) {
+  const corners = selectedFrame ? frameCorners(selectedFrame) : null;
+  const button = (value: ProtoMode, label: string) => (
+    <button
+      type="button"
+      onClick={() => onMode(value)}
+      style={{
+        padding: "4px 10px",
+        borderRadius: 6,
+        border: "1px solid #dc2626",
+        background: mode === value ? "#dc2626" : "transparent",
+        color: mode === value ? "#fff" : "inherit",
+        cursor: "pointer",
+        font: "inherit",
+      }}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: 84,
+        transform: "translateX(-50%)",
+        zIndex: 30,
+        width: "min(720px, calc(100% - 32px))",
+        padding: "8px 12px",
+        borderRadius: 10,
+        border: "2px dashed #dc2626",
+        background: "color-mix(in srgb, var(--surface, #fff) 92%, transparent)",
+        color: "var(--ink, #111)",
+        font: "12px/1.4 ui-sans-serif, system-ui, sans-serif",
+        pointerEvents: "auto",
+      }}
+    >
+      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+        <strong style={{ color: "#dc2626" }}>PROTOTYPE #146</strong>
+        {button("edit", "(a) Edit sides")}
+        {button("draw", "(b) Draw corners")}
+        {button("rects", "(c) Add / cut rects")}
+        {selectedFrame ? (
+          <button type="button" onClick={onTidy} style={{ marginLeft: "auto", font: "inherit", cursor: "pointer" }}>
+            Tidy joints
+          </button>
+        ) : null}
+      </div>
+      <p style={{ margin: "6px 0 0" }}>{PROTO_HELP[mode]}</p>
+      <p data-proto-readout style={{ margin: "4px 0 0", fontFamily: "ui-monospace, monospace", fontSize: 11, opacity: 0.8 }}>
+        {mode !== "edit" ? `draft: ${drafted} corner(s) · ` : ""}
+        {corners
+          ? `selected: ${corners.length} corners, outline ${selectedFrame?.outline ? "stored" : "absent (old rectangle)"} · ${corners
+              .map(([x, z]) => `(${x}, ${z})`)
+              .join(" ")}`
+          : "no frame selected"}
+      </p>
     </div>
   );
 }
