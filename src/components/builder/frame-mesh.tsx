@@ -2,8 +2,10 @@
 
 import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
+import { useMemo } from "react";
+import { Shape, Vector2 } from "three";
 
-import type { Frame } from "@/components/builder/types";
+import type { Corner, Frame } from "@/components/builder/types";
 
 /** Just above the table's top face and the grid, below every part. */
 const FRAME_Y_MM = 0.6;
@@ -15,6 +17,20 @@ const GRAB_MM = 28;
 const GHOST = 0.35;
 
 type Strip = [x: number, z: number, sizeX: number, sizeZ: number];
+
+/**
+ * One strip per side, `thickness` across, centred on it. The sides along x
+ * run half a thickness past each end and those along z stop half a thickness
+ * short, so every corner is closed and covered once.
+ */
+function sideStrips(corners: Corner[], thickness: number): Strip[] {
+  return corners.map(([x0, z0], at) => {
+    const [x1, z1] = corners[(at + 1) % corners.length];
+    const alongX = z0 === z1;
+    const length = alongX ? Math.abs(x1 - x0) + thickness : Math.max(Math.abs(z1 - z0) - thickness, 0);
+    return [(x0 + x1) / 2, (z0 + z1) / 2, alongX ? length : thickness, alongX ? thickness : length];
+  });
+}
 
 /**
  * A frame, flat on the table: a faint tint inside a solid edge, or the edge
@@ -39,32 +55,23 @@ export function FrameMesh({
   interactive: boolean;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
 }) {
-  const [x, z] = frame.position;
-  const { width, depth, color } = frame;
+  const { corners, color } = frame;
   const edge = selected ? SELECTED_EDGE_MM : EDGE_MM;
   const strength = ghost ? GHOST : 1;
   // a faint tint: the frame marks an area, it should not colour the table
   const fill = (selected ? 0.07 : 0.035) * strength;
 
-  // the four edges, centred on the frame
-  const edges: Strip[] = [
-    [0, -depth / 2, width + edge, edge],
-    [0, depth / 2, width + edge, edge],
-    [-width / 2, 0, edge, depth - edge],
-    [width / 2, 0, edge, depth - edge],
-  ];
-  const grabs: Strip[] = [
-    [0, -depth / 2, width + GRAB_MM, GRAB_MM],
-    [0, depth / 2, width + GRAB_MM, GRAB_MM],
-    [-width / 2, 0, GRAB_MM, depth - GRAB_MM],
-    [width / 2, 0, GRAB_MM, depth - GRAB_MM],
-  ];
+  // laid flat by the mesh's turn about x, which carries the shape's +y to the table's −z
+  const outline = useMemo(() => new Shape(corners.map(([cx, cz]) => new Vector2(cx, -cz))), [corners]);
+  const edges = sideStrips(corners, edge);
+  const grabs = sideStrips(corners, GRAB_MM);
+  const [labelX, labelZ] = corners[0];
 
   return (
-    <group position={[x, FRAME_Y_MM, z]}>
+    <group position={[0, FRAME_Y_MM, 0]}>
       {frame.fill === false ? null : (
         <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={1}>
-          <planeGeometry args={[width, depth]} />
+          <shapeGeometry args={[outline]} />
           <meshBasicMaterial color={color} transparent opacity={fill} depthWrite={false} />
         </mesh>
       )}
@@ -83,7 +90,7 @@ export function FrameMesh({
           ))
         : null}
       {showLabel && !ghost && frame.label?.trim() ? (
-        <Html position={[-width / 2, 0, -depth / 2]} zIndexRange={[0, 0]} className="builderHtmlLayer">
+        <Html position={[labelX, 0, labelZ]} zIndexRange={[0, 0]} className="builderHtmlLayer">
           <span
             className={`builderLabel builderLabel--frame${selected ? " is-selected" : ""}`}
             style={{ borderColor: color }}

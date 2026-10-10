@@ -24,11 +24,13 @@ import {
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
   parseScene,
+  rectangleCorners,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
   settleAngles,
   settleHosts,
   snapToGrid,
+  translateCorners,
   type Beam,
   type BuilderComponent,
   type BuilderSceneData,
@@ -354,19 +356,18 @@ export function useBuilderScene() {
 
   // ---- frame edits ---------------------------------------------------------
 
-  /** A new frame of the default size, centred on (x, z); its id. */
+  /** A new rectangle of the default size, centred on (x, z); its id. */
   const addFrame = useCallback(
     ([x, z]: [number, number]): string => {
       const id = createFrameId();
+      const [width, depth] = DEFAULT_FRAME_SIZE_MM;
       commit((current) => ({
         ...current,
         frames: [
           ...current.frames,
           {
             id,
-            position: clampToTable(x, z),
-            width: DEFAULT_FRAME_SIZE_MM[0],
-            depth: DEFAULT_FRAME_SIZE_MM[1],
+            corners: rectangleCorners([x - width / 2, z - depth / 2], width, depth),
             color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length],
           },
         ],
@@ -388,9 +389,18 @@ export function useBuilderScene() {
     [commit, preview],
   );
 
+  /** Slide a frame whole, unrecorded, so its first corner sits at (x, z), held on the table. */
   const moveFrame = useCallback(
-    (id: string, x: number, z: number) => updateFrame(id, { position: clampToTable(x, z) }, false),
-    [updateFrame],
+    (id: string, x: number, z: number) =>
+      preview((current) => ({
+        ...current,
+        frames: current.frames.map((frame) => {
+          if (frame.id !== id) return frame;
+          const [fx, fz] = frame.corners[0];
+          return { ...frame, corners: translateCorners(frame.corners, x - fx, z - fz) };
+        }),
+      })),
+    [preview],
   );
 
   const deleteFrame = useCallback(
