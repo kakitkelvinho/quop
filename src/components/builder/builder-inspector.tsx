@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 import { IconButton } from "@/components/builder/builder-icons";
 import { useRowDrag } from "@/components/builder/use-row-drag";
+import {
+  frameCorners,
+  isRectilinear,
+  selfIntersects,
+  withCorners,
+  type P,
+} from "@/components/builder/PROTOTYPE-shaped-frames";
 import { useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
@@ -995,6 +1002,13 @@ export function FrameInspector({
           onChange={(event) => onUpdate({ color: event.target.value })}
         />
       </div>
+      <ProtoCornersField frame={frame} onUpdate={onUpdate} />
+      {frame.outline ? (
+        <button type="button" className="builderButton" onClick={() => { const c = frameCorners(frame); onUpdate({ outline: undefined, position: [Math.min(...c.map((p) => p[0])) + frame.width / 2, Math.min(...c.map((p) => p[1])) + frame.depth / 2] }); }}>
+          (prototype) Back to a plain rectangle
+        </button>
+      ) : null}
+      {frame.outline ? null : <>
       <NumberField
         label="Width"
         unit="mm"
@@ -1015,9 +1029,60 @@ export function FrameInspector({
         value={frame.depth}
         onChange={(depth) => onUpdate({ depth: clamp(depth, FRAME_SIZE_RANGE_MM) })}
       />
+      </>}
       <p className="builderInspector__hint">
         {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag its edge to move it.
       </p>
     </div>
+  );
+}
+
+/** PROTOTYPE (#146), option (d): type the corners, one "x, z" per line, table mm. */
+function ProtoCornersField({
+  frame,
+  onUpdate,
+}: {
+  frame: Frame;
+  onUpdate: (patch: Partial<Omit<Frame, "id">>) => void;
+}) {
+  const text = frameCorners(frame)
+    .map(([x, z]) => `${x}, ${z}`)
+    .join("\n");
+  const [draft, setDraft] = useState(text);
+  const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- prototype
+  useEffect(() => setDraft(text), [text]);
+  const apply = () => {
+    const corners = draft
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => line.split(/[ ,;]+/).map(Number) as P);
+    if (corners.some((c) => c.length !== 2 || c.some((v) => !Number.isFinite(v)))) return setError("Each line needs x, z.");
+    if (!isRectilinear(corners)) {
+      const bad = corners.findIndex((a, i) => {
+        const b = corners[(i + 1) % corners.length];
+        return a[0] !== b[0] && a[1] !== b[1];
+      });
+      return setError(corners.length < 4 ? "At least 4 corners." : `Side ${bad + 1} → ${((bad + 1) % corners.length) + 1} is slanted.`);
+    }
+    setError(selfIntersects(corners) ? "Applied, but the outline crosses itself." : null);
+    onUpdate(withCorners(corners));
+  };
+  return (
+    <label className="builderField" style={{ display: "block" }}>
+      <span className="builderField__label">(d) Corners, x, z mm (prototype)</span>
+      <textarea
+        value={draft}
+        rows={Math.min(10, draft.split("\n").length + 1)}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={apply}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) apply();
+        }}
+        style={{ width: "100%", fontFamily: "ui-monospace, monospace", fontSize: 12 }}
+      />
+      {error ? <span style={{ color: "#dc2626", fontSize: 12 }}>{error}</span> : null}
+    </label>
   );
 }

@@ -49,7 +49,8 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { ComponentMesh } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
-import { FrameMesh } from "@/components/builder/frame-mesh";
+import { ProtoDraft, ProtoFrameMesh } from "@/components/builder/PROTOTYPE-shaped-frame-mesh";
+import type { P, ProtoTarget } from "@/components/builder/PROTOTYPE-shaped-frames";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
@@ -266,6 +267,7 @@ function SurfaceDrag({
   dragging,
   onSurfaceDrag,
 }: {
+  /** PROTOTYPE (#146): also true while drawing an outline, to track the hover */
   dragging: boolean;
   onSurfaceDrag: BuilderCanvasProps["onSurfaceDrag"];
 }) {
@@ -865,7 +867,11 @@ export type BuilderCanvasProps = {
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
-  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, target: ProtoTarget) => void;
+  /** PROTOTYPE (#146) */
+  onFrameDoublePress: (id: string, event: ThreeEvent<MouseEvent>, target: ProtoTarget) => void;
+  protoDraft: { points: P[]; closing: P[] | null } | null;
+  protoTracking: boolean;
   onCanvasReady: (handle: CanvasApi) => void;
 };
 
@@ -923,6 +929,9 @@ export default function BuilderCanvas({
   onComponentHover,
   onConnectionPointerDown,
   onFramePointerDown,
+  onFrameDoublePress,
+  protoDraft,
+  protoTracking,
   onCanvasReady,
 }: BuilderCanvasProps) {
   // the orbit pivot: set when an orbit drag starts, cleared by a snap-back
@@ -971,7 +980,7 @@ export default function BuilderCanvas({
       <Backdrop stops={palette.backdrop} />
 
       <TableSurface palette={palette} onSurfaceClick={onSurfaceClick} />
-      <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
+      <SurfaceDrag dragging={dragging || protoTracking} onSurfaceDrag={onSurfaceDrag} />
 
       {/* with no table drawn, the grid is the one sign of the breadboard: it
           shows while the toolbar's grid toggle is on, follows the view, and
@@ -996,17 +1005,15 @@ export default function BuilderCanvas({
         const ghost = Boolean(frame.hidden) && frame.id === ghostFrameId;
         if (frame.hidden && !ghost) return null;
         return (
-          <FrameMesh
+          <ProtoFrameMesh
             key={frame.id}
             frame={frame}
             selected={frame.id === selectedFrameId}
             ghost={ghost}
             showLabel={showLabels}
             interactive={framesInteractive}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              onFramePointerDown(frame.id, event);
-            }}
+            onPress={(event, target) => onFramePointerDown(frame.id, event, target)}
+            onDoublePress={(event, target) => onFrameDoublePress(frame.id, event, target)}
           />
         );
       })}
@@ -1059,6 +1066,8 @@ export default function BuilderCanvas({
           color={palette.accent}
         />
       ) : null}
+
+      {protoDraft ? <ProtoDraft points={protoDraft.points} closing={protoDraft.closing} color={palette.accent} /> : null}
 
       {snapGuide ? (
         // Laid on the table under the beam, not along it, where the beam's own
