@@ -20,7 +20,6 @@ import {
   CONNECTION_LENGTH_RANGE_M,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
-  DEFAULT_FRAME_SIZE_MM,
   DEFAULT_MOUNT_COLOR,
   FOCAL_LENGTH_RANGE_MM,
   FRAME_COLORS,
@@ -63,7 +62,7 @@ const FILE_FIELDS: FieldDocs<BuilderSceneData> = {
   components: { text: "the parts on the table. Required." },
   beams: { text: "the light paths, in order. The first beam through a mirror sets its angle." },
   connections: { text: "fibres and cables between parts; `[]` when there are none." },
-  frames: { text: "rectangles marking areas such as a breadboard or an enclosure; `[]` when there are none." },
+  frames: { text: "outlines marking areas such as a breadboard or an enclosure; `[]` when there are none." },
 };
 
 const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
@@ -140,11 +139,11 @@ const CONNECTION_FIELDS: FieldDocs<Connection> = {
 
 const FRAME_FIELDS: FieldDocs<Frame> = {
   id: { text: "text, unique in the file." },
-  position: { text: "`[x, z]`, mm: its centre on the table. Two numbers, not three: a frame lies flat at height 0." },
-  width: { text: `along x, mm, ${range(FRAME_SIZE_RANGE_MM)}; default ${DEFAULT_FRAME_SIZE_MM[0]}.` },
-  depth: { text: `along z, mm, ${range(FRAME_SIZE_RANGE_MM)}; default ${DEFAULT_FRAME_SIZE_MM[1]}.` },
+  corners: {
+    text: `the outline as \`[x, z]\` points in mm, listed around the edge in order. Every side runs along x or z; a rectangle is 4 corners. Two numbers per corner, not three: a frame lies flat at height 0. Every side at least ${FRAME_SIZE_RANGE_MM[0]} mm, and the outline at most ${FRAME_SIZE_RANGE_MM[1]} mm across in x and in z. An outline with a slanted side, or one that crosses itself, opens as the rectangle around it.`,
+  },
   color: { text: `a hex colour; default ${code(FRAME_COLORS[0])}.` },
-  label: { text: "text drawn at its corner, such as `Main breadboard`." },
+  label: { text: "text drawn at its back-left corner (smallest z, then smallest x), such as `Main breadboard`." },
   hidden: { text: "`true` leaves the frame out of the drawing; leave it out otherwise." },
   fill: { text: "`false` draws the coloured outline alone, with no tint inside; leave it out otherwise." },
 };
@@ -190,7 +189,22 @@ export const EXAMPLE_SETUP: BuilderSceneData = {
   ],
   beams: [{ id: "probe", path: ["laser", "m1", "lens", "pd"], color: "#dc2626", label: "probe" }],
   connections: [],
-  frames: [{ id: "board", position: [-150, -150], width: 450, depth: 450, color: "#0891b2", label: "Breadboard" }],
+  // an L: one arm along the laser's line, one along the turned beam
+  frames: [
+    {
+      id: "board",
+      corners: [
+        [-75, -375],
+        [75, -375],
+        [75, 75],
+        [-375, 75],
+        [-375, -75],
+        [-75, -75],
+      ],
+      color: "#0891b2",
+      label: "Breadboard",
+    },
+  ],
 };
 
 /** JSON on one line, spaced as the setup fixtures are: `{ "id": "m1", "position": [0, 100, 0] }`. */
@@ -276,9 +290,11 @@ ${fieldList(CONNECTION_FIELDS)}
 
 ### A frame
 
-A labelled rectangle drawn flat on the table to mark an area, such as one breadboard or an enclosure. Its sides run along x and z; it cannot be rotated. It constrains nothing, and parts need not be inside it.
+A labelled outline drawn flat on the table to mark an area, such as one breadboard or an enclosure: a rectangle, or a right-angled shape such as an L or a U. Its sides run along x and z; it cannot be rotated. It constrains nothing, and parts need not be inside it.
 
 ${fieldList(FRAME_FIELDS)}
+
+Older files give a frame as \`position\` (its centre, \`[x, z]\`), \`width\` and \`depth\` instead of \`corners\`. The builder still reads that form, but don't write it: always write \`corners\`.
 
 ## Component types
 
@@ -288,7 +304,7 @@ ${componentTypes()}
 
 ## Example
 
-A laser fires along +x into a mirror, which turns the beam toward −z, through a lens and onto a photodiode, all at the beam height on one breadboard:
+A laser fires along +x into a mirror, which turns the beam toward −z, through a lens and onto a photodiode, all at the beam height on one L-shaped breadboard:
 
 \`\`\`json
 ${exampleJson()}

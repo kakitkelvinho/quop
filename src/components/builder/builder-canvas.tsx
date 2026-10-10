@@ -92,12 +92,13 @@ type ControlsLike = { target: Vector3; update: () => void };
 
 /**
  * The box the components fill: their footprints on the table, from the table
- * up to the top of the tallest part. An empty table frames the 800 × 600 mm
- * breadboard the builder used to be bounded by, so a fresh scene looks the
- * same as it always has.
+ * up to the top of the tallest part, and the corners of any shown frames
+ * passed in. An empty table frames the 800 × 600 mm breadboard the builder
+ * used to be bounded by, so a fresh scene looks the same as it always has.
  */
-function layoutBox(components: BuilderComponent[]): Box3 {
-  if (components.length === 0) {
+function layoutBox(components: BuilderComponent[], frames: Frame[] = []): Box3 {
+  const shown = frames.filter((frame) => !frame.hidden);
+  if (components.length === 0 && shown.length === 0) {
     return new Box3(
       new Vector3(-420, 0, -320),
       new Vector3(420, BEAM_HEIGHT_MM + 30, 320),
@@ -111,6 +112,9 @@ function layoutBox(components: BuilderComponent[]): Box3 {
     box.expandByPoint(
       new Vector3(x + radius, y + COMPONENT_SPECS[component.type].top, z + radius),
     );
+  }
+  for (const frame of shown) {
+    for (const [x, z] of frame.corners) box.expandByPoint(new Vector3(x, 0, z));
   }
   return box;
 }
@@ -133,11 +137,13 @@ function CameraRig({
   view,
   fitToken,
   components,
+  frames,
   pivotRef,
 }: {
   view: CameraView;
   fitToken: number;
   components: BuilderComponent[];
+  frames: Frame[];
   pivotRef: RefObject<Vector3 | null>;
 }) {
   // `get()` reaches the live camera imperatively; the size selector is here so
@@ -145,17 +151,17 @@ function CameraRig({
   const get = useThree((state) => state.get);
   const size = useThree((state) => state.size);
   // read at fit time, not a dependency: a drag must not reframe the view
-  const latest = useRef(components);
+  const latest = useRef({ components, frames });
   useLayoutEffect(() => {
-    latest.current = components;
-  }, [components]);
+    latest.current = { components, frames };
+  }, [components, frames]);
 
   useEffect(() => {
     const store = get();
     const cam = store.camera as OrthographicCamera;
     const controls = store.controls as ControlsLike | null;
     const distance = 1400;
-    const box = layoutBox(latest.current);
+    const box = layoutBox(latest.current.components, latest.current.frames);
     const centre = box.getCenter(new Vector3()).setY(0);
 
     if (view === "top") {
@@ -1115,6 +1121,7 @@ export default function BuilderCanvas({
         view={view}
         fitToken={fitToken}
         components={components}
+        frames={frames}
         pivotRef={pivotRef}
       />
 

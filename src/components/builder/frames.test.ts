@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
-  DEFAULT_FRAME_SIZE_MM,
+  type Corner,
   EMPTY_SCENE,
   FRAME_COLORS,
-  FRAME_SIZE_RANGE_MM,
   TABLE_GUARD_MM,
   type Frame,
   frameDisplayName,
@@ -22,12 +21,25 @@ import {
 
 const breadboard: Frame = {
   id: "bb",
-  position: [100, -50],
-  width: 900,
-  depth: 600,
+  corners: [
+    [-350, -350],
+    [550, -350],
+    [550, 250],
+    [-350, 250],
+  ],
   color: "#0891b2",
   label: "Main breadboard",
 };
+
+/** 850 × 250 overall: a long arm along x at the back, and a short one down at its right end. */
+const L_SHAPE: Corner[] = [
+  [0, 0],
+  [850, 0],
+  [850, 250],
+  [700, 250],
+  [700, 100],
+  [0, 100],
+];
 
 const parse = (frames: unknown) => parseScene({ version: 5, components: [], frames });
 
@@ -46,13 +58,16 @@ describe("reading frames", () => {
     assert.deepEqual(parse([breadboard])?.frames, [breadboard]);
   });
 
-  it("gives a frame with only an id the defaults: the table's centre, a breadboard's size, the first colour", () => {
+  it("gives a frame with only an id the defaults: a breadboard's size on the table's centre, the first colour", () => {
     assert.deepEqual(parse([{ id: "bare" }])?.frames, [
       {
         id: "bare",
-        position: [0, 0],
-        width: DEFAULT_FRAME_SIZE_MM[0],
-        depth: DEFAULT_FRAME_SIZE_MM[1],
+        corners: [
+          [-300, -225],
+          [300, -225],
+          [300, 225],
+          [-300, 225],
+        ],
         color: FRAME_COLORS[0],
       },
     ]);
@@ -66,11 +81,15 @@ describe("reading frames", () => {
     );
   });
 
-  it("holds the size to its range and the centre to the table's guard", () => {
+  it("holds an old frame's size to its range, and slides it onto the table", () => {
     const [frame] = parse([{ id: "x", width: 1, depth: 1e9, position: [1e9, -1e9] }])!.frames;
-    assert.equal(frame.width, FRAME_SIZE_RANGE_MM[0]);
-    assert.equal(frame.depth, FRAME_SIZE_RANGE_MM[1]);
-    assert.deepEqual(frame.position, [TABLE_GUARD_MM, -TABLE_GUARD_MM]);
+    const edge = TABLE_GUARD_MM;
+    assert.deepEqual(frame.corners, [
+      [edge - 10, -edge],
+      [edge, -edge],
+      [edge, 0],
+      [edge - 10, 0],
+    ]);
   });
 
   it("reads anything but true as shown, and a label that isn't text as none", () => {
@@ -142,6 +161,10 @@ describe("a frame's name", () => {
     assert.equal(frameDisplayName({ ...breadboard, label: undefined }), "Frame 900 × 600 mm");
     assert.equal(frameDisplayName({ ...breadboard, label: "   " }), "Frame 900 × 600 mm");
   });
+
+  it("is its overall size when it is not a rectangle", () => {
+    assert.equal(frameDisplayName({ ...breadboard, corners: L_SHAPE, label: undefined }), "Frame 850 × 250 mm");
+  });
 });
 
 // #144: a frame can be drawn as its coloured outline alone. Fill is on unless
@@ -151,8 +174,8 @@ describe("a frame's name", () => {
 describe("a frame's fill", () => {
   const atVersion = (version: number, frames: unknown) => parseScene({ version, components: [], frames })!.frames;
 
-  it("is the version that added it", () => {
-    assert.equal(SCENE_VERSION, 6);
+  it("came in with version 6", () => {
+    assert.ok(SCENE_VERSION >= 6);
   });
 
   it("is on when the frame doesn't say, with no fill key", () => {

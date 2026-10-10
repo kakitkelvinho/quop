@@ -127,19 +127,23 @@ export type Connection = {
   velocityFactor?: number;
 };
 
+/** A point on the table, [x, z], mm. */
+export type Corner = [x: number, z: number];
+
 /**
- * A labelled rectangle drawn flat on the table to mark an area, such as one
- * breadboard or an enclosure. A drawing aid only: it constrains nothing, adds
- * nothing to any path, and parts need not be inside it.
+ * A labelled outline drawn flat on the table to mark an area, such as one
+ * breadboard or an enclosure: a rectangle, or a right-angled shape such as an
+ * L or a U. A drawing aid only: it constrains nothing, adds nothing to any
+ * path, and parts need not be inside it.
  */
 export type Frame = {
   id: string;
-  /** the centre on the table: [x, z], mm */
-  position: [number, number];
-  /** along the table's x axis, mm */
-  width: number;
-  /** along the table's z axis, mm */
-  depth: number;
+  /**
+   * The outline, in absolute table mm, in standard form (see `normaliseCorners`):
+   * from the back-most, then left-most corner, clockwise in the top-down view.
+   * Every side runs along x or z. corners[0] is where the label sits.
+   */
+  corners: Corner[];
   color: string;
   label?: string;
   /** true keeps the frame out of the drawing, and so out of a PNG; stored only when true */
@@ -148,7 +152,7 @@ export type Frame = {
   fill?: false;
 };
 
-export const SCENE_VERSION = 6 as const;
+export const SCENE_VERSION = 7 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -476,7 +480,10 @@ export const BEAM_COLORS = [
   "#db2777",
 ] as const;
 
-/** A frame's width and depth, mm. The default is a small breadboard's footprint. */
+/**
+ * A frame's shortest side and its largest overall width and depth, mm. The
+ * default is a small breadboard's footprint.
+ */
 export const FRAME_SIZE_RANGE_MM: [number, number] = [10, 5000];
 export const DEFAULT_FRAME_SIZE_MM: [number, number] = [600, 450];
 export const FRAME_COLORS = ["#0891b2", "#ea580c", "#16a34a", "#db2777", "#7c3aed", "#ca8a04"] as const;
@@ -1039,6 +1046,130 @@ export function dropComponentFromConnections(connections: Connection[], id: stri
 }
 
 // ---------------------------------------------------------------------------
+// Frame outlines
+// ---------------------------------------------------------------------------
+//
+// A frame is its corners. These are pure so that drawing and reshaping can
+// test an outline live by the same rules the parser holds a file to.
+
+/** The box around an outline: its back-left and front-right, and its overall width and depth, mm. */
+export type CornerBounds = { minX: number; minZ: number; maxX: number; maxZ: number; width: number; depth: number };
+
+export function cornerBounds(corners: Corner[]): CornerBounds {
+  if (corners.length === 0) return { minX: 0, minZ: 0, maxX: 0, maxZ: 0, width: 0, depth: 0 };
+  const xs = corners.map(([x]) => x);
+  const zs = corners.map(([, z]) => z);
+  const [minX, maxX, minZ, maxZ] = [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)];
+  return { minX, minZ, maxX, maxZ, width: maxX - minX, depth: maxZ - minZ };
+}
+
+/**
+ * A rectangle from its back-left corner, in standard form. Its width and
+ * depth are held to FRAME_SIZE_RANGE_MM, and it is slid, not squeezed, to
+ * stay on the table.
+ */
+export function rectangleCorners([x, z]: Corner, width: number, depth: number): Corner[] {
+  const across = clamp(width, FRAME_SIZE_RANGE_MM);
+  const down = clamp(depth, FRAME_SIZE_RANGE_MM);
+  const left = clamp(x, [-TABLE_GUARD_MM, TABLE_GUARD_MM - across]);
+  const back = clamp(z, [-TABLE_GUARD_MM, TABLE_GUARD_MM - down]);
+  return [
+    [left, back],
+    [left + across, back],
+    [left + across, back + down],
+    [left, back + down],
+  ];
+}
+
+/**
+ * An outline in standard form: repeated corners and corners in the middle of
+ * a straight side dropped, running clockwise as seen in the top-down view (+x
+ * right, +z down the screen), from the back-most, then left-most corner. The
+ * same outline gives the same list whichever corner it started at and
+ * whichever way it ran. A side that doubles back on itself is kept, for
+ * `isValidOutline` to refuse.
+ */
+export function normaliseCorners(corners: Corner[]): Corner[] {
+  const ring = corners.map(([x, z]): Corner => [x, z]);
+  // dropping one corner can leave its neighbour in the middle of a side, so go round until nothing changes
+  for (let at = 0; ring.length > 2 && at < ring.length; ) {
+    const [px, pz] = ring[(at + ring.length - 1) % ring.length];
+    const [x, z] = ring[at];
+    const [nx, nz] = ring[(at + 1) % ring.length];
+    const repeated = x === px && z === pz;
+    const ahead = (x - px) * (nz - z) - (z - pz) * (nx - x) === 0 && (x - px) * (nx - x) + (z - pz) * (nz - z) > 0;
+    if (repeated || ahead) {
+      ring.splice(at, 1);
+      at = 0;
+    } else {
+      at += 1;
+    }
+  }
+  // with +z down the screen, a positive shoelace sum runs clockwise
+  const turn = ring.reduce((sum, [x, z], at) => {
+    const [nx, nz] = ring[(at + 1) % ring.length];
+    return sum + x * nz - nx * z;
+  }, 0);
+  if (turn < 0) ring.reverse();
+  let first = 0;
+  ring.forEach(([x, z], at) => {
+    const [fx, fz] = ring[first];
+    if (z < fz || (z === fz && x < fx)) first = at;
+  });
+  return [...ring.slice(first), ...ring.slice(0, first)];
+}
+
+/**
+ * Whether corners make an outline a frame can have, read as a closed loop in
+ * the order given: at least 4 corners, every side along x or z and at least
+ * FRAME_SIZE_RANGE_MM[0] long, at most FRAME_SIZE_RANGE_MM[1] wide and deep
+ * overall, and no side crossing, touching or doubling back along another.
+ */
+export function isValidOutline(corners: Corner[]): boolean {
+  const count = corners.length;
+  if (count < 4) return false;
+  if (!corners.every(([x, z]) => Number.isFinite(x) && Number.isFinite(z))) return false;
+  const [shortest, largest] = FRAME_SIZE_RANGE_MM;
+  const { width, depth } = cornerBounds(corners);
+  if (width > largest || depth > largest) return false;
+
+  const sides = corners.map((from, at): [Corner, Corner] => [from, corners[(at + 1) % count]]);
+  for (const [[x0, z0], [x1, z1]] of sides) {
+    if (x0 !== x1 && z0 !== z1) return false;
+    if (Math.abs(x1 - x0) + Math.abs(z1 - z0) < shortest) return false;
+  }
+  for (let i = 0; i < count; i += 1) {
+    for (let j = i + 1; j < count; j += 1) {
+      const [[ax0, az0], [ax1, az1]] = sides[i];
+      const [[bx0, bz0], [bx1, bz1]] = sides[j];
+      if (j === i + 1 || (i === 0 && j === count - 1)) {
+        // neighbours share a corner; they only go wrong by running back along each other
+        if ((ax1 - ax0) * (bx1 - bx0) + (az1 - az0) * (bz1 - bz0) < 0) return false;
+        continue;
+      }
+      // two sides along the axes meet exactly when their boxes overlap
+      const meetX = Math.max(Math.min(ax0, ax1), Math.min(bx0, bx1)) <= Math.min(Math.max(ax0, ax1), Math.max(bx0, bx1));
+      const meetZ = Math.max(Math.min(az0, az1), Math.min(bz0, bz1)) <= Math.min(Math.max(az0, az1), Math.max(bz0, bz1));
+      if (meetX && meetZ) return false;
+    }
+  }
+  return true;
+}
+
+/** Every corner moved by (dx, dz), held back so the whole outline stays on the table. */
+export function translateCorners(corners: Corner[], dx: number, dz: number): Corner[] {
+  const { minX, minZ, maxX, maxZ } = cornerBounds(corners);
+  const stepX = clamp(dx, [-TABLE_GUARD_MM - minX, TABLE_GUARD_MM - maxX]);
+  const stepZ = clamp(dz, [-TABLE_GUARD_MM - minZ, TABLE_GUARD_MM - maxZ]);
+  return corners.map(([x, z]) => [x + stepX, z + stepZ]);
+}
+
+/** A plain rectangle, which keeps an editable width and depth; any other shape shows its overall size. */
+export function isRectangle(corners: Corner[]): boolean {
+  return corners.length === 4 && isValidOutline(corners);
+}
+
+// ---------------------------------------------------------------------------
 // Serialisation
 // ---------------------------------------------------------------------------
 
@@ -1146,21 +1277,49 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
 }
 
 /**
- * A frame needs only an id; what is missing or out of range gets the default or
- * the nearest allowed value. Frames from before version 6 had no fill switch and
- * open filled.
+ * A frame's outline from a saved one. Corners are held to the table and put
+ * in standard form. An outline no frame can have (a slanted side, a crossing,
+ * too few corners, a side under 10 mm, too large, or an entry that isn't two
+ * numbers) becomes the rectangle around its usable corners.
+ *
+ * With no usable corners at all, the frame is read in the form saved before
+ * version 7, a centre and a size, which hand-written files may still use:
+ * what is missing gets the default, so a frame with only an id is a 600 × 450
+ * rectangle centred on the table's origin.
+ */
+function parseFrameCorners(raw: Record<string, unknown>): Corner[] {
+  const listed: unknown[] = Array.isArray(raw.corners) ? raw.corners : [];
+  const usable = listed.flatMap((entry): Corner[] => {
+    if (!Array.isArray(entry) || entry.length !== 2) return [];
+    const [x, z] = entry.map(finiteNumber);
+    return x === undefined || z === undefined ? [] : [clampToTable(x, z)];
+  });
+  if (usable.length === 0) {
+    const at = Array.isArray(raw.position) ? raw.position : [];
+    const [x, z] = clampToTable(finiteNumber(at[0]) ?? 0, finiteNumber(at[1]) ?? 0);
+    const width = clamp(finiteNumber(raw.width) ?? DEFAULT_FRAME_SIZE_MM[0], FRAME_SIZE_RANGE_MM);
+    const depth = clamp(finiteNumber(raw.depth) ?? DEFAULT_FRAME_SIZE_MM[1], FRAME_SIZE_RANGE_MM);
+    return rectangleCorners([x - width / 2, z - depth / 2], width, depth);
+  }
+  const outline = normaliseCorners(usable);
+  if (usable.length === listed.length && isValidOutline(outline)) return outline;
+  const { minX, minZ, width, depth } = cornerBounds(usable);
+  return rectangleCorners([minX, minZ], width, depth);
+}
+
+/**
+ * A frame needs only an id; a bad outline is kept as a rectangle, and the rest
+ * that is missing gets the default. Frames from before version 6 had no fill
+ * switch and open filled; those from before version 7 were saved as a centre
+ * and a size, and open as that rectangle's corners.
  */
 function parseFrame(value: unknown, version: number): Frame | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   if (typeof raw.id !== "string") return null;
-  const at = Array.isArray(raw.position) ? raw.position : [];
-  const [x, z] = clampToTable(finiteNumber(at[0]) ?? 0, finiteNumber(at[1]) ?? 0);
   return {
     id: raw.id,
-    position: [x, z],
-    width: clamp(finiteNumber(raw.width) ?? DEFAULT_FRAME_SIZE_MM[0], FRAME_SIZE_RANGE_MM),
-    depth: clamp(finiteNumber(raw.depth) ?? DEFAULT_FRAME_SIZE_MM[1], FRAME_SIZE_RANGE_MM),
+    corners: parseFrameCorners(raw),
     color: typeof raw.color === "string" ? raw.color : FRAME_COLORS[0],
     ...(typeof raw.label === "string" ? { label: raw.label } : {}),
     ...(raw.hidden === true ? { hidden: true } : {}),
@@ -1192,10 +1351,11 @@ export function setFrameHidden(frames: Frame[], id: string, hidden: boolean): Fr
   });
 }
 
-/** What a frame is called in the list and the inspector: its label, else its size. */
+/** What a frame is called in the list and the inspector: its label, else its overall size. */
 export function frameDisplayName(frame: Frame): string {
   const label = frame.label?.trim();
-  return label || `Frame ${Math.round(frame.width)} × ${Math.round(frame.depth)} mm`;
+  const { width, depth } = cornerBounds(frame.corners);
+  return label || `Frame ${Math.round(width)} × ${Math.round(depth)} mm`;
 }
 
 const KNOWN_CONNECTION_KINDS = new Set<string>(CONNECTION_KIND_IDS);
@@ -1233,7 +1393,9 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
  * Setups from before version 3 have no connections and open with none;
  * those from before version 4 have no hidden beams and open with every beam shown;
  * those from before version 5 have no frames and open with none;
- * those from before version 6 open with every frame filled.
+ * those from before version 6 open with every frame filled;
+ * those from before version 7 saved each frame as a centre and a size, and
+ * open with that rectangle's corners.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;

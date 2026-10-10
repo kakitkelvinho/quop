@@ -42,7 +42,10 @@ import {
   componentById,
   componentDisplayName,
   componentTag,
+  cornerBounds,
   frameDisplayName,
+  isRectangle,
+  rectangleCorners,
   connectionDelayPs,
   connectionIndex,
   lengthToPicoseconds,
@@ -958,6 +961,7 @@ export function FrameInspector({
   onDelete: () => void;
 }) {
   const [min, max] = FRAME_SIZE_RANGE_MM;
+  const { minX, minZ, width, depth } = cornerBounds(frame.corners);
   return (
     <div className="builderInspector">
       <div className="builderInspector__head">
@@ -995,26 +999,37 @@ export function FrameInspector({
           onChange={(event) => onUpdate({ color: event.target.value })}
         />
       </div>
-      <NumberField
-        label="Width"
-        unit="mm"
-        step={25}
-        min={min}
-        max={max}
-        title="Along the table's x axis"
-        value={frame.width}
-        onChange={(width) => onUpdate({ width: clamp(width, FRAME_SIZE_RANGE_MM) })}
-      />
-      <NumberField
-        label="Depth"
-        unit="mm"
-        step={25}
-        min={min}
-        max={max}
-        title="Along the table's z axis"
-        value={frame.depth}
-        onChange={(depth) => onUpdate({ depth: clamp(depth, FRAME_SIZE_RANGE_MM) })}
-      />
+      {isRectangle(frame.corners) ? (
+        <>
+          <NumberField
+            label="Width"
+            unit="mm"
+            step={25}
+            min={min}
+            max={max}
+            title="Along the table's x axis, from its back-left corner"
+            value={width}
+            onChange={(next) => onUpdate({ corners: rectangleCorners([minX, minZ], next, depth) })}
+          />
+          <NumberField
+            label="Depth"
+            unit="mm"
+            step={25}
+            min={min}
+            max={max}
+            title="Along the table's z axis, from its back-left corner"
+            value={depth}
+            onChange={(next) => onUpdate({ corners: rectangleCorners([minX, minZ], width, next) })}
+          />
+        </>
+      ) : (
+        <div className="builderField" title="The box around its outline, along x and z">
+          <span className="builderField__label">Size</span>
+          <span className="builderReadout">
+            {Math.round(width)} × {Math.round(depth)} mm overall
+          </span>
+        </div>
+      )}
       <div className="builderChoice" role="group" aria-label="Fill">
         <button
           type="button"
