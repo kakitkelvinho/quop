@@ -18,8 +18,8 @@ const ibmPlexSans = localFont({
   variable: "--font-ibm-plex-sans",
 });
 
-// The chalkboard hero sets its equations in italic Garamond. Each file is a
-// 400–500 weight variable font cut to the Latin and Greek ranges.
+// The home page's chapter diagrams set their labels in italic Garamond.
+// Each file is a 400–500 weight variable font cut to Latin, Greek, arrows and ⟨⟩.
 const ebGaramond = localFont({
   src: [
     { path: "./fonts/eb-garamond-400-500-normal.woff2", weight: "400 500", style: "normal" },
