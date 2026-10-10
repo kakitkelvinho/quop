@@ -35,6 +35,7 @@ import {
   beamDisplayName,
   frameDisplayName,
   moveBeamTo,
+  moveFrameTo,
   derivedAngleBeam,
   parseScene,
   serializeScene,
@@ -568,6 +569,23 @@ export default function BuilderScene() {
     [announce, api],
   );
 
+  const handleMoveFrame = useCallback(
+    (id: string, to: number): boolean => {
+      const frames = sceneRef.current.frames;
+      const frame = frames.find((entry) => entry.id === id);
+      if (!frame) return false;
+      const place = api.reorderFrame(id, to);
+      if (place === null) {
+        const edit = moveFrameTo(frames, id, to);
+        announce(`Can't move ${frameDisplayName(frame)}: ${edit.ok ? "it can't go there" : edit.reason}.`);
+        return false;
+      }
+      announce(`Moved ${frameDisplayName(frame)} to ${place + 1} of ${frames.length}.`);
+      return true;
+    },
+    [announce, api],
+  );
+
   const handleSetFrameHidden = useCallback(
     (id: string, hidden: boolean) => {
       const frame = sceneRef.current.frames.find((entry) => entry.id === id);
@@ -1065,6 +1083,7 @@ export default function BuilderScene() {
         onSelectFrame={handleSelectFrame}
         onUpdateFrame={api.updateFrame}
         onDeleteFrame={handleDeleteFrame}
+        onMoveFrame={handleMoveFrame}
         onSetFrameHidden={handleSetFrameHidden}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}

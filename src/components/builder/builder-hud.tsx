@@ -99,6 +99,7 @@ export type BuilderHudProps = {
   onSelectFrame: (id: string) => void;
   onUpdateFrame: (id: string, patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
   onDeleteFrame: (id: string) => void;
+  onMoveFrame: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetFrameHidden: (id: string, hidden: boolean) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
@@ -259,22 +260,28 @@ function BeamList({
   );
 }
 
-/** The frames section, under the beams box: one row per frame, to select it, hide or show it, or delete it. */
+/**
+ * The frames section, under the beams box: one row per frame, to select it,
+ * drag it to a new place in the list (Alt+↑ / Alt+↓ moves a focused row), hide
+ * or show it, or delete it. Focus follows the edit as in the beams box.
+ */
 function FrameList({
   frames,
   selectedId,
   onSelect,
+  onMove,
   onSetHidden,
   onDelete,
 }: {
   frames: Frame[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onMove: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
-  // a deleted frame's row hands focus to the one that took its place
+  // a moved frame's row keeps focus, and a deleted frame's row hands it to the one that took its place
   const focusRow = useRef<number | null>(null);
   useEffect(() => {
     const row = focusRow.current;
@@ -284,22 +291,36 @@ function FrameList({
     rows[Math.min(row, rows.length - 1)].querySelector("button")?.focus();
   }, [frames]);
 
+  const { listClass, rowProps } = useRowDrag({
+    listRef,
+    count: frames.length,
+    onMove: (from, to, how) => {
+      if (how === "keyboard") focusRow.current = to;
+      return onMove(frames[from].id, to, how);
+    },
+  });
+
   return (
     <section className="builderIsland builderHud__frames" aria-labelledby="builderFramesTitle" data-guide="frames">
       <h2 id="builderFramesTitle" className="builderHud__listTitle">
         Frames
       </h2>
-      <ul ref={listRef} role="list" className="builderHud__frameRows">
+      <ul ref={listRef} role="list" className={`builderHud__frameRows ${listClass}`}>
         {frames.map((frame, index) => {
           const name = frameDisplayName(frame);
           const selected = selectedId === frame.id;
+          const drag = rowProps(index);
           return (
-            <li key={frame.id} className={`builderBeamRow${selected ? " is-selected" : ""}${frame.hidden ? " is-hidden" : ""}`}>
+            <li
+              key={frame.id}
+              {...drag}
+              className={`builderBeamRow${selected ? " is-selected" : ""}${frame.hidden ? " is-hidden" : ""} ${drag.className}`}
+            >
               <button type="button" className="builderBeamRow__select" aria-pressed={selected} onClick={() => onSelect(frame.id)}>
                 <span className="builderBeamRow__dot builderBeamRow__dot--square" style={{ background: frame.color }} />
                 <span className="builderBeamRow__name">{name}</span>
               </button>
-              <span className="builderBeamRow__actions">
+              <span className="builderBeamRow__actions" data-no-drag>
                 <IconButton
                   icon={frame.hidden ? "eyeOff" : "eye"}
                   // a toggle: the label stays put and aria-pressed carries the state
@@ -831,6 +852,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           frames={props.frames}
           selectedId={props.selectedFrame?.id ?? null}
           onSelect={props.onSelectFrame}
+          onMove={props.onMoveFrame}
           onSetHidden={props.onSetFrameHidden}
           onDelete={props.onDeleteFrame}
         />

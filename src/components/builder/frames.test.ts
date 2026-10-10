@@ -9,6 +9,7 @@ import {
   TABLE_GUARD_MM,
   type Frame,
   frameDisplayName,
+  moveFrameTo,
   parseScene,
   SCENE_VERSION,
   serializeScene,
@@ -194,5 +195,30 @@ describe("a frame's fill", () => {
     const switchedOn = { ...breadboard, fill: undefined };
     const saved = JSON.parse(serializeScene({ ...EMPTY_SCENE, frames: [switchedOn] }));
     assert.equal("fill" in saved.frames[0], false);
+  });
+});
+
+describe("reordering frames", () => {
+  const frames = ["a", "b", "c"].map((id) => ({ ...breadboard, id }));
+  const ids = (edit: ReturnType<typeof moveFrameTo>) => (edit.ok ? edit.frames.map((frame) => frame.id) : edit.reason);
+
+  it("drops a frame at a new place in the list", () => {
+    assert.deepEqual(ids(moveFrameTo(frames, "c", 0)), ["c", "a", "b"]);
+    assert.deepEqual(ids(moveFrameTo(frames, "a", 2)), ["b", "c", "a"]);
+    assert.deepEqual(ids(moveFrameTo(frames, "b", 1)), ["a", "b", "c"]);
+  });
+
+  it("refuses a place past either end, or a frame that isn't there", () => {
+    assert.match(String(ids(moveFrameTo(frames, "b", -1))), /already first/);
+    assert.match(String(ids(moveFrameTo(frames, "b", 3))), /already last/);
+    assert.match(String(ids(moveFrameTo(frames, "x", 0))), /isn't in the list/);
+  });
+
+  it("leaves the list it was given as it was, and saves in the new order", () => {
+    const edit = moveFrameTo(frames, "c", 0);
+    assert.deepEqual(frames.map((frame) => frame.id), ["a", "b", "c"]);
+    assert.ok(edit.ok);
+    const saved = parseScene(JSON.parse(serializeScene({ ...EMPTY_SCENE, frames: edit.frames })));
+    assert.deepEqual(saved?.frames.map((frame) => frame.id), ["c", "a", "b"]);
   });
 });

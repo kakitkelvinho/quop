@@ -34,7 +34,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "tools", text: "Select · posts · grid · undo", sides: ["right", "below"] },
   { key: "inspector", text: "Edit the selection", sides: ["left", "above"] },
   { key: "beams", text: "Beams: drag a row to reorder", sides: ["above", "right"] },
-  { key: "frames", text: "Frames: hide or delete", sides: ["right", "above"] },
+  { key: "frames", text: "Frames: reorder, hide or delete", sides: ["right", "above"] },
   { key: "view", text: "Iso / top · fit · labels · day / night", sides: ["above", "left"] },
 ];
 
