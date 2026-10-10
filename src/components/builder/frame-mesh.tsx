@@ -17,7 +17,8 @@ const GHOST = 0.35;
 type Strip = [x: number, z: number, sizeX: number, sizeZ: number];
 
 /**
- * A frame, flat on the table. Only its edge takes a press: the inside lets
+ * A frame, flat on the table: a faint tint inside a solid edge, or the edge
+ * alone when its fill is off. Only its edge takes a press: the inside lets
  * clicks and drags through to the table, so a frame around a breadboard never
  * stops the table from panning, or a part from being placed or picked inside it.
  */
@@ -61,10 +62,12 @@ export function FrameMesh({
 
   return (
     <group position={[x, FRAME_Y_MM, z]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={1}>
-        <planeGeometry args={[width, depth]} />
-        <meshBasicMaterial color={color} transparent opacity={fill} depthWrite={false} />
-      </mesh>
+      {frame.fill === false ? null : (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={1}>
+          <planeGeometry args={[width, depth]} />
+          <meshBasicMaterial color={color} transparent opacity={fill} depthWrite={false} />
+        </mesh>
+      )}
       {edges.map(([ex, ez, sx, sz], index) => (
         <mesh key={index} position={[ex, 0.1, ez]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={2}>
           <planeGeometry args={[sx, sz]} />

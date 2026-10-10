@@ -89,12 +89,16 @@ shown) and each toggle is one undo step.
 under everything, to mark one breadboard or an enclosure. It is a drawing aid
 only: it constrains nothing, and parts need not be inside it. Add one with the
 dashed-rectangle button beside Draw a beam; it opens in the inspector, where
-you set its label, colour, width and depth. Drag its edge to move it (the
+you set its label, colour, width and depth, and switch its Fill: on (the
+default), it is a faint tint of its colour inside a solid edge; off, it is the
+coloured outline alone, on screen and in the PNG. Drag its edge to move it (the
 inside lets clicks and drags through, so a frame never blocks the table or the
 parts in it). Each frame has a row in the Frames box under the beams box, with
 an eye to hide it from the view and the PNG and a trash button; a selected
 hidden frame shows as a faint outline on screen, not in the export. Frames are
-saved with the setup (scene version 5; older setups open with none).
+saved with the setup (scene version 5; older setups open with none), and so is
+a frame's Fill, stored only when off (scene version 6; older frames open
+filled). Hiding, showing and each Fill switch are one undo step.
 
 **Round beams.** A beam's core is drawn as a lit tube along each leg, so it
 reads as light passing through the parts rather than a flat stroke. Its halo
@@ -254,7 +258,7 @@ is on screen until it is needed:
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds one and selects it; drag its edge to move it (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour, width and depth are in its inspector |
+| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds one and selects it; drag its edge to move it (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour, width, depth and Fill are in its inspector; Fill off draws the outline alone, on screen and in the PNG, as one undo step |
 | Hide, show or delete a frame | The eye and trash buttons on its row in the Frames box. A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
