@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
+import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import {
   BeamDraftInspector,
@@ -110,6 +111,9 @@ export type BuilderHudProps = {
   onSave: () => void;
   onLoad: (event: ChangeEvent<HTMLInputElement>) => void;
   onExportPng: () => void;
+  /** the setup brief: to the clipboard, or saved as a .md file */
+  onCopyBrief: () => void;
+  onDownloadBrief: () => void;
   onResetExample: () => void;
   onClear: () => void;
 };
@@ -329,11 +333,11 @@ const LIMITATIONS = [
   "A fibre or cable’s route across the table is drawn for you and can pass under other parts. Its delay comes from the length you type, not from the route.",
 ];
 
-/** What the builder is for, from the navigation registry, then what it leaves to the author. */
-function AboutPanel({ onClose }: { onClose: () => void }) {
-  const tool = findTool("/experiment/builder");
-  // Capture, and stop, so this Esc closes only the panel: the scene's Esc
-  // chain peels one layer per press and would otherwise also deselect.
+/**
+ * Esc closes the panel. Capture, and stop, so this Esc closes only the panel:
+ * the scene's Esc chain peels one layer per press and would otherwise also deselect.
+ */
+function useEscapeCloses(onClose: () => void) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -343,6 +347,12 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
+}
+
+/** What the builder is for, from the navigation registry, then what it leaves to the author. */
+function AboutPanel({ onClose }: { onClose: () => void }) {
+  const tool = findTool("/experiment/builder");
+  useEscapeCloses(onClose);
 
   return (
     <aside className="builderIsland builderAbout" aria-labelledby="builder-about-title">
@@ -361,6 +371,52 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
         ))}
       </ul>
       <ReportLine tool={tool?.label} className="builderAbout__report" showVersion />
+      <button
+        type="button"
+        className="builderHud__close"
+        aria-label="Close panel"
+        title="Close (Esc)"
+        onClick={onClose}
+      >
+        <Icon name="close" size={16} />
+      </button>
+    </aside>
+  );
+}
+
+/** The setup brief, to copy into an AI assistant or save; it opens where the about panel does. */
+function BriefPanel({
+  onCopy,
+  onDownload,
+  onClose,
+}: {
+  onCopy: () => void;
+  onDownload: () => void;
+  onClose: () => void;
+}) {
+  const brief = useMemo(() => setupBrief(), []);
+  useEscapeCloses(onClose);
+
+  return (
+    <aside className="builderIsland builderAbout builderBrief" aria-labelledby="builder-brief-title">
+      <h2 id="builder-brief-title" className="builderAbout__title">
+        Setup brief
+      </h2>
+      <p className="builderAbout__description">
+        Paste this into an AI assistant and describe your experiment. Save the JSON it writes and open it with
+        Open JSON… in the file menu.
+      </p>
+      <div className="builderBrief__actions">
+        <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
+          Copy
+        </button>
+        <button type="button" className="builderButton" onClick={onDownload}>
+          Download .md
+        </button>
+      </div>
+      <pre className="builderBrief__text" tabIndex={0} aria-label="The setup brief, in Markdown">
+        {brief}
+      </pre>
       <button
         type="button"
         className="builderHud__close"
@@ -474,17 +530,27 @@ export default function BuilderHud(props: BuilderHudProps) {
   } = props;
   const mode = modeHints(props);
   const selecting = !beamMode && !connectDraft && !placingType && !trayOpen;
-  // the about panel shares the parts panel's spot, so opening either closes the other
+  // the about panel and the brief share the parts panel's spot, so opening one closes the others
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeAbout = useCallback(() => setAboutOpen(false), []);
+  const closeBrief = useCallback(() => setBriefOpen(false), []);
   const { onCloseTray } = props;
   const showAbout = useCallback(() => {
     onCloseTray();
+    setBriefOpen(false);
     setAboutOpen(true);
+  }, [onCloseTray]);
+  // the brief takes the parts panel's place and size, so the boxes step aside for either
+  const besideParts = trayOpen || briefOpen;
+  const toggleBrief = useCallback(() => {
+    onCloseTray();
+    setAboutOpen(false);
+    setBriefOpen((open) => !open);
   }, [onCloseTray]);
 
   let inspector = null;
@@ -601,6 +667,9 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
 
       {aboutOpen && !trayOpen ? <AboutPanel onClose={closeAbout} /> : null}
+      {briefOpen && !trayOpen ? (
+        <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
+      ) : null}
 
       <div className="builderIsland builderHud__add">
         <IconButton
@@ -610,6 +679,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           active={trayOpen}
           onClick={() => {
             setAboutOpen(false);
+            setBriefOpen(false);
             props.onToggleTray();
           }}
         />
@@ -667,6 +737,20 @@ export default function BuilderHud(props: BuilderHudProps) {
             >
               Cheat sheet
               <Icon name="chevron" size={12} />
+            </button>
+          </div>
+          {/* the brief is neither a tool nor a guide: its own island, across the tools from the Guide pill */}
+          <div className="builderIsland builderHud__brief">
+            <button
+              type="button"
+              className={`builderIconBtn builderBriefButton${briefOpen ? " is-active" : ""}`}
+              aria-label="Setup brief: instructions for an AI assistant to write a setup file"
+              aria-pressed={briefOpen}
+              title="Setup brief: instructions for an AI assistant to write a setup file"
+              data-guide="brief"
+              onClick={toggleBrief}
+            >
+              .md
             </button>
           </div>
         </div>
@@ -729,13 +813,13 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length || props.frames.length ? (
-        <div className={`builderHud__lists${trayOpen ? " is-besideParts" : ""}`}>
+        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
       {beams.length ? (
         <BeamList
           components={components}
           beams={beams}
           selectedId={selectedBeam?.id ?? null}
-          besideParts={trayOpen}
+          besideParts={besideParts}
           onSelect={props.onSelectBeam}
           onMove={props.onMoveBeam}
           onSetHidden={props.onSetBeamHidden}

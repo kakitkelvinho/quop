@@ -3310,6 +3310,60 @@ html[data-theme="dark"] .builderButton--primary {
   bottom: 0.9rem;
 }
 
+/* top centre, right of the tool pill: the setup brief's own island. It hangs
+   off the row's end rather than widening it, so the Guide pill and the tool
+   pill stay centred where they were */
+.builderHud__toolRow {
+  position: relative;
+}
+
+.builderHud__brief {
+  top: 0;
+  left: calc(100% + 0.45rem);
+}
+
+/* a text button in an icon button's square */
+.builderBriefButton {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* the brief: the parts panel's spot and size, so the beams and frames boxes
+   move beside it as they do for the parts; the Markdown scrolls in its box */
+.builderBrief {
+  bottom: 3.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: clamp(16rem, 25vw, 24rem);
+  max-height: none;
+  overflow: hidden;
+}
+
+.builderBrief__actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.builderBrief__text {
+  flex: 1 1 auto;
+  min-height: 6rem;
+  margin: 0.7rem 0 0;
+  padding: 0.6rem 0.7rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--background);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .builderStatus {
   position: absolute;
   z-index: 5;
@@ -3436,6 +3490,17 @@ html[data-theme="dark"] .builderButton--primary {
   .builderAbout {
     right: 0.9rem;
     width: auto;
+  }
+
+  /* the .md island drops to a third row at the right edge, under the tool
+     pill: the brief opens below it, so its button stays in reach */
+  .builderHud__brief {
+    position: static;
+  }
+
+  .builderBrief {
+    top: 11.4rem;
+    bottom: 7.2rem;
   }
 
   /* no room beside a full-width parts panel: the box returns when it closes */

@@ -100,6 +100,23 @@ saved with the setup (scene version 5; older setups open with none), and so is
 a frame's Fill, stored only when off (scene version 6; older frames open
 filled). Hiding, showing and each Fill switch are one undo step.
 
+**A setup brief for an AI assistant.** The `.md` button, in its own island at
+the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
+author pastes into an AI assistant so it writes a setup file for the experiment
+they describe, which then opens with Open JSON… like any other. The panel shows
+the brief with **Copy** (to the clipboard, confirmed in the status line) and
+**Download .md**; Esc or its close button shuts it. The brief tells the
+assistant to ask about anything unclear and then reply with one JSON file and
+nothing else, and sets out the conventions (millimetres, the x–z table at
+height 0, the beam height, how rotations turn a part, unique ids), the file's
+shape at the current scene version, every component type with its heights and
+own fields, and a worked example (laser, mirror, lens, photodiode, one beam).
+It is generated in `setup-brief.ts`: the types and their defaults come from
+`types.ts`, so a new type appears in it with no extra work, and a new saved
+field doesn't typecheck until the brief has a line for it. A test opens the
+example with the setup parser and checks every component and beam survives,
+unchanged.
+
 **Round beams.** A beam's core is drawn as a lit tube along each leg, so it
 reads as light passing through the parts rather than a flat stroke. Its halo
 is a wider translucent tube that is densest facing you and fades to nothing at
@@ -199,12 +216,17 @@ is on screen until it is needed:
   icon and one-line hint, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
   reopening it. The about panel (what the builder is for, then its known
-  limitations) opens in the same spot, so opening either closes the other.
+  limitations) and the setup brief open in the same spot, so opening one
+  closes the others.
 - **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
-  Undo, Redo) with the Cheat sheet tab hung under it. While placing, drawing
-  or connecting, a mode badge under the pill carries that mode's key hints. On
-  a phone the column moves to the right edge, clear of the + island: the Guide
-  pill sits level with the file island and the tool pill drops below it.
+  Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
+  `.md` button in its own island (it is neither a tool nor a guide). The `.md`
+  island hangs off the row's end, so the Guide and tool pills stay centred.
+  While placing, drawing or connecting, a mode badge under the pill carries
+  that mode's key hints. On a phone the column moves to the right edge, clear
+  of the + island: the Guide pill sits level with the file island, the tool
+  pill drops below it and the `.md` island below that, with the brief opening
+  under it.
 - **Right**: the inspector, shown only while something is selected: a
   component, several components, a beam, or a beam being drawn. For several
   it reads "N parts selected", with rotate, duplicate and delete, a height
@@ -219,7 +241,8 @@ is on screen until it is needed:
   stay). The list order is
   the setup's beam order, so it is saved, and each move, hide or delete is one
   undo step. It scrolls once there
-  are more beams than fit. While the parts panel is open the box moves to sit
+  are more beams than fit. While the parts panel (or the setup brief, which
+  takes its place and size) is open the box moves to sit
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
@@ -264,6 +287,7 @@ is on screen until it is needed:
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
+| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, save the JSON it writes and open it with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet
@@ -335,7 +359,8 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill, edge, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
+| `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |

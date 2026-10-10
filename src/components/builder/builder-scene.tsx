@@ -18,6 +18,7 @@ import BuilderCanvas, {
 } from "@/components/builder/builder-canvas";
 import BuilderHud, { type ConnectDraft } from "@/components/builder/builder-hud";
 import { useScenePalette } from "@/components/builder/scene-theme";
+import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { getTheme, setTheme } from "@/components/theme-toggle";
@@ -687,6 +688,25 @@ export default function BuilderScene() {
     announce("Setup saved as JSON.");
   }, [announce]);
 
+  const handleCopyBrief = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(setupBrief());
+      announce("Copied the setup brief. Paste it into an AI assistant.");
+    } catch {
+      announce("Couldn't copy in this browser. Download the brief instead.");
+    }
+  }, [announce]);
+
+  const handleDownloadBrief = useCallback(() => {
+    const url = URL.createObjectURL(new Blob([setupBrief()], { type: "text/markdown" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = SETUP_BRIEF_FILENAME;
+    link.click();
+    URL.revokeObjectURL(url);
+    announce("Setup brief saved as Markdown.");
+  }, [announce]);
+
   const handleLoad = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
@@ -1061,6 +1081,8 @@ export default function BuilderScene() {
         onSave={handleSave}
         onLoad={handleLoad}
         onExportPng={handleExportPng}
+        onCopyBrief={handleCopyBrief}
+        onDownloadBrief={handleDownloadBrief}
         onResetExample={() => {
           api.resetToExample();
           setSelection([]);

@@ -30,6 +30,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "frame", text: "Frame an area", sides: ["below"] },
   { key: "beam", text: "Draw a beam", sides: ["below"] },
   { key: "add", text: "Add a part", sides: ["below"] },
+  { key: "brief", text: "Brief an AI to write a setup", sides: ["right", "below"] },
   { key: "tools", text: "Select · posts · grid · undo", sides: ["right", "below"] },
   { key: "inspector", text: "Edit the selection", sides: ["left", "above"] },
   { key: "beams", text: "Beams: drag a row to reorder", sides: ["above", "right"] },
@@ -293,6 +294,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Beam: click parts, Enter" },
       { icon: "frame", text: "Frame: drag its edge to move" },
       { icon: "connect", text: "Fibre or cable: from, then to" },
+      { keys: ".md", text: "Brief an AI to write a setup" },
     ],
   },
   {
