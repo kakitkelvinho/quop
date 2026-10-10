@@ -100,8 +100,8 @@ saved with the setup (scene version 5; older setups open with none), and so is
 a frame's Fill, stored only when off (scene version 6; older frames open
 filled). Hiding, showing and each Fill switch are one undo step.
 
-**A setup brief for an AI assistant.** The `.md` button, in its own island
-beside the view controls, opens the setup brief: Markdown instructions an
+**A setup brief for an AI assistant.** The `.md` button, in its own island at
+the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
 author pastes into an AI assistant so it writes a setup file for the experiment
 they describe, which then opens with Open JSON… like any other. The panel shows
 the brief with **Copy** (to the clipboard, confirmed in the status line) and
@@ -219,10 +219,14 @@ is on screen until it is needed:
   limitations) and the setup brief open in the same spot, so opening one
   closes the others.
 - **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
-  Undo, Redo) with the Cheat sheet tab hung under it. While placing, drawing
-  or connecting, a mode badge under the pill carries that mode's key hints. On
-  a phone the column moves to the right edge, clear of the + island: the Guide
-  pill sits level with the file island and the tool pill drops below it.
+  Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
+  `.md` button in its own island (it is neither a tool nor a guide). The `.md`
+  island hangs off the row's end, so the Guide and tool pills stay centred.
+  While placing, drawing or connecting, a mode badge under the pill carries
+  that mode's key hints. On a phone the column moves to the right edge, clear
+  of the + island: the Guide pill sits level with the file island, the tool
+  pill drops below it and the `.md` island below that, with the brief opening
+  under it.
 - **Right**: the inspector, shown only while something is selected: a
   component, several components, a beam, or a beam being drawn. For several
   it reads "N parts selected", with rotate, duplicate and delete, a height
@@ -242,8 +246,7 @@ is on screen until it is needed:
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
-- **Bottom right**: the setup brief's `.md` button, in its own island (it is
-  neither a view control nor an edit tool), then the view controls.
+- **Bottom right**: the view controls.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
 - **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
@@ -284,7 +287,7 @@ is on screen until it is needed:
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Have an AI write a setup | The `.md` button, bottom right, beside the view controls: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, save the JSON it writes and open it with Open JSON… |
+| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, save the JSON it writes and open it with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet

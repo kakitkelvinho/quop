@@ -3305,19 +3305,21 @@ html[data-theme="dark"] .builderButton--primary {
   border-radius: 0.15rem;
 }
 
-/* bottom right: the setup brief's island, then the view controls */
-.builderHud__corner {
-  position: absolute;
-  z-index: 5;
+.builderHud__view {
   right: 0.9rem;
   bottom: 0.9rem;
-  display: flex;
-  align-items: flex-end;
-  gap: 0.4rem;
 }
 
-.builderHud__corner > .builderIsland {
-  position: static;
+/* top centre, right of the tool pill: the setup brief's own island. It hangs
+   off the row's end rather than widening it, so the Guide pill and the tool
+   pill stay centred where they were */
+.builderHud__toolRow {
+  position: relative;
+}
+
+.builderHud__brief {
+  top: 0;
+  left: calc(100% + 0.45rem);
 }
 
 /* a text button in an icon button's square */
@@ -3490,7 +3492,14 @@ html[data-theme="dark"] .builderButton--primary {
     width: auto;
   }
 
+  /* the .md island drops to a third row at the right edge, under the tool
+     pill: the brief opens below it, so its button stays in reach */
+  .builderHud__brief {
+    position: static;
+  }
+
   .builderBrief {
+    top: 11.4rem;
     bottom: 7.2rem;
   }
 

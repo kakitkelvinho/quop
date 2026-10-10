@@ -739,6 +739,20 @@ export default function BuilderHud(props: BuilderHudProps) {
               <Icon name="chevron" size={12} />
             </button>
           </div>
+          {/* the brief is neither a tool nor a guide: its own island, across the tools from the Guide pill */}
+          <div className="builderIsland builderHud__brief">
+            <button
+              type="button"
+              className={`builderIconBtn builderBriefButton${briefOpen ? " is-active" : ""}`}
+              aria-label="Setup brief: instructions for an AI assistant to write a setup file"
+              aria-pressed={briefOpen}
+              title="Setup brief: instructions for an AI assistant to write a setup file"
+              data-guide="brief"
+              onClick={toggleBrief}
+            >
+              .md
+            </button>
+          </div>
         </div>
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
@@ -824,31 +838,15 @@ export default function BuilderHud(props: BuilderHudProps) {
         </div>
       ) : null}
 
-      {/* the brief is neither a view control nor an edit tool: its own island, beside the view's */}
-      <div className="builderHud__corner">
-        <div className="builderIsland">
-          <button
-            type="button"
-            className={`builderIconBtn builderBriefButton${briefOpen ? " is-active" : ""}`}
-            aria-label="Setup brief: instructions for an AI assistant to write a setup file"
-            aria-pressed={briefOpen}
-            title="Setup brief: instructions for an AI assistant to write a setup file"
-            data-guide="brief"
-            onClick={toggleBrief}
-          >
-            .md
-          </button>
-        </div>
-        <div className="builderIsland" role="toolbar" aria-label="View" data-guide="view">
-          <span className="builderSegment">
-            <IconButton icon="iso" label="Isometric view" active={view === "iso"} onClick={() => props.onViewChange("iso")} />
-            <IconButton icon="top" label="Top-down view" active={view === "top"} onClick={() => props.onViewChange("top")} />
-          </span>
-          <IconButton icon="fit" label="Fit the layout" onClick={props.onFit} />
-          <span className="builderIsland__sep" />
-          <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
-          <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        </div>
+      <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
+        <span className="builderSegment">
+          <IconButton icon="iso" label="Isometric view" active={view === "iso"} onClick={() => props.onViewChange("iso")} />
+          <IconButton icon="top" label="Top-down view" active={view === "top"} onClick={() => props.onViewChange("top")} />
+        </span>
+        <IconButton icon="fit" label="Fit the layout" onClick={props.onFit} />
+        <span className="builderIsland__sep" />
+        <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
+        <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 

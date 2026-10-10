@@ -30,12 +30,12 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "frame", text: "Frame an area", sides: ["below"] },
   { key: "beam", text: "Draw a beam", sides: ["below"] },
   { key: "add", text: "Add a part", sides: ["below"] },
+  { key: "brief", text: "Brief an AI to write a setup", sides: ["right", "below"] },
   { key: "tools", text: "Select · posts · grid · undo", sides: ["right", "below"] },
   { key: "inspector", text: "Edit the selection", sides: ["left", "above"] },
   { key: "beams", text: "Beams: drag a row to reorder", sides: ["above", "right"] },
   { key: "frames", text: "Frames: hide or delete", sides: ["right", "above"] },
   { key: "view", text: "Iso / top · fit · labels · day / night", sides: ["above", "left"] },
-  { key: "brief", text: "Brief an AI to write a setup", sides: ["above", "left"] },
 ];
 
 const GAP = 10;
