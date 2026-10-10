@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { EB_Garamond, IBM_Plex_Sans } from "next/font/google";
+import localFont from "next/font/local";
 
 import { AppShell } from "@/components/app-shell";
 import { SiteFooter } from "@/components/site-footer";
@@ -7,18 +7,26 @@ import { SITE_VERSION } from "@/components/site-version";
 
 import "./globals.css";
 
-const ibmPlexSans = IBM_Plex_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Both fonts live in ./fonts so the build never fetches from Google Fonts.
+const ibmPlexSans = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-sans-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/ibm-plex-sans-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-ibm-plex-sans",
 });
 
-// The chalkboard hero sets its equations in italic Garamond.
-const ebGaramond = EB_Garamond({
-  subsets: ["latin", "greek"],
-  style: ["normal", "italic"],
-  weight: ["400", "500"],
+// The chalkboard hero sets its equations in italic Garamond. Each file is a
+// 400–500 weight variable font cut to the Latin and Greek ranges.
+const ebGaramond = localFont({
+  src: [
+    { path: "./fonts/eb-garamond-400-500-normal.woff2", weight: "400 500", style: "normal" },
+    { path: "./fonts/eb-garamond-400-500-italic.woff2", weight: "400 500", style: "italic" },
+  ],
   variable: "--font-eb-garamond",
+  adjustFontFallback: "Times New Roman",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kitkatho.github.io/quop";
