@@ -31,10 +31,6 @@ const breadboard: Frame = {
 const parse = (frames: unknown) => parseScene({ version: 5, components: [], frames });
 
 describe("reading frames", () => {
-  it("is the version that added them", () => {
-    assert.equal(SCENE_VERSION, 5);
-  });
-
   it("opens a setup with no frames key, as older files are, with none", () => {
     assert.deepEqual(parseScene({ version: 4, components: [] })?.frames, []);
     assert.deepEqual(parseScene({ components: [] })?.frames, []);
@@ -123,9 +119,9 @@ describe("frames in a saved setup", () => {
     assert.deepEqual(parseScene(JSON.parse(serializeScene(scene)))?.frames, scene.frames);
   });
 
-  it("are written as version 5, and a shown frame carries no hidden key", () => {
+  it("are written at the current version, and a shown frame carries no hidden key", () => {
     const saved = JSON.parse(serializeScene(scene));
-    assert.equal(saved.version, 5);
+    assert.equal(saved.version, SCENE_VERSION);
     assert.equal("hidden" in saved.frames[0], false);
     assert.equal(saved.frames[1].hidden, true);
   });
@@ -144,5 +140,59 @@ describe("a frame's name", () => {
   it("is its size when it has no label, or a blank one", () => {
     assert.equal(frameDisplayName({ ...breadboard, label: undefined }), "Frame 900 × 600 mm");
     assert.equal(frameDisplayName({ ...breadboard, label: "   " }), "Frame 900 × 600 mm");
+  });
+});
+
+// #144: a frame can be drawn as its coloured outline alone. Fill is on unless
+// the frame says otherwise, so every setup saved before the switch opens as it
+// looked.
+
+describe("a frame's fill", () => {
+  const atVersion = (version: number, frames: unknown) => parseScene({ version, components: [], frames })!.frames;
+
+  it("is the version that added it", () => {
+    assert.equal(SCENE_VERSION, 6);
+  });
+
+  it("is on when the frame doesn't say, with no fill key", () => {
+    const [frame] = atVersion(6, [{ id: "a" }]);
+    assert.equal("fill" in frame, false);
+  });
+
+  it("is off when the frame was saved with fill: false", () => {
+    assert.deepEqual(atVersion(6, [{ ...breadboard, fill: false }]), [{ ...breadboard, fill: false }]);
+  });
+
+  it("reads anything but false as on", () => {
+    const frames = atVersion(6, [
+      { id: "a", fill: true },
+      { id: "b", fill: 0 },
+      { id: "c", fill: "no" },
+    ]);
+    assert.deepEqual(
+      frames.map((frame) => "fill" in frame),
+      [false, false, false],
+    );
+  });
+
+  it("is on for every frame in a setup from before version 6", () => {
+    for (const version of [1, 5]) {
+      const [frame] = atVersion(version, [{ ...breadboard, fill: false }]);
+      assert.equal("fill" in frame, false, `version ${version}`);
+    }
+  });
+
+  it("is saved only when off, and opens again as it was", () => {
+    const scene = { ...EMPTY_SCENE, frames: [breadboard, { ...breadboard, id: "outline", fill: false as const }] };
+    const saved = JSON.parse(serializeScene(scene));
+    assert.equal("fill" in saved.frames[0], false);
+    assert.equal(saved.frames[1].fill, false);
+    assert.deepEqual(parseScene(saved)?.frames, scene.frames);
+  });
+
+  it("leaves no key behind when switched back on", () => {
+    const switchedOn = { ...breadboard, fill: undefined };
+    const saved = JSON.parse(serializeScene({ ...EMPTY_SCENE, frames: [switchedOn] }));
+    assert.equal("fill" in saved.frames[0], false);
   });
 });

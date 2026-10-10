@@ -46,8 +46,12 @@ Where a beam meets a component, for drawing and for path length. For most compon
 _Avoid_: aperture, anchor
 
 **Frame**:
-A labelled rectangle drawn on the table to mark an area, such as one breadboard or an enclosure. A drawing aid only: it constrains nothing and adds nothing to any path. A setup can have any number; each can be hidden from its eye button.
-_Avoid_: table, border, region, zone
+A labelled outline drawn on the table to mark an area, such as one breadboard or an enclosure. Its sides all run along the table's x or z axes, so it is a rectangle or a right-angled floor-plan shape such as an L or a U; it is never rotated. It is drawn either filled with a faint tint of its colour or as the coloured outline alone. A drawing aid only: it constrains nothing and adds nothing to any path. A setup can have any number; each can be hidden from its eye button.
+_Avoid_: table, border, region, zone, polygon
+
+**Setup brief**:
+Instructions, in Markdown, for an AI assistant to write a setup file from a description of an experiment: the file's shape, every kind of component, and the table's conventions. The author copies it from the builder and pastes it as a prompt; the file the assistant writes opens like any other setup.
+_Avoid_: prompt, skill, AI instructions
 
 **Beam line**:
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.

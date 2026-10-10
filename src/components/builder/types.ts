@@ -141,9 +141,11 @@ export type Frame = {
   label?: string;
   /** true keeps the frame out of the drawing, and so out of a PNG; stored only when true */
   hidden?: true;
+  /** false draws the coloured outline alone, with no tint inside; stored only when false, missing means filled */
+  fill?: false;
 };
 
-export const SCENE_VERSION = 5 as const;
+export const SCENE_VERSION = 6 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -1140,8 +1142,12 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   };
 }
 
-/** A frame needs only an id; what is missing or out of range gets the default or the nearest allowed value. */
-function parseFrame(value: unknown): Frame | null {
+/**
+ * A frame needs only an id; what is missing or out of range gets the default or
+ * the nearest allowed value. Frames from before version 6 had no fill switch and
+ * open filled.
+ */
+function parseFrame(value: unknown, version: number): Frame | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   if (typeof raw.id !== "string") return null;
@@ -1155,6 +1161,7 @@ function parseFrame(value: unknown): Frame | null {
     color: typeof raw.color === "string" ? raw.color : FRAME_COLORS[0],
     ...(typeof raw.label === "string" ? { label: raw.label } : {}),
     ...(raw.hidden === true ? { hidden: true } : {}),
+    ...(version >= 6 && raw.fill === false ? { fill: false } : {}),
   };
 }
 
@@ -1209,7 +1216,8 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
  * rather than throwing — a partially readable setup beats an error dialog.
  * Setups from before version 3 have no connections and open with none;
  * those from before version 4 have no hidden beams and open with every beam shown;
- * those from before version 5 have no frames and open with none.
+ * those from before version 5 have no frames and open with none;
+ * those from before version 6 open with every frame filled.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -1234,7 +1242,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     : [];
 
   const frames = Array.isArray(raw.frames)
-    ? raw.frames.map(parseFrame).filter((frame): frame is Frame => frame !== null)
+    ? raw.frames.map((frame) => parseFrame(frame, version)).filter((frame): frame is Frame => frame !== null)
     : [];
 
   return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames }));

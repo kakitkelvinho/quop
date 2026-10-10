@@ -1015,6 +1015,24 @@ export function FrameInspector({
         value={frame.depth}
         onChange={(depth) => onUpdate({ depth: clamp(depth, FRAME_SIZE_RANGE_MM) })}
       />
+      <div className="builderChoice" role="group" aria-label="Fill">
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={frame.fill !== false}
+          onClick={() => onUpdate({ fill: undefined })}
+        >
+          Fill
+        </button>
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={frame.fill === false}
+          onClick={() => onUpdate({ fill: false })}
+        >
+          No fill
+        </button>
+      </div>
       <p className="builderInspector__hint">
         {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag its edge to move it.
       </p>

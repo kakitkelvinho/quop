@@ -8,7 +8,14 @@ import { beamLengthMm, parseScene, serializeScene } from "./types.ts";
 // dropped, in every later release. Each fixture is a setup file in the shape
 // one schema version saved; see setup-fixtures/README.md before touching them.
 
-const FIXTURES = ["setup-v1.json", "setup-v2.json", "setup-v3.json", "setup-v4.json", "setup-v5.json"];
+const FIXTURES = [
+  "setup-v1.json",
+  "setup-v2.json",
+  "setup-v3.json",
+  "setup-v4.json",
+  "setup-v5.json",
+  "setup-v6.json",
+];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
 const LEGACY_NAMES: Record<string, string> = {
@@ -166,6 +173,40 @@ describe("setup-v5.json, the first version with frames", () => {
   it("opens every older setup with no frames", () => {
     for (const name of ["setup-v1.json", "setup-v2.json", "setup-v3.json", "setup-v4.json"]) {
       assert.deepEqual(open(name).frames, [], name);
+    }
+  });
+});
+
+describe("setup-v6.json, the first version with unfilled frames", () => {
+  it("opens the lock-optics frame as its outline alone, and the other two filled", () => {
+    assert.deepEqual(
+      open("setup-v6.json").frames.map(({ id, fill }) => [id, fill]),
+      [
+        ["breadboard", undefined],
+        ["enclosure", undefined],
+        ["lock-area", false],
+      ],
+    );
+  });
+
+  it("keeps it unfilled after being saved and opened again", () => {
+    const again = parseScene(JSON.parse(serializeScene(open("setup-v6.json"))));
+    assert.deepEqual(again?.frames, open("setup-v6.json").frames);
+  });
+
+  it("is v5's setup in every other way: its parts, beams, connections and first two frames", () => {
+    const [v5, v6] = [open("setup-v5.json"), open("setup-v6.json")];
+    assert.deepEqual([v6.components, v6.beams, v6.connections], [v5.components, v5.beams, v5.connections]);
+    assert.deepEqual(v6.frames.slice(0, 2), v5.frames);
+  });
+
+  it("opens every older setup with every frame filled", () => {
+    for (const name of FIXTURES.slice(0, -1)) {
+      assert.deepEqual(
+        open(name).frames.filter((frame) => "fill" in frame),
+        [],
+        name,
+      );
     }
   });
 });

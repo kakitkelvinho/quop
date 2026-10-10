@@ -1,0 +1,47 @@
+{
+  "version": 6,
+  "components": [
+    { "id": "laser", "type": "laser-source", "position": [-400, 100, 0], "rotation": 0, "label": "780 nm ECDL" },
+    { "id": "m1", "type": "mirror-mount", "position": [-250, 100, 0], "rotation": 45, "color": "#8b1e3f" },
+    { "id": "bs", "type": "beam-splitter", "position": [-100, 100, 0], "rotation": 0, "label": "PBS" },
+    { "id": "lens", "type": "lens", "position": [50, 100, 0], "rotation": 90, "lensShape": "biconvex", "focalLength": 150 },
+    { "id": "trap", "type": "paul-trap", "position": [200, 100, 0], "rotation": 0 },
+    { "id": "ion", "type": "particle", "position": [200, 100, 0], "rotation": 0, "host": "trap", "particleRadius": 4, "color": "#ff5a36" },
+    { "id": "pd", "type": "photodiode", "position": [350, 100, 0], "rotation": 180, "label": "SPCM A" },
+    { "id": "wp", "type": "waveplate", "position": [-100, 100, 150], "rotation": 0, "label": "λ/2" },
+    { "id": "filter", "type": "filter", "position": [-100, 100, 250], "rotation": 0 },
+    { "id": "iris", "type": "iris", "position": [-100, 100, 350], "rotation": 0 },
+    { "id": "sample", "type": "sample", "position": [-100, 100, 450], "rotation": 0, "opacity": 0.6, "color": "#f2c94c" },
+    { "id": "obj", "type": "objective", "position": [-100, 100, 550], "rotation": 90 },
+    { "id": "cam", "type": "camera", "position": [-100, 125, 700], "rotation": 90, "label": "EMCCD" },
+    { "id": "fiber", "type": "fiber-collimator", "position": [-400, 100, -300], "rotation": 0 },
+    { "id": "aom", "type": "aom", "position": [-250, 100, -300], "rotation": 0, "label": "80 MHz" },
+    { "id": "eom", "type": "eom", "position": [-100, 100, -300], "rotation": 0 },
+    { "id": "m2", "type": "mirror-mount", "position": [50, 100, -300], "rotation": 135 },
+    { "id": "cavity", "type": "cavity", "position": [50, 100, -450], "rotation": 90, "cavityLength": 100 },
+    { "id": "spec", "type": "spectrometer", "position": [50, 100, -600], "rotation": 90 },
+    { "id": "dump", "type": "beam-block", "position": [-400, 100, 150], "rotation": 0 },
+    { "id": "riser", "type": "block", "position": [300, 25, 400], "rotation": 0, "size": [100, 50, 60], "color": "#3b4a6b" },
+    { "id": "tagger", "type": "block", "position": [500, 25, 300], "rotation": 0, "size": [120, 50, 80], "color": "#1f2937", "label": "Time tagger" },
+    { "id": "laser-folded", "type": "laser-source", "position": [-400, 100, -450], "rotation": 0, "label": "Folded delay", "internalPathMm": 4000 }
+  ],
+  "beams": [
+    { "id": "probe", "path": ["laser", "m1", "bs", "lens", "trap", "pd"], "color": "#e53935", "label": "probe", "width": 2, "opacity": 0.9 },
+    { "id": "imaging", "path": ["bs", "wp", "filter", "iris", "sample", "obj", "cam"], "color": "#1e88e5", "arrows": false },
+    { "id": "lock", "path": ["fiber", "aom", "eom", "m2", "cavity", "spec"], "color": "#43a047", "width": 1.5 },
+    { "id": "leak", "path": ["wp", "dump"], "color": "#8e24aa", "opacity": 0.4 },
+    { "id": "folded", "path": ["laser-folded", "cavity"], "color": "#f59e0b" },
+    { "id": "reference", "path": ["laser", "m1", "bs", "wp", "dump"], "color": "#64748b", "label": "reference arm", "hidden": true }
+  ],
+  "connections": [
+    { "id": "fib-a", "kind": "fiber", "from": "fiber", "to": "pd", "color": "#eab308", "label": "MMF 105 µm", "lengthM": 2, "refractiveIndex": 1.47 },
+    { "id": "coax-a", "kind": "cable", "from": "pd", "to": "tagger", "color": "#64748b", "label": "SMA" },
+    { "id": "coax-cam", "kind": "cable", "from": "cam", "to": "tagger", "color": "#0f766e", "lengthM": 1.5, "velocityFactor": 0.7 },
+    { "id": "fib-spare", "kind": "fiber", "from": "fiber", "to": "spec", "color": "#f97316" }
+  ],
+  "frames": [
+    { "id": "breadboard", "position": [0, 0], "width": 900, "depth": 600, "color": "#0891b2", "label": "Main breadboard" },
+    { "id": "enclosure", "position": [-700, 500], "width": 300, "depth": 250, "color": "#ea580c", "label": "Laser enclosure", "hidden": true },
+    { "id": "lock-area", "position": [-175, -400], "width": 550, "depth": 375, "color": "#16a34a", "label": "Lock optics", "fill": false }
+  ]
+}
