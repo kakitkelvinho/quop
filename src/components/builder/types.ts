@@ -1120,40 +1120,57 @@ export function normaliseCorners(corners: Corner[]): Corner[] {
 }
 
 /**
+ * Why corners can't be a frame's outline, or null when they can. `closed`
+ * reads them as a loop in the order given, as a saved frame is; open, they
+ * are a path from the first corner to the last, as an outline being drawn is.
+ * Every side must run along x or z and be at least FRAME_SIZE_RANGE_MM[0]
+ * long, the whole at most FRAME_SIZE_RANGE_MM[1] wide and deep, and no side
+ * may cross, touch or double back along another. A loop needs 4 corners.
+ * Each reason finishes a sentence such as "Can't close the outline: …".
+ */
+export function outlineProblem(corners: Corner[], closed: boolean): string | null {
+  const count = corners.length;
+  if (closed && count < 4) return "an outline needs at least 4 corners";
+  if (!corners.every(([x, z]) => Number.isFinite(x) && Number.isFinite(z))) return "a corner isn't two numbers";
+  const [shortest, largest] = FRAME_SIZE_RANGE_MM;
+  const { width, depth } = cornerBounds(corners);
+  if (width > largest || depth > largest) return `the frame would be over ${largest} mm across`;
+
+  const sides = (closed ? corners : corners.slice(0, -1)).map((from, at): [Corner, Corner] => [
+    from,
+    corners[(at + 1) % count],
+  ]);
+  for (const [[x0, z0], [x1, z1]] of sides) {
+    if (x0 !== x1 && z0 !== z1) return "a side would be slanted";
+    if (Math.abs(x1 - x0) + Math.abs(z1 - z0) < shortest) return `a side would be under ${shortest} mm`;
+  }
+  const folds = "a side would cross, touch or run back along another";
+  for (let i = 0; i < sides.length; i += 1) {
+    for (let j = i + 1; j < sides.length; j += 1) {
+      const [[ax0, az0], [ax1, az1]] = sides[i];
+      const [[bx0, bz0], [bx1, bz1]] = sides[j];
+      if (j === i + 1 || (closed && i === 0 && j === sides.length - 1)) {
+        // neighbours share a corner; they only go wrong by running back along each other
+        if ((ax1 - ax0) * (bx1 - bx0) + (az1 - az0) * (bz1 - bz0) < 0) return folds;
+        continue;
+      }
+      // two sides along the axes meet exactly when their boxes overlap
+      const meetX = Math.max(Math.min(ax0, ax1), Math.min(bx0, bx1)) <= Math.min(Math.max(ax0, ax1), Math.max(bx0, bx1));
+      const meetZ = Math.max(Math.min(az0, az1), Math.min(bz0, bz1)) <= Math.min(Math.max(az0, az1), Math.max(bz0, bz1));
+      if (meetX && meetZ) return folds;
+    }
+  }
+  return null;
+}
+
+/**
  * Whether corners make an outline a frame can have, read as a closed loop in
  * the order given: at least 4 corners, every side along x or z and at least
  * FRAME_SIZE_RANGE_MM[0] long, at most FRAME_SIZE_RANGE_MM[1] wide and deep
  * overall, and no side crossing, touching or doubling back along another.
  */
 export function isValidOutline(corners: Corner[]): boolean {
-  const count = corners.length;
-  if (count < 4) return false;
-  if (!corners.every(([x, z]) => Number.isFinite(x) && Number.isFinite(z))) return false;
-  const [shortest, largest] = FRAME_SIZE_RANGE_MM;
-  const { width, depth } = cornerBounds(corners);
-  if (width > largest || depth > largest) return false;
-
-  const sides = corners.map((from, at): [Corner, Corner] => [from, corners[(at + 1) % count]]);
-  for (const [[x0, z0], [x1, z1]] of sides) {
-    if (x0 !== x1 && z0 !== z1) return false;
-    if (Math.abs(x1 - x0) + Math.abs(z1 - z0) < shortest) return false;
-  }
-  for (let i = 0; i < count; i += 1) {
-    for (let j = i + 1; j < count; j += 1) {
-      const [[ax0, az0], [ax1, az1]] = sides[i];
-      const [[bx0, bz0], [bx1, bz1]] = sides[j];
-      if (j === i + 1 || (i === 0 && j === count - 1)) {
-        // neighbours share a corner; they only go wrong by running back along each other
-        if ((ax1 - ax0) * (bx1 - bx0) + (az1 - az0) * (bz1 - bz0) < 0) return false;
-        continue;
-      }
-      // two sides along the axes meet exactly when their boxes overlap
-      const meetX = Math.max(Math.min(ax0, ax1), Math.min(bx0, bx1)) <= Math.min(Math.max(ax0, ax1), Math.max(bx0, bx1));
-      const meetZ = Math.max(Math.min(az0, az1), Math.min(bz0, bz1)) <= Math.min(Math.max(az0, az1), Math.max(bz0, bz1));
-      if (meetX && meetZ) return false;
-    }
-  }
-  return true;
+  return outlineProblem(corners, true) === null;
 }
 
 /** Every corner moved by (dx, dz), held back so the whole outline stays on the table. */

@@ -21,6 +21,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  type ComponentProps,
   type RefObject,
 } from "react";
 import {
@@ -49,7 +50,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { ComponentMesh } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
-import { FrameMesh } from "@/components/builder/frame-mesh";
+import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
@@ -852,8 +853,10 @@ export type BuilderCanvasProps = {
   selectedFrameId: string | null;
   /** the one hidden frame drawn as a faint ghost, if any; every other hidden frame is not drawn */
   ghostFrameId: string | null;
-  /** the edges of frames take presses: off while placing a part or drawing a beam or connection */
+  /** the edges of frames take presses: off while placing a part or drawing a beam, connection or frame */
   framesInteractive: boolean;
+  /** the frame being drawn and what the pointer would do, laid over everything; null when none is */
+  frameDraft: ComponentProps<typeof FrameDraft> | null;
   hoveredId: string | null;
   beamDraft: string[];
   showLabels: boolean;
@@ -879,6 +882,8 @@ export type CanvasApi = {
   canvas: HTMLCanvasElement;
   /** where a point in the scene, mm, is on screen now, in client pixels */
   project: (point: Vec3) => [number, number];
+  /** the table point under a point on screen, in client pixels, as [x, z] mm */
+  tableAt: (clientX: number, clientY: number) => [number, number] | null;
 };
 
 function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
@@ -886,6 +891,8 @@ function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
   const get = useThree((state) => state.get);
   useEffect(() => {
     const scratch = new Vector3();
+    const raycaster = new Raycaster();
+    const pointer = new Vector2();
     onReady({
       canvas: gl.domElement,
       project: (point) => {
@@ -895,6 +902,12 @@ function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
           rect.left + ((scratch.x + 1) / 2) * rect.width,
           rect.top + ((1 - scratch.y) / 2) * rect.height,
         ];
+      },
+      tableAt: (clientX, clientY) => {
+        const rect = gl.domElement.getBoundingClientRect();
+        pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+        raycaster.setFromCamera(pointer, get().camera);
+        return tablePoint(raycaster.ray);
       },
     });
   }, [get, gl, onReady]);
@@ -914,6 +927,7 @@ export default function BuilderCanvas({
   selectedFrameId,
   ghostFrameId,
   framesInteractive,
+  frameDraft,
   hoveredId,
   beamDraft,
   showLabels,
@@ -1065,6 +1079,8 @@ export default function BuilderCanvas({
           color={palette.accent}
         />
       ) : null}
+
+      {frameDraft ? <FrameDraft {...frameDraft} /> : null}
 
       {snapGuide ? (
         // Laid on the table under the beam, not along it, where the beam's own

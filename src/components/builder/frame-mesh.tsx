@@ -1,11 +1,12 @@
 "use client";
 
-import { Html } from "@react-three/drei";
+import { Html, Line } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useMemo } from "react";
 import { Shape, Vector2 } from "three";
 
-import type { Corner, Frame } from "@/components/builder/types";
+import type { DrawingPreview } from "@/components/builder/frame-drawing";
+import type { Corner, Frame, Vec3 } from "@/components/builder/types";
 
 /** Just above the table's top face and the grid, below every part. */
 const FRAME_Y_MM = 0.6;
@@ -15,6 +16,11 @@ const SELECTED_EDGE_MM = 6;
 const GRAB_MM = 28;
 /** A selected hidden frame, drawn faintly so it can be found and edited. */
 const GHOST = 0.35;
+/** A side or a way back that a frame being drawn can't take. */
+const REFUSED_COLOR = "#dc2626";
+/** The marks on a drawing's corners, mm; the first is larger, as a click there closes the outline. */
+const CORNER_MARK_MM = 12;
+const FIRST_MARK_MM = 20;
 
 type Strip = [x: number, z: number, sizeX: number, sizeZ: number];
 
@@ -99,6 +105,73 @@ export function FrameMesh({
           </span>
         </Html>
       ) : null}
+    </group>
+  );
+}
+
+const onTable = (corners: Corner[]): Vec3[] => corners.map(([x, z]): Vec3 => [x, 0, z]);
+
+/**
+ * A frame being drawn, over everything so a corner can go on a part: the
+ * sides placed so far, solid, then dashed to where a click puts the next
+ * corner, and fainter dashes back to the first; red where it is refused. A
+ * rectangle being dragged out is all way back.
+ */
+export function FrameDraft({
+  corners,
+  next,
+  closing,
+  refused,
+  color,
+}: Pick<DrawingPreview, "next" | "closing" | "refused"> & { corners: Corner[]; color: string }) {
+  const last = corners.at(-1);
+  const marks = next ? [...corners, next] : corners;
+  return (
+    <group position={[0, FRAME_Y_MM + 1, 0]}>
+      {corners.length >= 2 ? (
+        <Line points={onTable(corners)} color={color} lineWidth={3} depthTest={false} renderOrder={5} />
+      ) : null}
+      {last && next ? (
+        <Line
+          points={onTable([last, next])}
+          color={refused === "next" ? REFUSED_COLOR : color}
+          lineWidth={2.5}
+          dashed
+          dashSize={10}
+          gapSize={6}
+          depthTest={false}
+          renderOrder={5}
+        />
+      ) : null}
+      {closing ? (
+        <Line
+          points={onTable(closing)}
+          color={refused === "closing" ? REFUSED_COLOR : color}
+          lineWidth={1.5}
+          dashed
+          dashSize={10}
+          gapSize={6}
+          transparent
+          opacity={refused === "closing" ? 0.9 : 0.6}
+          depthTest={false}
+          renderOrder={5}
+        />
+      ) : null}
+      {marks.map(([x, z], index) => {
+        const pending = index === corners.length;
+        const size = index === 0 && !pending ? FIRST_MARK_MM : CORNER_MARK_MM;
+        return (
+          <mesh key={index} position={[x, 0, z]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={6}>
+            <planeGeometry args={[size, size]} />
+            <meshBasicMaterial
+              color={pending && refused === "next" ? REFUSED_COLOR : color}
+              depthTest={false}
+              transparent
+              opacity={pending ? 0.6 : 1}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 }

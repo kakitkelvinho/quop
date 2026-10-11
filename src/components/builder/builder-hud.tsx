@@ -53,6 +53,8 @@ export type BuilderHudProps = {
   placingType: ComponentType | null;
   trayOpen: boolean;
   beamMode: boolean;
+  /** "Add a frame" is drawing one */
+  drawingFrame: boolean;
   /** "Add stops" is on for the selected beam */
   addingStops: boolean;
   beamDraft: string[];
@@ -95,7 +97,8 @@ export type BuilderHudProps = {
   /** drop a beam at index `to` of the list; true when it moved */
   onMoveBeam: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetBeamHidden: (id: string, hidden: boolean) => void;
-  onAddFrame: () => void;
+  onStartFrame: () => void;
+  onCancelFrame: () => void;
   onSelectFrame: (id: string) => void;
   onUpdateFrame: (id: string, patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
   onDeleteFrame: (id: string) => void;
@@ -129,6 +132,17 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
       hints: [
         ["Click", "add stop"],
         ["Enter", "finish"],
+        ["Esc", "cancel"],
+      ],
+    };
+  if (props.drawingFrame)
+    return {
+      label: "Drawing a frame",
+      hints: [
+        ["Click", "corner"],
+        ["Drag", "rectangle"],
+        ["Double-click", "finish"],
+        ["⌫", "undo corner"],
         ["Esc", "cancel"],
       ],
     };
@@ -546,11 +560,12 @@ export default function BuilderHud(props: BuilderHudProps) {
     placingType,
     trayOpen,
     beamMode,
+    drawingFrame,
     connectDraft,
     view,
   } = props;
   const mode = modeHints(props);
-  const selecting = !beamMode && !connectDraft && !placingType && !trayOpen;
+  const selecting = !beamMode && !drawingFrame && !connectDraft && !placingType && !trayOpen;
   // the about panel and the brief share the parts panel's spot, so opening one closes the others
   const [aboutOpen, setAboutOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
@@ -712,7 +727,13 @@ export default function BuilderHud(props: BuilderHudProps) {
           onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
           disabled={components.length < 2}
         />
-        <IconButton icon="frame" label="Add a frame to mark an area" guide="frame" onClick={props.onAddFrame} />
+        <IconButton
+          icon="frame"
+          label="Draw a frame to mark an area"
+          guide="frame"
+          active={drawingFrame}
+          onClick={drawingFrame ? props.onCancelFrame : props.onStartFrame}
+        />
         <IconButton
           icon="connect"
           label="Connect two parts with a fibre or cable"

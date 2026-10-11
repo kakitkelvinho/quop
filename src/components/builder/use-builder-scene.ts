@@ -10,7 +10,6 @@ import {
   DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
-  DEFAULT_FRAME_SIZE_MM,
   FRAME_COLORS,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SCENE,
@@ -24,7 +23,6 @@ import {
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
   parseScene,
-  rectangleCorners,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
   settleAngles,
@@ -37,6 +35,7 @@ import {
   type ComponentType,
   type Connection,
   type ConnectionKind,
+  type Corner,
   type Frame,
   type Vec3,
 } from "@/components/builder/types";
@@ -356,21 +355,13 @@ export function useBuilderScene() {
 
   // ---- frame edits ---------------------------------------------------------
 
-  /** A new rectangle of the default size, centred on (x, z); its id. */
+  /** A new frame with these corners, in standard form, in the next colour: one undo step; its id. */
   const addFrame = useCallback(
-    ([x, z]: [number, number]): string => {
+    (corners: Corner[]): string => {
       const id = createFrameId();
-      const [width, depth] = DEFAULT_FRAME_SIZE_MM;
       commit((current) => ({
         ...current,
-        frames: [
-          ...current.frames,
-          {
-            id,
-            corners: rectangleCorners([x - width / 2, z - depth / 2], width, depth),
-            color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length],
-          },
-        ],
+        frames: [...current.frames, { id, corners, color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length] }],
       }));
       return id;
     },
