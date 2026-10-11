@@ -51,6 +51,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { ComponentMesh } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
+import type { FrameGrip } from "@/components/builder/frame-reshape";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
@@ -874,7 +875,7 @@ export type BuilderCanvasProps = {
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
-  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
   onCanvasReady: (handle: CanvasApi) => void;
 };
 
@@ -1023,9 +1024,9 @@ export default function BuilderCanvas({
             ghost={ghost}
             showLabel={showLabels}
             interactive={framesInteractive}
-            onPointerDown={(event) => {
+            onPointerDown={(event, grip) => {
               event.stopPropagation();
-              onFramePointerDown(frame.id, event);
+              onFramePointerDown(frame.id, event, grip);
             }}
           />
         );

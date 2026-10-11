@@ -29,6 +29,7 @@ import { useScenePalette } from "@/components/builder/scene-theme";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
+import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
 import { useFrameDrawing } from "@/components/builder/use-frame-drawing";
 import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
@@ -77,6 +78,20 @@ type FrameDragState = {
   /** from the grab point to the frame's first corner, mm */
   offsetX: number;
   offsetZ: number;
+  started: boolean;
+};
+
+/** A side or corner of the selected frame being dragged to reshape it. */
+type FrameReshapeState = {
+  id: string;
+  grip: FrameGrip;
+  /** the outline at the press; every step is measured from it */
+  corners: Corner[];
+  /** from the grab point to the grip's corner, mm */
+  offsetX: number;
+  offsetZ: number;
+  /** where the grip's corner last got to: a drag stops at the last valid outline */
+  reached: Corner;
   started: boolean;
 };
 
@@ -220,6 +235,7 @@ export default function BuilderScene() {
 
   const dragRef = useRef<DragState | null>(null);
   const frameDragRef = useRef<FrameDragState | null>(null);
+  const frameReshapeRef = useRef<FrameReshapeState | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const projectRef = useRef<CanvasApi["project"] | null>(null);
@@ -410,6 +426,23 @@ export default function BuilderScene() {
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: PointerEvent) => {
+      const reshape = frameReshapeRef.current;
+      if (reshape) {
+        const frame = sceneRef.current.frames.find((entry) => entry.id === reshape.id);
+        if (!frame) return;
+        const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+        const to: Corner = [snapToGrid(x + reshape.offsetX, step), snapToGrid(z + reshape.offsetZ, step)];
+        const { corners, reached } = dragGrip(reshape.corners, reshape.grip, reshape.reached, to, step);
+        reshape.reached = reached;
+        if (corners.length === frame.corners.length && corners.every(([cx, cz], at) => cx === frame.corners[at][0] && cz === frame.corners[at][1])) return;
+        // like a move, the first real change earns the undo step
+        if (!reshape.started) {
+          reshape.started = true;
+          api.commitCheckpoint(sceneRef.current);
+        }
+        api.updateFrame(reshape.id, { corners }, false);
+        return;
+      }
       const frameDrag = frameDragRef.current;
       if (frameDrag) {
         const frame = sceneRef.current.frames.find((entry) => entry.id === frameDrag.id);
@@ -510,8 +543,9 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
-      if (frameDragRef.current) {
+      if (frameDragRef.current || frameReshapeRef.current) {
         frameDragRef.current = null;
+        frameReshapeRef.current = null;
         setDragging(false);
       }
       const drag = dragRef.current;
@@ -551,24 +585,43 @@ export default function BuilderScene() {
 
   // ---- frames --------------------------------------------------------------
 
-  // Pressing a frame's edge selects it and drags it; only its edge takes the press.
-  const handleFramePointerDown = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
-    if (event.nativeEvent.button !== 0) return;
-    const frame = sceneRef.current.frames.find((entry) => entry.id === id);
-    if (!frame) return;
-    setSelectedFrameId(id);
-    setSelection([]);
-    setSelectedBeamId(null);
-    setSelectedConnectionId(null);
-    const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
-    frameDragRef.current = {
-      id,
-      offsetX: frame.corners[0][0] - grabX,
-      offsetZ: frame.corners[0][1] - grabZ,
-      started: false,
-    };
-    setDragging(true);
-  }, []);
+  // Pressing an unselected frame's edge selects it and drags it whole; on the
+  // selected frame, a side or corner reshapes it, and Alt drags it whole.
+  // Only its edge and corner handles take the press.
+  const handleFramePointerDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => {
+      if (event.nativeEvent.button !== 0) return;
+      const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+      if (!frame) return;
+      const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
+      if (id === selectedFrameId && !event.nativeEvent.altKey) {
+        const [gripX, gripZ] = frame.corners[grip.index];
+        frameReshapeRef.current = {
+          id,
+          grip,
+          corners: frame.corners,
+          offsetX: gripX - grabX,
+          offsetZ: gripZ - grabZ,
+          reached: [gripX, gripZ],
+          started: false,
+        };
+        setDragging(true);
+        return;
+      }
+      setSelectedFrameId(id);
+      setSelection([]);
+      setSelectedBeamId(null);
+      setSelectedConnectionId(null);
+      frameDragRef.current = {
+        id,
+        offsetX: frame.corners[0][0] - grabX,
+        offsetZ: frame.corners[0][1] - grabZ,
+        started: false,
+      };
+      setDragging(true);
+    },
+    [selectedFrameId],
+  );
 
   const handleSelectFrame = useCallback((id: string) => {
     setSelectedFrameId((current) => (current === id ? null : id));
@@ -600,7 +653,7 @@ export default function BuilderScene() {
         // the whole drawing is one undo step: the frame arrives in one commit
         setSelectedFrameId(api.addFrame(step.corners));
         setDrawing(null);
-        announce("Added a frame. Drag its edge to move it.");
+        announce("Added a frame. Drag a side or corner to reshape it, Alt-drag to move it.");
         return true;
       }
       // a refused click is explained live in the status line; a refused finish is said here

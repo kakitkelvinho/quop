@@ -109,9 +109,20 @@ a solid edge; off, it is the coloured outline alone, on screen and in the PNG.
 A rectangle also has its width and depth there, which resize it from its
 back-left corner; any other shape shows its overall size, read-only ("850 ×
 250 mm overall"). The label sits on the back-left corner (the back-most, then
-left-most). Drag its edge to move it whole, its back-left corner on the grid
-(the inside lets clicks and drags through, so a frame never blocks the table
-or the parts in it). Each frame has a row in the Frames box under the beams
+left-most). Pressing the edge of an unselected frame selects it and drags it
+whole, its back-left corner on the grid (the inside lets clicks and drags
+through, so a frame never blocks the table or the parts in it). A selected
+frame shows a handle on each corner and reshapes instead: drag a side in or
+out, perpendicular to itself, and the sides either side of it stretch or
+shrink; drag a corner, and both sides that meet there stay along x and z, so
+the corners at their far ends slide with it. Both snap to the grid (`⇧` for
+fine steps). A drag stops at the last valid outline, so the outline never
+folds or crosses itself and keeps every side at least 10 mm and the whole at
+most 5000 mm across; the one gap it crosses is onto a side that vanishes, as
+when an L's foot is pushed flush with its long side and the L becomes a
+rectangle, which gets its width and depth back in the inspector. Alt-drag or
+the arrow keys move a selected frame whole. Each drag is one undo step, from
+its first real change. Each frame has a row in the Frames box under the beams
 box, with an eye to hide it from the view and the PNG and a trash button; drag
 a row to reorder the list, as in the beams box; a selected hidden frame shows
 as a faint outline on screen, not in the export. Frames are saved with the
@@ -309,7 +320,7 @@ is on screen until it is needed:
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam draws one: drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag its edge to move it whole (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
+| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam draws one: drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag an unselected frame's edge to select and move it whole (`⇧` for fine steps). On a selected frame, drag a side in or out or drag a corner handle to reshape it (stops at the last valid outline, one undo step per drag); `Alt`-drag or the arrow keys move it whole, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
 | Hide, show, reorder or delete a frame | The eye and trash buttons on its row in the Frames box; drag the row to a new place (or focus it and press `Alt+↑` / `Alt+↓`). A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |

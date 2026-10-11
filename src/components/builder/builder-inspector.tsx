@@ -1049,7 +1049,7 @@ export function FrameInspector({
         </button>
       </div>
       <p className="builderInspector__hint">
-        {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag its edge to move it.
+        {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag a side or corner to reshape it, Alt-drag or the arrow keys to move it.
       </p>
     </div>
   );
