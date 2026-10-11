@@ -43,7 +43,6 @@ import {
   componentDisplayName,
   componentTag,
   cornerBounds,
-  frameDisplayName,
   isRectangle,
   rectangleCorners,
   connectionDelayPs,
@@ -951,16 +950,38 @@ export function ConnectionDraftInspector({
   );
 }
 
+/** The frame colours by name, for the swatches' labels. */
+const FRAME_COLOR_NAMES: Record<(typeof FRAME_COLORS)[number], string> = {
+  "#0891b2": "teal",
+  "#ea580c": "orange",
+  "#16a34a": "green",
+  "#db2777": "pink",
+  "#7c3aed": "violet",
+  "#ca8a04": "ochre",
+};
+
 export function FrameInspector({
   frame,
   onUpdate,
   onDelete,
+  focusLabel,
+  onLabelFocused,
 }: {
   frame: Frame;
   onUpdate: (patch: Partial<Omit<Frame, "id">>) => void;
   onDelete: () => void;
+  /** the frame was just drawn: its label is the next thing to give it */
+  focusLabel: boolean;
+  onLabelFocused: () => void;
 }) {
   const [min, max] = FRAME_SIZE_RANGE_MM;
+  const labelRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!focusLabel) return;
+    // a touch screen would throw up its keyboard over the frame just drawn
+    if (window.matchMedia("(pointer: fine)").matches) labelRef.current?.focus();
+    onLabelFocused();
+  }, [focusLabel, onLabelFocused]);
   const { minX, minZ, width, depth } = cornerBounds(frame.corners);
   return (
     <div className="builderInspector">
@@ -972,6 +993,7 @@ export function FrameInspector({
         <span className="builderField__label">Label</span>
         <span className="builderField__control">
           <input
+            ref={labelRef}
             type="text"
             value={frame.label ?? ""}
             placeholder="Breadboard, enclosure…"
@@ -984,7 +1006,8 @@ export function FrameInspector({
           <button
             key={color}
             type="button"
-            aria-label={`Frame colour ${color}`}
+            aria-label={`Frame colour: ${FRAME_COLOR_NAMES[color]}`}
+            title={FRAME_COLOR_NAMES[color]}
             aria-pressed={frame.color === color}
             className={`builderSwatch${frame.color === color ? " is-active" : ""}`}
             style={{ background: color }}
@@ -1049,7 +1072,7 @@ export function FrameInspector({
         </button>
       </div>
       <p className="builderInspector__hint">
-        {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag a side or corner to reshape it, Alt-drag or the arrow keys to move it.
+        Marks an area; constrains nothing. Drag a side or corner to reshape it; Alt-drag or the arrow keys move it.
       </p>
     </div>
   );

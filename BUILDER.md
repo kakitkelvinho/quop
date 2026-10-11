@@ -94,16 +94,22 @@ a beam. Drag on the table for a plain rectangle, or click to place corners:
 each new side runs along x or z, whichever way the pointer has moved further,
 its corner on the grid (`⇧` for fine steps). A dashed preview shows the next
 side and, fainter, the way back to the first corner, with an elbow where the
-two don't line up. Double-click, click the first corner or press Enter to
+two don't line up, and a note beside the pointer reads the outline's overall
+size in mm. The mode badge shows the keys that apply: before the first corner,
+drag for a rectangle; after it, a drag pans and Enter finishes. Double-click,
+click the first corner or press Enter to
 finish: the closing side and any elbow are added for you. `⌫` removes the last
 corner and Esc cancels. A side that would cross, touch or run back along the
-outline drawn so far is refused: the preview turns red, the click isn't taken
-and the status line says why, and the same goes for the closing side, so an
+outline drawn so far is refused: the preview turns red and dotted, the corner
+is crossed out, the note beside the pointer says why, and the click isn't
+taken (a refused click is then said in the status line, which a screen reader
+reads out; hovering alone isn't). The same goes for the closing side, so an
 outline can't be finished crossing itself (other frames don't count; frames
 may overlap). While drawing, parts and other frames ignore clicks, so a corner
 can go on top of a part. The finished frame is held to a saved one's limits
 (sides at least 10 mm, at most 5000 mm overall), arrives as one undo step and
-opens in the inspector, where you set its label and colour
+opens in the inspector with its Label field focused (not on a touch screen,
+where the keyboard would cover it), where you set its label and colour
 and switch its Fill: on (the default), it is a faint tint of its colour inside
 a solid edge; off, it is the coloured outline alone, on screen and in the PNG.
 A rectangle also has its width and depth there, which resize it from its

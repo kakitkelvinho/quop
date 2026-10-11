@@ -7,7 +7,7 @@ import { Shape, Vector2 } from "three";
 
 import type { DrawingPreview } from "@/components/builder/frame-drawing";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
-import type { Corner, Frame, Vec3 } from "@/components/builder/types";
+import { cornerBounds, type Corner, type Frame, type Vec3 } from "@/components/builder/types";
 
 /** Just above the table's top face and the grid, below every part. */
 const FRAME_Y_MM = 0.6;
@@ -26,6 +26,8 @@ const REFUSED_COLOR = "#dc2626";
 /** The marks on a drawing's corners, mm; the first is larger, as a click there closes the outline. */
 const CORNER_MARK_MM = 12;
 const FIRST_MARK_MM = 20;
+/** The cross on a corner a frame being drawn can't take. */
+const CROSS_MM = 26;
 
 type Strip = [x: number, z: number, sizeX: number, sizeZ: number];
 
@@ -142,21 +144,43 @@ export function FrameMesh({
 
 const onTable = (corners: Corner[]): Vec3[] => corners.map(([x, z]): Vec3 => [x, 0, z]);
 
+/** The refused sentence without its "Can't … there:" lead-in, as a note beside the pointer. */
+function shortReason(reason: string): string {
+  const [, rest = reason] = reason.split(": ");
+  return rest.charAt(0).toUpperCase() + rest.slice(1);
+}
+
 /**
  * A frame being drawn, over everything so a corner can go on a part: the
  * sides placed so far, solid, then dashed to where a click puts the next
- * corner, and fainter dashes back to the first; red where it is refused. A
- * rectangle being dragged out is all way back.
+ * corner, and fainter dashes back to the first. A rectangle being dragged
+ * out is all way back, at full strength. Where it is refused the dashes turn
+ * red and dotted and the corner is crossed out, so colour isn't the only
+ * sign; a note beside the pointer says why, or reads the outline's size.
  */
 export function FrameDraft({
   corners,
   next,
   closing,
   refused,
+  reason,
+  pointer,
   color,
-}: Pick<DrawingPreview, "next" | "closing" | "refused"> & { corners: Corner[]; color: string }) {
+}: Pick<DrawingPreview, "next" | "closing" | "refused" | "reason"> & {
+  corners: Corner[];
+  /** the pointer over the table, which the note sits beside */
+  pointer: Corner | null;
+  color: string;
+}) {
   const last = corners.at(-1);
   const marks = next ? [...corners, next] : corners;
+  const dragging = corners.length === 0 && closing !== null;
+  const dots = { dashSize: 3, gapSize: 7 };
+  const dashes = { dashSize: 10, gapSize: 6 };
+  const anchor = pointer ?? next ?? last;
+  const { width, depth } = cornerBounds([...corners, ...(next ? [next] : []), ...(closing ?? [])]);
+  // on the corner a click would place, or where the way back starts
+  const crossAt = refused === "next" ? next : refused === "closing" ? (next ?? last) : null;
   return (
     <group position={[0, FRAME_Y_MM + 1, 0]}>
       {corners.length >= 2 ? (
@@ -168,8 +192,7 @@ export function FrameDraft({
           color={refused === "next" ? REFUSED_COLOR : color}
           lineWidth={2.5}
           dashed
-          dashSize={10}
-          gapSize={6}
+          {...(refused === "next" ? dots : dashes)}
           depthTest={false}
           renderOrder={5}
         />
@@ -178,31 +201,43 @@ export function FrameDraft({
         <Line
           points={onTable(closing)}
           color={refused === "closing" ? REFUSED_COLOR : color}
-          lineWidth={1.5}
+          lineWidth={dragging ? 2.5 : 1.5}
           dashed
-          dashSize={10}
-          gapSize={6}
+          {...(refused === "closing" ? dots : dashes)}
           transparent
-          opacity={refused === "closing" ? 0.9 : 0.6}
+          opacity={dragging || refused === "closing" ? 1 : 0.6}
           depthTest={false}
           renderOrder={5}
         />
       ) : null}
       {marks.map(([x, z], index) => {
         const pending = index === corners.length;
+        if (pending && refused === "next") return null;
         const size = index === 0 && !pending ? FIRST_MARK_MM : CORNER_MARK_MM;
         return (
           <mesh key={index} position={[x, 0, z]} rotation={[-Math.PI / 2, 0, 0]} raycast={() => null} renderOrder={6}>
             <planeGeometry args={[size, size]} />
-            <meshBasicMaterial
-              color={pending && refused === "next" ? REFUSED_COLOR : color}
-              depthTest={false}
-              transparent
-              opacity={pending ? 0.6 : 1}
-            />
+            <meshBasicMaterial color={color} depthTest={false} transparent opacity={pending ? 0.6 : 1} />
           </mesh>
         );
       })}
+      {crossAt ? (
+        <group position={[crossAt[0], 0.2, crossAt[1]]} rotation={[-Math.PI / 2, 0, 0]}>
+          {[Math.PI / 4, -Math.PI / 4].map((turn) => (
+            <mesh key={turn} rotation={[0, 0, turn]} raycast={() => null} renderOrder={7}>
+              <planeGeometry args={[CROSS_MM, CROSS_MM / 6]} />
+              <meshBasicMaterial color={REFUSED_COLOR} depthTest={false} transparent />
+            </mesh>
+          ))}
+        </group>
+      ) : null}
+      {anchor && (reason || width > 0 || depth > 0) ? (
+        <Html position={[anchor[0], 0, anchor[1]]} zIndexRange={[0, 0]} className="builderHtmlLayer">
+          <span className={`builderDraftNote${reason ? " is-refused" : ""}`}>
+            {reason ? shortReason(reason) : `${Math.round(width)} × ${Math.round(depth)} mm`}
+          </span>
+        </Html>
+      ) : null}
     </group>
   );
 }

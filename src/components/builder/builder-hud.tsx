@@ -55,6 +55,8 @@ export type BuilderHudProps = {
   beamMode: boolean;
   /** "Add a frame" is drawing one */
   drawingFrame: boolean;
+  /** how many corners the frame being drawn has so far */
+  frameCorners: number;
   /** "Add stops" is on for the selected beam */
   addingStops: boolean;
   beamDraft: string[];
@@ -99,6 +101,9 @@ export type BuilderHudProps = {
   onSetBeamHidden: (id: string, hidden: boolean) => void;
   onStartFrame: () => void;
   onCancelFrame: () => void;
+  /** the selected frame was just drawn: its label field takes focus */
+  focusFrameLabel: boolean;
+  onFrameLabelFocused: () => void;
   onSelectFrame: (id: string) => void;
   onUpdateFrame: (id: string, patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
   onDeleteFrame: (id: string) => void;
@@ -135,16 +140,23 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
         ["Esc", "cancel"],
       ],
     };
+  // a drag makes a rectangle only before the first corner; after it, it pans
   if (props.drawingFrame)
     return {
       label: "Drawing a frame",
-      hints: [
-        ["Click", "corner"],
-        ["Drag", "rectangle"],
-        ["Double-click", "finish"],
-        ["⌫", "undo corner"],
-        ["Esc", "cancel"],
-      ],
+      hints:
+        props.frameCorners === 0
+          ? [
+              ["Drag", "rectangle"],
+              ["Click", "first corner"],
+              ["Esc", "cancel"],
+            ]
+          : [
+              ["Click", "corner"],
+              ["Enter", "finish"],
+              ["⌫", "undo corner"],
+              ["Esc", "cancel"],
+            ],
     };
   if (props.connectDraft)
     return {
@@ -655,6 +667,8 @@ export default function BuilderHud(props: BuilderHudProps) {
         frame={frame}
         onUpdate={(patch) => props.onUpdateFrame(frame.id, patch)}
         onDelete={() => props.onDeleteFrame(frame.id)}
+        focusLabel={props.focusFrameLabel}
+        onLabelFocused={props.onFrameLabelFocused}
       />
     );
   } else if (props.selectedConnection) {
