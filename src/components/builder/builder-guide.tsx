@@ -304,7 +304,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Stops snap back onto a beam" },
       { keys: "⌘ drag", text: "Box select; ⌘ click adds" },
       { keys: "R D ⌫", text: "Turn, copy, delete" },
-      { icon: "frame", text: "Drag a frame's edge to move it" },
+      { icon: "frame", text: "Frame: reshape; Alt-drag moves" },
     ],
   },
   {

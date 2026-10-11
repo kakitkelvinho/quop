@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import { Shape, Vector2 } from "three";
 
 import type { DrawingPreview } from "@/components/builder/frame-drawing";
+import type { FrameGrip } from "@/components/builder/frame-reshape";
 import type { Corner, Frame, Vec3 } from "@/components/builder/types";
 
 /** Just above the table's top face and the grid, below every part. */
@@ -16,6 +17,10 @@ const SELECTED_EDGE_MM = 6;
 const GRAB_MM = 28;
 /** A selected hidden frame, drawn faintly so it can be found and edited. */
 const GHOST = 0.35;
+/** A selected frame's corner handles: drawn, and the square that takes the press, mm. */
+const HANDLE_MM = 14;
+const HANDLE_RIM_MM = 3;
+const HANDLE_GRAB_MM = 36;
 /** A side or a way back that a frame being drawn can't take. */
 const REFUSED_COLOR = "#dc2626";
 /** The marks on a drawing's corners, mm; the first is larger, as a click there closes the outline. */
@@ -43,6 +48,8 @@ function sideStrips(corners: Corner[], thickness: number): Strip[] {
  * alone when its fill is off. Only its edge takes a press: the inside lets
  * clicks and drags through to the table, so a frame around a breadboard never
  * stops the table from panning, or a part from being placed or picked inside it.
+ * A selected frame also has a handle on each corner; a press says which side
+ * or corner it took.
  */
 export function FrameMesh({
   frame,
@@ -59,7 +66,7 @@ export function FrameMesh({
   showLabel: boolean;
   /** off while placing a part or drawing a beam or connection: the edge is then no more than a drawing */
   interactive: boolean;
-  onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
+  onPointerDown: (event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
 }) {
   const { corners, color } = frame;
   const edge = selected ? SELECTED_EDGE_MM : EDGE_MM;
@@ -89,10 +96,34 @@ export function FrameMesh({
       ))}
       {interactive
         ? grabs.map(([gx, gz, sx, sz], index) => (
-            <mesh key={index} position={[gx, 0.2, gz]} rotation={[-Math.PI / 2, 0, 0]} onPointerDown={onPointerDown}>
+            <mesh
+              key={index}
+              position={[gx, 0.2, gz]}
+              rotation={[-Math.PI / 2, 0, 0]}
+              onPointerDown={(event) => onPointerDown(event, { kind: "side", index })}
+            >
               <planeGeometry args={[sx, sz]} />
               <meshBasicMaterial visible={false} />
             </mesh>
+          ))
+        : null}
+      {selected && interactive
+        ? corners.map(([cx, cz], index) => (
+            // above the side strips, so a press near a corner takes the corner
+            <group key={index} position={[cx, 0.4, cz]} rotation={[-Math.PI / 2, 0, 0]}>
+              <mesh raycast={() => null} renderOrder={3}>
+                <planeGeometry args={[HANDLE_MM, HANDLE_MM]} />
+                <meshBasicMaterial color={color} transparent opacity={strength} depthWrite={false} />
+              </mesh>
+              <mesh position={[0, 0, 0.1]} raycast={() => null} renderOrder={4}>
+                <planeGeometry args={[HANDLE_MM - 2 * HANDLE_RIM_MM, HANDLE_MM - 2 * HANDLE_RIM_MM]} />
+                <meshBasicMaterial color="#ffffff" transparent opacity={strength} depthWrite={false} />
+              </mesh>
+              <mesh position={[0, 0, 0.2]} onPointerDown={(event) => onPointerDown(event, { kind: "corner", index })}>
+                <planeGeometry args={[HANDLE_GRAB_MM, HANDLE_GRAB_MM]} />
+                <meshBasicMaterial visible={false} />
+              </mesh>
+            </group>
           ))
         : null}
       {showLabel && !ghost && frame.label?.trim() ? (
