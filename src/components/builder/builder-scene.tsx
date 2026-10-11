@@ -17,15 +17,25 @@ import BuilderCanvas, {
   tablePoint,
 } from "@/components/builder/builder-canvas";
 import BuilderHud, { type ConnectDraft } from "@/components/builder/builder-hud";
+import {
+  clickDrawing,
+  dragRectangle,
+  finishDrawing,
+  previewDrawing,
+  type DrawingPreview,
+  type DrawingStep,
+} from "@/components/builder/frame-drawing";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
+import { useFrameDrawing } from "@/components/builder/use-frame-drawing";
 import { getTheme, setTheme } from "@/components/theme-toggle";
 import {
   BEAM_COLORS,
   CONNECTION_KINDS,
   FINE_GRID_MM,
+  FRAME_COLORS,
   GRID_SIZE_MM,
   clampToTable,
   componentById,
@@ -44,6 +54,7 @@ import {
   translateCorners,
   type BuilderComponent,
   type ComponentType,
+  type Corner,
   type Vec3,
 } from "@/components/builder/types";
 
@@ -68,6 +79,23 @@ type FrameDragState = {
   offsetZ: number;
   started: boolean;
 };
+
+/** A frame being drawn, from "Add a frame" until it is finished or cancelled. */
+type FrameDrawing = {
+  /** placed so far, in click order */
+  corners: Corner[];
+  /** the pointer over the table, the grid it snaps to, and whether it is on the first corner on screen */
+  pointer: { point: Corner; step: number; onFirst: boolean } | null;
+  /** dragged out from a press before the first corner */
+  rectangle: { corners: Corner[]; reason: string | null } | null;
+  /** the last click was refused, so the double-click it starts doesn't finish */
+  refused: boolean;
+};
+
+const NEW_DRAWING: FrameDrawing = { corners: [], pointer: null, rectangle: null, refused: false };
+
+/** How near the first corner, client px, a click closes the outline. */
+const FIRST_CORNER_PX = 10;
 
 function clampXZ(x: number, y: number, z: number): [number, number, number] {
   const [clampedX, clampedZ] = clampToTable(x, z);
@@ -175,6 +203,7 @@ export default function BuilderScene() {
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
   const [connectDraft, setConnectDraft] = useState<ConnectDraft | null>(null);
+  const [drawing, setDrawing] = useState<FrameDrawing | null>(null);
   // the beam "Add stops" is on for; it lapses as soon as another is selected
   const [addingStopsTo, setAddingStopsTo] = useState<string | null>(null);
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
@@ -194,6 +223,7 @@ export default function BuilderScene() {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const projectRef = useRef<CanvasApi["project"] | null>(null);
+  const tableAtRef = useRef<CanvasApi["tableAt"] | null>(null);
   // the part under the pointer, for a Ctrl/⌘ click the canvas never sees
   const hoveredRef = useRef<string | null>(null);
   // Pointer handlers run outside React's render pass and need the newest
@@ -247,7 +277,7 @@ export default function BuilderScene() {
 
   const handleSurfaceClick = useCallback(
     (x: number, z: number) => {
-      if (beamMode || connectDraft || addingStops) return;
+      if (beamMode || connectDraft || addingStops || drawing) return;
       if (placingType) {
         // a particle clicked onto a trap or cavity goes inside it
         const host =
@@ -270,13 +300,14 @@ export default function BuilderScene() {
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
     },
-    [addingStops, api, beamMode, connectDraft, placingType],
+    [addingStops, api, beamMode, connectDraft, drawing, placingType],
   );
 
   const handleComponentPointerDown = useCallback(
     (id: string, event: ThreeEvent<PointerEvent>) => {
-      // middle and right drags orbit the camera, even when they start on a part
-      if (event.nativeEvent.button !== 0) return;
+      // middle and right drags orbit the camera, even when they start on a part;
+      // while a frame is drawn, a click on a part puts a corner on the table under it
+      if (event.nativeEvent.button !== 0 || drawing) return;
       if (beamMode) {
         setBeamDraft((current) =>
           current[current.length - 1] === id ? current : [...current, id],
@@ -332,7 +363,7 @@ export default function BuilderScene() {
       };
       setDragging(true);
     },
-    [addingStops, announce, api, beamMode, connectDraft, selectedBeamId, selectedIds],
+    [addingStops, announce, api, beamMode, connectDraft, drawing, selectedBeamId, selectedIds],
   );
 
   const handleComponentHover = useCallback((id: string | null) => {
@@ -372,7 +403,7 @@ export default function BuilderScene() {
   }, []);
 
   const selectionBox = useBoxSelect(hostRef, {
-    enabled: !placingType && !beamMode && !connectDraft && !addingStops,
+    enabled: !placingType && !beamMode && !connectDraft && !addingStops && !drawing,
     onClick: togglePointedPart,
     onBox: selectInBox,
   });
@@ -507,7 +538,7 @@ export default function BuilderScene() {
   const handleConnectionPointerDown = useCallback(
     (id: string, event: ThreeEvent<PointerEvent>) => {
       // while placing or picking parts, the click goes on to the part or the table behind
-      if (event.nativeEvent.button !== 0 || placingType || beamMode || connectDraft || addingStops) return;
+      if (event.nativeEvent.button !== 0 || placingType || beamMode || connectDraft || addingStops || drawing) return;
       event.stopPropagation();
       setSelectedConnectionId(id);
       setSelectedFrameId(null);
@@ -515,7 +546,7 @@ export default function BuilderScene() {
       setSelectedBeamId(null);
       setSelectedFrameId(null);
     },
-    [addingStops, beamMode, connectDraft, placingType],
+    [addingStops, beamMode, connectDraft, drawing, placingType],
   );
 
   // ---- frames --------------------------------------------------------------
@@ -546,21 +577,102 @@ export default function BuilderScene() {
     setSelectedConnectionId(null);
   }, []);
 
-  const handleAddFrame = useCallback(() => {
-    // each new one a little off the last, so they don't land exactly on top of each other
-    const shift = (sceneRef.current.frames.length % 8) * GRID_SIZE_MM * 2;
-    const id = api.addFrame([snapToGrid(shift), snapToGrid(shift)]);
-    setSelectedFrameId(id);
+  // "Add a frame" draws one: placing, drawing a beam or a frame and connecting are one mode at a time
+  const startFrame = useCallback(() => {
+    setDrawing(NEW_DRAWING);
     setSelection([]);
     setSelectedBeamId(null);
+    setSelectedFrameId(null);
     setSelectedConnectionId(null);
     setBeamMode(false);
     setBeamDraft([]);
     setConnectDraft(null);
     setPlacingType(null);
     setTrayOpen(false);
-    announce("Added a frame. Drag its edge to move it.");
-  }, [announce, api]);
+  }, []);
+
+  const cancelFrame = useCallback(() => setDrawing(null), []);
+
+  /** What a click, a double-click, Enter or a dragged-out rectangle did; true when it finished the frame. */
+  const applyDrawing = useCallback(
+    (step: DrawingStep, { sayRefusal }: { sayRefusal: boolean }): boolean => {
+      if (step.kind === "done") {
+        // the whole drawing is one undo step: the frame arrives in one commit
+        setSelectedFrameId(api.addFrame(step.corners));
+        setDrawing(null);
+        announce("Added a frame. Drag its edge to move it.");
+        return true;
+      }
+      // a refused click is explained live in the status line; a refused finish is said here
+      if (step.kind === "refused" && sayRefusal) announce(step.reason);
+      setDrawing((current) =>
+        current && {
+          ...current,
+          corners: step.kind === "corner" ? step.corners : current.corners,
+          refused: step.kind === "refused",
+        },
+      );
+      return false;
+    },
+    [announce, api],
+  );
+
+  const isOnFirstCorner = useCallback((corners: Corner[], event: PointerEvent): boolean => {
+    const project = projectRef.current;
+    if (!project || corners.length < 3) return false;
+    const [x, y] = project([corners[0][0], 0, corners[0][1]]);
+    return Math.hypot(event.clientX - x, event.clientY - y) <= FIRST_CORNER_PX;
+  }, []);
+
+  useFrameDrawing(hostRef, {
+    active: drawing !== null,
+    rectangles: drawing?.corners.length === 0,
+    tableAt: (clientX, clientY) => tableAtRef.current?.(clientX, clientY) ?? null,
+    onHover: (point, event) =>
+      setDrawing(
+        (current) =>
+          current && {
+            ...current,
+            pointer: point && {
+              point,
+              step: event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM,
+              onFirst: isOnFirstCorner(current.corners, event),
+            },
+          },
+      ),
+    onClick: (point, event, second) => {
+      if (!drawing) return false;
+      if (second) return drawing.refused ? false : applyDrawing(finishDrawing(drawing.corners), { sayRefusal: true });
+      const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+      const onFirst = isOnFirstCorner(drawing.corners, event);
+      return applyDrawing(clickDrawing(drawing.corners, point, { step, onFirst }), { sayRefusal: false });
+    },
+    onRectangle: (from, to, event, done) => {
+      if (!drawing) return;
+      const rectangle = dragRectangle(from, to, event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM);
+      if (!done) {
+        setDrawing((current) => current && { ...current, rectangle });
+        return;
+      }
+      setDrawing((current) => current && { ...current, rectangle: null });
+      applyDrawing(
+        rectangle.reason ? { kind: "refused", reason: rectangle.reason } : { kind: "done", corners: rectangle.corners },
+        { sayRefusal: true },
+      );
+    },
+  });
+
+  // the drawing, with what the pointer would do next, for the canvas and the status line
+  const drawingView = useMemo((): (DrawingPreview & { corners: Corner[] }) | null => {
+    if (!drawing) return null;
+    const { corners, pointer, rectangle } = drawing;
+    if (rectangle) {
+      const loop = [...rectangle.corners, rectangle.corners[0]];
+      return { corners: [], next: null, closing: loop, refused: rectangle.reason ? "closing" : null, reason: rectangle.reason };
+    }
+    if (!pointer) return { corners, next: null, closing: null, refused: null, reason: null };
+    return { corners, ...previewDrawing(corners, pointer.point, { step: pointer.step, onFirst: pointer.onFirst }) };
+  }, [drawing]);
 
   const handleDeleteFrame = useCallback(
     (id: string) => {
@@ -598,10 +710,11 @@ export default function BuilderScene() {
     [announce, api],
   );
 
-  // Placing, drawing a beam and connecting are one mode at a time.
+  // Placing, drawing a beam or a frame and connecting are one mode at a time.
   const startConnect = useCallback(() => {
     setBeamMode(false);
     setBeamDraft([]);
+    setDrawing(null);
     setPlacingType(null);
     setTrayOpen(false);
     setSelection([]);
@@ -620,6 +733,7 @@ export default function BuilderScene() {
     setBeamMode(true);
     setBeamDraft([]);
     setConnectDraft(null);
+    setDrawing(null);
     setPlacingType(null);
     setTrayOpen(false);
     setSelection([]);
@@ -750,6 +864,7 @@ export default function BuilderScene() {
           setSelectedConnectionId(null);
           cancelBeam();
           cancelConnect();
+          cancelFrame();
           announce(
             `Loaded ${parsed.components.length} parts from ${file.name}.`,
           );
@@ -759,7 +874,7 @@ export default function BuilderScene() {
       };
       reader.readAsText(file);
     },
-    [announce, api, cancelBeam, cancelConnect],
+    [announce, api, cancelBeam, cancelConnect, cancelFrame],
   );
 
   const handleExportPng = useCallback(async () => {
@@ -785,6 +900,7 @@ export default function BuilderScene() {
   const handleCanvasReady = useCallback((handle: CanvasApi) => {
     canvasRef.current = handle.canvas;
     projectRef.current = handle.project;
+    tableAtRef.current = handle.tableAt;
   }, []);
 
   // ---- keyboard ------------------------------------------------------------
@@ -823,7 +939,7 @@ export default function BuilderScene() {
         return;
       }
 
-      if (meta && event.key.toLowerCase() === "a" && !beamMode) {
+      if (meta && event.key.toLowerCase() === "a" && !beamMode && !drawing) {
         event.preventDefault();
         setSelection(sceneRef.current.components.map((component) => component.id));
         setSelectedBeamId(null);
@@ -836,6 +952,7 @@ export default function BuilderScene() {
         if (placingType) setPlacingType(null);
         else if (trayOpen) setTrayOpen(false);
         else if (beamMode) cancelBeam();
+        else if (drawing) cancelFrame();
         else if (connectDraft) cancelConnect();
         else if (addingStops) setAddingStopsTo(null);
         else {
@@ -850,6 +967,17 @@ export default function BuilderScene() {
       if (beamMode && event.key === "Enter") {
         event.preventDefault();
         finishBeam();
+        return;
+      }
+
+      if (drawing) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          applyDrawing(finishDrawing(drawing.corners), { sayRefusal: true });
+        } else if (event.key === "Backspace" || event.key === "Delete") {
+          event.preventDefault();
+          setDrawing({ ...drawing, corners: drawing.corners.slice(0, -1), refused: false });
+        }
         return;
       }
 
@@ -928,11 +1056,14 @@ export default function BuilderScene() {
   }, [
     addingStops,
     api,
+    applyDrawing,
     beamMode,
     cancelBeam,
     cancelConnect,
+    cancelFrame,
     connectDraft,
     deleteSelected,
+    drawing,
     duplicateSelected,
     finishBeam,
     handleDeleteFrame,
@@ -963,7 +1094,7 @@ export default function BuilderScene() {
     <div className="builderWorkspace">
       <div
         ref={hostRef}
-        className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops ? " is-picking" : ""}`}
+        className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || drawing ? " is-picking" : ""}`}
       >
         <BuilderCanvas
           components={scene.components}
@@ -977,7 +1108,10 @@ export default function BuilderScene() {
           selectedConnectionId={selectedConnection?.id ?? null}
           selectedFrameId={selectedFrame?.id ?? null}
           ghostFrameId={ghostFrameId}
-          framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops}
+          framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops && !drawing}
+          frameDraft={
+            drawingView && { ...drawingView, color: FRAME_COLORS[scene.frames.length % FRAME_COLORS.length] }
+          }
           hoveredId={hoveredId}
           // the part a connection leaves from carries the "1" badge until the second click
           beamDraft={connectDraft?.from ? [connectDraft.from] : beamDraft}
@@ -1021,6 +1155,7 @@ export default function BuilderScene() {
         placingType={placingType}
         trayOpen={trayOpen}
         beamMode={beamMode}
+        drawingFrame={drawing !== null}
         addingStops={addingStops}
         beamDraft={beamDraft}
         beamColor={beamColor}
@@ -1030,18 +1165,21 @@ export default function BuilderScene() {
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
-        status={status}
+        // while a frame is drawn, why the pointer's corner or the way back is refused
+        status={drawingView?.reason ?? status}
         onToggleTray={() => setTrayOpen((open) => !open)}
         onPickType={(type) => {
           // the panel stays open, so a run of parts goes down without reopening it
           cancelBeam();
           cancelConnect();
+          cancelFrame();
           setPlacingType(type);
         }}
         onCloseTray={() => setTrayOpen(false)}
         onSelectTool={() => {
           cancelBeam();
           cancelConnect();
+          cancelFrame();
           setPlacingType(null);
           setTrayOpen(false);
         }}
@@ -1081,7 +1219,8 @@ export default function BuilderScene() {
         onDeleteBeam={handleDeleteBeam}
         onMoveBeam={handleMoveBeam}
         onSetBeamHidden={handleSetBeamHidden}
-        onAddFrame={handleAddFrame}
+        onStartFrame={startFrame}
+        onCancelFrame={cancelFrame}
         onSelectFrame={handleSelectFrame}
         onUpdateFrame={api.updateFrame}
         onDeleteFrame={handleDeleteFrame}
@@ -1119,6 +1258,7 @@ export default function BuilderScene() {
           setSelectedConnectionId(null);
           cancelBeam();
           cancelConnect();
+          cancelFrame();
         }}
       />
     </div>

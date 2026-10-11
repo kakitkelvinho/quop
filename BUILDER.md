@@ -88,9 +88,22 @@ shown) and each toggle is one undo step.
 **Frames mark areas.** A frame is a labelled outline drawn flat on the table
 under everything, to mark one breadboard or an enclosure: a rectangle, or a
 right-angled shape such as an L or a U, its sides always along x or z. It is a
-drawing aid only: it constrains nothing, and parts need not be inside it. Add
-one with the dashed-rectangle button beside Draw a beam: it drops a 600 × 450 mm
-rectangle and opens it in the inspector, where you set its label and colour
+drawing aid only: it constrains nothing, and parts need not be inside it. The
+dashed-rectangle button beside Draw a beam starts drawing one, a mode like Draw
+a beam. Drag on the table for a plain rectangle, or click to place corners:
+each new side runs along x or z, whichever way the pointer has moved further,
+its corner on the grid (`⇧` for fine steps). A dashed preview shows the next
+side and, fainter, the way back to the first corner, with an elbow where the
+two don't line up. Double-click, click the first corner or press Enter to
+finish: the closing side and any elbow are added for you. `⌫` removes the last
+corner and Esc cancels. A side that would cross, touch or run back along the
+outline drawn so far is refused: the preview turns red, the click isn't taken
+and the status line says why, and the same goes for the closing side, so an
+outline can't be finished crossing itself (other frames don't count; frames
+may overlap). While drawing, parts and other frames ignore clicks, so a corner
+can go on top of a part. The finished frame is held to a saved one's limits
+(sides at least 10 mm, at most 5000 mm overall), arrives as one undo step and
+opens in the inspector, where you set its label and colour
 and switch its Fill: on (the default), it is a faint tint of its colour inside
 a solid edge; off, it is the coloured outline alone, on screen and in the PNG.
 A rectangle also has its width and depth there, which resize it from its
@@ -266,7 +279,7 @@ is on screen until it is needed:
   number worth reading.
 - **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
   builder dims and each control on screen is ringed and tagged in place, in
-  a few words ("Draw a beam", "Frame an area", "Beams: drag a row to
+  a few words ("Draw a beam", "Draw a frame round an area", "Beams: drag a row to
   reorder"), with the camera and selection keys in a card. A control under
   another island, or with no free spot for its tag, goes untagged; its
   tooltip still names it. Any click, Esc or "Got it" closes them, and focus
@@ -296,7 +309,7 @@ is on screen until it is needed:
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds a rectangle and selects it; drag its edge to move it whole (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
+| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam draws one: drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag its edge to move it whole (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
 | Hide, show, reorder or delete a frame | The eye and trash buttons on its row in the Frames box; drag the row to a new place (or focus it and press `Alt+↑` / `Alt+↓`). A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
