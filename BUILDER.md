@@ -85,21 +85,33 @@ arrows, so you can see what you are editing; the export still leaves it out. Hid
 saved with the setup (scene version 4; older setups open with every beam
 shown) and each toggle is one undo step.
 
-**Frames mark areas.** A frame is a labelled rectangle drawn flat on the table
-under everything, to mark one breadboard or an enclosure. It is a drawing aid
-only: it constrains nothing, and parts need not be inside it. Add one with the
-dashed-rectangle button beside Draw a beam; it opens in the inspector, where
-you set its label, colour, width and depth, and switch its Fill: on (the
-default), it is a faint tint of its colour inside a solid edge; off, it is the
-coloured outline alone, on screen and in the PNG. Drag its edge to move it (the
-inside lets clicks and drags through, so a frame never blocks the table or the
-parts in it). Each frame has a row in the Frames box under the beams box, with
-an eye to hide it from the view and the PNG and a trash button; drag a row to
-reorder the list, as in the beams box; a selected
-hidden frame shows as a faint outline on screen, not in the export. Frames are
-saved with the setup (scene version 5; older setups open with none), and so is
-a frame's Fill, stored only when off (scene version 6; older frames open
-filled). Hiding, showing and each Fill switch are one undo step.
+**Frames mark areas.** A frame is a labelled outline drawn flat on the table
+under everything, to mark one breadboard or an enclosure: a rectangle, or a
+right-angled shape such as an L or a U, its sides always along x or z. It is a
+drawing aid only: it constrains nothing, and parts need not be inside it. Add
+one with the dashed-rectangle button beside Draw a beam: it drops a 600 × 450 mm
+rectangle and opens it in the inspector, where you set its label and colour
+and switch its Fill: on (the default), it is a faint tint of its colour inside
+a solid edge; off, it is the coloured outline alone, on screen and in the PNG.
+A rectangle also has its width and depth there, which resize it from its
+back-left corner; any other shape shows its overall size, read-only ("850 ×
+250 mm overall"). The label sits on the back-left corner (the back-most, then
+left-most). Drag its edge to move it whole, its back-left corner on the grid
+(the inside lets clicks and drags through, so a frame never blocks the table
+or the parts in it). Each frame has a row in the Frames box under the beams
+box, with an eye to hide it from the view and the PNG and a trash button; drag
+a row to reorder the list, as in the beams box; a selected hidden frame shows
+as a faint outline on screen, not in the export. Frames are saved with the
+setup (scene version 5; older setups open with none), and so is a frame's
+Fill, stored only when off (scene version 6; older frames open filled).
+Since scene version 7 a frame is saved as its `corners`, `[x, z]` in mm,
+from the back-left corner and clockwise in the top-down view; older frames,
+saved as a centre, width and depth, open as that rectangle's corners, and the
+parser still reads that form in any version for hand-written files. An
+outline no frame can have (a slanted side, one crossing itself, fewer than 4
+corners, a side under 10 mm, over 5000 mm overall, junk values) opens as the
+rectangle around it rather than being dropped. Hiding, showing and each Fill
+switch are one undo step.
 
 **A setup brief for an AI assistant.** The `.md` button, in its own island at
 the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
@@ -111,7 +123,8 @@ assistant to ask about anything unclear and then reply with one JSON file and
 nothing else, and sets out the conventions (millimetres, the x–z table at
 height 0, the beam height, how rotations turn a part, unique ids), the file's
 shape at the current scene version, every component type with its heights and
-own fields, and a worked example (laser, mirror, lens, photodiode, one beam).
+own fields, and a worked example (laser, mirror, lens, photodiode, one beam,
+one L-shaped frame).
 It is generated in `setup-brief.ts`: the types and their defaults come from
 `types.ts`, so a new type appears in it with no extra work, and a new saved
 field doesn't typecheck until the brief has a line for it. A test opens the
@@ -283,7 +296,7 @@ is on screen until it is needed:
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds one and selects it; drag its edge to move it (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour, width, depth and Fill are in its inspector; Fill off draws the outline alone, on screen and in the PNG, as one undo step |
+| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds a rectangle and selects it; drag its edge to move it whole (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
 | Hide, show, reorder or delete a frame | The eye and trash buttons on its row in the Frames box; drag the row to a new place (or focus it and press `Alt+↑` / `Alt+↓`). A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
@@ -332,8 +345,8 @@ print — posters, slides and paper figures are mostly white pages.
   it appears only while a part is being placed or dragged (and the grid toggle
   is on), follows the view and fades with distance.
 - **Fit frames the parts.** Fit, a change of view and loading a scene frame the
-  parts themselves, tall ones and their tags included; an empty table frames an
-  800 × 600 mm board. The key light's shadows follow the layout too.
+  parts themselves, tall ones and their tags included, and the corners of every
+  shown frame; an empty table frames an 800 × 600 mm board. The key light's shadows follow the layout too.
 - **Enamel, not anodised metal.** Mount plates and bodies are dielectric so
   their colour stays saturated; only screws, rods and mirrors are metal.
 - **Grey posts.** Pillars, pedestals and risers are one mid-grey in both
@@ -359,7 +372,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
-| `src/components/builder/frame-mesh.tsx` | A frame: flat fill, edge, label, and the edge strips that take a press |
+| `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |

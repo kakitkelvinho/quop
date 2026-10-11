@@ -41,6 +41,7 @@ import {
   serializeScene,
   beamLineSnap,
   snapToGrid,
+  translateCorners,
   type BuilderComponent,
   type ComponentType,
   type Vec3,
@@ -62,6 +63,7 @@ type DragState = {
 
 type FrameDragState = {
   id: string;
+  /** from the grab point to the frame's first corner, mm */
   offsetX: number;
   offsetZ: number;
   started: boolean;
@@ -382,9 +384,10 @@ export default function BuilderScene() {
         const frame = sceneRef.current.frames.find((entry) => entry.id === frameDrag.id);
         if (!frame) return;
         const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
+        // the first corner snaps to the grid, and every other corner moves with it
         const nextX = snapToGrid(x + frameDrag.offsetX, step);
         const nextZ = snapToGrid(z + frameDrag.offsetZ, step);
-        if (frame.position[0] === nextX && frame.position[1] === nextZ) return;
+        if (frame.corners[0][0] === nextX && frame.corners[0][1] === nextZ) return;
         // like a part, the first real movement earns the undo step
         if (!frameDrag.started) {
           frameDrag.started = true;
@@ -529,8 +532,8 @@ export default function BuilderScene() {
     const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
     frameDragRef.current = {
       id,
-      offsetX: frame.position[0] - grabX,
-      offsetZ: frame.position[1] - grabZ,
+      offsetX: frame.corners[0][0] - grabX,
+      offsetZ: frame.corners[0][1] - grabZ,
       started: false,
     };
     setDragging(true);
@@ -865,16 +868,15 @@ export default function BuilderScene() {
 
       if (selectedFrame && selectedIds.length === 0) {
         const nudge = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
-        const [fx, fz] = selectedFrame.position;
-        const to: Record<string, [number, number]> = {
-          ArrowLeft: [fx - nudge, fz],
-          ArrowRight: [fx + nudge, fz],
-          ArrowUp: [fx, fz - nudge],
-          ArrowDown: [fx, fz + nudge],
+        const by: Record<string, [number, number]> = {
+          ArrowLeft: [-nudge, 0],
+          ArrowRight: [nudge, 0],
+          ArrowUp: [0, -nudge],
+          ArrowDown: [0, nudge],
         };
-        if (to[event.key]) {
+        if (by[event.key]) {
           event.preventDefault();
-          api.updateFrame(selectedFrame.id, { position: clampToTable(...to[event.key]) });
+          api.updateFrame(selectedFrame.id, { corners: translateCorners(selectedFrame.corners, ...by[event.key]) });
         } else if (event.key === "Delete" || event.key === "Backspace") {
           event.preventDefault();
           handleDeleteFrame(selectedFrame.id);
