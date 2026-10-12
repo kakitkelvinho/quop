@@ -60,7 +60,12 @@ came from inside the laser. The beam is still drawn from the aperture.
 **A beam meets each part at its reference point.** The beam is drawn to, and
 measured to, a fixed point on the part. For most parts that is the optical
 centre. Where it isn't, the rule is the ruler's: the reference point is the
-first surface a ruler laid along the beam touches. A photodiode's is its chip
+first surface a ruler laid along the beam touches. A laser's is its opening,
+the emitter's output face (56 mm in front of its centre), so a beam that starts
+there is drawn and measured from where the light leaves it, not from inside the
+head; a built-in path still counts on top. A fibre collimator's is its lens
+window (10.5 mm in front of its centre), whether the beam leaves the fibre
+there or is coupled into it. A photodiode's is its chip
 (2.15 mm in front of its centre, at the back of its cup), a camera's the front
 of the camera, its C-mount ring face (23 mm), a spectrometer's its entrance
 port (62 mm), a single-photon detector's its fibre receptacle (30.5 mm). An
@@ -69,7 +74,8 @@ on the side away from the tip), whichever side the beam comes from.
 Each offset is fixed per type and turns with the part. Placement, grid
 snapping and the angle a mirror or detector takes still use the centre.
 Setups saved before this can measure a few millimetres differently wherever
-a beam reaches one of these parts.
+a beam reaches one of these parts, 56 mm shorter wherever one starts at a
+laser, and 10.5 mm shorter at each fibre collimator.
 
 **Beams can be told apart.** Each beam has its own width (a drawn diameter in
 millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the

@@ -101,10 +101,10 @@ describe("setup-v3.json, the first version with connections", () => {
 });
 
 describe("setup-v3.json, a laser with a built-in path", () => {
-  it("opens with the path and counts it in its beam: 4000 mm inside plus 450 mm on the table", () => {
+  it("opens with the path and counts it in its beam: 4000 mm inside plus 394 mm on the table from its opening", () => {
     const setup = open("setup-v3.json");
     assert.equal(setup.components.find(({ id }) => id === "laser-folded")?.internalPathMm, 4000);
-    assert.equal(beamLengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4450);
+    assert.equal(beamLengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4394);
   });
 
   it("is on no laser in older setups", () => {
