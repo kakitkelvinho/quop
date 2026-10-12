@@ -14,8 +14,9 @@
   --shadow: 0 20px 50px rgb(31 41 51 / 0.1);
   /* the deeper shadow a card lifts into on hover */
   --shadow-lift: 0 26px 60px rgb(31 41 51 / 0.16);
-  /* keyboard focus, in the ink pair rather than the browser's blue */
-  --focus-ring: rgb(139 30 63 / 0.3);
+  /* keyboard focus, in the ink itself: the 0.3 wash it once was fell under
+     the 3:1 a focus indicator needs against the page */
+  --focus-ring: var(--accent);
   --mark: 17 17 17;
   --chalk-alpha: 0.26;
   --chalk-dust: 0.09;
@@ -35,7 +36,7 @@ html[data-theme="dark"] {
   --accent-soft: rgb(244 185 66 / 0.14);
   --shadow: 0 28px 60px rgb(0 0 0 / 0.6);
   --shadow-lift: 0 34px 72px rgb(0 0 0 / 0.7);
-  --focus-ring: rgb(244 185 66 / 0.4);
+  --focus-ring: var(--accent);
   --mark: 255 255 255;
   --chalk-alpha: 0.3;
   --chalk-dust: 0.15;
@@ -217,7 +218,7 @@ a.toolCard:hover {
 }
 
 a.toolCard:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -556,7 +557,7 @@ html[data-theme="dark"] .buttonLink--ghost {
 }
 
 .fileDrop:focus-within {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -1181,7 +1182,7 @@ html[data-theme="dark"] .visualizerOverlayState {
 /* Keyboard focus anywhere, in the ink pair rather than the browser's blue.
    Zero specificity, so any control that draws its own focus keeps it. */
 :where(:focus-visible) {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -1199,7 +1200,7 @@ main:focus {
 .buttonLink:focus-visible,
 .siteFooter a:focus-visible,
 .field__control:focus-within {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 

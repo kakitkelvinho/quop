@@ -183,7 +183,7 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 ### Shadow Vocabulary
 - **Card ambient** (`box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1)`, day / `0 28px 60px rgba(0, 0, 0, 0.35)`, night): the resting shadow under every `sectionCard`, `inputCard`, and `infoPanel`.
 - **Control ambient** (`box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14)`, deepens to `0 16px 28px rgba(91, 102, 117, 0.18)` on hover): the metallic plotter/action buttons (`buttonControl`).
-- **Focus ring** (`outline: 3px solid var(--focus-ring)`: `rgba(139, 30, 63, 0.3)` day / `rgba(244, 185, 66, 0.4)` night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Uses the ink-accent pair, not a generic blue.
+- **Focus ring** (`outline: 2px solid var(--focus-ring)`, the ink itself: Oxblood `#8b1e3f` by day, Lamp Amber `#f4b942` by night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Solid rather than a soft wash, because a focus indicator needs 3:1 against the page.
 - **Lift** (`var(--shadow-lift)`): the deeper shadow a card rises into on hover, with `translateY(-2px)`.
 
 ## Shapes
