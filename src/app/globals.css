@@ -3615,6 +3615,64 @@ html[data-theme="dark"] .builderButton--primary {
   overflow-wrap: anywhere;
 }
 
+/* the JSON panel's box: the brief's text, but editable, and wider actions */
+.builderJson .builderBrief__actions {
+  flex-wrap: wrap;
+}
+
+.builderJson__text {
+  width: 100%;
+  resize: none;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.builderJson__text:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.builderJson__text[aria-invalid="true"] {
+  border-color: var(--accent);
+}
+
+.builderJson__check {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.builderJson__check.is-error {
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+.builderJson__note {
+  margin: 0.3rem 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.builderJson__revert {
+  align-self: flex-start;
+  margin-top: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-strong);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
 .builderStatus {
   position: absolute;
   z-index: 5;

@@ -1241,8 +1241,8 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
       z,
     ],
     rotation: finiteNumber(raw.rotation) ?? 0,
-    color: typeof raw.color === "string" ? raw.color : undefined,
-    label: typeof raw.label === "string" ? raw.label : undefined,
+    color: cssColor(raw.color, undefined),
+    label: labelText(raw.label),
   };
   if (type === "lens") {
     component.lensShape = raw.lensShape === "biconvex" ? "biconvex" : "plano-convex";
@@ -1293,8 +1293,8 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
   return {
     id: raw.id,
     path,
-    color: typeof raw.color === "string" ? raw.color : BEAM_COLORS[0],
-    label: typeof raw.label === "string" ? raw.label : undefined,
+    color: cssColor(raw.color, BEAM_COLORS[0]),
+    label: labelText(raw.label),
     ...(finiteNumber(raw.width) !== undefined
       ? { width: clamp(finiteNumber(raw.width)!, BEAM_WIDTH_RANGE_MM) }
       : {}),
@@ -1350,8 +1350,8 @@ function parseFrame(value: unknown, version: number): Frame | null {
   return {
     id: raw.id,
     corners: parseFrameCorners(raw),
-    color: typeof raw.color === "string" ? raw.color : FRAME_COLORS[0],
-    ...(typeof raw.label === "string" ? { label: raw.label } : {}),
+    color: cssColor(raw.color, FRAME_COLORS[0]),
+    ...(labelText(raw.label) !== undefined ? { label: labelText(raw.label) } : {}),
     ...(raw.hidden === true ? { hidden: true } : {}),
     ...(version >= 6 && raw.fill === false ? { fill: false } : {}),
   };
@@ -1409,8 +1409,8 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
     kind,
     from,
     to,
-    color: typeof raw.color === "string" ? raw.color : spec.color,
-    ...(typeof raw.label === "string" ? { label: raw.label } : {}),
+    color: cssColor(raw.color, spec.color),
+    ...(labelText(raw.label) !== undefined ? { label: labelText(raw.label) } : {}),
     ...(length !== undefined ? { lengthM: clamp(length, CONNECTION_LENGTH_RANGE_M) } : {}),
     ...(index !== undefined ? { [spec.index.key]: clamp(index, spec.index.range) } : {}),
   };
@@ -1427,6 +1427,28 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
  * those from before version 7 saved each frame as a centre and a size, and
  * open with that rectangle's corners.
  */
+/** A colour a setup file may give: hex, rgb()/hsl() of plain numbers, or a CSS colour name. */
+const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgba?|hsla?)\(\s*[-+\d.%\s,/deg]+\)|[a-z]{3,24})$/i;
+
+/**
+ * A file's colour, if it is one: anything else (a `url(…)`, an `image-set`)
+ * would reach inline styles and could make the page fetch from elsewhere.
+ */
+function cssColor<T extends string | undefined>(raw: unknown, fallback: T): string | T {
+  if (typeof raw !== "string") return fallback;
+  const color = raw.trim();
+  return CSS_COLOR.test(color) ? color : fallback;
+}
+
+/** The longest label a file may give, characters; beyond it a label is cut. */
+export const LABEL_MAX_LENGTH = 120;
+
+/** A file's label, without control characters and cut to LABEL_MAX_LENGTH. */
+function labelText(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined;
+  return raw.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, LABEL_MAX_LENGTH);
+}
+
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
