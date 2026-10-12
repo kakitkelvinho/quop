@@ -18,6 +18,7 @@ const FIXTURES = [
   "setup-v7.json",
   "setup-v8.json",
   "setup-v9.json",
+  "setup-v10.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -318,5 +319,18 @@ describe("setup-v9.json, the first version with a frame's fill opacity", () => {
     for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v9.json"))) {
       for (const frame of open(name).frames) assert.equal(frame.fillOpacity, undefined, `${name} ${frame.id}`);
     }
+  });
+});
+
+describe("setup-v10.json, the first version to place a part by its port", () => {
+  it("opens exactly as v9's setup does, which was saved by centres", () => {
+    assert.deepEqual(open("setup-v10.json"), open("setup-v9.json"));
+  });
+
+  it("saves the laser at its opening, ahead of where v9 saved its centre", () => {
+    const laserAt = (name: string) =>
+      (readSaved(name).components.find(({ type }) => type === "laser-source") as { position?: number[] } | undefined)?.position;
+    const [before, after] = [laserAt("setup-v9.json"), laserAt("setup-v10.json")];
+    assert.notDeepEqual(after, before);
   });
 });

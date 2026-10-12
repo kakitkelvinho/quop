@@ -19,6 +19,9 @@ v8 is the first with an objective length: v7's setup with the objective saved
 80 mm long; v1 to v7 open with every objective at the default length.
 v9 is the first with a frame's fill opacity: v8's setup plus a solid frame,
 `"fillOpacity": 1`; v1 to v8 open with every fill at the faint default.
+v10 places a part with a port (a laser, a fibre collimator, a detector, an
+objective) by that port rather than its body's centre: v9's setup, opened and
+saved, so the same drawing; v1 to v9 open with each such part moved to its port.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

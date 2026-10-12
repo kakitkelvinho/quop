@@ -36,6 +36,7 @@ import {
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
+  COMPONENT_SPECS,
   CONNECTION_KINDS,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
@@ -1726,93 +1727,96 @@ export function ComponentMesh({
       onPointerOver={onPointerOver}
       onPointerOut={onPointerOut}
     >
-      {component.type === "laser-source" ? (
-        <LaserSource {...modelProps} />
-      ) : null}
-      {component.type === "fiber-collimator" ? (
-        <FiberCollimator {...modelProps} stub={!stubTaken} />
-      ) : null}
-      {component.type === "mirror-mount" ? (
-        <MirrorMount {...modelProps} />
-      ) : null}
-      {component.type === "beam-splitter" ? (
-        <BeamSplitter {...modelProps} />
-      ) : null}
-      {component.type === "lens" ? (
-        <Lens
-          {...modelProps}
-          shape={component.lensShape ?? "plano-convex"}
-          focalLength={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
-        />
-      ) : null}
-      {component.type === "waveplate" ? <Waveplate {...modelProps} /> : null}
-      {component.type === "filter" ? <Filter {...modelProps} /> : null}
-      {component.type === "iris" ? <Iris {...modelProps} /> : null}
-      {component.type === "sample" ? (
-        <Sample
-          axis={axis}
-          color={component.color ?? DEFAULT_SAMPLE_COLOR}
-          opacity={component.opacity ?? SAMPLE_OPACITY}
-        />
-      ) : null}
-      {component.type === "paul-trap" ? <PaulTrap {...modelProps} /> : null}
-      {component.type === "cavity" ? (
-        <Cavity
-          {...modelProps}
-          length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
-        />
-      ) : null}
-      {component.type === "particle" ? (
-        <Particle
-          axis={axis}
-          color={component.color ?? DEFAULT_PARTICLE_COLOR}
-          radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
-        />
-      ) : null}
-      {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!stubTaken} /> : null}
-      {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
-      {component.type === "objective" ? (
-        <Objective
-          {...modelProps}
-          length={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
-        />
-      ) : null}
-      {component.type === "block" ? (
-        <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
-      ) : null}
-      {component.type === "aom" ? <Aom {...modelProps} /> : null}
-      {component.type === "eom" ? <Eom {...modelProps} /> : null}
-      {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
-      {component.type === "spectrometer" ? (
-        <Spectrometer {...modelProps} />
-      ) : null}
-      {component.type === "single-photon-detector" ? (
-        <SinglePhotonDetector {...modelProps} />
-      ) : null}
-      {component.type === "time-tagger" ? <TimeTagger {...modelProps} /> : null}
+      {/* the group stands at the part's port; its body is drawn behind it */}
+      <group position={[-(COMPONENT_SPECS[component.type].referenceX ?? 0), 0, 0]}>
+        {component.type === "laser-source" ? (
+          <LaserSource {...modelProps} />
+        ) : null}
+        {component.type === "fiber-collimator" ? (
+          <FiberCollimator {...modelProps} stub={!stubTaken} />
+        ) : null}
+        {component.type === "mirror-mount" ? (
+          <MirrorMount {...modelProps} />
+        ) : null}
+        {component.type === "beam-splitter" ? (
+          <BeamSplitter {...modelProps} />
+        ) : null}
+        {component.type === "lens" ? (
+          <Lens
+            {...modelProps}
+            shape={component.lensShape ?? "plano-convex"}
+            focalLength={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
+          />
+        ) : null}
+        {component.type === "waveplate" ? <Waveplate {...modelProps} /> : null}
+        {component.type === "filter" ? <Filter {...modelProps} /> : null}
+        {component.type === "iris" ? <Iris {...modelProps} /> : null}
+        {component.type === "sample" ? (
+          <Sample
+            axis={axis}
+            color={component.color ?? DEFAULT_SAMPLE_COLOR}
+            opacity={component.opacity ?? SAMPLE_OPACITY}
+          />
+        ) : null}
+        {component.type === "paul-trap" ? <PaulTrap {...modelProps} /> : null}
+        {component.type === "cavity" ? (
+          <Cavity
+            {...modelProps}
+            length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
+          />
+        ) : null}
+        {component.type === "particle" ? (
+          <Particle
+            axis={axis}
+            color={component.color ?? DEFAULT_PARTICLE_COLOR}
+            radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
+          />
+        ) : null}
+        {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!stubTaken} /> : null}
+        {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
+        {component.type === "objective" ? (
+          <Objective
+            {...modelProps}
+            length={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+          />
+        ) : null}
+        {component.type === "block" ? (
+          <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
+        ) : null}
+        {component.type === "aom" ? <Aom {...modelProps} /> : null}
+        {component.type === "eom" ? <Eom {...modelProps} /> : null}
+        {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
+        {component.type === "spectrometer" ? (
+          <Spectrometer {...modelProps} />
+        ) : null}
+        {component.type === "single-photon-detector" ? (
+          <SinglePhotonDetector {...modelProps} />
+        ) : null}
+        {component.type === "time-tagger" ? <TimeTagger {...modelProps} /> : null}
 
-      {hovered && !selected ? (
-        <HoverRing radius={radius} color={palette.hover} />
-      ) : null}
-      {selected ? (
-        <SelectionRing radius={radius} color={palette.accent} />
-      ) : null}
-      {beamOrder ? (
-        <BeamOrderBadge order={beamOrder} height={axis + top} />
-      ) : null}
+        {hovered && !selected ? (
+          <HoverRing radius={radius} color={palette.hover} />
+        ) : null}
+        {selected ? (
+          <SelectionRing radius={radius} color={palette.accent} />
+        ) : null}
+        {beamOrder ? (
+          <BeamOrderBadge order={beamOrder} height={axis + top} />
+        ) : null}
 
-      {showLabel && !component.host ? (
-        <Html
-          position={[0, axis + top + 12, 0]}
-          center
-          zIndexRange={[0, 0]}
-          className="builderHtmlLayer"
-        >
-          <span className={`builderLabel${selected ? " is-selected" : ""}`}>
-            {componentDisplayName(component)}
-          </span>
-        </Html>
-      ) : null}
+        {showLabel && !component.host ? (
+          <Html
+            position={[0, axis + top + 12, 0]}
+            center
+            zIndexRange={[0, 0]}
+            className="builderHtmlLayer"
+          >
+            <span className={`builderLabel${selected ? " is-selected" : ""}`}>
+              {componentDisplayName(component)}
+            </span>
+          </Html>
+        ) : null}
+      </group>
     </group>
     </PostsVisible.Provider>
   );

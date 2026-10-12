@@ -37,6 +37,7 @@ import {
   FINE_GRID_MM,
   FRAME_COLORS,
   GRID_SIZE_MM,
+  bodyCentre,
   clampToTable,
   componentById,
   componentDisplayName,
@@ -400,14 +401,14 @@ export default function BuilderScene() {
     setSelectedConnectionId(null);
   }, []);
 
-  // Ctrl/⌘ + drag selects every part whose optical centre falls in the box;
+  // Ctrl/⌘ + drag selects every part whose body's centre falls in the box;
   // with Shift as well, it adds them to the selection.
   const selectInBox = useCallback((box: ScreenBox, adding: boolean) => {
     const project = projectRef.current;
     if (!project) return;
     const inside = sceneRef.current.components
       .filter((component) => {
-        const [x, y] = project(component.position);
+        const [x, y] = project(bodyCentre(component));
         return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
       })
       .map((component) => component.id);

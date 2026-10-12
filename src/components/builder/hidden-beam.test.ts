@@ -80,9 +80,9 @@ describe("a hidden beam in a setup", () => {
     assert.notEqual(yaw(hidden), 0);
   });
 
-  it("keeps its path length: 144 mm in from the laser's opening and 200 mm out", () => {
+  it("keeps its path length: 200 mm in from the laser's opening and 200 mm out", () => {
     const hidden = bench([{ ...probe, hidden: true }]);
-    assert.equal(beamLengthMm(hidden.components, hidden.beams[0]), 344);
+    assert.equal(beamLengthMm(hidden.components, hidden.beams[0]), 400);
   });
 
   it("is hidden still after saving and opening, and the others are not", () => {

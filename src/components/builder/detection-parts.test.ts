@@ -34,9 +34,10 @@ describe("a setup with a single-photon detector and a time tagger", () => {
     );
   });
 
-  it("keeps the detector's height and label, and turns it to the laser", () => {
+  it("keeps the detector's height and label, turns it to the laser, and places it by its fibre receptacle", () => {
+    // saved by its centre, at x = 0, before version 10: its receptacle is 30.5 mm toward the laser
     const spcm = open().components.find(({ id }) => id === "spcm-a");
-    assert.deepEqual([spcm?.position, spcm?.label, spcm?.rotation], [[0, 100, 0], "SPCM A", 0]);
+    assert.deepEqual([spcm?.position, spcm?.label, spcm?.rotation], [[-30.5, 100, 0], "SPCM A", 0]);
   });
 
   it("stands the time tagger at its fixed height, whatever the file says", () => {

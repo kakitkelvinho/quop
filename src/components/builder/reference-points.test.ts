@@ -6,16 +6,20 @@ import {
   type BuilderComponent,
   type ComponentType,
   type Vec3,
+  COMPONENT_SPECS,
   beamLengthMm,
-  beamPoints,
+  bodyCentre,
+  parseScene,
   SCENE_VERSION,
   settleAngles,
 } from "./types.ts";
 
 // #125: a beam meets each part at its reference point, the first surface a
-// ruler laid along the beam touches: a photodiode's chip, a camera's C-mount
-// ring face, an objective's threaded plate's outer face. Everything else's is
-// its optical centre. Path length and the drawn beam both use it.
+// ruler laid along the beam touches: a laser's opening, a photodiode's chip, a
+// camera's C-mount ring face, an objective's threaded plate's outer face.
+// Since version 10 a part with such a port is placed, snapped and saved by it,
+// and its body is drawn behind it, so the distance between two parts'
+// positions is the beam between them. Everything else's is its optical centre.
 
 const part = (id: string, type: ComponentType, [x, z]: [number, number], rotation = 0): BuilderComponent => ({
   id,
@@ -32,57 +36,67 @@ function settled(components: BuilderComponent[], path: string[]) {
   return { components: scene.components, beam: scene.beams[0] };
 }
 
-const rounded = (points: Vec3[]) => points.map((point) => point.map((value) => Math.round(value * 1000) / 1000));
+// adding 0 turns the -0 a cosine leaves into 0
+const rounded = (points: Vec3[]) => points.map((point) => point.map((value) => Math.round(value * 1000) / 1000 + 0));
 
-describe("a beam that ends at a detector stops at its reference point", () => {
-  const cases: [ComponentType, number][] = [
-    ["photodiode", 497.85],
-    ["camera", 477],
-    ["spectrometer", 438],
-    ["single-photon-detector", 469.5],
-  ];
+const PORTED: ComponentType[] = [
+  "laser-source",
+  "fiber-collimator",
+  "photodiode",
+  "camera",
+  "spectrometer",
+  "single-photon-detector",
+  "objective",
+];
 
-  for (const [type, length] of cases) {
-    it(`${type}: 500 mm between centres, ${length} mm to its reference point`, () => {
-      const { components, beam: ending } = settled(
-        [part("m", "mirror-mount", [0, 0]), part("d", type, [300, 400])],
-        ["m", "d"],
-      );
-      assert.equal(Math.round(beamLengthMm(components, ending) * 1000) / 1000, length);
+describe("a part with a port is placed by it", () => {
+  for (const type of PORTED) {
+    it(`${type}: 500 mm between positions is 500 mm of beam`, () => {
+      const { components, beam: run } = settled([part("m", "mirror-mount", [0, 0]), part("p", type, [300, 400])], ["m", "p"]);
+      assert.equal(Math.round(beamLengthMm(components, run) * 1000) / 1000, 500);
     });
   }
 
-  it("turns with the part: a photodiode straight down +z from the mirror stops at its chip, 2.15 mm short of its centre", () => {
-    const { components, beam: ending } = settled(
-      [part("m", "mirror-mount", [0, 0]), part("d", "photodiode", [0, 300])],
-      ["m", "d"],
-    );
-    assert.deepEqual(rounded(beamPoints(components, ending.path)), [
-      [0, 100, 0],
-      [0, 100, 297.85],
-    ]);
+  it("a laser's opening 300 mm from a spectrometer's port is 300 mm of beam, whatever their sizes", () => {
+    const components = [part("l", "laser-source", [0, 0]), part("s", "spectrometer", [300, 0])];
+    assert.equal(beamLengthMm(components, beam(["l", "s"])), 300);
   });
 });
 
-describe("a beam through an objective turns at its threaded plate's outer face", () => {
-  it("from the plate's side: 300 mm in and 400 mm out, 700 mm", () => {
-    const components = [
-      part("in", "mirror-mount", [-329, 0]),
-      part("obj", "objective", [0, 0]),
-      part("out", "mirror-mount", [-29, 400]),
-    ];
-    assert.deepEqual(rounded(beamPoints(components, ["in", "obj", "out"]))[1], [-29, 100, 0]);
-    assert.equal(Math.round(beamLengthMm(components, beam(["in", "obj", "out"])) * 1000) / 1000, 700);
+describe("its body is drawn behind its port", () => {
+  for (const type of PORTED) {
+    const offset = COMPONENT_SPECS[type].referenceX ?? 0;
+    it(`${type}: its body's centre is ${offset} mm from its port, against its local x`, () => {
+      assert.deepEqual(rounded([bodyCentre(part("p", type, [0, 0]))]), rounded([[-offset, 100, 0]]));
+    });
+  }
+
+  it("turns with the part: a laser turned to fire along -z has its body at z = +56", () => {
+    assert.deepEqual(rounded([bodyCentre(part("l", "laser-source", [0, 0], 90))]), [[0, 100, 56]]);
   });
 
-  it("from the tip's side, the objective turned 180°: still the plate, 700 mm", () => {
-    const components = [
-      part("in", "mirror-mount", [329, 0]),
-      part("obj", "objective", [0, 0], 180),
-      part("out", "mirror-mount", [29, 400]),
-    ];
-    assert.deepEqual(rounded(beamPoints(components, ["in", "obj", "out"]))[1], [29, 100, 0]);
-    assert.equal(Math.round(beamLengthMm(components, beam(["in", "obj", "out"])) * 1000) / 1000, 700);
+  it("a part with no port is its own body's centre", () => {
+    assert.deepEqual(bodyCentre(part("m", "mirror-mount", [10, 20], 45)), [10, 100, 20]);
+  });
+
+  it("a detector turned to the light keeps its port where it is and swings its body behind it", () => {
+    const { components } = settled([part("m", "mirror-mount", [0, 0]), part("d", "photodiode", [0, 300])], ["m", "d"]);
+    const detector = components.find(({ id }) => id === "d")!;
+    assert.deepEqual(detector.position, [0, 100, 300]);
+    assert.deepEqual(rounded([bodyCentre(detector)]), [[0, 100, 302.15]]);
+  });
+});
+
+describe("a beam through an objective turns at its threaded plate's outer face, its position", () => {
+  it("300 mm in and 400 mm out, 700 mm, from either side", () => {
+    for (const rotation of [0, 180]) {
+      const components = [
+        part("in", "mirror-mount", [-300, 0]),
+        part("obj", "objective", [0, 0], rotation),
+        part("out", "mirror-mount", [0, 400]),
+      ];
+      assert.equal(beamLengthMm(components, beam(["in", "obj", "out"])), 700, `turned ${rotation}°`);
+    }
   });
 });
 
@@ -97,20 +111,35 @@ describe("every other part meets the beam at its optical centre", () => {
   });
 });
 
-describe("a beam at a fibre collimator meets its lens window", () => {
-  // the collimator faces +x: its window is 10.5 mm in front of its centre
-  const collimator = part("c", "fiber-collimator", [0, 0]);
-  const mirror = part("m", "mirror-mount", [300, 0]);
+describe("a setup saved by its parts' centres, before version 10", () => {
+  // the default scene as version 9 saved it: the laser's centre 56 mm behind
+  // its opening, the spectrometer's 62 mm behind its port
+  const old = {
+    version: 9,
+    components: [
+      { id: "l", type: "laser-source", position: [-356, 100, -150], rotation: 0 },
+      { id: "m", type: "mirror-mount", position: [0, 100, -150], rotation: 0 },
+      { id: "s", type: "spectrometer", position: [337, 100, -150], rotation: 0 },
+      { id: "c", type: "fiber-collimator", position: [0, 100, 0], rotation: 90 },
+    ],
+    beams: [{ id: "b", path: ["l", "m", "s"], color: "#7c3aed" }],
+  };
 
-  it("starts there when light leaves the fibre: 300 mm between centres, 289.5 mm from the window", () => {
-    assert.equal(beamLengthMm([collimator, mirror], beam(["c", "m"])), 289.5);
+  it("opens with each part with a port moved to that port, and the rest where they were", () => {
+    const scene = parseScene(old)!;
+    const at = (id: string) => rounded([scene.components.find((part) => part.id === id)!.position])[0];
+    assert.deepEqual(at("l"), [-300, 100, -150]);
+    assert.deepEqual(at("m"), [0, 100, -150]);
+    assert.deepEqual(at("s"), [275, 100, -150]);
+    assert.deepEqual(at("c"), [0, 100, -10.5]);
   });
 
-  it("ends there when light is coupled in, the same 289.5 mm", () => {
-    assert.equal(beamLengthMm([collimator, mirror], beam(["m", "c"])), 289.5);
-  });
-
-  it("turns with the collimator: turned to face -z, its window is at z = -10.5", () => {
-    assert.deepEqual(rounded(beamPoints([part("c", "fiber-collimator", [0, 0], 90)], ["c"])), [[0, 100, -10.5]]);
+  it("draws every body where it was and measures every beam the same", () => {
+    const scene = parseScene(old)!;
+    for (const saved of old.components) {
+      const opened = scene.components.find((part) => part.id === saved.id)!;
+      assert.deepEqual(rounded([bodyCentre(opened)]), rounded([saved.position as Vec3]), saved.id);
+    }
+    assert.equal(beamLengthMm(scene.components, scene.beams[0]), 575);
   });
 });

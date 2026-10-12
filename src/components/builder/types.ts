@@ -156,7 +156,7 @@ export type Frame = {
   fillOpacity?: number;
 };
 
-export const SCENE_VERSION = 9 as const;
+export const SCENE_VERSION = 10 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -186,9 +186,11 @@ export type ComponentSpec = {
   /** radius of the selection ring, mm */
   radius: number;
   /**
-   * Where its reference point sits along its local x axis, mm from the
-   * optical centre, read off its model in component-models.tsx: the first
-   * surface a ruler laid along the beam touches. Missing means the centre.
+   * Where its port sits along its local x axis, mm from the body's centre,
+   * read off its model in component-models.tsx: the first surface a ruler laid
+   * along the beam touches, where light leaves or enters it. A part with a
+   * port is placed, snapped, saved and turned by that port; its model is
+   * drawn this far behind it. Missing means the port is the centre.
    */
   referenceX?: number;
   /** one line of plain-language help for a visitor who has never met a bench */
@@ -541,15 +543,31 @@ export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): 
   return first?.type === "laser-source" ? (first.internalPathMm ?? 0) : 0;
 }
 
+/** How far, in world x and z, a part's port sits from its body's centre: its referenceX turned with it. */
+function portShift(type: ComponentType, rotation: number): [number, number] {
+  const offset = COMPONENT_SPECS[type].referenceX ?? 0;
+  const yaw = (rotation * Math.PI) / 180;
+  return [offset * Math.cos(yaw), -offset * Math.sin(yaw)];
+}
+
 /**
- * Where a beam meets the component: its optical centre moved along its local
- * x by the type's referenceX. A yaw θ maps local +x to world (cos θ, 0, −sin θ).
+ * Where a beam meets the component, its reference point: its position. A
+ * part with a port (a laser's opening, a detector's window) is placed by
+ * that port, so the distance between two positions is the beam between them.
  */
 export function referencePoint(component: BuilderComponent): Vec3 {
+  return [...component.position] as Vec3;
+}
+
+/**
+ * The middle of a part's body, which its model, selection ring and label are
+ * drawn around: its position, less its port's offset. The same as its
+ * position for a part with no port.
+ */
+export function bodyCentre(component: BuilderComponent): Vec3 {
   const [x, y, z] = component.position;
-  const offset = COMPONENT_SPECS[component.type].referenceX ?? 0;
-  const yaw = (component.rotation * Math.PI) / 180;
-  return [x + offset * Math.cos(yaw), y, z - offset * Math.sin(yaw)];
+  const [dx, dz] = portShift(component.type, component.rotation);
+  return [x - dx, y, z - dz];
 }
 
 /** The reference points a beam runs through, skipping stops whose part is gone. */
@@ -1464,7 +1482,9 @@ function labelText(raw: unknown): string | undefined {
  * those from before version 6 open with every frame filled;
  * those from before version 7 saved each frame as a centre and a size, and
  * open with that rectangle's corners;
- * those from before version 9 open with every frame's fill at the faint default.
+ * those from before version 9 open with every frame's fill at the faint default;
+ * those from before version 10 saved a part with a port by its body's centre,
+ * and open with it moved to its port, exactly where it was.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -1492,7 +1512,25 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     ? raw.frames.map((frame) => parseFrame(frame, version)).filter((frame): frame is Frame => frame !== null)
     : [];
 
-  return settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames }));
+  const scene = settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames }));
+  return version < 10 ? settleAngles(movedToPorts(scene)) : scene;
+}
+
+/**
+ * Before version 10 a part with a port was saved by its body's centre. Once
+ * its angle is settled (a detector turned to its light, as it was drawn),
+ * each moves to its port, so it opens exactly where it was; the angles then
+ * settle again, unchanged, as a port lies on the line its part is turned along.
+ */
+function movedToPorts(scene: BuilderSceneData): BuilderSceneData {
+  const components = scene.components.map((component) => {
+    const [dx, dz] = portShift(component.type, component.rotation);
+    if (dx === 0 && dz === 0) return component;
+    const [x, y, z] = component.position;
+    const [px, pz] = clampToTable(x + dx, z + dz);
+    return { ...component, position: [px, y, pz] as Vec3 };
+  });
+  return { ...scene, components };
 }
 
 export function serializeScene(scene: BuilderSceneData): string {
@@ -1521,13 +1559,15 @@ function atDefaultHeight(components: BuilderComponent[]): BuilderComponent[] {
 export const DEFAULT_SCENE: BuilderSceneData = {
   version: SCENE_VERSION,
   components: atDefaultHeight([
-    { id: "laser-pump", type: "laser-source", position: [-350, 0, -150], rotation: 0, label: "Pump 400 nm" },
+    // a laser, spectrometer and photodiode are placed by their ports: the
+    // pump line runs 575 mm from the laser's opening to the spectrometer's
+    { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], rotation: 0, label: "Pump 400 nm" },
     { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], rotation: 0, label: "λ/2" },
     { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], rotation: 0, label: "PBS" },
     { id: "lens-1", type: "lens", position: [-25, 0, -150], rotation: 0, lensShape: "plano-convex", focalLength: 100 },
     { id: "sample-1", type: "sample", position: [100, 0, -150], rotation: 0, label: "MeLPPP film" },
     { id: "filter-1", type: "filter", position: [200, 0, -150], rotation: 0, label: "Pump block" },
-    { id: "spectrometer-1", type: "spectrometer", position: [325, 0, -150], rotation: 0 },
+    { id: "spectrometer-1", type: "spectrometer", position: [275, 0, -150], rotation: 0 },
     { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 45, color: "#dc2626", label: "M1" },
     { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 0, label: "Reference PD" },
   ]),
