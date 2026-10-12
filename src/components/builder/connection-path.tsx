@@ -5,7 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { useMemo } from "react";
 import { CatmullRomCurve3, Vector3 } from "three";
 
-import { FIBER_STUBS } from "@/components/builder/component-models";
+import { FIBER_STUBS, leavesFromStub } from "@/components/builder/component-models";
 import {
   CONNECTION_KINDS,
   componentById,
@@ -21,17 +21,25 @@ const HIT_RADIUS_MM = 5;
 
 /**
  * One end of a connection, from where it leaves its part down to where it
- * lands on the table, world mm. A fibre at a part with its own fibre stub
- * follows that stub. Anything else comes out of the part's side facing the
- * other end, droops and drops to the table, the way the stub does; between
- * two close parts the drop is squeezed so the landings never pass each other.
+ * lands on the table, world mm. At a part with its own stub (a collimator's
+ * fibre, a photodiode's jack on the back of its head) it follows that stub,
+ * curling to whichever side the other end is on, so it never leaves at a
+ * sharp angle or doubles back. Anything else comes out of the part's side
+ * facing the other end, droops and drops to the table, the way a stub does;
+ * between two close parts the drop is squeezed so the landings never pass
+ * each other.
  */
 function endPoints(part: BuilderComponent, other: BuilderComponent, kind: ConnectionKind, rest: number): Vector3[] {
   const [x, height, z] = part.position;
-  const stub = CONNECTION_KINDS[kind].usesFiberStub ? FIBER_STUBS[part.type] : undefined;
+  const stub = leavesFromStub(part.type, kind) ? FIBER_STUBS[part.type] : undefined;
   if (stub) {
     const yaw = (part.rotation * Math.PI) / 180;
-    return stub(height).points.map((point) => point.clone().applyAxisAngle(UP, yaw).add(new Vector3(x, 0, z)));
+    // the stub curls to the part's +z; mirror it when the other end is on its -z side
+    const toward = new Vector3(other.position[0] - x, 0, other.position[2] - z).applyAxisAngle(UP, -yaw);
+    const side = toward.z < 0 ? -1 : 1;
+    return stub(height).points.map((point) =>
+      new Vector3(point.x, point.y, point.z * side).applyAxisAngle(UP, yaw).add(new Vector3(x, 0, z)),
+    );
   }
 
   const out = new Vector3(other.position[0] - x, 0, other.position[2] - z);
