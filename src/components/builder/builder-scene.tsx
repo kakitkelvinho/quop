@@ -341,7 +341,7 @@ export default function BuilderScene() {
         if (!from) {
           setConnectDraft({ ...connectDraft, from: id });
         } else if (from.id === id) {
-          announce(`Can't connect ${componentDisplayName(component)} to itself. Click another part.`);
+          announce(`Can't connect ${componentDisplayName(component)} to itself.`);
         } else {
           setSelectedConnectionId(api.addConnection(connectDraft.kind, from.id, id));
           setConnectDraft(null);
@@ -657,7 +657,7 @@ export default function BuilderScene() {
         setSelectedFrameId(id);
         setLabelFocusId(id);
         setDrawing(null);
-        announce("Added a frame. Give it a label, or drag a side or corner to reshape it.");
+        announce("Frame added.");
         return true;
       }
       // what the pointer would do is shown beside it; the status line, which is read out, says only what a click did
@@ -738,7 +738,7 @@ export default function BuilderScene() {
       const frame = sceneRef.current.frames.find((entry) => entry.id === id);
       api.deleteFrame(id);
       setSelectedFrameId((current) => (current === id ? null : current));
-      if (frame) announce(`Deleted ${frameDisplayName(frame)}. ⌘Z brings it back.`);
+      if (frame) announce(`Deleted ${frameDisplayName(frame)}. ⌘Z undoes.`);
     },
     [announce, api],
   );
@@ -764,7 +764,7 @@ export default function BuilderScene() {
     (id: string, hidden: boolean) => {
       const frame = sceneRef.current.frames.find((entry) => entry.id === id);
       api.setFrameHidden(id, hidden);
-      if (frame) announce(`${hidden ? "Hid" : "Showed"} ${frameDisplayName(frame)} on the table.`);
+      if (frame) announce(`${hidden ? "Hid" : "Showed"} ${frameDisplayName(frame)}.`);
     },
     [announce, api],
   );
@@ -836,7 +836,7 @@ export default function BuilderScene() {
       const beam = sceneRef.current.beams.find((entry) => entry.id === id);
       api.deleteBeam(id);
       setSelectedBeamId((current) => (current === id ? null : current));
-      if (beam) announce(`Deleted ${beamDisplayName(beam)}. ⌘Z brings it back.`);
+      if (beam) announce(`Deleted ${beamDisplayName(beam)}. ⌘Z undoes.`);
     },
     [announce, api],
   );
@@ -862,7 +862,7 @@ export default function BuilderScene() {
     (id: string, hidden: boolean) => {
       const beam = sceneRef.current.beams.find((entry) => entry.id === id);
       api.setBeamHidden(id, hidden);
-      if (beam) announce(`${hidden ? "Hid" : "Showed"} ${beamDisplayName(beam)} on the table.`);
+      if (beam) announce(`${hidden ? "Hid" : "Showed"} ${beamDisplayName(beam)}.`);
     },
     [announce, api],
   );
@@ -879,15 +879,15 @@ export default function BuilderScene() {
     link.download = setupFileName("json");
     link.click();
     URL.revokeObjectURL(url);
-    announce("Setup saved as JSON.");
+    announce("Saved.");
   }, [announce]);
 
   const handleCopyBrief = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(setupBrief());
-      announce("Copied the setup brief. Paste it into an AI assistant.");
+      announce("Brief copied.");
     } catch {
-      announce("Couldn't copy in this browser. Download the brief instead.");
+      announce("Copy blocked. Use Download.");
     }
   }, [announce]);
 
@@ -898,7 +898,7 @@ export default function BuilderScene() {
     link.download = SETUP_BRIEF_FILENAME;
     link.click();
     URL.revokeObjectURL(url);
-    announce("Setup brief saved as Markdown.");
+    announce("Brief saved.");
   }, [announce]);
 
   // a setup the JSON panel checked replaces the table, as one undo step
@@ -913,7 +913,7 @@ export default function BuilderScene() {
       cancelBeam();
       cancelConnect();
       cancelFrame();
-      announce(`Applied the setup: ${summary}. ⌘Z undoes it.`);
+      announce(`Applied: ${summary}. ⌘Z undoes.`);
     },
     [announce, api, cancelBeam, cancelConnect, cancelFrame],
   );
@@ -932,9 +932,9 @@ export default function BuilderScene() {
       link.href = exportViewPng(canvas);
       link.download = setupFileName("png");
       link.click();
-      announce("Exported the view as a PNG.");
+      announce("PNG exported.");
     } catch {
-      announce("Couldn't export the canvas in this browser.");
+      announce("PNG export failed.");
     } finally {
       setExporting(false);
     }
@@ -1294,7 +1294,7 @@ export default function BuilderScene() {
           setSelection([]);
           setSelectedConnectionId(null);
           setSelectedFrameId(null);
-          announce("Loaded the example pump + reference layout.");
+          announce("Example loaded. ⌘Z undoes.");
         }}
         onClear={() => {
           api.clearScene();
@@ -1305,6 +1305,7 @@ export default function BuilderScene() {
           cancelBeam();
           cancelConnect();
           cancelFrame();
+          announce("Table cleared. ⌘Z undoes.");
         }}
       />
     </div>

@@ -9,7 +9,7 @@ import {
   type ComponentType,
 } from "@/components/builder/types";
 
-/** Name, tag and aliases only: hints mention other parts ("drop it on a Paul trap"). */
+/** Name, tag and aliases. */
 function matches(type: ComponentType, query: string): boolean {
   const spec = COMPONENT_SPECS[type];
   return [spec.label, spec.tag, ...(spec.aliases ?? [])].some((text) => text.toLowerCase().includes(query));
@@ -17,7 +17,7 @@ function matches(type: ComponentType, query: string): boolean {
 
 /**
  * The parts panel: opened from the + in the top-left island, it lists every
- * part by group with its icon and one-line hint. It stays open while placing,
+ * part by group with its icon and name. It stays open while placing,
  * so a run of parts can go down without reopening it.
  */
 export default function PartsPanel({
@@ -45,7 +45,7 @@ export default function PartsPanel({
         <input
           className="builderParts__search"
           type="search"
-          placeholder="Find a part…"
+          placeholder="Search"
           aria-label="Find a part"
           autoFocus
           value={query}
@@ -81,16 +81,13 @@ export default function PartsPanel({
                 <span className="builderPart__icon">
                   <PartIcon type={type} />
                 </span>
-                <span className="builderPart__text">
-                  <span className="builderPart__name">{COMPONENT_SPECS[type].label}</span>
-                  <span className="builderPart__hint">{COMPONENT_SPECS[type].hint}</span>
-                </span>
+                <span className="builderPart__name">{COMPONENT_SPECS[type].label}</span>
               </button>
             ))}
           </section>
         ))}
         {groups.length ? null : (
-          <p className="builderParts__empty">No part matches “{query.trim()}”.</p>
+          <p className="builderParts__empty">No match.</p>
         )}
       </div>
     </aside>

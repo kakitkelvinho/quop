@@ -15,8 +15,8 @@ Both of QUOP's audiences at once (see `PRODUCT.md`):
   physically fits on the board, and get a delay line's path length and time of
   flight without doing the arithmetic by hand.
 - **From outside** — an interactive way to see what an optics bench is made of.
-  Every part carries a plain-language hint, so nothing requires lab-internal
-  knowledge to be legible.
+  Copy is kept to names and short key hints: parts carry no descriptions, and
+  nothing names a real lab's experiment, sample or supplier.
 
 ## Decisions
 
@@ -295,12 +295,12 @@ is on screen until it is needed:
 
 - **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
   (with Draw a beam and Connect beside it), and the File menu (save/open JSON, export PNG, load the example, clear the
-  table, about the builder).
+  table).
 - **Left**: the parts panel, shown while the + is on: every part with its
-  icon and one-line hint, grouped as a bench walk-through, with a search box
+  icon and name, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
-  reopening it. The about panel (what the builder is for, then its known
-  limitations) and the setup brief open in the same spot, so opening one
+  reopening it. The JSON panel
+  and the setup brief open in the same spot, so opening one
   closes the others.
 - **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
   Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
@@ -387,7 +387,7 @@ drag on a part still moves it on the fine grid. Ctrl/⌘ + click adds a part to
 the selection or takes it out, and Ctrl/⌘ + drag draws a box that selects
 every part whose optical centre falls inside it (hold Shift too to add them);
 while placing or drawing a beam, Ctrl/⌘ + drag orbits instead. A faint hint
-in the top-right corner lists these. The camera is orthographic. It orbits a full turn as a
+in the top-right corner gives the Shift orbit. The camera is orthographic. It orbits a full turn as a
 turntable (up stays up) but never dips below the table, and Iso / Top jump straight back
 to the isometric or top-down view (no animation). Placing and dragging still
 work from any angle: they land on the table plane.
@@ -447,15 +447,12 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
-| `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
+| `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |
 | `src/components/builder/builder-icons.tsx` | The builder's icon set, icon button, and one glyph per part |
 | `src/components/builder/builder-scene.tsx` | Orchestration: selection, drag, keyboard, files |
 
 ## Known gaps
-
-Visitors see these in the builder under File › About the Tabletop
-(`LIMITATIONS` in `builder-hud.tsx`); keep the two lists in step.
 
 - A beam can pass through any component. Nothing checks that the light could
   really take that path.

@@ -193,8 +193,6 @@ export type ComponentSpec = {
    * drawn this far behind it. Missing means the port is the centre.
    */
   referenceX?: number;
-  /** one line of plain-language help for a visitor who has never met a bench */
-  hint: string;
 };
 
 /**
@@ -209,16 +207,14 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 20,
     radius: 60,
     referenceX: 56, // the emitter's output face, where the beam leaves: drawn 12 mm long at x = 50
-    hint: "Where a beam starts. Points along its own +x axis.",
   },
   "fiber-collimator": {
-    label: "Fiber collimator",
+    label: "Fibre collimator",
     tag: "Fiber",
     top: 20,
     minHeight: 20,
     radius: 30,
     referenceX: 10.5, // the lens window's face, where light leaves or enters: drawn 0.6 mm thick at x = 10.2
-    hint: "Where light enters or leaves a fiber: a beam can start or end here.",
   },
   "mirror-mount": {
     label: "Mirror",
@@ -227,7 +223,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 27,
     radius: 34,
-    hint: "Steers the beam. Colour the mount to mark which beam line it serves.",
   },
   "beam-splitter": {
     label: "Beam cube",
@@ -236,7 +231,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 25,
     radius: 30,
-    hint: "Splits one beam into two arms. Note in the label if it splits by polarisation.",
   },
   lens: {
     label: "Lens",
@@ -244,7 +238,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 17,
     radius: 26,
-    hint: "Focuses or collimates. Set its shape and focal length below.",
   },
   waveplate: {
     label: "Waveplate",
@@ -252,7 +245,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 30,
     minHeight: 36,
     radius: 26,
-    hint: "Rotates polarisation — λ/2 for angle, λ/4 for circular.",
   },
   filter: {
     label: "Filter",
@@ -260,7 +252,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 19,
     minHeight: 25,
     radius: 24,
-    hint: "Blocks part of the spectrum, e.g. rejecting the pump before a detector.",
   },
   iris: {
     label: "Iris",
@@ -268,7 +259,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 27,
     radius: 24,
-    hint: "Clips the beam — an alignment reference and a stray-light cut.",
   },
   sample: {
     label: "Sample",
@@ -276,7 +266,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 13,
     radius: 24,
-    hint: "The thing under study, here a thin film on a slab. Drawn larger than life.",
   },
   "paul-trap": {
     label: "Paul trap",
@@ -284,7 +273,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 31,
     minHeight: 28,
     radius: 26,
-    hint: "Holds a charged particle in oscillating fields: four rods along the trap axis, ring endcaps.",
   },
   cavity: {
     label: "Cavity",
@@ -292,7 +280,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 16,
     radius: 30,
-    hint: "Two facing mirrors with light standing between them. The glow is its mode, not a beam.",
   },
   particle: {
     label: "Particle",
@@ -300,7 +287,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 10,
     minHeight: 5,
     radius: 10,
-    hint: "Drop it on a Paul trap or cavity to place it inside; it then moves with it.",
   },
   photodiode: {
     label: "Photodiode",
@@ -309,7 +295,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 20,
     radius: 22,
     referenceX: -2.15, // the chip's face: drawn 0.2 mm thick at x = -2.05
-    hint: "Reads total power. Good for a reference arm.",
   },
   camera: {
     label: "Camera",
@@ -318,7 +303,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 31,
     radius: 30,
     referenceX: -23, // the C-mount ring's face: drawn 2 mm thick at x = -22
-    hint: "Images the beam or the sample plane — the source of FITS frames.",
   },
   spectrometer: {
     label: "Spectrometer",
@@ -328,17 +312,15 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     fixedHeight: 100,
     radius: 70,
     referenceX: -62, // the entrance port's outer end
-    hint: "Disperses the light and records a spectrum.",
   },
   "single-photon-detector": {
     label: "Single-photon detector",
-    tag: "SPCM",
+    tag: "SPD",
     aliases: ["SPCM", "SNSPD", "APD", "single photon counter"],
     top: 17,
     minHeight: 23,
     radius: 38,
     referenceX: -30.5, // the FC receptacle's tip
-    hint: "Counts single photons, each one a pulse out the back. Note SPCM or SNSPD in the label.",
   },
   "time-tagger": {
     label: "Time tagger",
@@ -348,7 +330,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 27,
     fixedHeight: 27,
     radius: 131,
-    hint: "Timestamps the detectors' pulses on each input, so coincidences can be counted. Sits on the table.",
   },
   "beam-block": {
     label: "Beam block",
@@ -356,24 +337,21 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 15,
     minHeight: 21,
     radius: 32,
-    hint: "Where a beam ends on purpose: a stack of black fins that soaks up stray or unused light.",
   },
   objective: {
-    label: "Microscope objective",
+    label: "Objective",
     tag: "Obj",
     top: 17,
     minHeight: 24,
     radius: 32,
     referenceX: -29, // the threaded plate's outer face: drawn at x = -23, 6 mm thick
-    hint: "Focuses the beam tightly, tip toward the focus. Note magnification and NA in the label.",
   },
   block: {
-    label: "Generic block",
+    label: "Block",
     tag: "Block",
     top: 15,
     minHeight: 15,
     radius: 26,
-    hint: "A box for any part not in the list — a Faraday rotator, a vacuum window. Size, colour and label it.",
   },
   aom: {
     label: "AOM",
@@ -381,7 +359,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 24,
     radius: 32,
-    hint: "Acousto-optic modulator: a sound wave in a crystal diffracts and frequency-shifts the beam.",
   },
   eom: {
     label: "EOM",
@@ -389,7 +366,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 24,
     radius: 40,
-    hint: "Electro-optic modulator: a voltage across a crystal shifts the beam's phase or polarisation.",
   },
 };
 
@@ -993,8 +969,6 @@ export const CONNECTION_LENGTH_RANGE_M: [number, number] = [0, 100_000];
 export type ConnectionSpec = {
   label: string;
   color: string;
-  /** a label it might carry, shown as the field's placeholder */
-  example: string;
   /** drawn tube radius, mm */
   radius: number;
   /** what slows the signal down: a fibre's refractive index, a cable's velocity factor */
@@ -1015,7 +989,6 @@ export const CONNECTION_KINDS: Record<ConnectionKind, ConnectionSpec> = {
   fiber: {
     label: "Fibre",
     color: "#eab308",
-    example: "MMF 105 µm",
     radius: 1.6,
     index: {
       key: "refractiveIndex",
@@ -1030,7 +1003,6 @@ export const CONNECTION_KINDS: Record<ConnectionKind, ConnectionSpec> = {
   cable: {
     label: "Cable",
     color: "#64748b",
-    example: "SMA coax",
     radius: 2.4,
     index: {
       key: "velocityFactor",
@@ -1545,9 +1517,9 @@ export const EMPTY_SCENE: BuilderSceneData = {
   frames: [],
 };
 
-// A pump + reference-arm layout so the table isn't blank on first load. It
-// demonstrates the two conventions a newcomer needs: mount colour marks the
-// beam line, and a beam is a path you draw through the parts it passes.
+// A two-beam layout so the table isn't blank on first load. It demonstrates
+// the two conventions a newcomer needs: mount colour marks the beam line, and
+// a beam is a path you draw through the parts it passes.
 /** Stand hand-written components at their default height. */
 function atDefaultHeight(components: BuilderComponent[]): BuilderComponent[] {
   return components.map((component) => ({
@@ -1560,27 +1532,25 @@ export const DEFAULT_SCENE: BuilderSceneData = {
   version: SCENE_VERSION,
   components: atDefaultHeight([
     // a laser, spectrometer and photodiode are placed by their ports: the
-    // pump line runs 575 mm from the laser's opening to the spectrometer's
-    { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], rotation: 0, label: "Pump 400 nm" },
-    { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], rotation: 0, label: "λ/2" },
-    { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], rotation: 0, label: "PBS" },
+    // the first beam runs 575 mm from the laser's opening to the spectrometer's
+    { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], rotation: 0 },
+    { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], rotation: 0 },
+    { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], rotation: 0 },
     { id: "lens-1", type: "lens", position: [-25, 0, -150], rotation: 0, lensShape: "plano-convex", focalLength: 100 },
-    { id: "sample-1", type: "sample", position: [100, 0, -150], rotation: 0, label: "MeLPPP film" },
-    { id: "filter-1", type: "filter", position: [200, 0, -150], rotation: 0, label: "Pump block" },
+    { id: "sample-1", type: "sample", position: [100, 0, -150], rotation: 0 },
+    { id: "filter-1", type: "filter", position: [200, 0, -150], rotation: 0 },
     { id: "spectrometer-1", type: "spectrometer", position: [275, 0, -150], rotation: 0 },
-    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 45, color: "#dc2626", label: "M1" },
-    { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 0, label: "Reference PD" },
+    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 45, color: "#dc2626" },
+    { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 0 },
   ]),
   beams: [
     {
       id: "beam-pump",
-      label: "Pump line",
       path: ["laser-pump", "waveplate-1", "pbs-1", "lens-1", "sample-1", "filter-1", "spectrometer-1"],
       color: "#7c3aed",
     },
     {
       id: "beam-ref",
-      label: "Reference arm",
       path: ["pbs-1", "mirror-ref", "pd-ref"],
       color: "#dc2626",
     },

@@ -416,12 +416,10 @@ export function ComponentInspector({
             min={INTERNAL_PATH_RANGE_MM[0]}
             max={INTERNAL_PATH_RANGE_MM[1]}
             placeholder="none"
-            title="Light the laser adds before it leaves the aperture. Leave empty for none."
             value={component.internalPathMm}
             onChange={(next) => onUpdate({ internalPathMm: clamp(next, INTERNAL_PATH_RANGE_MM) })}
             onClear={() => onUpdate({ internalPathMm: undefined })}
           />
-          <p className="builderInspector__hint">Folded or internal delay, counted in a beam that starts here.</p>
         </>
       ) : null}
       {component.type === "lens" ? (
@@ -458,7 +456,7 @@ export function ComponentInspector({
         />
       ) : null}
       {MOUNTED_TYPES.has(component.type) ? (
-        <label className="builderField" title="Tint the mount the colour of the beam it serves">
+        <label className="builderField">
           <span className="builderField__label">Mount colour</span>
           <span className="builderField__control builderField__control--color">
             <input
@@ -565,7 +563,6 @@ export function ComponentInspector({
           onChange={(color) => onUpdate({ color })}
         />
       ) : null}
-      <p className="builderInspector__hint">{spec.hint}</p>
     </div>
   );
 }
@@ -629,15 +626,11 @@ export function GroupInspector({
       {mounted.length ? (
         <ColorField
           label={mounted.length === selected.length ? "Mount colour" : `Mount colour (${mounted.length} of ${selected.length})`}
-          title="Tint the mounts the colour of the beam they serve"
           value={mounted[0].color ?? DEFAULT_MOUNT_COLOR}
           readout={mountColors.size > 1 ? "mixed" : undefined}
           onChange={onSetMountColor}
         />
       ) : null}
-      <p className="builderInspector__hint">
-        Drag any one of them to move them all; they keep their spacing. ⌘-click a part to add or remove it.
-      </p>
     </div>
   );
 }
@@ -766,9 +759,6 @@ export function BeamInspector({
       >
         {addingStops ? "Done adding stops" : "Add stops"}
       </button>
-      {addingStops ? (
-        <p className="builderInspector__hint">Click parts to add them to the end, in order. Drag a stop, or move it up or down, to reorder.</p>
-      ) : null}
     </div>
   );
 }
@@ -802,7 +792,7 @@ export function BeamDraftInspector({
       {draft.length ? (
         <StopList components={components} path={draft} />
       ) : (
-        <p className="builderInspector__hint">Click parts in the order the light visits them.</p>
+        <p className="builderInspector__hint">Click parts in order.</p>
       )}
       <div className="builderInspector__actions">
         <button type="button" className="builderButton builderButton--primary" onClick={onFinish} disabled={draft.length < 2}>
@@ -880,7 +870,6 @@ export function ConnectionInspector({
           <input
             type="text"
             value={connection.label ?? ""}
-            placeholder={`e.g. ${spec.example}`}
             onChange={(event) => onUpdate({ label: event.target.value })}
           />
         </span>
@@ -894,7 +883,6 @@ export function ConnectionInspector({
           min={0}
           decimals={2}
           placeholder="unknown"
-          title="Leave empty when the length isn't known"
           value={connection.lengthM}
           onChange={(metres) => onUpdate({ lengthM: clamp(metres, CONNECTION_LENGTH_RANGE_M) })}
           onClear={() => onUpdate({ lengthM: undefined })}
@@ -912,9 +900,7 @@ export function ConnectionInspector({
           onChange={(next) => onUpdate({ [spec.index.key]: clamp(next, spec.index.range) })}
         />
       </div>
-      {delay === undefined ? (
-        <p className="builderInspector__hint">Give a length to see the delay.</p>
-      ) : (
+      {delay === undefined ? null : (
         <dl className="builderMetrics">
           <div>
             <dt>Delay</dt>
@@ -922,7 +908,6 @@ export function ConnectionInspector({
           </div>
         </dl>
       )}
-      <p className="builderInspector__hint">Not a beam: it adds nothing to any path length.</p>
     </div>
   );
 }
@@ -950,10 +935,10 @@ export function ConnectionDraftInspector({
       <p className="builderInspector__hint">
         {from ? (
           <>
-            From <strong>{endName(components, from)}</strong>. Click the part it goes to.
+            From <strong>{endName(components, from)}</strong>
           </>
         ) : (
-          "Click the part it leaves from, then the part it goes to."
+          "Click two parts."
         )}
       </p>
       <div className="builderInspector__actions">
@@ -1013,7 +998,6 @@ export function FrameInspector({
             ref={labelRef}
             type="text"
             value={frame.label ?? ""}
-            placeholder="Breadboard, enclosure…"
             onChange={(event) => onUpdate({ label: event.target.value })}
           />
         </span>
@@ -1047,7 +1031,6 @@ export function FrameInspector({
             step={25}
             min={min}
             max={max}
-            title="Along the table's x axis, from its back-left corner"
             value={width}
             onChange={(next) => onUpdate({ corners: rectangleCorners([minX, minZ], next, depth) })}
           />
@@ -1057,13 +1040,12 @@ export function FrameInspector({
             step={25}
             min={min}
             max={max}
-            title="Along the table's z axis, from its back-left corner"
             value={depth}
             onChange={(next) => onUpdate({ corners: rectangleCorners([minX, minZ], width, next) })}
           />
         </>
       ) : (
-        <div className="builderField" title="The box around its outline, along x and z">
+        <div className="builderField">
           <span className="builderField__label">Size</span>
           <span className="builderReadout">
             {Math.round(width)} × {Math.round(depth)} mm overall
@@ -1099,9 +1081,6 @@ export function FrameInspector({
           onChange={(next) => onUpdate({ fillOpacity: next }, false)}
         />
       )}
-      <p className="builderInspector__hint">
-        Marks an area; constrains nothing. Drag a side or corner to reshape it; Alt-drag or the arrow keys move it.
-      </p>
     </div>
   );
 }
