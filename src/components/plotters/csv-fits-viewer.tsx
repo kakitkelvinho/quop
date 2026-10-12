@@ -15,6 +15,7 @@ import {
 } from "chart.js";
 
 import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
+import { FileDrop } from "@/components/plotters/file-drop";
 import { describeFitsError } from "@/components/plotters/fits-errors";
 import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file";
 import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
@@ -170,8 +171,7 @@ function CsvCompactPanel() {
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
         <div>
-          <p className="sectionCard__kicker">CSV</p>
-          <h2>CSV Viewer</h2>
+          <h2>CSV</h2>
           <p>
             Upload a time-series CSV and plot all non-time columns against time.
           </p>
@@ -179,9 +179,8 @@ function CsvCompactPanel() {
 
         <label className="field">
           <span>CSV file</span>
-          <input
-            className="fileInput"
-            type="file"
+          <FileDrop
+            kind="CSV file"
             accept=".csv,text/csv"
             onChange={(event) => {
               void handleFileUpload(event);
@@ -327,8 +326,7 @@ function FitsCompactPanel() {
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
         <div>
-          <p className="sectionCard__kicker">FITS</p>
-          <h2>FITS Viewer</h2>
+          <h2>FITS</h2>
           <p>
             Upload a FITS image and preview the first image HDU as a trace, a
             colormapped frame or a 3D Surface view.
@@ -337,9 +335,8 @@ function FitsCompactPanel() {
 
         <label className="field">
           <span>FITS file</span>
-          <input
-            className="fileInput"
-            type="file"
+          <FileDrop
+            kind="FITS file"
             accept=".fits,.fit,application/fits"
             onChange={(event) => {
               void handleFileUpload(event);

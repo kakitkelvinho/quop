@@ -43,7 +43,7 @@ function NavItem({
         {label}
       </Link>
       {links.length ? (
-        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100`}>
+        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100`}>
           {links.map((link) => (
             <Link
               className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
@@ -119,16 +119,19 @@ function MobileNav() {
         >
           QUOP
         </Link>
-        <button
-          className="inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]"
-          type="button"
-          aria-expanded={open}
-          aria-controls="mobile-nav-sheet"
-          onClick={() => setOpen((value) => !value)}
-        >
-          Menu
-          <MenuIcon open={open} />
-        </button>
+        <div className="flex items-stretch">
+          <ThemeToggle />
+          <button
+            className="inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]"
+            type="button"
+            aria-expanded={open}
+            aria-controls="mobile-nav-sheet"
+            onClick={() => setOpen((value) => !value)}
+          >
+            Menu
+            <MenuIcon open={open} />
+          </button>
+        </div>
       </div>
 
       {open ? (
@@ -188,6 +191,11 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
+      {isBuilderRoute ? null : (
+        <a className="skipLink" href="#main">
+          Skip to content
+        </a>
+      )}
       {/* The builder is a full-window workspace with its own way back. */}
       {isBuilderRoute ? null : (
         <header className="sticky top-0 z-40">
@@ -211,14 +219,15 @@ export function AppShell({
             <div className="flex items-stretch justify-end gap-1">
               <NavItem href="/plotters" label="plotter" align="right" />
               <NavItem href="/calculators" label="calculator" align="right" />
+              <ThemeToggle />
             </div>
           </nav>
         </header>
       )}
 
-      {isBuilderRoute ? null : <ThemeToggle />}
-
       <main
+        id="main"
+        tabIndex={-1}
         className={
           isBuilderRoute
             ? "builderMain"

@@ -15,6 +15,7 @@ import {
 } from "chart.js";
 
 import { parseGenericCsv, type DataPoint } from "@/components/plotters/csv-parsing";
+import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
 
@@ -182,8 +183,8 @@ export default function GenericCsvPlotter() {
         />
         <div className="inputCard fieldStack">
           <div>
-            <h2>Generic CSV</h2>
-            <p className="lead">
+            <h2>Data</h2>
+            <p className="toolNote">
               Upload a numeric CSV with headers, then choose which column is
               the x-axis and which columns should be plotted as y-series.
               Leading metadata or comment lines (camera settings, fit
@@ -195,9 +196,8 @@ export default function GenericCsvPlotter() {
 
           <label className="field">
             <span>CSV file</span>
-            <input
-              className="fileInput"
-              type="file"
+            <FileDrop
+              kind="CSV file"
               accept=".csv,text/csv"
               onChange={(event) => {
                 void handleFileUpload(event);
@@ -278,14 +278,7 @@ export default function GenericCsvPlotter() {
       </div>
 
       <div className="sectionCard visualizerChartCard">
-        <div>
-          <p className="sectionCard__kicker">Column plot</p>
-          <h2>CSV Plot</h2>
-          <p>
-            The selected x column labels the horizontal axis automatically, and
-            every selected y column becomes a legend entry.
-          </p>
-        </div>
+        <h2>Plot</h2>
         <div className="visualizerChartSurface">
           {canRenderChart ? (
             <InteractiveScatterChart

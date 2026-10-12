@@ -1,5 +1,7 @@
 import GenericCsvPlotter from "@/components/plotters/generic-csv-plotter";
-import { ToolIntro } from "@/components/tool-intro";
+import { ToolIntro, toolMetadata } from "@/components/tool-intro";
+
+export const metadata = toolMetadata("/plotters/generic-csv-plotter");
 
 export default function GenericCsvPlotterPage() {
   return (

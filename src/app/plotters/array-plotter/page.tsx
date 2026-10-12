@@ -1,5 +1,7 @@
 import ArrayPlotter from "@/components/plotters/array-plotter";
-import { ToolIntro } from "@/components/tool-intro";
+import { ToolIntro, toolMetadata } from "@/components/tool-intro";
+
+export const metadata = toolMetadata("/plotters/array-plotter");
 
 export default function VisualizerPage() {
   return (

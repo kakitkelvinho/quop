@@ -1,9 +1,11 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 
 import { navSections } from "@/components/navigation";
-import { BetaMark } from "@/components/beta-badge";
+import { ToolIndex } from "@/components/tool-index";
 
 const plotters = navSections.find((section) => section.href === "/plotters");
+
+export const metadata: Metadata = { title: "Plotters" };
 
 export default function PlottersPage() {
   return (
@@ -14,21 +16,7 @@ export default function PlottersPage() {
         exported lab data.
       </p>
 
-      <div className="cardGrid">
-        {plotters?.links.map((link) => (
-          <article className="sectionCard" key={link.href}>
-            <p className="sectionCard__kicker">Plotter</p>
-            <h2>
-              {link.label}
-              <BetaMark tool={link} />
-            </h2>
-            <p>{link.description}</p>
-            <Link className="buttonLink" href={link.href}>
-              Open plotter
-            </Link>
-          </article>
-        ))}
-      </div>
+      <ToolIndex links={plotters?.links ?? []} />
     </section>
   );
 }

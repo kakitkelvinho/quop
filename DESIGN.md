@@ -160,7 +160,7 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 - **Body** (400, 1rem, line-height 1.6): running copy. Lead paragraphs step up to `1.08rem` in the muted color, capped at `44rem` measure.
 - **Label** (800, `0.75–0.84rem`, letter-spacing 0.08em, uppercase): kicker tags ("CALCULATOR", "PLOTTER"), nav pill text, button-cluster labels — always in the ink-deep accent color or muted, never body color.
 - **Readout** (700, `0.72–0.78rem`, mono): FITS crosshair coordinates, colorbar labels, mono text inputs.
-- **Result** (800, `clamp(2rem, 5vw, 3.2rem)`, line-height 0.95, letter-spacing -0.04em): the one place numbers get genuinely large — calculator answers like pace results.
+- **Result** (800, `clamp(2rem, 5vw, 3.2rem)`, line-height 0.95, letter-spacing -0.04em): the one place numbers get genuinely large: every calculator's answer, through the shared `Readout` (`readout--primary`), with tabular figures, a few significant figures and an SI prefix (`1.00 mJ`, never `1.000000e-3 J`). Secondary answers beside it step down to `clamp(1.45rem, 3vw, 1.9rem)`. A tool page's own heading (`toolTitle`, `clamp(1.8rem, 3.4vw, 2.5rem)`) sits below Display, so the answer, not the tool's name, is the largest thing on it.
 - **Equation** (400 italic serif, `1.5–1.8rem`): the board's drifting equations. Sized per equation rather than by a scale step, because the shorter ones need to be larger to hold the same visual weight.
 
 ### Named Rules
@@ -170,7 +170,7 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 
 The page is a single centered column: `max-w-6xl`, `px-4`/`sm:px-6`, `pt-8 pb-16`, sitting under a sticky, blurred nav bar (`backdrop-filter: blur(14px)`) that never scrolls away. The nav itself is a three-column grid (`1fr auto 1fr`) — left links, centered wordmark, right links — with hover-revealed dropdown panels beneath section labels.
 
-Content grids adapt per surface: `cardGrid` stacks single-column (a vertical list of section cards on index pages like Calculators/Plotters); `calculatorGrid` uses `repeat(auto-fit, minmax(250px, 1fr))` so calculator inputs reflow by available width; the pace calculator's dual-panel-with-swap layout (`1fr auto 1fr`) collapses to a single column under 900px. The homepage is the chalkboard hero (`min-height: clamp(400px, 66vh, 640px)`, centered welcome copy) followed by the four chalk section cards, which run `1fr` / `2×` / `4×` at 0 / 640px / 1000px.
+Content grids adapt per surface: `toolGrid` lists a section's tools on its index page (Calculators, Plotters, Experiment), one column, two from 900px; `calculatorGrid` uses `repeat(auto-fit, minmax(250px, 1fr))` so calculator inputs reflow by available width; the pace calculator's dual-panel-with-swap layout (`1fr auto 1fr`) collapses to a single column under 900px. The homepage is the chalkboard hero (`min-height: clamp(400px, 66vh, 640px)`, centered welcome copy) followed by the four chalk section cards, which run `1fr` / `2×` / `4×` at 0 / 640px / 1000px.
 
 Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind's `sm:` (640px) on newer Tailwind-authored components — both idioms are currently live in the codebase; match whichever a given file already uses rather than introducing a third.
 
@@ -183,11 +183,12 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 ### Shadow Vocabulary
 - **Card ambient** (`box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1)`, day / `0 28px 60px rgba(0, 0, 0, 0.35)`, night): the resting shadow under every `sectionCard`, `inputCard`, and `infoPanel`.
 - **Control ambient** (`box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14)`, deepens to `0 16px 28px rgba(91, 102, 117, 0.18)` on hover): the metallic plotter/action buttons (`buttonControl`).
-- **Focus ring** (`outline: 3px solid rgba(139, 30, 63, 0.3)`, day / `rgba(244, 185, 66, 0.4)`, night, `outline-offset: 3px`): keyboard focus on links, buttons, and active input containers — uses the ink-accent pair, not a generic blue.
+- **Focus ring** (`outline: 3px solid var(--focus-ring)`: `rgba(139, 30, 63, 0.3)` day / `rgba(244, 185, 66, 0.4)` night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Uses the ink-accent pair, not a generic blue.
+- **Lift** (`var(--shadow-lift)`): the deeper shadow a card rises into on hover, with `translateY(-2px)`.
 
 ## Shapes
 
-Corners are soft throughout but not uniform: primary buttons and small controls round to `0.8rem`, inputs and secondary surfaces to `0.9–0.95rem`, primary cards to the largest radius at `1.1rem`. Pills (nav items) and true circles (the theme toggle) go fully round (`rounded-full`/`999px`). A 1px hairline border in the hairline/frost neutral appears on almost every container. The chalk section cards are the one departure: no radius and no border at all, because their edge is a drawn line rather than a box — see the Chalk Section Cards component.
+Corners are soft throughout but not uniform: primary buttons and small controls round to `0.8rem`, inputs and secondary surfaces to `0.9–0.95rem`, primary cards to the largest radius at `1.1rem`. Badges and the sidebar toggle go fully round (`999px`). The header is the exception: its items, the theme toggle among them, are square, full-height tabs in the bar. A 1px hairline border in the hairline/frost neutral appears on almost every container. The chalk section cards are the one departure: no radius and no border at all, because their edge is a drawn line rather than a box — see the Chalk Section Cards component.
 
 ## Components
 
@@ -197,18 +198,19 @@ Buttons, cards, and inputs are precise and instrument-like: numbers are exact, c
 - **Shape:** primary actions round to `0.8rem`; the plotter/calculator action grid (`buttonControl`) rounds to `1rem`.
 - **Primary** (`buttonLink`): solid Oxblood Ink / Lamp Amber fill, `#fffaf1` text (day) or `#1a1d26` (night), bold weight, `0.72rem 1rem` padding, no border. Lifts `translateY(-1px)` on hover with no color change.
 - **Action grid** (`buttonControl`): a distinct neutral-metal gradient fill (`linear-gradient(135deg, #d7dbe2, #bcc3cd)`) used for plotter/data-action buttons, not the ink accent — reads as hardware, not as a call-to-action. Its secondary variant swaps to the surface gradient with the standard hairline border.
-- **Nav pills** (`NavItem`): fully round, transparent at rest, Oxblood/Amber-soft wash + ink-deep text when active or hovered.
+- **Header items** (`NavItem`, the wordmark, the theme toggle): square tabs the full height of the bar, transparent at rest, Oxblood/Amber-soft wash + ink-deep text when active or hovered. The theme toggle is the header's last item on every screen, not a floating button.
 
 ### Cards / Containers
 - **Corner Style:** `1.1rem` (`sectionCard`, `inputCard`, `infoPanel`).
 - **Background:** Paper Surface / Ink Panel (translucent), always paired with the Card ambient shadow.
 - **Border:** 1px hairline, Sepia/Frost.
 - **Internal Padding:** `1.3rem`, with `0.85rem` gap between internal stacked elements.
-- **Signature detail — the kicker:** every section card opens with an uppercase, letter-spaced category tag (`sectionCard__kicker`) in Oxblood-Deep/Amber-Light before its heading — this is the card's defining tell, not optional flourish.
+- **Signature detail — the kicker:** a section card opens with an uppercase, letter-spaced category tag (`sectionCard__kicker`) in Oxblood-Deep/Amber-Light before its heading.
+- **Tool cards** (`toolCard`, on index pages) open instead on a mono line of what the tool gives (`550 nm → 2.2543 eV`) on the ink wash: on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing, and the result is the homepage chapters' language carried inward. The whole card is one link and lifts on hover; there is no per-card button.
 
 ### Inputs / Fields
 - **Style:** bordered outer container (`field__control`, `0.9rem` radius, Sepia/Frost border) housing a borderless inner `input`/`textarea` on Paper-Surface-Strong background; a unit label sits inline at the end in muted color.
-- **File input:** the one dashed-border treatment in the system (`1px dashed`), signaling "drop a file here" distinctly from typed fields.
+- **File input** (`FileDrop`): the one dashed-border treatment in the system (`1px dashed`), signaling "drop a file here" distinctly from typed fields. It names the file it was given, in mono, rather than the browser's "No file chosen".
 - **Focus:** the ink-accent Focus Ring (see Elevation & Depth), not a border-color change.
 
 ### Navigation

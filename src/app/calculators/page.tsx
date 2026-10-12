@@ -1,9 +1,11 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 
 import { navSections } from "@/components/navigation";
-import { BetaMark } from "@/components/beta-badge";
+import { ToolIndex } from "@/components/tool-index";
 
 const calculators = navSections.find((section) => section.href === "/calculators");
+
+export const metadata: Metadata = { title: "Calculators" };
 
 export default function CalculatorsPage() {
   return (
@@ -13,21 +15,7 @@ export default function CalculatorsPage() {
         Practical optics tools for quick conversions and threshold estimates.
       </p>
 
-      <div className="cardGrid">
-        {calculators?.links.map((link) => (
-          <article className="sectionCard" key={link.href}>
-            <p className="sectionCard__kicker">Calculator</p>
-            <h2>
-              {link.label}
-              <BetaMark tool={link} />
-            </h2>
-            <p>{link.description}</p>
-            <Link className="buttonLink" href={link.href}>
-              Open calculator
-            </Link>
-          </article>
-        ))}
-      </div>
+      <ToolIndex links={calculators?.links ?? []} />
     </section>
   );
 }

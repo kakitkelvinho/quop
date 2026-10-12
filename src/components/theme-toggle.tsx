@@ -40,6 +40,7 @@ function SunIcon() {
   );
 }
 
+/** Day or night, as the header's last item: in the bar, not floating over the page. */
 export function ThemeToggle() {
   const handleToggle = () => {
     const currentTheme = getTheme();
@@ -49,7 +50,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="fixed bottom-4 right-4 z-50 inline-flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] shadow-[var(--shadow)] transition-transform hover:-translate-y-0.5"
+      className="themeToggle inline-flex h-full min-w-11 items-center justify-center px-3 text-[var(--muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
       type="button"
       onClick={handleToggle}
       aria-label="Toggle dark mode"

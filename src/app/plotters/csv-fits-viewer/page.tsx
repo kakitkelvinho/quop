@@ -1,5 +1,7 @@
 import CsvFitsViewer from "@/components/plotters/csv-fits-viewer";
-import { ToolIntro } from "@/components/tool-intro";
+import { ToolIntro, toolMetadata } from "@/components/tool-intro";
+
+export const metadata = toolMetadata("/plotters/csv-fits-viewer");
 
 export default function CsvFitsViewerPage() {
   return (

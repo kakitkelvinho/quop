@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 
 import { DecimalNote } from "@/components/calculators/decimal-note";
+import { formatSignificant } from "@/components/calculators/format-quantity";
 import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { Readout } from "@/components/calculators/readout";
 import { ToolIntro } from "@/components/tool-intro";
 
 type TimeUnit = "fs" | "ps" | "ns" | "us" | "ms" | "s";
@@ -28,27 +30,8 @@ const distanceUnitToMeters: Record<DistanceUnit, number> = {
   m: 1,
 };
 
-function formatResult(value: number) {
-  const absoluteValue = Math.abs(value);
-
-  if (absoluteValue === 0) {
-    return "0";
-  }
-
-  if (absoluteValue >= 1e4 || absoluteValue < 1e-3) {
-    return value.toExponential(6);
-  }
-
-  if (absoluteValue >= 100) {
-    return value.toFixed(3);
-  }
-
-  if (absoluteValue >= 1) {
-    return value.toFixed(4);
-  }
-
-  return value.toFixed(6);
-}
+/** The units as written for reading: "um" and "us" are typed for ease, shown as µm and µs. */
+const unitLabel = (unit: string) => unit.replace(/^u/, "µ");
 
 export function LightTravelCalculator() {
   const [timeInput, setTimeInput] = useState("30");
@@ -132,11 +115,13 @@ export function LightTravelCalculator() {
             </div>
           </label>
 
-          <p className="resultCard">
-            {Number.isNaN(distanceFromTime)
-              ? "Invalid input."
-              : `${formatResult(distanceFromTime)} ${distanceOutputUnit}`}
-          </p>
+          <Readout
+            primary
+            label="Distance"
+            value={Number.isNaN(distanceFromTime) ? null : formatSignificant(distanceFromTime, 6)}
+            unit={unitLabel(distanceOutputUnit)}
+            empty="Enter a time of zero or more."
+          />
         </div>
 
         <div className="inputCard">
@@ -183,11 +168,13 @@ export function LightTravelCalculator() {
             </div>
           </label>
 
-          <p className="resultCard">
-            {Number.isNaN(timeFromDistance)
-              ? "Invalid input."
-              : `${formatResult(timeFromDistance)} ${timeOutputUnit}`}
-          </p>
+          <Readout
+            primary
+            label="Time"
+            value={Number.isNaN(timeFromDistance) ? null : formatSignificant(timeFromDistance, 6)}
+            unit={unitLabel(timeOutputUnit)}
+            empty="Enter a distance of zero or more."
+          />
         </div>
       </div>
     </section>
