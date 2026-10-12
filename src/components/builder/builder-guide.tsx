@@ -292,7 +292,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
     lines: [
       { icon: "add", text: "Pick a part, click to place" },
       { icon: "beam", text: "Beam: click parts, Enter" },
-      { icon: "frame", text: "Frame: click corners, or drag" },
+      { icon: "frame", text: "Frame: drag, or corners + Enter" },
       { icon: "connect", text: "Fibre or cable: from, then to" },
       { keys: ".md", text: "Brief an AI to write a setup" },
     ],

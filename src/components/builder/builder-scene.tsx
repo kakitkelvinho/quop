@@ -219,6 +219,8 @@ export default function BuilderScene() {
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
   const [connectDraft, setConnectDraft] = useState<ConnectDraft | null>(null);
   const [drawing, setDrawing] = useState<FrameDrawing | null>(null);
+  // the frame just drawn, whose label field takes focus as it opens
+  const [labelFocusId, setLabelFocusId] = useState<string | null>(null);
   // the beam "Add stops" is on for; it lapses as soon as another is selected
   const [addingStopsTo, setAddingStopsTo] = useState<string | null>(null);
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
@@ -648,16 +650,18 @@ export default function BuilderScene() {
 
   /** What a click, a double-click, Enter or a dragged-out rectangle did; true when it finished the frame. */
   const applyDrawing = useCallback(
-    (step: DrawingStep, { sayRefusal }: { sayRefusal: boolean }): boolean => {
+    (step: DrawingStep): boolean => {
       if (step.kind === "done") {
         // the whole drawing is one undo step: the frame arrives in one commit
-        setSelectedFrameId(api.addFrame(step.corners));
+        const id = api.addFrame(step.corners);
+        setSelectedFrameId(id);
+        setLabelFocusId(id);
         setDrawing(null);
-        announce("Added a frame. Drag a side or corner to reshape it, Alt-drag to move it.");
+        announce("Added a frame. Give it a label, or drag a side or corner to reshape it.");
         return true;
       }
-      // a refused click is explained live in the status line; a refused finish is said here
-      if (step.kind === "refused" && sayRefusal) announce(step.reason);
+      // what the pointer would do is shown beside it; the status line, which is read out, says only what a click did
+      if (step.kind === "refused") announce(step.reason);
       setDrawing((current) =>
         current && {
           ...current,
@@ -695,10 +699,10 @@ export default function BuilderScene() {
       ),
     onClick: (point, event, second) => {
       if (!drawing) return false;
-      if (second) return drawing.refused ? false : applyDrawing(finishDrawing(drawing.corners), { sayRefusal: true });
+      if (second) return drawing.refused ? false : applyDrawing(finishDrawing(drawing.corners));
       const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
       const onFirst = isOnFirstCorner(drawing.corners, event);
-      return applyDrawing(clickDrawing(drawing.corners, point, { step, onFirst }), { sayRefusal: false });
+      return applyDrawing(clickDrawing(drawing.corners, point, { step, onFirst }));
     },
     onRectangle: (from, to, event, done) => {
       if (!drawing) return;
@@ -710,21 +714,23 @@ export default function BuilderScene() {
       setDrawing((current) => current && { ...current, rectangle: null });
       applyDrawing(
         rectangle.reason ? { kind: "refused", reason: rectangle.reason } : { kind: "done", corners: rectangle.corners },
-        { sayRefusal: true },
       );
     },
   });
 
-  // the drawing, with what the pointer would do next, for the canvas and the status line
-  const drawingView = useMemo((): (DrawingPreview & { corners: Corner[] }) | null => {
+  // the drawing, with what the pointer would do next, for the canvas
+  const drawingView = useMemo((): (DrawingPreview & { corners: Corner[]; pointer: Corner | null }) | null => {
     if (!drawing) return null;
-    const { corners, pointer, rectangle } = drawing;
+    const { corners, rectangle } = drawing;
+    const pointer = drawing.pointer?.point ?? null;
     if (rectangle) {
       const loop = [...rectangle.corners, rectangle.corners[0]];
-      return { corners: [], next: null, closing: loop, refused: rectangle.reason ? "closing" : null, reason: rectangle.reason };
+      const refused = rectangle.reason ? "closing" : null;
+      return { corners: [], pointer, next: null, closing: loop, refused, reason: rectangle.reason };
     }
-    if (!pointer) return { corners, next: null, closing: null, refused: null, reason: null };
-    return { corners, ...previewDrawing(corners, pointer.point, { step: pointer.step, onFirst: pointer.onFirst }) };
+    if (!drawing.pointer) return { corners, pointer, next: null, closing: null, refused: null, reason: null };
+    const { step, onFirst } = drawing.pointer;
+    return { corners, pointer, ...previewDrawing(corners, drawing.pointer.point, { step, onFirst }) };
   }, [drawing]);
 
   const handleDeleteFrame = useCallback(
@@ -1026,7 +1032,7 @@ export default function BuilderScene() {
       if (drawing) {
         if (event.key === "Enter") {
           event.preventDefault();
-          applyDrawing(finishDrawing(drawing.corners), { sayRefusal: true });
+          applyDrawing(finishDrawing(drawing.corners));
         } else if (event.key === "Backspace" || event.key === "Delete") {
           event.preventDefault();
           setDrawing({ ...drawing, corners: drawing.corners.slice(0, -1), refused: false });
@@ -1203,12 +1209,15 @@ export default function BuilderScene() {
         selected={selectedComponents}
         selectedBeam={selectedBeam}
         selectedFrame={selectedFrame}
+        focusFrameLabel={selectedFrame !== null && selectedFrame.id === labelFocusId}
+        onFrameLabelFocused={() => setLabelFocusId(null)}
         selectedConnection={selectedConnection}
         connectDraft={connectDraft}
         placingType={placingType}
         trayOpen={trayOpen}
         beamMode={beamMode}
         drawingFrame={drawing !== null}
+        frameCorners={drawing?.corners.length ?? 0}
         addingStops={addingStops}
         beamDraft={beamDraft}
         beamColor={beamColor}
@@ -1218,8 +1227,7 @@ export default function BuilderScene() {
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
-        // while a frame is drawn, why the pointer's corner or the way back is refused
-        status={drawingView?.reason ?? status}
+        status={status}
         onToggleTray={() => setTrayOpen((open) => !open)}
         onPickType={(type) => {
           // the panel stays open, so a run of parts goes down without reopening it
