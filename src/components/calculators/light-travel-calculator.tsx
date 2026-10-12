@@ -99,7 +99,7 @@ export function LightTravelCalculator() {
           </label>
 
           <label className="field">
-            <span>Output distance unit</span>
+            <span>Distance unit</span>
             <div className="field__control">
               <select
                 aria-label="Distance output unit"
@@ -120,7 +120,6 @@ export function LightTravelCalculator() {
             label="Distance"
             value={Number.isNaN(distanceFromTime) ? null : formatSignificant(distanceFromTime, 6)}
             unit={unitLabel(distanceOutputUnit)}
-            empty="Enter a time of zero or more."
           />
         </div>
 
@@ -151,7 +150,7 @@ export function LightTravelCalculator() {
           </label>
 
           <label className="field">
-            <span>Output time unit</span>
+            <span>Time unit</span>
             <div className="field__control">
               <select
                 aria-label="Time output unit"
@@ -173,7 +172,6 @@ export function LightTravelCalculator() {
             label="Time"
             value={Number.isNaN(timeFromDistance) ? null : formatSignificant(timeFromDistance, 6)}
             unit={unitLabel(timeOutputUnit)}
-            empty="Enter a distance of zero or more."
           />
         </div>
       </div>

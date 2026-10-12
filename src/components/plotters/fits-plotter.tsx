@@ -168,14 +168,7 @@ export default function FitsPlotter() {
           onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
         <div className="inputCard fieldStack">
-          <div>
-            <h2>Data</h2>
-            <p className="toolNote">
-              Upload a <code>.fits</code> or <code>.fit</code> file. Image
-              HDUs are previewed directly, and 1D FITS data are rendered as a
-              trace.
-            </p>
-          </div>
+          <h2>Data</h2>
 
           <label className="field">
             <span>FITS file</span>
@@ -190,12 +183,12 @@ export default function FitsPlotter() {
 
           <p className="resultCard">
             {isLoading
-              ? "Loading FITS file..."
+              ? "Loading…"
               : error
                 ? error
                 : summary
-                  ? `Loaded ${summary.sourceLabel}. BITPIX ${summary.bitpix}, range ${summary.min.toExponential(3)} to ${summary.max.toExponential(3)}.`
-                  : "Upload a FITS file to preview its first image HDU."}
+                  ? `Range ${summary.min.toExponential(3)} to ${summary.max.toExponential(3)}`
+                  : "No file."}
           </p>
 
           {summary ? (
@@ -219,7 +212,7 @@ export default function FitsPlotter() {
           <div className="visualizerChartSurface">
             {!summary && !error && !isLoading ? (
               <div className="visualizerEmptyState">
-                Upload a FITS file to render a preview.
+                No file.
               </div>
             ) : null}
             {summary?.kind === "series" ? (

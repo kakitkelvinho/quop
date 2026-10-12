@@ -374,13 +374,6 @@ a.toolCard:hover .toolCard__open span {
   grid-column: 1 / -1;
 }
 
-.readoutNote {
-  max-width: 44rem;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.55;
-}
-
 .sectionCard,
 .inputCard,
 .infoPanel {
@@ -720,14 +713,6 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   font-size: 1.1rem;
   font-weight: 700;
   line-height: 1.3;
-}
-
-/* how to use a tool, in its input panel: quieter than the page's lead */
-.toolNote {
-  margin-top: 0.35rem;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.55;
 }
 
 /* the chart's own frame is enough: no second box around it */
@@ -1719,12 +1704,6 @@ html[data-theme="dark"] .fitsColorControl__select {
 .fitsSlicePanel h3 {
   font-size: 1.05rem;
   line-height: 1.15;
-}
-
-.fitsInspectorCard__meta,
-.fitsSlicePanel__meta {
-  color: var(--muted);
-  font-size: 0.92rem;
 }
 
 .fitsInspectorCard__button {

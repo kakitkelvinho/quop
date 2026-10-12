@@ -14,7 +14,7 @@ const PLAIN_MESSAGES: Array<{ match: RegExp; message: string }> = [
   {
     match: /tile-compressed|compressed images/i,
     message:
-      "This FITS image is compressed, which the plotter can't read yet. Decompress it (for example with funpack) and upload it again.",
+      "This FITS image is compressed, which the plotter can't read yet. Decompress it and upload it again.",
   },
   {
     match: /random-groups/i,

@@ -73,9 +73,6 @@ export default function GenericCsvPlotter() {
   }, [parsed.headers, resolvedXColumnIndex, yColumnIndexes]);
 
   const xLabel = parsed.headers[resolvedXColumnIndex] ?? "x";
-  const selectedYLabels = resolvedYColumnIndexes
-    .map((index) => parsed.headers[index])
-    .filter(Boolean);
 
   const chartData: ChartData<"scatter"> = {
     datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex) => {
@@ -164,12 +161,8 @@ export default function GenericCsvPlotter() {
   const statusMessage = parsed.error
     ? parsed.error
     : resolvedYColumnIndexes.length === 0
-      ? "Select at least one Y column to render the plot."
-      : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${xLabel}. Y-series: ${selectedYLabels.join(", ")}.${
-          parsed.skippedRowCount > 0
-            ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
-            : ""
-        }`;
+      ? "Pick a y column."
+      : `${parsed.rowCount} rows.${parsed.skippedRowCount > 0 ? ` ${parsed.skippedRowCount} skipped.` : ""}`;
 
   return (
     <div
@@ -182,17 +175,7 @@ export default function GenericCsvPlotter() {
           onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
         <div className="inputCard fieldStack">
-          <div>
-            <h2>Data</h2>
-            <p className="toolNote">
-              Upload a numeric CSV with headers, then choose which column is
-              the x-axis and which columns should be plotted as y-series.
-              Leading metadata or comment lines (camera settings, fit
-              parameters, a <code>#</code>/<code>%</code> block, ...) are
-              detected automatically and shown separately instead of breaking
-              the plot.
-            </p>
-          </div>
+          <h2>Data</h2>
 
           <label className="field">
             <span>CSV file</span>
@@ -222,7 +205,7 @@ export default function GenericCsvPlotter() {
 
           {parsed.extraInfo ? (
             <label className="field">
-              <span>File metadata / notes</span>
+              <span>Metadata</span>
               <div className="field__control field__control--textarea">
                 <textarea
                   value={parsed.extraInfo}
@@ -237,8 +220,7 @@ export default function GenericCsvPlotter() {
           {parsed.headers.length ? (
             <div className="csvRoleChooser">
               <div className="csvRoleChooser__header">
-                <p className="sectionCard__kicker">Column Roles</p>
-                <p>Pick one x column and any number of y columns.</p>
+                <p className="sectionCard__kicker">Columns</p>
               </div>
               {parsed.headers.map((header, index) => {
                 const isX = index === resolvedXColumnIndex;
@@ -290,8 +272,8 @@ export default function GenericCsvPlotter() {
           {!canRenderChart ? (
             <div className="visualizerEmptyState visualizerOverlayState">
               {parsed.error
-                ? "Fix the CSV input to render the figure."
-                : "Choose one x column and at least one y column to render the figure."}
+                ? "Invalid CSV."
+                : "Pick x and y columns."}
             </div>
           ) : null}
         </div>
