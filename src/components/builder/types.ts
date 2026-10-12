@@ -73,6 +73,8 @@ export type BuilderComponent = {
   focalLength?: number;
   /** cavity only, mm between the two mirrors */
   cavityLength?: number;
+  /** objective only, mm from the back of the thread to the nose; missing means DEFAULT_OBJECTIVE_LENGTH_MM */
+  objectiveLength?: number;
   /** particle only: the trap or cavity it sits in; it sits at the host's centre */
   host?: string;
   /** particle only, mm; missing means PARTICLE_RADIUS_MM */
@@ -152,7 +154,7 @@ export type Frame = {
   fill?: false;
 };
 
-export const SCENE_VERSION = 7 as const;
+export const SCENE_VERSION = 8 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -443,6 +445,8 @@ export const PARTICLE_RADIUS_MM = 3;
 export const PARTICLE_RADIUS_RANGE_MM: [number, number] = [0.5, 15];
 export const DEFAULT_BLOCK_COLOR = "#3b4a6b";
 export const DEFAULT_OBJECTIVE_COLOR = "#d5d9df";
+export const DEFAULT_OBJECTIVE_LENGTH_MM = 54;
+export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [10, 150];
 export const DEFAULT_PHOTODIODE_COLOR = "#b3261e";
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
@@ -590,6 +594,11 @@ export function beamDisplayName(beam: Beam): string {
 export function componentRadius(component: BuilderComponent): number {
   if (component.type === "cavity") {
     return Math.max(COMPONENT_SPECS.cavity.radius, (component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM) / 2 + 12);
+  }
+  if (component.type === "objective") {
+    // drawn from the thread's back at x = -29 to the nose, so the far end sets the ring
+    const length = component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM;
+    return Math.max(COMPONENT_SPECS.objective.radius, length - 29 + 8);
   }
   if (component.type === "block") {
     const [dx, , dz] = component.size ?? BLOCK_SIZE_MM;
@@ -1243,6 +1252,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   if (type === "cavity") {
     const length = finiteNumber(raw.cavityLength);
     if (length !== undefined) component.cavityLength = clamp(length, CAVITY_LENGTH_RANGE_MM);
+  }
+  if (type === "objective" && version >= 8) {
+    const length = finiteNumber(raw.objectiveLength);
+    if (length !== undefined) component.objectiveLength = clamp(length, OBJECTIVE_LENGTH_RANGE_MM);
   }
   if (type === "sample") {
     const opacity = finiteNumber(raw.opacity);
