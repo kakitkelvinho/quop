@@ -21,6 +21,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  type ComponentProps,
   type RefObject,
 } from "react";
 import {
@@ -49,7 +50,8 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { ComponentMesh } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
-import { FrameMesh } from "@/components/builder/frame-mesh";
+import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
+import type { FrameGrip } from "@/components/builder/frame-reshape";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
@@ -92,12 +94,13 @@ type ControlsLike = { target: Vector3; update: () => void };
 
 /**
  * The box the components fill: their footprints on the table, from the table
- * up to the top of the tallest part. An empty table frames the 800 × 600 mm
- * breadboard the builder used to be bounded by, so a fresh scene looks the
- * same as it always has.
+ * up to the top of the tallest part, and the corners of any shown frames
+ * passed in. An empty table frames the 800 × 600 mm breadboard the builder
+ * used to be bounded by, so a fresh scene looks the same as it always has.
  */
-function layoutBox(components: BuilderComponent[]): Box3 {
-  if (components.length === 0) {
+function layoutBox(components: BuilderComponent[], frames: Frame[] = []): Box3 {
+  const shown = frames.filter((frame) => !frame.hidden);
+  if (components.length === 0 && shown.length === 0) {
     return new Box3(
       new Vector3(-420, 0, -320),
       new Vector3(420, BEAM_HEIGHT_MM + 30, 320),
@@ -111,6 +114,9 @@ function layoutBox(components: BuilderComponent[]): Box3 {
     box.expandByPoint(
       new Vector3(x + radius, y + COMPONENT_SPECS[component.type].top, z + radius),
     );
+  }
+  for (const frame of shown) {
+    for (const [x, z] of frame.corners) box.expandByPoint(new Vector3(x, 0, z));
   }
   return box;
 }
@@ -133,11 +139,13 @@ function CameraRig({
   view,
   fitToken,
   components,
+  frames,
   pivotRef,
 }: {
   view: CameraView;
   fitToken: number;
   components: BuilderComponent[];
+  frames: Frame[];
   pivotRef: RefObject<Vector3 | null>;
 }) {
   // `get()` reaches the live camera imperatively; the size selector is here so
@@ -145,17 +153,17 @@ function CameraRig({
   const get = useThree((state) => state.get);
   const size = useThree((state) => state.size);
   // read at fit time, not a dependency: a drag must not reframe the view
-  const latest = useRef(components);
+  const latest = useRef({ components, frames });
   useLayoutEffect(() => {
-    latest.current = components;
-  }, [components]);
+    latest.current = { components, frames };
+  }, [components, frames]);
 
   useEffect(() => {
     const store = get();
     const cam = store.camera as OrthographicCamera;
     const controls = store.controls as ControlsLike | null;
     const distance = 1400;
-    const box = layoutBox(latest.current);
+    const box = layoutBox(latest.current.components, latest.current.frames);
     const centre = box.getCenter(new Vector3()).setY(0);
 
     if (view === "top") {
@@ -846,8 +854,10 @@ export type BuilderCanvasProps = {
   selectedFrameId: string | null;
   /** the one hidden frame drawn as a faint ghost, if any; every other hidden frame is not drawn */
   ghostFrameId: string | null;
-  /** the edges of frames take presses: off while placing a part or drawing a beam or connection */
+  /** the edges of frames take presses: off while placing a part or drawing a beam, connection or frame */
   framesInteractive: boolean;
+  /** the frame being drawn and what the pointer would do, laid over everything; null when none is */
+  frameDraft: ComponentProps<typeof FrameDraft> | null;
   hoveredId: string | null;
   beamDraft: string[];
   showLabels: boolean;
@@ -865,7 +875,7 @@ export type BuilderCanvasProps = {
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
-  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
   onCanvasReady: (handle: CanvasApi) => void;
 };
 
@@ -873,6 +883,8 @@ export type CanvasApi = {
   canvas: HTMLCanvasElement;
   /** where a point in the scene, mm, is on screen now, in client pixels */
   project: (point: Vec3) => [number, number];
+  /** the table point under a point on screen, in client pixels, as [x, z] mm */
+  tableAt: (clientX: number, clientY: number) => [number, number] | null;
 };
 
 function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
@@ -880,6 +892,8 @@ function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
   const get = useThree((state) => state.get);
   useEffect(() => {
     const scratch = new Vector3();
+    const raycaster = new Raycaster();
+    const pointer = new Vector2();
     onReady({
       canvas: gl.domElement,
       project: (point) => {
@@ -889,6 +903,12 @@ function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
           rect.left + ((scratch.x + 1) / 2) * rect.width,
           rect.top + ((1 - scratch.y) / 2) * rect.height,
         ];
+      },
+      tableAt: (clientX, clientY) => {
+        const rect = gl.domElement.getBoundingClientRect();
+        pointer.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+        raycaster.setFromCamera(pointer, get().camera);
+        return tablePoint(raycaster.ray);
       },
     });
   }, [get, gl, onReady]);
@@ -908,6 +928,7 @@ export default function BuilderCanvas({
   selectedFrameId,
   ghostFrameId,
   framesInteractive,
+  frameDraft,
   hoveredId,
   beamDraft,
   showLabels,
@@ -1003,9 +1024,9 @@ export default function BuilderCanvas({
             ghost={ghost}
             showLabel={showLabels}
             interactive={framesInteractive}
-            onPointerDown={(event) => {
+            onPointerDown={(event, grip) => {
               event.stopPropagation();
-              onFramePointerDown(frame.id, event);
+              onFramePointerDown(frame.id, event, grip);
             }}
           />
         );
@@ -1059,6 +1080,8 @@ export default function BuilderCanvas({
           color={palette.accent}
         />
       ) : null}
+
+      {frameDraft ? <FrameDraft {...frameDraft} /> : null}
 
       {snapGuide ? (
         // Laid on the table under the beam, not along it, where the beam's own
@@ -1115,6 +1138,7 @@ export default function BuilderCanvas({
         view={view}
         fitToken={fitToken}
         components={components}
+        frames={frames}
         pivotRef={pivotRef}
       />
 

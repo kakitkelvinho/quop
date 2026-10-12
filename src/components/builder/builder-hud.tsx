@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
+import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import {
   BeamDraftInspector,
@@ -52,6 +53,10 @@ export type BuilderHudProps = {
   placingType: ComponentType | null;
   trayOpen: boolean;
   beamMode: boolean;
+  /** "Add a frame" is drawing one */
+  drawingFrame: boolean;
+  /** how many corners the frame being drawn has so far */
+  frameCorners: number;
   /** "Add stops" is on for the selected beam */
   addingStops: boolean;
   beamDraft: string[];
@@ -94,10 +99,15 @@ export type BuilderHudProps = {
   /** drop a beam at index `to` of the list; true when it moved */
   onMoveBeam: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetBeamHidden: (id: string, hidden: boolean) => void;
-  onAddFrame: () => void;
+  onStartFrame: () => void;
+  onCancelFrame: () => void;
+  /** the selected frame was just drawn: its label field takes focus */
+  focusFrameLabel: boolean;
+  onFrameLabelFocused: () => void;
   onSelectFrame: (id: string) => void;
   onUpdateFrame: (id: string, patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
   onDeleteFrame: (id: string) => void;
+  onMoveFrame: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetFrameHidden: (id: string, hidden: boolean) => void;
   onToggleLabels: () => void;
   onToggleGrid: () => void;
@@ -110,6 +120,9 @@ export type BuilderHudProps = {
   onSave: () => void;
   onLoad: (event: ChangeEvent<HTMLInputElement>) => void;
   onExportPng: () => void;
+  /** the setup brief: to the clipboard, or saved as a .md file */
+  onCopyBrief: () => void;
+  onDownloadBrief: () => void;
   onResetExample: () => void;
   onClear: () => void;
 };
@@ -126,6 +139,24 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
         ["Enter", "finish"],
         ["Esc", "cancel"],
       ],
+    };
+  // a drag makes a rectangle only before the first corner; after it, it pans
+  if (props.drawingFrame)
+    return {
+      label: "Drawing a frame",
+      hints:
+        props.frameCorners === 0
+          ? [
+              ["Drag", "rectangle"],
+              ["Click", "first corner"],
+              ["Esc", "cancel"],
+            ]
+          : [
+              ["Click", "corner"],
+              ["Enter", "finish"],
+              ["⌫", "undo corner"],
+              ["Esc", "cancel"],
+            ],
     };
   if (props.connectDraft)
     return {
@@ -255,22 +286,28 @@ function BeamList({
   );
 }
 
-/** The frames section, under the beams box: one row per frame, to select it, hide or show it, or delete it. */
+/**
+ * The frames section, under the beams box: one row per frame, to select it,
+ * drag it to a new place in the list (Alt+↑ / Alt+↓ moves a focused row), hide
+ * or show it, or delete it. Focus follows the edit as in the beams box.
+ */
 function FrameList({
   frames,
   selectedId,
   onSelect,
+  onMove,
   onSetHidden,
   onDelete,
 }: {
   frames: Frame[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onMove: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const listRef = useRef<HTMLUListElement>(null);
-  // a deleted frame's row hands focus to the one that took its place
+  // a moved frame's row keeps focus, and a deleted frame's row hands it to the one that took its place
   const focusRow = useRef<number | null>(null);
   useEffect(() => {
     const row = focusRow.current;
@@ -280,22 +317,36 @@ function FrameList({
     rows[Math.min(row, rows.length - 1)].querySelector("button")?.focus();
   }, [frames]);
 
+  const { listClass, rowProps } = useRowDrag({
+    listRef,
+    count: frames.length,
+    onMove: (from, to, how) => {
+      if (how === "keyboard") focusRow.current = to;
+      return onMove(frames[from].id, to, how);
+    },
+  });
+
   return (
     <section className="builderIsland builderHud__frames" aria-labelledby="builderFramesTitle" data-guide="frames">
       <h2 id="builderFramesTitle" className="builderHud__listTitle">
         Frames
       </h2>
-      <ul ref={listRef} role="list" className="builderHud__frameRows">
+      <ul ref={listRef} role="list" className={`builderHud__frameRows ${listClass}`}>
         {frames.map((frame, index) => {
           const name = frameDisplayName(frame);
           const selected = selectedId === frame.id;
+          const drag = rowProps(index);
           return (
-            <li key={frame.id} className={`builderBeamRow${selected ? " is-selected" : ""}${frame.hidden ? " is-hidden" : ""}`}>
+            <li
+              key={frame.id}
+              {...drag}
+              className={`builderBeamRow${selected ? " is-selected" : ""}${frame.hidden ? " is-hidden" : ""} ${drag.className}`}
+            >
               <button type="button" className="builderBeamRow__select" aria-pressed={selected} onClick={() => onSelect(frame.id)}>
                 <span className="builderBeamRow__dot builderBeamRow__dot--square" style={{ background: frame.color }} />
                 <span className="builderBeamRow__name">{name}</span>
               </button>
-              <span className="builderBeamRow__actions">
+              <span className="builderBeamRow__actions" data-no-drag>
                 <IconButton
                   icon={frame.hidden ? "eyeOff" : "eye"}
                   // a toggle: the label stays put and aria-pressed carries the state
@@ -329,11 +380,11 @@ const LIMITATIONS = [
   "A fibre or cable’s route across the table is drawn for you and can pass under other parts. Its delay comes from the length you type, not from the route.",
 ];
 
-/** What the builder is for, from the navigation registry, then what it leaves to the author. */
-function AboutPanel({ onClose }: { onClose: () => void }) {
-  const tool = findTool("/experiment/builder");
-  // Capture, and stop, so this Esc closes only the panel: the scene's Esc
-  // chain peels one layer per press and would otherwise also deselect.
+/**
+ * Esc closes the panel. Capture, and stop, so this Esc closes only the panel:
+ * the scene's Esc chain peels one layer per press and would otherwise also deselect.
+ */
+function useEscapeCloses(onClose: () => void) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -343,6 +394,12 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
+}
+
+/** What the builder is for, from the navigation registry, then what it leaves to the author. */
+function AboutPanel({ onClose }: { onClose: () => void }) {
+  const tool = findTool("/experiment/builder");
+  useEscapeCloses(onClose);
 
   return (
     <aside className="builderIsland builderAbout" aria-labelledby="builder-about-title">
@@ -361,6 +418,52 @@ function AboutPanel({ onClose }: { onClose: () => void }) {
         ))}
       </ul>
       <ReportLine tool={tool?.label} className="builderAbout__report" showVersion />
+      <button
+        type="button"
+        className="builderHud__close"
+        aria-label="Close panel"
+        title="Close (Esc)"
+        onClick={onClose}
+      >
+        <Icon name="close" size={16} />
+      </button>
+    </aside>
+  );
+}
+
+/** The setup brief, to copy into an AI assistant or save; it opens where the about panel does. */
+function BriefPanel({
+  onCopy,
+  onDownload,
+  onClose,
+}: {
+  onCopy: () => void;
+  onDownload: () => void;
+  onClose: () => void;
+}) {
+  const brief = useMemo(() => setupBrief(), []);
+  useEscapeCloses(onClose);
+
+  return (
+    <aside className="builderIsland builderAbout builderBrief" aria-labelledby="builder-brief-title">
+      <h2 id="builder-brief-title" className="builderAbout__title">
+        Setup brief
+      </h2>
+      <p className="builderAbout__description">
+        Paste this into an AI assistant and describe your experiment. Save the JSON it writes and open it with
+        Open JSON… in the file menu.
+      </p>
+      <div className="builderBrief__actions">
+        <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
+          Copy
+        </button>
+        <button type="button" className="builderButton" onClick={onDownload}>
+          Download .md
+        </button>
+      </div>
+      <pre className="builderBrief__text" tabIndex={0} aria-label="The setup brief, in Markdown">
+        {brief}
+      </pre>
       <button
         type="button"
         className="builderHud__close"
@@ -469,22 +572,33 @@ export default function BuilderHud(props: BuilderHudProps) {
     placingType,
     trayOpen,
     beamMode,
+    drawingFrame,
     connectDraft,
     view,
   } = props;
   const mode = modeHints(props);
-  const selecting = !beamMode && !connectDraft && !placingType && !trayOpen;
-  // the about panel shares the parts panel's spot, so opening either closes the other
+  const selecting = !beamMode && !drawingFrame && !connectDraft && !placingType && !trayOpen;
+  // the about panel and the brief share the parts panel's spot, so opening one closes the others
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [briefOpen, setBriefOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeAbout = useCallback(() => setAboutOpen(false), []);
+  const closeBrief = useCallback(() => setBriefOpen(false), []);
   const { onCloseTray } = props;
   const showAbout = useCallback(() => {
     onCloseTray();
+    setBriefOpen(false);
     setAboutOpen(true);
+  }, [onCloseTray]);
+  // the brief takes the parts panel's place and size, so the boxes step aside for either
+  const besideParts = trayOpen || briefOpen;
+  const toggleBrief = useCallback(() => {
+    onCloseTray();
+    setAboutOpen(false);
+    setBriefOpen((open) => !open);
   }, [onCloseTray]);
 
   let inspector = null;
@@ -553,6 +667,8 @@ export default function BuilderHud(props: BuilderHudProps) {
         frame={frame}
         onUpdate={(patch) => props.onUpdateFrame(frame.id, patch)}
         onDelete={() => props.onDeleteFrame(frame.id)}
+        focusLabel={props.focusFrameLabel}
+        onLabelFocused={props.onFrameLabelFocused}
       />
     );
   } else if (props.selectedConnection) {
@@ -601,6 +717,9 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
 
       {aboutOpen && !trayOpen ? <AboutPanel onClose={closeAbout} /> : null}
+      {briefOpen && !trayOpen ? (
+        <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
+      ) : null}
 
       <div className="builderIsland builderHud__add">
         <IconButton
@@ -610,6 +729,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           active={trayOpen}
           onClick={() => {
             setAboutOpen(false);
+            setBriefOpen(false);
             props.onToggleTray();
           }}
         />
@@ -621,7 +741,13 @@ export default function BuilderHud(props: BuilderHudProps) {
           onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
           disabled={components.length < 2}
         />
-        <IconButton icon="frame" label="Add a frame to mark an area" guide="frame" onClick={props.onAddFrame} />
+        <IconButton
+          icon="frame"
+          label="Draw a frame to mark an area"
+          guide="frame"
+          active={drawingFrame}
+          onClick={drawingFrame ? props.onCancelFrame : props.onStartFrame}
+        />
         <IconButton
           icon="connect"
           label="Connect two parts with a fibre or cable"
@@ -667,6 +793,20 @@ export default function BuilderHud(props: BuilderHudProps) {
             >
               Cheat sheet
               <Icon name="chevron" size={12} />
+            </button>
+          </div>
+          {/* the brief is neither a tool nor a guide: its own island, across the tools from the Guide pill */}
+          <div className="builderIsland builderHud__brief">
+            <button
+              type="button"
+              className={`builderIconBtn builderBriefButton${briefOpen ? " is-active" : ""}`}
+              aria-label="Setup brief: instructions for an AI assistant to write a setup file"
+              aria-pressed={briefOpen}
+              title="Setup brief: instructions for an AI assistant to write a setup file"
+              data-guide="brief"
+              onClick={toggleBrief}
+            >
+              .md
             </button>
           </div>
         </div>
@@ -729,13 +869,13 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length || props.frames.length ? (
-        <div className={`builderHud__lists${trayOpen ? " is-besideParts" : ""}`}>
+        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
       {beams.length ? (
         <BeamList
           components={components}
           beams={beams}
           selectedId={selectedBeam?.id ?? null}
-          besideParts={trayOpen}
+          besideParts={besideParts}
           onSelect={props.onSelectBeam}
           onMove={props.onMoveBeam}
           onSetHidden={props.onSetBeamHidden}
@@ -747,6 +887,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           frames={props.frames}
           selectedId={props.selectedFrame?.id ?? null}
           onSelect={props.onSelectFrame}
+          onMove={props.onMoveFrame}
           onSetHidden={props.onSetFrameHidden}
           onDelete={props.onDeleteFrame}
         />

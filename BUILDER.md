@@ -85,16 +85,81 @@ arrows, so you can see what you are editing; the export still leaves it out. Hid
 saved with the setup (scene version 4; older setups open with every beam
 shown) and each toggle is one undo step.
 
-**Frames mark areas.** A frame is a labelled rectangle drawn flat on the table
-under everything, to mark one breadboard or an enclosure. It is a drawing aid
-only: it constrains nothing, and parts need not be inside it. Add one with the
-dashed-rectangle button beside Draw a beam; it opens in the inspector, where
-you set its label, colour, width and depth. Drag its edge to move it (the
-inside lets clicks and drags through, so a frame never blocks the table or the
-parts in it). Each frame has a row in the Frames box under the beams box, with
-an eye to hide it from the view and the PNG and a trash button; a selected
-hidden frame shows as a faint outline on screen, not in the export. Frames are
-saved with the setup (scene version 5; older setups open with none).
+**Frames mark areas.** A frame is a labelled outline drawn flat on the table
+under everything, to mark one breadboard or an enclosure: a rectangle, or a
+right-angled shape such as an L or a U, its sides always along x or z. It is a
+drawing aid only: it constrains nothing, and parts need not be inside it. The
+dashed-rectangle button beside Draw a beam starts drawing one, a mode like Draw
+a beam. Drag on the table for a plain rectangle, or click to place corners:
+each new side runs along x or z, whichever way the pointer has moved further,
+its corner on the grid (`⇧` for fine steps). A dashed preview shows the next
+side and, fainter, the way back to the first corner, with an elbow where the
+two don't line up, and a note beside the pointer reads the outline's overall
+size in mm. The mode badge shows the keys that apply: before the first corner,
+drag for a rectangle; after it, a drag pans and Enter finishes. Double-click,
+click the first corner or press Enter to
+finish: the closing side and any elbow are added for you. `⌫` removes the last
+corner and Esc cancels. A side that would cross, touch or run back along the
+outline drawn so far is refused: the preview turns red and dotted, the corner
+is crossed out, the note beside the pointer says why, and the click isn't
+taken (a refused click is then said in the status line, which a screen reader
+reads out; hovering alone isn't). The same goes for the closing side, so an
+outline can't be finished crossing itself (other frames don't count; frames
+may overlap). While drawing, parts and other frames ignore clicks, so a corner
+can go on top of a part. The finished frame is held to a saved one's limits
+(sides at least 10 mm, at most 5000 mm overall), arrives as one undo step and
+opens in the inspector with its Label field focused (not on a touch screen,
+where the keyboard would cover it), where you set its label and colour
+and switch its Fill: on (the default), it is a faint tint of its colour inside
+a solid edge; off, it is the coloured outline alone, on screen and in the PNG.
+A rectangle also has its width and depth there, which resize it from its
+back-left corner; any other shape shows its overall size, read-only ("850 ×
+250 mm overall"). The label sits on the back-left corner (the back-most, then
+left-most). Pressing the edge of an unselected frame selects it and drags it
+whole, its back-left corner on the grid (the inside lets clicks and drags
+through, so a frame never blocks the table or the parts in it). A selected
+frame shows a handle on each corner and reshapes instead: drag a side in or
+out, perpendicular to itself, and the sides either side of it stretch or
+shrink; drag a corner, and both sides that meet there stay along x and z, so
+the corners at their far ends slide with it. Both snap to the grid (`⇧` for
+fine steps). A drag stops at the last valid outline, so the outline never
+folds or crosses itself and keeps every side at least 10 mm and the whole at
+most 5000 mm across; the one gap it crosses is onto a side that vanishes, as
+when an L's foot is pushed flush with its long side and the L becomes a
+rectangle, which gets its width and depth back in the inspector. Alt-drag or
+the arrow keys move a selected frame whole. Each drag is one undo step, from
+its first real change. Each frame has a row in the Frames box under the beams
+box, with an eye to hide it from the view and the PNG and a trash button; drag
+a row to reorder the list, as in the beams box; a selected hidden frame shows
+as a faint outline on screen, not in the export. Frames are saved with the
+setup (scene version 5; older setups open with none), and so is a frame's
+Fill, stored only when off (scene version 6; older frames open filled).
+Since scene version 7 a frame is saved as its `corners`, `[x, z]` in mm,
+from the back-left corner and clockwise in the top-down view; older frames,
+saved as a centre, width and depth, open as that rectangle's corners, and the
+parser still reads that form in any version for hand-written files. An
+outline no frame can have (a slanted side, one crossing itself, fewer than 4
+corners, a side under 10 mm, over 5000 mm overall, junk values) opens as the
+rectangle around it rather than being dropped. Hiding, showing and each Fill
+switch are one undo step.
+
+**A setup brief for an AI assistant.** The `.md` button, in its own island at
+the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
+author pastes into an AI assistant so it writes a setup file for the experiment
+they describe, which then opens with Open JSON… like any other. The panel shows
+the brief with **Copy** (to the clipboard, confirmed in the status line) and
+**Download .md**; Esc or its close button shuts it. The brief tells the
+assistant to ask about anything unclear and then reply with one JSON file and
+nothing else, and sets out the conventions (millimetres, the x–z table at
+height 0, the beam height, how rotations turn a part, unique ids), the file's
+shape at the current scene version, every component type with its heights and
+own fields, and a worked example (laser, mirror, lens, photodiode, one beam,
+one L-shaped frame).
+It is generated in `setup-brief.ts`: the types and their defaults come from
+`types.ts`, so a new type appears in it with no extra work, and a new saved
+field doesn't typecheck until the brief has a line for it. A test opens the
+example with the setup parser and checks every component and beam survives,
+unchanged.
 
 **Round beams.** A beam's core is drawn as a lit tube along each leg, so it
 reads as light passing through the parts rather than a flat stroke. Its halo
@@ -195,12 +260,17 @@ is on screen until it is needed:
   icon and one-line hint, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
   reopening it. The about panel (what the builder is for, then its known
-  limitations) opens in the same spot, so opening either closes the other.
+  limitations) and the setup brief open in the same spot, so opening one
+  closes the others.
 - **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
-  Undo, Redo) with the Cheat sheet tab hung under it. While placing, drawing
-  or connecting, a mode badge under the pill carries that mode's key hints. On
-  a phone the column moves to the right edge, clear of the + island: the Guide
-  pill sits level with the file island and the tool pill drops below it.
+  Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
+  `.md` button in its own island (it is neither a tool nor a guide). The `.md`
+  island hangs off the row's end, so the Guide and tool pills stay centred.
+  While placing, drawing or connecting, a mode badge under the pill carries
+  that mode's key hints. On a phone the column moves to the right edge, clear
+  of the + island: the Guide pill sits level with the file island, the tool
+  pill drops below it and the `.md` island below that, with the brief opening
+  under it.
 - **Right**: the inspector, shown only while something is selected: a
   component, several components, a beam, or a beam being drawn. For several
   it reads "N parts selected", with rotate, duplicate and delete, a height
@@ -215,16 +285,18 @@ is on screen until it is needed:
   stay). The list order is
   the setup's beam order, so it is saved, and each move, hide or delete is one
   undo step. It scrolls once there
-  are more beams than fit. While the parts panel is open the box moves to sit
+  are more beams than fit. While the parts panel (or the setup brief, which
+  takes its place and size) is open the box moves to sit
   beside it; on a phone, where the panel spans the width, it hides until the
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
+  Its rows drag to reorder, like the beams box's.
 - **Bottom right**: the view controls.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
 - **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
   builder dims and each control on screen is ringed and tagged in place, in
-  a few words ("Draw a beam", "Frame an area", "Beams: drag a row to
+  a few words ("Draw a beam", "Draw a frame round an area", "Beams: drag a row to
   reorder"), with the camera and selection keys in a card. A control under
   another island, or with no free spot for its tag, goes untagged; its
   tooltip still names it. Any click, Esc or "Got it" closes them, and focus
@@ -254,12 +326,13 @@ is on screen until it is needed:
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam adds one and selects it; drag its edge to move it (`⇧` for fine steps), arrow keys nudge it, `Delete` removes it. Label, colour, width and depth are in its inspector |
-| Hide, show or delete a frame | The eye and trash buttons on its row in the Frames box. A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
+| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam draws one: drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag an unselected frame's edge to select and move it whole (`⇧` for fine steps). On a selected frame, drag a side in or out or drag a corner handle to reshape it (stops at the last valid outline, one undo step per drag); `Alt`-drag or the arrow keys move it whole, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
+| Hide, show, reorder or delete a frame | The eye and trash buttons on its row in the Frames box; drag the row to a new place (or focus it and press `Alt+↑` / `Alt+↓`). A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
+| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, save the JSON it writes and open it with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet
@@ -302,8 +375,8 @@ print — posters, slides and paper figures are mostly white pages.
   it appears only while a part is being placed or dragged (and the grid toggle
   is on), follows the view and fades with distance.
 - **Fit frames the parts.** Fit, a change of view and loading a scene frame the
-  parts themselves, tall ones and their tags included; an empty table frames an
-  800 × 600 mm board. The key light's shadows follow the layout too.
+  parts themselves, tall ones and their tags included, and the corners of every
+  shown frame; an empty table frames an 800 × 600 mm board. The key light's shadows follow the layout too.
 - **Enamel, not anodised metal.** Mount plates and bodies are dielectric so
   their colour stays saturated; only screws, rods and mirrors are metal.
 - **Grey posts.** Pillars, pedestals and risers are one mid-grey in both
@@ -329,9 +402,10 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/scene-theme.ts` | Day/night lighting and backdrop palettes, bound to `data-theme` |
 | `src/components/builder/component-models.tsx` | The 3D part models |
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
-| `src/components/builder/frame-mesh.tsx` | A frame: flat fill, edge, label, and the edge strips that take a press |
+| `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
+| `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons and hints, and search |
 | `src/components/builder/builder-inspector.tsx` | Inspector bodies for a component, a beam, and a beam being drawn |

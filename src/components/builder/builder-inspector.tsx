@@ -42,7 +42,9 @@ import {
   componentById,
   componentDisplayName,
   componentTag,
-  frameDisplayName,
+  cornerBounds,
+  isRectangle,
+  rectangleCorners,
   connectionDelayPs,
   connectionIndex,
   lengthToPicoseconds,
@@ -948,16 +950,39 @@ export function ConnectionDraftInspector({
   );
 }
 
+/** The frame colours by name, for the swatches' labels. */
+const FRAME_COLOR_NAMES: Record<(typeof FRAME_COLORS)[number], string> = {
+  "#0891b2": "teal",
+  "#ea580c": "orange",
+  "#16a34a": "green",
+  "#db2777": "pink",
+  "#7c3aed": "violet",
+  "#ca8a04": "ochre",
+};
+
 export function FrameInspector({
   frame,
   onUpdate,
   onDelete,
+  focusLabel,
+  onLabelFocused,
 }: {
   frame: Frame;
   onUpdate: (patch: Partial<Omit<Frame, "id">>) => void;
   onDelete: () => void;
+  /** the frame was just drawn: its label is the next thing to give it */
+  focusLabel: boolean;
+  onLabelFocused: () => void;
 }) {
   const [min, max] = FRAME_SIZE_RANGE_MM;
+  const labelRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!focusLabel) return;
+    // a touch screen would throw up its keyboard over the frame just drawn
+    if (window.matchMedia("(pointer: fine)").matches) labelRef.current?.focus();
+    onLabelFocused();
+  }, [focusLabel, onLabelFocused]);
+  const { minX, minZ, width, depth } = cornerBounds(frame.corners);
   return (
     <div className="builderInspector">
       <div className="builderInspector__head">
@@ -968,6 +993,7 @@ export function FrameInspector({
         <span className="builderField__label">Label</span>
         <span className="builderField__control">
           <input
+            ref={labelRef}
             type="text"
             value={frame.label ?? ""}
             placeholder="Breadboard, enclosure…"
@@ -980,7 +1006,8 @@ export function FrameInspector({
           <button
             key={color}
             type="button"
-            aria-label={`Frame colour ${color}`}
+            aria-label={`Frame colour: ${FRAME_COLOR_NAMES[color]}`}
+            title={FRAME_COLOR_NAMES[color]}
             aria-pressed={frame.color === color}
             className={`builderSwatch${frame.color === color ? " is-active" : ""}`}
             style={{ background: color }}
@@ -995,28 +1022,57 @@ export function FrameInspector({
           onChange={(event) => onUpdate({ color: event.target.value })}
         />
       </div>
-      <NumberField
-        label="Width"
-        unit="mm"
-        step={25}
-        min={min}
-        max={max}
-        title="Along the table's x axis"
-        value={frame.width}
-        onChange={(width) => onUpdate({ width: clamp(width, FRAME_SIZE_RANGE_MM) })}
-      />
-      <NumberField
-        label="Depth"
-        unit="mm"
-        step={25}
-        min={min}
-        max={max}
-        title="Along the table's z axis"
-        value={frame.depth}
-        onChange={(depth) => onUpdate({ depth: clamp(depth, FRAME_SIZE_RANGE_MM) })}
-      />
+      {isRectangle(frame.corners) ? (
+        <>
+          <NumberField
+            label="Width"
+            unit="mm"
+            step={25}
+            min={min}
+            max={max}
+            title="Along the table's x axis, from its back-left corner"
+            value={width}
+            onChange={(next) => onUpdate({ corners: rectangleCorners([minX, minZ], next, depth) })}
+          />
+          <NumberField
+            label="Depth"
+            unit="mm"
+            step={25}
+            min={min}
+            max={max}
+            title="Along the table's z axis, from its back-left corner"
+            value={depth}
+            onChange={(next) => onUpdate({ corners: rectangleCorners([minX, minZ], width, next) })}
+          />
+        </>
+      ) : (
+        <div className="builderField" title="The box around its outline, along x and z">
+          <span className="builderField__label">Size</span>
+          <span className="builderReadout">
+            {Math.round(width)} × {Math.round(depth)} mm overall
+          </span>
+        </div>
+      )}
+      <div className="builderChoice" role="group" aria-label="Fill">
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={frame.fill !== false}
+          onClick={() => onUpdate({ fill: undefined })}
+        >
+          Fill
+        </button>
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={frame.fill === false}
+          onClick={() => onUpdate({ fill: false })}
+        >
+          No fill
+        </button>
+      </div>
       <p className="builderInspector__hint">
-        {frameDisplayName(frame)} only marks an area. It constrains nothing. Drag its edge to move it.
+        Marks an area; constrains nothing. Drag a side or corner to reshape it; Alt-drag or the arrow keys move it.
       </p>
     </div>
   );

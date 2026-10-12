@@ -10,7 +10,6 @@ import {
   DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
-  DEFAULT_FRAME_SIZE_MM,
   FRAME_COLORS,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SCENE,
@@ -22,18 +21,21 @@ import {
   createFrameId,
   defaultHeight,
   moveBeamTo as moveBeamInList,
+  moveFrameTo as moveFrameInList,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
   settleAngles,
   settleHosts,
   snapToGrid,
+  translateCorners,
   type Beam,
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
   type Connection,
   type ConnectionKind,
+  type Corner,
   type Frame,
   type Vec3,
 } from "@/components/builder/types";
@@ -353,22 +355,13 @@ export function useBuilderScene() {
 
   // ---- frame edits ---------------------------------------------------------
 
-  /** A new frame of the default size, centred on (x, z); its id. */
+  /** A new frame with these corners, in standard form, in the next colour: one undo step; its id. */
   const addFrame = useCallback(
-    ([x, z]: [number, number]): string => {
+    (corners: Corner[]): string => {
       const id = createFrameId();
       commit((current) => ({
         ...current,
-        frames: [
-          ...current.frames,
-          {
-            id,
-            position: clampToTable(x, z),
-            width: DEFAULT_FRAME_SIZE_MM[0],
-            depth: DEFAULT_FRAME_SIZE_MM[1],
-            color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length],
-          },
-        ],
+        frames: [...current.frames, { id, corners, color: FRAME_COLORS[current.frames.length % FRAME_COLORS.length] }],
       }));
       return id;
     },
@@ -387,15 +380,38 @@ export function useBuilderScene() {
     [commit, preview],
   );
 
+  /** Slide a frame whole, unrecorded, so its first corner sits at (x, z), held on the table. */
   const moveFrame = useCallback(
-    (id: string, x: number, z: number) => updateFrame(id, { position: clampToTable(x, z) }, false),
-    [updateFrame],
+    (id: string, x: number, z: number) =>
+      preview((current) => ({
+        ...current,
+        frames: current.frames.map((frame) => {
+          if (frame.id !== id) return frame;
+          const [fx, fz] = frame.corners[0];
+          return { ...frame, corners: translateCorners(frame.corners, x - fx, z - fz) };
+        }),
+      })),
+    [preview],
   );
 
   const deleteFrame = useCallback(
     (id: string) =>
       commit((current) => ({ ...current, frames: current.frames.filter((frame) => frame.id !== id) })),
     [commit],
+  );
+
+  /** Drop a frame at index `to` of the list; the frame's new place, or null when it can't go there. */
+  const reorderFrame = useCallback(
+    (id: string, to: number): number | null => {
+      const edit = moveFrameInList(scene.frames, id, to);
+      if (!edit.ok) return null;
+      commit((current) => {
+        const moved = moveFrameInList(current.frames, id, to);
+        return moved.ok ? { ...current, frames: moved.frames } : current;
+      });
+      return to;
+    },
+    [commit, scene.frames],
   );
 
   /** Hide or show a frame: one undo step, and nothing else about it changes. */
@@ -479,6 +495,7 @@ export function useBuilderScene() {
       updateFrame,
       moveFrame,
       deleteFrame,
+      reorderFrame,
       setFrameHidden,
       replaceScene,
       clearScene,
@@ -514,6 +531,7 @@ export function useBuilderScene() {
       updateFrame,
       moveFrame,
       deleteFrame,
+      reorderFrame,
       setFrameHidden,
       replaceScene,
       clearScene,

@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
-  DEFAULT_FRAME_SIZE_MM,
+  type Corner,
   EMPTY_SCENE,
   FRAME_COLORS,
-  FRAME_SIZE_RANGE_MM,
   TABLE_GUARD_MM,
   type Frame,
   frameDisplayName,
+  moveFrameTo,
   parseScene,
   SCENE_VERSION,
   serializeScene,
@@ -21,20 +21,29 @@ import {
 
 const breadboard: Frame = {
   id: "bb",
-  position: [100, -50],
-  width: 900,
-  depth: 600,
+  corners: [
+    [-350, -350],
+    [550, -350],
+    [550, 250],
+    [-350, 250],
+  ],
   color: "#0891b2",
   label: "Main breadboard",
 };
 
+/** 850 × 250 overall: a long arm along x at the back, and a short one down at its right end. */
+const L_SHAPE: Corner[] = [
+  [0, 0],
+  [850, 0],
+  [850, 250],
+  [700, 250],
+  [700, 100],
+  [0, 100],
+];
+
 const parse = (frames: unknown) => parseScene({ version: 5, components: [], frames });
 
 describe("reading frames", () => {
-  it("is the version that added them", () => {
-    assert.equal(SCENE_VERSION, 5);
-  });
-
   it("opens a setup with no frames key, as older files are, with none", () => {
     assert.deepEqual(parseScene({ version: 4, components: [] })?.frames, []);
     assert.deepEqual(parseScene({ components: [] })?.frames, []);
@@ -49,13 +58,16 @@ describe("reading frames", () => {
     assert.deepEqual(parse([breadboard])?.frames, [breadboard]);
   });
 
-  it("gives a frame with only an id the defaults: the table's centre, a breadboard's size, the first colour", () => {
+  it("gives a frame with only an id the defaults: a breadboard's size on the table's centre, the first colour", () => {
     assert.deepEqual(parse([{ id: "bare" }])?.frames, [
       {
         id: "bare",
-        position: [0, 0],
-        width: DEFAULT_FRAME_SIZE_MM[0],
-        depth: DEFAULT_FRAME_SIZE_MM[1],
+        corners: [
+          [-300, -225],
+          [300, -225],
+          [300, 225],
+          [-300, 225],
+        ],
         color: FRAME_COLORS[0],
       },
     ]);
@@ -69,11 +81,15 @@ describe("reading frames", () => {
     );
   });
 
-  it("holds the size to its range and the centre to the table's guard", () => {
+  it("holds an old frame's size to its range, and slides it onto the table", () => {
     const [frame] = parse([{ id: "x", width: 1, depth: 1e9, position: [1e9, -1e9] }])!.frames;
-    assert.equal(frame.width, FRAME_SIZE_RANGE_MM[0]);
-    assert.equal(frame.depth, FRAME_SIZE_RANGE_MM[1]);
-    assert.deepEqual(frame.position, [TABLE_GUARD_MM, -TABLE_GUARD_MM]);
+    const edge = TABLE_GUARD_MM;
+    assert.deepEqual(frame.corners, [
+      [edge - 10, -edge],
+      [edge, -edge],
+      [edge, 0],
+      [edge - 10, 0],
+    ]);
   });
 
   it("reads anything but true as shown, and a label that isn't text as none", () => {
@@ -123,9 +139,9 @@ describe("frames in a saved setup", () => {
     assert.deepEqual(parseScene(JSON.parse(serializeScene(scene)))?.frames, scene.frames);
   });
 
-  it("are written as version 5, and a shown frame carries no hidden key", () => {
+  it("are written at the current version, and a shown frame carries no hidden key", () => {
     const saved = JSON.parse(serializeScene(scene));
-    assert.equal(saved.version, 5);
+    assert.equal(saved.version, SCENE_VERSION);
     assert.equal("hidden" in saved.frames[0], false);
     assert.equal(saved.frames[1].hidden, true);
   });
@@ -144,5 +160,88 @@ describe("a frame's name", () => {
   it("is its size when it has no label, or a blank one", () => {
     assert.equal(frameDisplayName({ ...breadboard, label: undefined }), "Frame 900 × 600 mm");
     assert.equal(frameDisplayName({ ...breadboard, label: "   " }), "Frame 900 × 600 mm");
+  });
+
+  it("is its overall size when it is not a rectangle", () => {
+    assert.equal(frameDisplayName({ ...breadboard, corners: L_SHAPE, label: undefined }), "Frame 850 × 250 mm");
+  });
+});
+
+// #144: a frame can be drawn as its coloured outline alone. Fill is on unless
+// the frame says otherwise, so every setup saved before the switch opens as it
+// looked.
+
+describe("a frame's fill", () => {
+  const atVersion = (version: number, frames: unknown) => parseScene({ version, components: [], frames })!.frames;
+
+  it("came in with version 6", () => {
+    assert.ok(SCENE_VERSION >= 6);
+  });
+
+  it("is on when the frame doesn't say, with no fill key", () => {
+    const [frame] = atVersion(6, [{ id: "a" }]);
+    assert.equal("fill" in frame, false);
+  });
+
+  it("is off when the frame was saved with fill: false", () => {
+    assert.deepEqual(atVersion(6, [{ ...breadboard, fill: false }]), [{ ...breadboard, fill: false }]);
+  });
+
+  it("reads anything but false as on", () => {
+    const frames = atVersion(6, [
+      { id: "a", fill: true },
+      { id: "b", fill: 0 },
+      { id: "c", fill: "no" },
+    ]);
+    assert.deepEqual(
+      frames.map((frame) => "fill" in frame),
+      [false, false, false],
+    );
+  });
+
+  it("is on for every frame in a setup from before version 6", () => {
+    for (const version of [1, 5]) {
+      const [frame] = atVersion(version, [{ ...breadboard, fill: false }]);
+      assert.equal("fill" in frame, false, `version ${version}`);
+    }
+  });
+
+  it("is saved only when off, and opens again as it was", () => {
+    const scene = { ...EMPTY_SCENE, frames: [breadboard, { ...breadboard, id: "outline", fill: false as const }] };
+    const saved = JSON.parse(serializeScene(scene));
+    assert.equal("fill" in saved.frames[0], false);
+    assert.equal(saved.frames[1].fill, false);
+    assert.deepEqual(parseScene(saved)?.frames, scene.frames);
+  });
+
+  it("leaves no key behind when switched back on", () => {
+    const switchedOn = { ...breadboard, fill: undefined };
+    const saved = JSON.parse(serializeScene({ ...EMPTY_SCENE, frames: [switchedOn] }));
+    assert.equal("fill" in saved.frames[0], false);
+  });
+});
+
+describe("reordering frames", () => {
+  const frames = ["a", "b", "c"].map((id) => ({ ...breadboard, id }));
+  const ids = (edit: ReturnType<typeof moveFrameTo>) => (edit.ok ? edit.frames.map((frame) => frame.id) : edit.reason);
+
+  it("drops a frame at a new place in the list", () => {
+    assert.deepEqual(ids(moveFrameTo(frames, "c", 0)), ["c", "a", "b"]);
+    assert.deepEqual(ids(moveFrameTo(frames, "a", 2)), ["b", "c", "a"]);
+    assert.deepEqual(ids(moveFrameTo(frames, "b", 1)), ["a", "b", "c"]);
+  });
+
+  it("refuses a place past either end, or a frame that isn't there", () => {
+    assert.match(String(ids(moveFrameTo(frames, "b", -1))), /already first/);
+    assert.match(String(ids(moveFrameTo(frames, "b", 3))), /already last/);
+    assert.match(String(ids(moveFrameTo(frames, "x", 0))), /isn't in the list/);
+  });
+
+  it("leaves the list it was given as it was, and saves in the new order", () => {
+    const edit = moveFrameTo(frames, "c", 0);
+    assert.deepEqual(frames.map((frame) => frame.id), ["a", "b", "c"]);
+    assert.ok(edit.ok);
+    const saved = parseScene(JSON.parse(serializeScene({ ...EMPTY_SCENE, frames: edit.frames })));
+    assert.deepEqual(saved?.frames.map((frame) => frame.id), ["c", "a", "b"]);
   });
 });

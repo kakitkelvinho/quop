@@ -27,13 +27,14 @@ type Side = "below" | "above" | "right" | "left";
 const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "file", text: "Save · open · PNG", sides: ["right", "below"] },
   { key: "connect", text: "Fibre or cable", sides: ["below"] },
-  { key: "frame", text: "Frame an area", sides: ["below"] },
+  { key: "frame", text: "Draw a frame round an area", sides: ["below"] },
   { key: "beam", text: "Draw a beam", sides: ["below"] },
   { key: "add", text: "Add a part", sides: ["below"] },
+  { key: "brief", text: "Brief an AI to write a setup", sides: ["right", "below"] },
   { key: "tools", text: "Select · posts · grid · undo", sides: ["right", "below"] },
   { key: "inspector", text: "Edit the selection", sides: ["left", "above"] },
   { key: "beams", text: "Beams: drag a row to reorder", sides: ["above", "right"] },
-  { key: "frames", text: "Frames: hide or delete", sides: ["right", "above"] },
+  { key: "frames", text: "Frames: reorder, hide or delete", sides: ["right", "above"] },
   { key: "view", text: "Iso / top · fit · labels · day / night", sides: ["above", "left"] },
 ];
 
@@ -291,8 +292,9 @@ const SHEET: { title: string; lines: Line[] }[] = [
     lines: [
       { icon: "add", text: "Pick a part, click to place" },
       { icon: "beam", text: "Beam: click parts, Enter" },
-      { icon: "frame", text: "Frame: drag its edge to move" },
+      { icon: "frame", text: "Frame: drag, or corners + Enter" },
       { icon: "connect", text: "Fibre or cable: from, then to" },
+      { keys: ".md", text: "Brief an AI to write a setup" },
     ],
   },
   {
@@ -302,6 +304,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Stops snap back onto a beam" },
       { keys: "⌘ drag", text: "Box select; ⌘ click adds" },
       { keys: "R D ⌫", text: "Turn, copy, delete" },
+      { icon: "frame", text: "Frame: reshape; Alt-drag moves" },
     ],
   },
   {
