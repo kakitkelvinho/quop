@@ -43,7 +43,7 @@ function NavItem({
         {label}
       </Link>
       {links.length ? (
-        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100`}>
+        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100`}>
           {links.map((link) => (
             // out of the Tab order: the section page lists every tool, so the
             // header is four stops for a keyboard, not fourteen

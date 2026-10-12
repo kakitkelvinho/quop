@@ -4030,6 +4030,7 @@ html[data-theme="dark"] .builderOrderBadge {
 }
 
 .heroTools .buttonLink {
+  gap: 0.4rem;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
