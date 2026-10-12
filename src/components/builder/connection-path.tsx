@@ -8,6 +8,7 @@ import { CatmullRomCurve3, Vector3 } from "three";
 import { FIBER_STUBS, leavesFromStub } from "@/components/builder/component-models";
 import {
   CONNECTION_KINDS,
+  bodyCentre,
   componentById,
   componentRadius,
   type BuilderComponent,
@@ -30,19 +31,22 @@ const HIT_RADIUS_MM = 5;
  * each other.
  */
 function endPoints(part: BuilderComponent, other: BuilderComponent, kind: ConnectionKind, rest: number): Vector3[] {
-  const [x, height, z] = part.position;
+  // stubs and cables leave the body, which a part with a port is drawn behind
+  const [x, height, z] = bodyCentre(part);
   const stub = leavesFromStub(part.type, kind) ? FIBER_STUBS[part.type] : undefined;
   if (stub) {
     const yaw = (part.rotation * Math.PI) / 180;
     // the stub curls to the part's +z; mirror it when the other end is on its -z side
-    const toward = new Vector3(other.position[0] - x, 0, other.position[2] - z).applyAxisAngle(UP, -yaw);
+    const [ox, , oz] = bodyCentre(other);
+    const toward = new Vector3(ox - x, 0, oz - z).applyAxisAngle(UP, -yaw);
     const side = toward.z < 0 ? -1 : 1;
     return stub(height).points.map((point) =>
       new Vector3(point.x, point.y, point.z * side).applyAxisAngle(UP, yaw).add(new Vector3(x, 0, z)),
     );
   }
 
-  const out = new Vector3(other.position[0] - x, 0, other.position[2] - z);
+  const [ox, , oz] = bodyCentre(other);
+  const out = new Vector3(ox - x, 0, oz - z);
   const apart = out.length();
   if (apart < 1e-6) out.set(1, 0, 0);
   out.normalize();

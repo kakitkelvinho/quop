@@ -73,7 +73,7 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
   id: { text: "text, unique in the file. Beams, connections and particles refer to the part by it." },
   type: { text: "one of the type ids under **Component types**. A part of another type is dropped." },
   position: {
-    text: `\`[x, y, z]\`, mm. x and z place the part's centre on the table (within ±${TABLE_GUARD_MM}); y is its height, its optical centre above the table, held to the type's range.`,
+    text: `\`[x, y, z]\`, mm. x and z place the part on the table (within ±${TABLE_GUARD_MM}): its centre, or for a part with a port (a laser's opening, a fibre collimator's lens, a detector's window, an objective's threaded plate) that port, where the beam meets it, so the distance between two parts' positions is the beam between them. y is its height, its optical centre above the table, held to the type's range.`,
   },
   rotation: { text: "degrees, yaw about the vertical axis; default 0. See **Angles**." },
   color: {

@@ -57,13 +57,14 @@ anywhere later in a path adds nothing. The beam's length, its time of flight
 and its row in the beams box all include it, and its inspector says how much
 came from inside the laser. The beam is still drawn from the aperture.
 
-**A beam meets each part at its reference point.** The beam is drawn to, and
-measured to, a fixed point on the part. For most parts that is the optical
-centre. Where it isn't, the rule is the ruler's: the reference point is the
-first surface a ruler laid along the beam touches. A laser's is its opening,
-the emitter's output face (56 mm in front of its centre), so a beam that starts
-there is drawn and measured from where the light leaves it, not from inside the
-head; a built-in path still counts on top. A fibre collimator's is its lens
+**A beam meets each part at its reference point, and a part with a port is
+placed by it.** The beam is drawn to, and measured to, a fixed point on the
+part. For most parts that is the optical centre. Where it isn't, the rule is
+the ruler's: the reference point is the first surface a ruler laid along the
+beam touches, the part's port. A laser's is its opening, the emitter's output
+face (56 mm in front of its body's centre), so a beam that starts there is
+drawn and measured from where the light leaves it, not from inside the head;
+a built-in path still counts on top. A fibre collimator's is its lens
 window (10.5 mm in front of its centre), whether the beam leaves the fibre
 there or is coupled into it. A photodiode's is its chip
 (2.15 mm in front of its centre, at the back of its cup), a camera's the front
@@ -71,11 +72,18 @@ of the camera, its C-mount ring face (23 mm), a spectrometer's its entrance
 port (62 mm), a single-photon detector's its fibre receptacle (30.5 mm). An
 objective's is the outer face of its threaded plate (29 mm behind its centre,
 on the side away from the tip), whichever side the beam comes from.
-Each offset is fixed per type and turns with the part. Placement, grid
-snapping and the angle a mirror or detector takes still use the centre.
-Setups saved before this can measure a few millimetres differently wherever
-a beam reaches one of these parts, 56 mm shorter wherever one starts at a
-laser, and 10.5 mm shorter at each fibre collimator.
+Each offset is fixed per type and turns with the part. Since scene version
+10 a part with a port is placed, snapped to the grid, saved and turned by
+that port, and its body is drawn behind it, so the distance between two
+parts' positions is the beam between them: a laser at x = 0 and a
+spectrometer at x = 300 are joined by 300 mm of beam. A detector turned to its
+light keeps its port still and swings its body behind it. The selection ring,
+label, box select, framing the view and a connection's stub still go by the
+body's centre (`bodyCentre`). Setups saved before version 10 were saved by
+centres and open with each such part moved to its port, so they draw exactly
+as before; before the ports existed at all, beams measured a few millimetres
+differently at a detector, 56 mm longer from a laser and 10.5 mm longer at a
+fibre collimator.
 
 **Beams can be told apart.** Each beam has its own width (a drawn diameter in
 millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the

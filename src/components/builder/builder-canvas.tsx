@@ -59,6 +59,7 @@ import {
   beamPoints,
   COMPONENT_SPECS,
   TABLE_GUARD_MM,
+  bodyCentre,
   componentById,
   componentRadius,
   type Beam,
@@ -107,7 +108,7 @@ function layoutBox(components: BuilderComponent[], frames: Frame[] = []): Box3 {
   }
   const box = new Box3();
   for (const component of components) {
-    const [x, y, z] = component.position;
+    const [x, y, z] = bodyCentre(component);
     const radius = componentRadius(component);
     box.expandByPoint(new Vector3(x - radius, 0, z - radius));
     box.expandByPoint(
@@ -950,7 +951,10 @@ export default function BuilderCanvas({
   const selected = useMemo(() => new Set(selection), [selection]);
   const primary = selection.at(-1);
   const selectedPosition = useMemo(
-    () => (primary ? (componentById(components, primary)?.position ?? null) : null),
+    () => {
+      const part = primary ? componentById(components, primary) : undefined;
+      return part ? bodyCentre(part) : null;
+    },
     [components, primary],
   );
   const draftOrder = useMemo(() => {
