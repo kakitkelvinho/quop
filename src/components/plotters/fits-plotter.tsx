@@ -12,6 +12,7 @@ import {
   type ChartData,
   type ChartOptions,
 } from "chart.js";
+import { FileDrop } from "@/components/plotters/file-drop";
 import { describeFitsError } from "@/components/plotters/fits-errors";
 import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file";
 import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
@@ -178,9 +179,8 @@ export default function FitsPlotter() {
 
           <label className="field">
             <span>FITS file</span>
-            <input
-              className="fileInput"
-              type="file"
+            <FileDrop
+              kind="FITS file"
               accept=".fits,.fit,application/fits"
               onChange={(event) => {
                 void handleFileUpload(event);

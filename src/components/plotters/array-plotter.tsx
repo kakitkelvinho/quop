@@ -15,6 +15,7 @@ import {
 } from "chart.js";
 
 import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
+import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -220,9 +221,8 @@ export default function ArrayPlotter() {
 
         <label className="field">
           <span>CSV files</span>
-          <input
-            className="fileInput"
-            type="file"
+          <FileDrop
+            kind="CSV file"
             accept=".csv,text/csv"
             multiple
             onChange={(event) => {
