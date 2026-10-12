@@ -800,7 +800,8 @@ export default function BuilderHud(props: BuilderHudProps) {
     inspector = (
       <FrameInspector
         frame={frame}
-        onUpdate={(patch) => props.onUpdateFrame(frame.id, patch)}
+        onUpdate={(patch, record) => props.onUpdateFrame(frame.id, patch, record)}
+        onCheckpoint={props.onCheckpoint}
         onDelete={() => props.onDeleteFrame(frame.id)}
         focusLabel={props.focusFrameLabel}
         onLabelFocused={props.onFrameLabelFocused}

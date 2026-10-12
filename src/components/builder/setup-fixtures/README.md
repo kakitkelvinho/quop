@@ -17,6 +17,8 @@ its three frames as the same rectangles, plus an L-shaped frame; v1 to v6 open
 with each frame as the rectangle of corners it was.
 v8 is the first with an objective length: v7's setup with the objective saved
 80 mm long; v1 to v7 open with every objective at the default length.
+v9 is the first with a frame's fill opacity: v8's setup plus a solid frame,
+`"fillOpacity": 1`; v1 to v8 open with every fill at the faint default.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 
