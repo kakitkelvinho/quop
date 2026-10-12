@@ -170,12 +170,7 @@ function CsvCompactPanel() {
   return (
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
-        <div>
-          <h2>CSV</h2>
-          <p>
-            Upload a time-series CSV and plot all non-time columns against time.
-          </p>
-        </div>
+        <h2>CSV</h2>
 
         <label className="field">
           <span>CSV file</span>
@@ -191,11 +186,7 @@ function CsvCompactPanel() {
         <p className="resultCard comparisonResultCard">
           {parsed.error
             ? parsed.error
-            : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. Channels: ${parsed.channelLabels.join(", ")}.${
-                parsed.skippedRowCount > 0
-                  ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
-                  : ""
-              }`}
+            : `${parsed.rowCount} rows.${parsed.skippedRowCount > 0 ? ` ${parsed.skippedRowCount} skipped.` : ""}`}
         </p>
       </div>
 
@@ -325,13 +316,7 @@ function FitsCompactPanel() {
   return (
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
-        <div>
-          <h2>FITS</h2>
-          <p>
-            Upload a FITS image and preview the first image HDU as a trace, a
-            colormapped frame or a 3D Surface view.
-          </p>
-        </div>
+        <h2>FITS</h2>
 
         <label className="field">
           <span>FITS file</span>
@@ -346,12 +331,12 @@ function FitsCompactPanel() {
 
         <p className="resultCard comparisonResultCard">
           {isLoading
-            ? "Loading FITS file..."
+            ? "Loading…"
             : error
               ? error
               : summary
-                ? `Loaded ${summary.sourceLabel}. BITPIX ${summary.bitpix}, range ${summary.min.toExponential(3)} to ${summary.max.toExponential(3)}.`
-                : "Upload a FITS file to preview its first image HDU."}
+                ? `Range ${summary.min.toExponential(3)} to ${summary.max.toExponential(3)}`
+                : "No file."}
         </p>
 
         {summary ? (

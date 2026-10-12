@@ -103,12 +103,7 @@ export function readFlexibleDecimal(value: string): FlexibleDecimal | null {
     return null;
   }
 
-  const note =
-    mantissa.note === "grouping"
-      ? `Read as ${numeric} (comma as thousands separator).`
-      : mantissa.note === "decimal"
-        ? `Read as ${numeric} (dot as decimal point).`
-        : null;
+  const note = mantissa.note ? `Read as ${numeric}.` : null;
 
   return { value: numeric, note };
 }

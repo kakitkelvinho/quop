@@ -182,9 +182,9 @@ export default function ArrayPlotter() {
       0,
     );
     setCsvStatus(
-      `Loaded ${files.length} CSV file${files.length === 1 ? "" : "s"}.${
+      `${files.length} file${files.length === 1 ? "" : "s"}.${
         skippedRowCount > 0
-          ? ` (${skippedRowCount} row${skippedRowCount === 1 ? "" : "s"} skipped.)`
+          ? ` ${skippedRowCount} skipped.`
           : ""
       }`,
     );
@@ -199,25 +199,17 @@ export default function ArrayPlotter() {
   }
 
   const statusMessage = usingCsvMode
-    ? csvStatus ?? `Plotting ${csvDatasets.length} CSV dataset${csvDatasets.length === 1 ? "" : "s"}.`
+    ? csvStatus ?? `${csvDatasets.length} dataset${csvDatasets.length === 1 ? "" : "s"}.`
     : series.error
       ? series.error
-      : `Plotting ${series.points.length} points from ${series.xCount} x-values and ${series.yCount} y-values.`;
+      : `${series.points.length} points.`;
 
   const activeError = usingCsvMode ? csvError : series.error;
 
   return (
     <div className="visualizerLayout">
       <div className="inputCard fieldStack">
-        <div>
-          <h2>Data</h2>
-          <p className="toolNote">
-            Paste JSON arrays like <code>[0, 1, 2]</code> or plain values like
-            <code> 0, 1, 2</code>. You can also load one or more CSV files with
-            numeric x/y columns. Leading <code>%</code> comment lines and header
-            rows before the numeric data are ignored.
-          </p>
-        </div>
+        <h2>Data</h2>
 
         <label className="field">
           <span>CSV files</span>
@@ -237,7 +229,7 @@ export default function ArrayPlotter() {
             className="buttonLink buttonLink--ghost"
             onClick={handleClearCsv}
           >
-            Clear CSV datasets
+            Clear CSVs
           </button>
         ) : null}
 
@@ -274,7 +266,7 @@ export default function ArrayPlotter() {
           <InteractiveScatterChart data={chartData} options={chartOptions} />
           {activeError ? (
             <div className="visualizerEmptyState visualizerOverlayState">
-              Fix the input data to render the figure.
+              Invalid data.
             </div>
           ) : null}
         </div>

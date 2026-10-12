@@ -112,14 +112,14 @@ describe("readFlexibleDecimal", () => {
   it("notes how a lone comma before three digits was read", () => {
     assert.deepEqual(readFlexibleDecimal("1,064"), {
       value: 1064,
-      note: "Read as 1064 (comma as thousands separator).",
+      note: "Read as 1064.",
     });
   });
 
   it("notes how a lone dot before three digits was read", () => {
     assert.deepEqual(readFlexibleDecimal("1.064"), {
       value: 1.064,
-      note: "Read as 1.064 (dot as decimal point).",
+      note: "Read as 1.064.",
     });
   });
 

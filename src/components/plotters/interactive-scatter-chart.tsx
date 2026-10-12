@@ -1982,7 +1982,7 @@ function InteractiveScatterChartInner({
           }
           className={`interactiveChart__iconButton interactiveChart__iconButton--customize ${customizeMenuOpen || anyCustomizeControlOpen ? "is-active" : ""}`}
           onClick={() => setCustomizeMenuOpen((current) => !current)}
-          title="Customize (point size, font, title, axis labels, legend, ticks)"
+          title="Customize"
           type="button"
         >
           <CustomizeIcon />
@@ -2208,7 +2208,7 @@ function InteractiveScatterChartInner({
               className="interactiveChart__textInput"
               onChange={(event) => setXAxisLabel(event.target.value)}
               placeholder="λ_0 (nm)"
-              title="^ for superscript, _ for subscript; braces group: x^{-1}"
+              title="^ sup · _ sub · {} group"
               type="text"
               value={xAxisLabel}
             />
@@ -2219,7 +2219,7 @@ function InteractiveScatterChartInner({
               className="interactiveChart__textInput"
               onChange={(event) => setYAxisLabel(event.target.value)}
               placeholder="|E|^2 (a.u.)"
-              title="^ for superscript, _ for subscript; braces group: x^{-1}"
+              title="^ sup · _ sub · {} group"
               type="text"
               value={yAxisLabel}
             />

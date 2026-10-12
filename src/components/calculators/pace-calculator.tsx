@@ -68,11 +68,6 @@ export function PaceCalculator() {
           <div className="paceCalculator__panelHeader">
             <p className="sectionCard__kicker">Input</p>
             <h2>{isPaceToSpeed ? "Running pace" : "Speed"}</h2>
-            <p>
-              {isPaceToSpeed
-                ? "Enter your pace in minutes and seconds per kilometer."
-                : "Enter your speed in kilometers per hour."}
-            </p>
           </div>
 
           {isPaceToSpeed ? (
@@ -139,11 +134,6 @@ export function PaceCalculator() {
           <div className="paceCalculator__panelHeader">
             <p className="sectionCard__kicker">Output</p>
             <h2>{isPaceToSpeed ? "Speed" : "Running pace"}</h2>
-            <p>
-              {isPaceToSpeed
-                ? "Show the converted speed here in kilometers per hour."
-                : "Show the converted pace here in minutes and seconds per kilometer."}
-            </p>
           </div>
 
           {isPaceToSpeed ? (
@@ -152,7 +142,6 @@ export function PaceCalculator() {
               label="Speed"
               value={speedResult === null ? null : formatSpeed(speedResult)}
               unit="km/h"
-              empty="Enter a pace above zero to see the speed."
             />
           ) : (
             <Readout
@@ -164,7 +153,6 @@ export function PaceCalculator() {
                   : `${paceResult.minutes}:${String(paceResult.seconds).padStart(2, "0")}`
               }
               unit="min/km"
-              empty="Enter a speed above zero to see the pace."
             />
           )}
         </section>

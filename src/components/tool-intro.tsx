@@ -14,11 +14,10 @@ export function toolName(href: string): string {
 }
 
 /**
- * A tool page's heading and lead. The lead is the tool's description in the
- * navigation registry, the same words as its index card, so they're written
- * once; the heading is badged when the registry marks the tool beta. An
- * `aside` spells out a name the label abbreviates. The report link lives in
- * the site footer, which names the tool by its page.
+ * A tool page's heading, badged when the registry marks the tool beta. The
+ * name says what the tool is, so the page carries no lead. An `aside` spells
+ * out a name the label abbreviates. The report link lives in the site footer,
+ * which names the tool by its page.
  */
 export function ToolIntro({ href, aside }: { href: string; aside?: string }) {
   const tool = findTool(href);
@@ -29,7 +28,6 @@ export function ToolIntro({ href, aside }: { href: string; aside?: string }) {
         <BetaMark tool={tool} />
         {aside ? <span className="toolTitle__aside">{aside}</span> : null}
       </h1>
-      {tool ? <p className="lead">{tool.description}</p> : null}
     </>
   );
 }

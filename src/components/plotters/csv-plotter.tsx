@@ -177,17 +177,7 @@ export default function CsvPlotter() {
           onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
         <div className="inputCard fieldStack">
-          <div>
-            <h2>Data</h2>
-            <p className="toolNote">
-              Upload a CSV that includes a <code>time</code> column and one or
-              more channel columns. Time always stays on the x-axis, and each
-              other header becomes its own y-series in the legend. Any
-              instrument metadata or comment lines (like a Moku export&apos;s
-              leading <code>%</code> block) are detected automatically and
-              shown separately instead of breaking the plot.
-            </p>
-          </div>
+          <h2>Data</h2>
 
           <label className="field">
             <span>CSV file</span>
@@ -217,7 +207,7 @@ export default function CsvPlotter() {
 
           {parsed.extraInfo ? (
             <label className="field">
-              <span>File metadata / notes</span>
+              <span>Metadata</span>
               <div className="field__control field__control--textarea">
                 <textarea
                   value={parsed.extraInfo}
@@ -239,7 +229,7 @@ export default function CsvPlotter() {
           <InteractiveScatterChart data={chartData} options={chartOptions} sourceLabel={sourceLabel} />
           {parsed.error ? (
             <div className="visualizerEmptyState visualizerOverlayState">
-              Fix the CSV input to render the figure.
+              Invalid CSV.
             </div>
           ) : null}
         </div>

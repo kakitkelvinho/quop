@@ -1477,11 +1477,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 type="range"
                 value={activeSliceIndex}
               />
-              <p className="fitsInspectorCard__meta">
-                {isSurface
-                  ? `Move the slider to sweep the Slice plane through the landscape; its yellow line matches the trace below.`
-                  : `Click the image to snap the active ${sliceAxis === "horizontal" ? "row" : "column"} to the hovered location. The highlighted band on the image matches the trace below.`}
-              </p>
               <button
                 className="buttonControl buttonControl--secondary fitsInspectorCard__button"
                 onClick={handleSaveSliceCsv}
@@ -1499,9 +1494,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 <p className="sectionCard__kicker">Slice Plot</p>
                 <h3>{sliceSeries.selectionLabel}</h3>
               </div>
-              <p className="fitsSlicePanel__meta">
-                Intensity plotted against {sliceSeries.axisLabel} for the full {sliceAxis === "horizontal" ? "row" : "column"}.
-              </p>
             </div>
             <div className="fitsSlicePanel__chart">
               <InteractiveScatterChart
@@ -1532,10 +1524,8 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
         </select>
       </label>
       <p className="fitsImageCaption">
-        {summary.width} × {summary.height} pixels. Original axes: {summary.xLabel} / {summary.yLabel}.
-        {isSurface
-          ? `${surfaceStep > 1 ? ` Surface mesh at 1/${surfaceStep} resolution (peaks kept); colour and hover use every pixel.` : ""} Drag to orbit, scroll to zoom, right-drag to pan.`
-          : null}
+        {summary.width} × {summary.height} px
+        {isSurface && surfaceStep > 1 ? ` · mesh 1/${surfaceStep}` : null}
       </p>
     </div>
   );

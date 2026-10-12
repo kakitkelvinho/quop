@@ -52,7 +52,6 @@ export function EnergyWavelengthCalculator() {
             label="Wavelength"
             value={Number.isNaN(wavelengthFromEnergy) ? null : formatSignificant(wavelengthFromEnergy, 5)}
             unit="nm"
-            empty="Enter a positive energy."
           />
         </div>
 
@@ -76,7 +75,6 @@ export function EnergyWavelengthCalculator() {
             label="Photon energy"
             value={Number.isNaN(energyFromWavelength) ? null : formatSignificant(energyFromWavelength, 5)}
             unit="eV"
-            empty="Enter a positive wavelength."
           />
         </div>
       </div>

@@ -80,12 +80,6 @@ export function LidtCalculator() {
       <div className="calculatorGrid calculatorGrid--single">
         <div className="inputCard">
           <h2>Pulsed Lasers</h2>
-          <p>
-            Enter your beam parameters below. Decimal commas and decimal
-            points both work, and so do 1e6 and 1,000,000. Give the beam
-            radius at 1/e² intensity, not the diameter.
-          </p>
-
           <div className="fieldStack">
             <LaserField
               field="Average power"
@@ -120,13 +114,11 @@ export function LidtCalculator() {
               }
               value={Number.isFinite(fluence) ? formatSignificant(fluence, 3) : null}
               unit="J/cm²"
-              empty="Enter a positive power, repetition rate and beam radius."
             />
             <Readout
               label="Pulse energy"
               value={Number.isFinite(pulseEnergy) ? energy.value : null}
               unit={energy.unit}
-              empty="Needs a positive power and repetition rate."
             />
             <Readout
               label={
@@ -136,21 +128,8 @@ export function LidtCalculator() {
               }
               value={Number.isFinite(peakFluence) ? formatSignificant(peakFluence, 3) : null}
               unit="J/cm²"
-              empty="Needs a positive beam radius."
             />
           </div>
-          {Number.isFinite(fluence) ? (
-            <p className="readoutNote">
-              Fluence here is E/(πw²), with w the 1/e² radius. Vendors such as
-              Thorlabs quote LIDT this way, so compare the first number against
-              the rating. The centre of a Gaussian beam sees twice that, the
-              peak fluence. This calculator doesn&apos;t know your optic&apos;s
-              damage threshold, and the fluence doesn&apos;t depend on
-              wavelength or pulse length. Damage thresholds do, so only compare
-              against a rating quoted at your wavelength and a similar pulse
-              length.
-            </p>
-          ) : null}
         </div>
       </div>
     </section>

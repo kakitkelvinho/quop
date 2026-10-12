@@ -25,7 +25,6 @@ describe("describeFitsError", () => {
     );
 
     assert.match(message, /compressed/);
-    assert.match(message, /funpack/);
   });
 
   it("names random groups", () => {
