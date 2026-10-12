@@ -19,7 +19,7 @@ const SAMPLES: Record<string, string> = {
   "/plotters/csv-plotter": "time, ch1, ch2 … → traces",
   "/plotters/fits-plotter": "BITPIX · NAXIS1 × NAXIS2 → image",
   "/plotters/csv-fits-viewer": "trace.csv ⟷ frame.fits",
-  "/builder/tabletop": "path 613 mm · flight 2.04 ns",
+  "/builder/tabletop": "path 557 mm · flight 1.86 ns",
 };
 
 /** A section's tools as cards, each one link: its result, its name, what it does. */

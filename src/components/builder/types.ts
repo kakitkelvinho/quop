@@ -206,6 +206,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 20,
     radius: 60,
+    referenceX: 56, // the emitter's output face, where the beam leaves: drawn 12 mm long at x = 50
     hint: "Where a beam starts. Points along its own +x axis.",
   },
   "fiber-collimator": {

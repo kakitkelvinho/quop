@@ -13,7 +13,8 @@ import {
 
 // #94: a laser source can carry light before the aperture, a folded or internal
 // delay path. A beam that starts at the laser counts it toward its path length;
-// a laser anywhere else in a path adds nothing.
+// a laser anywhere else in a path adds nothing. On the table a beam is measured
+// from the laser's opening, 56 mm in front of its centre, not from the centre.
 
 const part = (id: string, type: ComponentType, x: number, extra: Partial<BuilderComponent> = {}): BuilderComponent => ({
   id,
@@ -27,7 +28,8 @@ const beam = (path: string[]): Beam => ({ id: "b", path, color: "#7c3aed" });
 
 describe("a laser's built-in path", () => {
   const laser = part("laser", "laser-source", 0, { internalPathMm: 4000 });
-  const mirror = part("m", "mirror-mount", 300);
+  // 300 mm from the laser's opening, at x = 56
+  const mirror = part("m", "mirror-mount", 356);
 
   it("adds to a beam that starts at the laser: 4000 mm inside plus 300 mm on the table is 4300", () => {
     assert.equal(beamLengthMm([laser, mirror], beam(["laser", "m"])), 4300);
@@ -41,13 +43,21 @@ describe("a laser's built-in path", () => {
   it("adds nothing when the laser is a later stop", () => {
     const first = part("first", "mirror-mount", -300);
     const later = part("laser", "laser-source", 0, { internalPathMm: 4000 });
-    assert.equal(beamLengthMm([first, later], beam(["first", "laser"])), 300);
-    assert.equal(beamLengthMm([first, later, mirror], beam(["first", "laser", "m"])), 600);
+    // through a laser later in a path, the beam still meets it at its opening
+    assert.equal(beamLengthMm([first, later], beam(["first", "laser"])), 356);
+    assert.equal(beamLengthMm([first, later, mirror], beam(["first", "laser", "m"])), 656);
     assert.equal(beamInternalPathMm([first, later], beam(["first", "laser"])), 0);
   });
 
   it("adds once, to a beam that is only a laser", () => {
     assert.equal(beamLengthMm([laser], beam(["laser"])), 4000);
+  });
+
+  it("starts on the table at the opening, not the centre", () => {
+    const bare = part("laser", "laser-source", 0);
+    assert.equal(beamLengthMm([bare, part("m", "mirror-mount", 300)], beam(["laser", "m"])), 244);
+    const turned = { ...bare, rotation: 90 };
+    assert.equal(beamLengthMm([turned, { ...part("m", "mirror-mount", 0), position: [0, 100, -300] }], beam(["laser", "m"])), 244);
   });
 
   it("is nothing when missing or 0", () => {
