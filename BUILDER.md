@@ -149,7 +149,8 @@ switch are one undo step.
 **A setup brief for an AI assistant.** The `.md` button, in its own island at
 the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
 author pastes into an AI assistant so it writes a setup file for the experiment
-they describe, which then opens with Open JSON… like any other. The panel shows
+they describe, which then opens with Open JSON… like any other: the brief asks
+for a downloadable `.json` file, or the JSON alone in one code block to paste. The panel shows
 the brief with **Copy** (to the clipboard, confirmed in the status line) and
 **Download .md**; Esc or its close button shuts it. The brief tells the
 assistant to ask about anything unclear and then reply with one JSON file and
@@ -250,6 +251,20 @@ angle from one. Setups from before version 3 open with no connections.
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
 
+**Open JSON… is a text panel.** It opens in the parts panel's place, below the
+top-left islands, with the setup as it stands in an editable box: tweak it,
+**Paste** one over it, **Open file…** to fill the box from a `.json`, or
+**Copy** it out. Nothing reaches the table until **Apply**, which replaces it
+as one undo step. The text is checked as it changes (`scene-text.ts`), and
+Apply only takes text that passes: at most 1 MB, valid JSON (an error names
+its line and column), one object with a `components` list, at most 500 parts,
+200 beams, 500 connections and 100 frames. `parseScene` then keeps only what it
+can read, and the panel says how many entries it will leave out. Text in a
+setup is only ever data: colours must be a hex, `rgb()`/`hsl()` or a colour
+name (anything else, such as a `url(…)`, falls back to the default, so a file
+can't make the page fetch from elsewhere), and labels lose control characters
+and are cut at 120 characters.
+
 ## Interaction model
 
 The builder is a full-window workspace: the site nav steps aside and the canvas
@@ -335,7 +350,7 @@ is on screen until it is needed:
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, save the JSON it writes and open it with Open JSON… |
+| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet

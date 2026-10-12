@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
+import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import {
@@ -31,6 +32,7 @@ import {
   type Connection,
   type ConnectionKind,
   type Frame,
+  type BuilderSceneData,
 } from "@/components/builder/types";
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
@@ -118,7 +120,10 @@ export type BuilderHudProps = {
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
-  onLoad: (event: ChangeEvent<HTMLInputElement>) => void;
+  /** the setup as it stands, for the JSON panel to open on */
+  sceneJson: () => string;
+  /** replace the table with a setup the JSON panel checked: one undo step */
+  onApplyScene: (scene: BuilderSceneData, summary: string) => void;
   onExportPng: () => void;
   /** the setup brief: to the clipboard, or saved as a .md file */
   onCopyBrief: () => void;
@@ -450,8 +455,8 @@ function BriefPanel({
         Setup brief
       </h2>
       <p className="builderAbout__description">
-        Paste this into an AI assistant and describe your experiment. Save the JSON it writes and open it with
-        Open JSON… in the file menu.
+        Paste this into an AI assistant and describe your experiment. Open the .json file it gives you, or paste
+        its JSON, with Open JSON… in the file menu.
       </p>
       <div className="builderBrief__actions">
         <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
@@ -477,14 +482,144 @@ function BriefPanel({
   );
 }
 
+/**
+ * The setup as JSON, to read, tweak, copy, paste over or fill from a file,
+ * in the parts panel's place. Nothing reaches the table until Apply, and
+ * Apply only takes text checkSceneText passed: within its size, valid JSON,
+ * a setup's shape and counts, colours and labels made safe by parseScene.
+ */
+function JsonPanel({
+  initial,
+  onApply,
+  onClose,
+}: {
+  initial: () => string;
+  onApply: (scene: BuilderSceneData, summary: string) => void;
+  onClose: () => void;
+}) {
+  const [opened] = useState(initial);
+  const [text, setText] = useState(opened);
+  const [note, setNote] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  // a large paste is checked once typing settles, not on every keystroke
+  const settled = useDeferredValue(text);
+  const check = useMemo(() => checkSceneText(settled), [settled]);
+  const changed = text !== opened;
+  useEscapeCloses(onClose);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setNote("Copied.");
+    } catch {
+      setNote("This browser didn't allow copying: select the text and press ⌘C.");
+    }
+  };
+  const paste = async () => {
+    try {
+      const pasted = await navigator.clipboard.readText();
+      if (pasted.length > SCENE_TEXT_MAX_BYTES) setNote("That's far too long to be a setup.");
+      else {
+        setText(pasted);
+        setNote("Pasted. Check it, then Apply.");
+      }
+    } catch {
+      setNote("This browser didn't allow pasting here: click in the box and press ⌘V.");
+    }
+  };
+  const openFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > SCENE_TEXT_MAX_BYTES) {
+      setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB, far more than any setup.`);
+      return;
+    }
+    setText(await file.text());
+    setNote(`Read ${file.name}. Check it, then Apply.`);
+  };
+
+  return (
+    <aside className="builderIsland builderAbout builderBrief builderJson" aria-labelledby="builder-json-title">
+      <h2 id="builder-json-title" className="builderAbout__title">
+        Setup JSON
+      </h2>
+      <p className="builderAbout__description">
+        Edit the setup as text, paste one in or open a file, then Apply. Apply replaces the table; ⌘Z undoes it.
+      </p>
+      <div className="builderBrief__actions">
+        <button
+          type="button"
+          className="builderButton builderButton--primary"
+          disabled={!check.ok || !changed || settled !== text}
+          onClick={() => {
+            if (check.ok) onApply(check.scene, check.summary);
+          }}
+        >
+          Apply
+        </button>
+        <button type="button" className="builderButton" onClick={() => void copy()}>
+          Copy
+        </button>
+        <button type="button" className="builderButton" onClick={() => void paste()}>
+          Paste
+        </button>
+        <button type="button" className="builderButton" onClick={() => fileRef.current?.click()}>
+          Open file…
+        </button>
+        {/* No accept filter: macOS sometimes greys out .json files the first
+            time the picker opens; the check turns away anything that isn't one. */}
+        <input ref={fileRef} type="file" hidden onChange={(event) => void openFile(event)} />
+      </div>
+      <textarea
+        className="builderBrief__text builderJson__text"
+        value={text}
+        spellCheck={false}
+        autoCapitalize="off"
+        autoComplete="off"
+        aria-label="The setup, as JSON"
+        aria-describedby="builder-json-check"
+        aria-invalid={!check.ok}
+        onChange={(event) => {
+          setText(event.target.value);
+          setNote(null);
+        }}
+      />
+      <p id="builder-json-check" className={`builderJson__check${check.ok ? "" : " is-error"}`} role="status">
+        {check.ok
+          ? `${changed ? "Ready to apply" : "The table as it stands"}: ${check.summary}.${
+              check.skipped ? ` ${check.skipped} ${check.skipped === 1 ? "entry" : "entries"} couldn't be read and will be left out.` : ""
+            }`
+          : check.error}
+      </p>
+      {note ? <p className="builderJson__note">{note}</p> : null}
+      {changed ? (
+        <button type="button" className="builderJson__revert" onClick={() => setText(opened)}>
+          Revert to the table as it stands
+        </button>
+      ) : null}
+      <button
+        type="button"
+        className="builderHud__close"
+        aria-label="Close panel"
+        title="Close (Esc)"
+        onClick={onClose}
+      >
+        <Icon name="close" size={16} />
+      </button>
+    </aside>
+  );
+}
+
 function FileMenu({
   onSave,
-  onLoad,
+  onShowJson,
   onExportPng,
   onResetExample,
   onClear,
   onShowAbout,
-}: Pick<BuilderHudProps, "onSave" | "onLoad" | "onExportPng" | "onResetExample" | "onClear"> & {
+}: Pick<BuilderHudProps, "onSave" | "onExportPng" | "onResetExample" | "onClear"> & {
+  onShowJson: () => void;
   onShowAbout: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -530,19 +665,9 @@ function FileMenu({
           <button type="button" role="menuitem" onClick={run(onSave)}>
             Save as JSON
           </button>
-          <label role="menuitem">
+          <button type="button" role="menuitem" onClick={run(onShowJson)}>
             Open JSON…
-            {/* No accept filter: macOS sometimes greys out .json files the
-                first time the picker opens. handleLoad rejects non-setups. */}
-            <input
-              type="file"
-              hidden
-              onChange={(event) => {
-                onLoad(event);
-                setOpen(false);
-              }}
-            />
-          </label>
+          </button>
           <button type="button" role="menuitem" onClick={run(onExportPng)}>
             Export view as PNG
           </button>
@@ -581,24 +706,34 @@ export default function BuilderHud(props: BuilderHudProps) {
   // the about panel and the brief share the parts panel's spot, so opening one closes the others
   const [aboutOpen, setAboutOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
+  const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeAbout = useCallback(() => setAboutOpen(false), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
+  const closeJson = useCallback(() => setJsonOpen(false), []);
   const { onCloseTray } = props;
   const showAbout = useCallback(() => {
     onCloseTray();
     setBriefOpen(false);
+    setJsonOpen(false);
     setAboutOpen(true);
   }, [onCloseTray]);
-  // the brief takes the parts panel's place and size, so the boxes step aside for either
-  const besideParts = trayOpen || briefOpen;
+  // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for them
+  const besideParts = trayOpen || briefOpen || jsonOpen;
   const toggleBrief = useCallback(() => {
     onCloseTray();
     setAboutOpen(false);
+    setJsonOpen(false);
     setBriefOpen((open) => !open);
+  }, [onCloseTray]);
+  const showJson = useCallback(() => {
+    onCloseTray();
+    setAboutOpen(false);
+    setBriefOpen(false);
+    setJsonOpen(true);
   }, [onCloseTray]);
 
   let inspector = null;
@@ -708,7 +843,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <span className="builderIsland__sep" />
         <FileMenu
           onSave={props.onSave}
-          onLoad={props.onLoad}
+          onShowJson={showJson}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
@@ -720,6 +855,9 @@ export default function BuilderHud(props: BuilderHudProps) {
       {briefOpen && !trayOpen ? (
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
+      {jsonOpen && !trayOpen ? (
+        <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
+      ) : null}
 
       <div className="builderIsland builderHud__add">
         <IconButton
@@ -730,6 +868,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           onClick={() => {
             setAboutOpen(false);
             setBriefOpen(false);
+            setJsonOpen(false);
             props.onToggleTray();
           }}
         />

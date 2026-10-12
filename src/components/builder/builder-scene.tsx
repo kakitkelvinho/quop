@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
 } from "react";
 
 import BuilderCanvas, {
@@ -48,12 +47,12 @@ import {
   moveBeamTo,
   moveFrameTo,
   derivedAngleBeam,
-  parseScene,
   serializeScene,
   beamLineSnap,
   snapToGrid,
   translateCorners,
   type BuilderComponent,
+  type BuilderSceneData,
   type ComponentType,
   type Corner,
   type Vec3,
@@ -901,40 +900,24 @@ export default function BuilderScene() {
     announce("Setup brief saved as Markdown.");
   }, [announce]);
 
-  const handleLoad = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      event.target.value = "";
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const parsed = parseScene(JSON.parse(String(reader.result)));
-          if (!parsed) {
-            announce("That file isn't a QUOP setup — no components found.");
-            return;
-          }
-          api.replaceScene(parsed);
-          setFitToken((token) => token + 1);
-          setSelection([]);
-          setSelectedBeamId(null);
-          setSelectedFrameId(null);
-          setSelectedConnectionId(null);
-          cancelBeam();
-          cancelConnect();
-          cancelFrame();
-          announce(
-            `Loaded ${parsed.components.length} parts from ${file.name}.`,
-          );
-        } catch {
-          announce("Couldn't read that file — it isn't valid JSON.");
-        }
-      };
-      reader.readAsText(file);
+  // a setup the JSON panel checked replaces the table, as one undo step
+  const handleApplyScene = useCallback(
+    (parsed: BuilderSceneData, summary: string) => {
+      api.replaceScene(parsed);
+      setFitToken((token) => token + 1);
+      setSelection([]);
+      setSelectedBeamId(null);
+      setSelectedFrameId(null);
+      setSelectedConnectionId(null);
+      cancelBeam();
+      cancelConnect();
+      cancelFrame();
+      announce(`Applied the setup: ${summary}. ⌘Z undoes it.`);
     },
     [announce, api, cancelBeam, cancelConnect, cancelFrame],
   );
+
+  const sceneJson = useCallback(() => serializeScene(sceneRef.current), []);
 
   const handleExportPng = useCallback(async () => {
     const canvas = canvasRef.current;
@@ -1300,7 +1283,8 @@ export default function BuilderScene() {
         onUndo={api.undo}
         onRedo={api.redo}
         onSave={handleSave}
-        onLoad={handleLoad}
+        sceneJson={sceneJson}
+        onApplyScene={handleApplyScene}
         onExportPng={handleExportPng}
         onCopyBrief={handleCopyBrief}
         onDownloadBrief={handleDownloadBrief}
