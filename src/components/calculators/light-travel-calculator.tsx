@@ -90,7 +90,7 @@ export function LightTravelCalculator() {
                 <option value="fs">fs</option>
                 <option value="ps">ps</option>
                 <option value="ns">ns</option>
-                <option value="us">us</option>
+                <option value="us">µs</option>
                 <option value="ms">ms</option>
                 <option value="s">s</option>
               </select>
@@ -107,7 +107,7 @@ export function LightTravelCalculator() {
                 onChange={(event) => setDistanceOutputUnit(event.target.value as DistanceUnit)}
               >
                 <option value="nm">nm</option>
-                <option value="um">um</option>
+                <option value="um">µm</option>
                 <option value="mm">mm</option>
                 <option value="cm">cm</option>
                 <option value="m">m</option>
@@ -140,7 +140,7 @@ export function LightTravelCalculator() {
                 onChange={(event) => setDistanceInputUnit(event.target.value as DistanceUnit)}
               >
                 <option value="nm">nm</option>
-                <option value="um">um</option>
+                <option value="um">µm</option>
                 <option value="mm">mm</option>
                 <option value="cm">cm</option>
                 <option value="m">m</option>
@@ -160,7 +160,7 @@ export function LightTravelCalculator() {
                 <option value="fs">fs</option>
                 <option value="ps">ps</option>
                 <option value="ns">ns</option>
-                <option value="us">us</option>
+                <option value="us">µs</option>
                 <option value="ms">ms</option>
                 <option value="s">s</option>
               </select>

@@ -31,13 +31,13 @@ typography:
   display:
     fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "clamp(2.2rem, 5vw, 4.6rem)"
-    fontWeight: 700
+    fontWeight: 400
     lineHeight: 1.02
     letterSpacing: "-0.03em"
   headline:
     fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "clamp(1.25rem, 2.4vw, 1.9rem)"
-    fontWeight: 700
+    fontWeight: 400
     lineHeight: 1.15
   body:
     fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
@@ -155,8 +155,8 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 **Character:** IBM Plex Sans carries the interface alone — there's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is genuinely measured data, and Garamond italic where the content is a physicist's handwriting.
 
 ### Hierarchy
-- **Display** (700, `clamp(2.2rem, 5vw, 4.6rem)`, line-height 1.02, letter-spacing -0.03em): page `h1`s — one per page, tight and large.
-- **Headline** (700, `clamp(1.25rem, 2.4vw, 1.9rem)`, line-height 1.15): `h2`s inside cards and sections.
+- **Display** (400, `clamp(2.2rem, 5vw, 4.6rem)`, line-height 1.02, letter-spacing -0.03em): page `h1`s — one per page, tight and large.
+- **Headline** (400, `clamp(1.25rem, 2.4vw, 1.9rem)`, line-height 1.15): `h2`s inside cards and sections.
 - **Body** (400, 1rem, line-height 1.6): running copy. Lead paragraphs step up to `1.08rem` in the muted color, capped at `44rem` measure.
 - **Label** (800, `0.75–0.84rem`, letter-spacing 0.08em, uppercase): kicker tags ("CALCULATOR", "PLOTTER"), nav pill text, button-cluster labels — always in the ink-deep accent color or muted, never body color.
 - **Readout** (700, `0.72–0.78rem`, mono): FITS crosshair coordinates, colorbar labels, mono text inputs.
@@ -205,7 +205,7 @@ Buttons, cards, and inputs are precise and instrument-like: numbers are exact, c
 - **Background:** Paper Surface / Ink Panel (translucent), always paired with the Card ambient shadow.
 - **Border:** 1px hairline, Sepia/Frost.
 - **Internal Padding:** `1.3rem`, with `0.85rem` gap between internal stacked elements.
-- **Signature detail — the kicker:** a section card opens with an uppercase, letter-spaced category tag (`sectionCard__kicker`) in Oxblood-Deep/Amber-Light before its heading.
+- **The kicker:** an uppercase, letter-spaced tag (`sectionCard__kicker`) in Oxblood-Deep/Amber-Light may label a group of controls. It never sits above a heading: the heading carries its own weight.
 - **Tool cards** (`toolCard`, on index pages) open instead on a mono line of what the tool gives (`550 nm → 2.2543 eV`) on the ink wash: on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing, and the result is the homepage chapters' language carried inward. The whole card is one link and lifts on hover; there is no per-card button.
 
 ### Inputs / Fields
