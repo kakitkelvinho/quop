@@ -1101,18 +1101,28 @@ function BeamBlock({ palette, axis }: ModelProps) {
  * the post, a satin barrel with a black band, and a taper down to the front
  * lens. The barrel takes the component colour, so it can be chrome, champagne
  * or gunmetal like the real ones. Its length runs from the back of the thread
- * to the nose; only the barrel stretches, so the thread stays put.
+ * to the nose; only the barrel stretches, so the thread stays put. Below
+ * OBJECTIVE_SHORTEST_BARREL_MM of barrel, everything past the thread shrinks
+ * together instead.
  */
 const OBJECTIVE_BRASS = "#c9a24a";
 const OBJECTIVE_PLATE_GEOMETRY = boredPlate(36, 4, 20, 6);
 /** the plate's middle along the beam: drawn at x = -23 and extruded 6 mm back */
 const OBJECTIVE_PLATE_X = -26;
+/** the thread, from x = -29 to -23, whatever the length */
+const OBJECTIVE_THREAD_MM = 6;
+/** past the thread: a 4 mm flange, the barrel, a 10 mm taper and a 4 mm nose */
+const OBJECTIVE_SHORTEST_BARREL_MM = 6;
+const OBJECTIVE_FITTINGS_MM = 4 + 10 + 4;
 
 function Objective({ palette, color, axis, length }: ModelProps & { length: number }) {
   const barrel = color ?? DEFAULT_OBJECTIVE_COLOR;
-  // the barrel runs from x = -19 to `end`; the taper and nose add 14 mm, the thread 10
-  const barrelLength = clamp(length, OBJECTIVE_LENGTH_RANGE_MM) - 24;
-  const end = -19 + barrelLength;
+  const past = clamp(length, OBJECTIVE_LENGTH_RANGE_MM) - OBJECTIVE_THREAD_MM;
+  const scale = Math.min(1, past / (OBJECTIVE_FITTINGS_MM + OBJECTIVE_SHORTEST_BARREL_MM));
+  const [flange, taper, nose] = [4 * scale, 10 * scale, 4 * scale];
+  const barrelLength = past - flange - taper - nose;
+  const start = -23 + flange;
+  const end = start + barrelLength;
   const satin = (
     <meshStandardMaterial color={barrel} roughness={0.28} metalness={0.85} />
   );
@@ -1133,28 +1143,28 @@ function Objective({ palette, color, axis, length }: ModelProps & { length: numb
         <cylinderGeometry args={[10, 10, 6, 32]} />
         <meshStandardMaterial color={OBJECTIVE_BRASS} roughness={0.35} metalness={0.9} />
       </mesh>
-      <mesh position={[-21, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[14, 14, 4, 40]} />
+      <mesh position={[-23 + flange / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[14, 14, flange, 40]} />
         {satin}
       </mesh>
-      <mesh position={[-19 + barrelLength / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh position={[start + barrelLength / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[16, 16, barrelLength, 48]} />
         {satin}
       </mesh>
-      <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[16.15, 16.15, 1.6, 48]} />
+      <mesh position={[start + Math.min(11, barrelLength / 2), axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[16.15, 16.15, Math.min(1.6, barrelLength / 2), 48]} />
         <meshStandardMaterial color="#12161d" roughness={0.5} metalness={0.2} />
       </mesh>
       {/* the taper, the spring-loaded nose and the front lens */}
-      <mesh position={[end + 5, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <cylinderGeometry args={[6, 16, 10, 48]} />
+      <mesh position={[end + taper / 2, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[6, 16, taper, 48]} />
         {satin}
       </mesh>
-      <mesh position={[end + 12, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <cylinderGeometry args={[4.2, 6, 4, 32]} />
+      <mesh position={[end + taper + nose / 2, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <cylinderGeometry args={[4.2, 6, nose, 32]} />
         <Stainless palette={palette} />
       </mesh>
-      <mesh position={[end + 14.05, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <mesh position={[end + taper + nose + 0.05, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <cylinderGeometry args={[2.4, 2.4, 0.2, 24]} />
         <meshStandardMaterial color="#3a4a5c" roughness={0.05} metalness={0.2} />
       </mesh>
