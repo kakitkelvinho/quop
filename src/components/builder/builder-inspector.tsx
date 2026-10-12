@@ -31,6 +31,8 @@ import {
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SAMPLE_COLOR,
   FRAME_COLORS,
+  FRAME_FILL_OPACITY,
+  FRAME_FILL_OPACITY_RANGE,
   FRAME_SIZE_RANGE_MM,
   MOUNTED_TYPES,
   SAMPLE_OPACITY,
@@ -973,12 +975,14 @@ const FRAME_COLOR_NAMES: Record<(typeof FRAME_COLORS)[number], string> = {
 export function FrameInspector({
   frame,
   onUpdate,
+  onCheckpoint,
   onDelete,
   focusLabel,
   onLabelFocused,
 }: {
   frame: Frame;
-  onUpdate: (patch: Partial<Omit<Frame, "id">>) => void;
+  onUpdate: (patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
+  onCheckpoint: () => void;
   onDelete: () => void;
   /** the frame was just drawn: its label is the next thing to give it */
   focusLabel: boolean;
@@ -1081,6 +1085,17 @@ export function FrameInspector({
           No fill
         </button>
       </div>
+      {frame.fill === false ? null : (
+        <SliderField
+          label="Fill opacity"
+          value={frame.fillOpacity ?? FRAME_FILL_OPACITY}
+          display={`${Math.round((frame.fillOpacity ?? FRAME_FILL_OPACITY) * 100)}%`}
+          range={FRAME_FILL_OPACITY_RANGE}
+          step={0.01}
+          onBegin={onCheckpoint}
+          onChange={(next) => onUpdate({ fillOpacity: next }, false)}
+        />
+      )}
       <p className="builderInspector__hint">
         Marks an area; constrains nothing. Drag a side or corner to reshape it; Alt-drag or the arrow keys move it.
       </p>

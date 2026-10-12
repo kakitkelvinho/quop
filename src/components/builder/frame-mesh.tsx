@@ -7,7 +7,7 @@ import { Shape, Vector2 } from "three";
 
 import type { DrawingPreview } from "@/components/builder/frame-drawing";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
-import { cornerBounds, type Corner, type Frame, type Vec3 } from "@/components/builder/types";
+import { FRAME_FILL_OPACITY, cornerBounds, type Corner, type Frame, type Vec3 } from "@/components/builder/types";
 
 /** Just above the table's top face and the grid, below every part. */
 const FRAME_Y_MM = 0.6;
@@ -73,8 +73,10 @@ export function FrameMesh({
   const { corners, color } = frame;
   const edge = selected ? SELECTED_EDGE_MM : EDGE_MM;
   const strength = ghost ? GHOST : 1;
-  // a faint tint: the frame marks an area, it should not colour the table
-  const fill = (selected ? 0.07 : 0.035) * strength;
+  // a faint tint by default, so the frame marks an area without colouring the
+  // table, up to solid; selecting one deepens a faint tint by as much again
+  const base = frame.fillOpacity ?? FRAME_FILL_OPACITY;
+  const fill = Math.min(1, selected ? base + Math.min(base, FRAME_FILL_OPACITY) : base) * strength;
 
   // laid flat by the mesh's turn about x, which carries the shape's +y to the table's −z
   const outline = useMemo(() => new Shape(corners.map(([cx, cz]) => new Vector2(cx, -cz))), [corners]);

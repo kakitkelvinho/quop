@@ -152,9 +152,11 @@ export type Frame = {
   hidden?: true;
   /** false draws the coloured outline alone, with no tint inside; stored only when false, missing means filled */
   fill?: false;
+  /** how opaque the fill is, 0–1; missing means FRAME_FILL_OPACITY, a faint tint */
+  fillOpacity?: number;
 };
 
-export const SCENE_VERSION = 8 as const;
+export const SCENE_VERSION = 9 as const;
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -428,6 +430,9 @@ export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
 export const DEFAULT_SAMPLE_COLOR = "#f2c94c";
 export const SAMPLE_OPACITY = 0.8;
 export const SAMPLE_OPACITY_RANGE: [number, number] = [0.1, 1];
+/** A frame's fill: a faint tint by default, up to fully opaque. */
+export const FRAME_FILL_OPACITY = 0.035;
+export const FRAME_FILL_OPACITY_RANGE: [number, number] = [0.01, 1];
 
 /** A beam's drawn width, mm, and its range — wide enough to tell overlapping beams apart. */
 export const BEAM_WIDTH_MM = 2;
@@ -1354,7 +1359,16 @@ function parseFrame(value: unknown, version: number): Frame | null {
     ...(labelText(raw.label) !== undefined ? { label: labelText(raw.label) } : {}),
     ...(raw.hidden === true ? { hidden: true } : {}),
     ...(version >= 6 && raw.fill === false ? { fill: false } : {}),
+    ...parseFillOpacity(raw.fillOpacity, version),
   };
+}
+
+/** A frame's fill opacity, from version 9 on, kept only when it isn't the default. */
+function parseFillOpacity(raw: unknown, version: number): Pick<Frame, "fillOpacity"> {
+  const opacity = version >= 9 ? finiteNumber(raw) : undefined;
+  if (opacity === undefined) return {};
+  const held = clamp(opacity, FRAME_FILL_OPACITY_RANGE);
+  return held === FRAME_FILL_OPACITY ? {} : { fillOpacity: held };
 }
 
 export type FrameListEdit = { ok: true; frames: Frame[] } | { ok: false; reason: string };
@@ -1416,17 +1430,6 @@ function parseConnection(value: unknown, validIds: Set<string>): Connection | nu
   };
 }
 
-/**
- * Accepts anything (a dropped file, a localStorage blob) and returns a scene
- * or null. Unknown component types and dangling beam references are dropped
- * rather than throwing — a partially readable setup beats an error dialog.
- * Setups from before version 3 have no connections and open with none;
- * those from before version 4 have no hidden beams and open with every beam shown;
- * those from before version 5 have no frames and open with none;
- * those from before version 6 open with every frame filled;
- * those from before version 7 saved each frame as a centre and a size, and
- * open with that rectangle's corners.
- */
 /** A colour a setup file may give: hex, rgb()/hsl() of plain numbers, or a CSS colour name. */
 const CSS_COLOR = /^(?:#[0-9a-f]{3,8}|(?:rgba?|hsla?)\(\s*[-+\d.%\s,/deg]+\)|[a-z]{3,24})$/i;
 
@@ -1449,6 +1452,18 @@ function labelText(raw: unknown): string | undefined {
   return raw.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, LABEL_MAX_LENGTH);
 }
 
+/**
+ * Accepts anything (a dropped file, a localStorage blob) and returns a scene
+ * or null. Unknown component types and dangling beam references are dropped
+ * rather than throwing — a partially readable setup beats an error dialog.
+ * Setups from before version 3 have no connections and open with none;
+ * those from before version 4 have no hidden beams and open with every beam shown;
+ * those from before version 5 have no frames and open with none;
+ * those from before version 6 open with every frame filled;
+ * those from before version 7 saved each frame as a centre and a size, and
+ * open with that rectangle's corners;
+ * those from before version 9 open with every frame's fill at the faint default.
+ */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;

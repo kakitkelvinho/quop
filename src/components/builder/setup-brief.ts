@@ -25,6 +25,8 @@ import {
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   FRAME_COLORS,
+  FRAME_FILL_OPACITY,
+  FRAME_FILL_OPACITY_RANGE,
   FRAME_SIZE_RANGE_MM,
   HOST_TYPES,
   INTERNAL_PATH_RANGE_MM,
@@ -152,6 +154,9 @@ const FRAME_FIELDS: FieldDocs<Frame> = {
   label: { text: "text drawn at its back-left corner (smallest z, then smallest x), such as `Main breadboard`." },
   hidden: { text: "`true` leaves the frame out of the drawing; leave it out otherwise." },
   fill: { text: "`false` draws the coloured outline alone, with no tint inside; leave it out otherwise." },
+  fillOpacity: {
+    text: `how opaque the fill is, from ${code(FRAME_FILL_OPACITY_RANGE[0])} to ${code(1)} (solid); leave it out for the default faint tint, ${code(FRAME_FILL_OPACITY)}.`,
+  },
 };
 
 function fieldList<T>(fields: FieldDocs<T>, keep: (doc: { only?: ComponentType }) => boolean = () => true): string {

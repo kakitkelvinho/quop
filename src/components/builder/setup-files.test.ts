@@ -17,6 +17,7 @@ const FIXTURES = [
   "setup-v6.json",
   "setup-v7.json",
   "setup-v8.json",
+  "setup-v9.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -291,9 +292,31 @@ describe("setup-v8.json, the first version with an objective length", () => {
   });
 
   it(`opens every older setup's objective at the default ${DEFAULT_OBJECTIVE_LENGTH_MM} mm`, () => {
-    for (const name of FIXTURES.slice(0, -1)) {
+    for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v8.json"))) {
       const obj = objective(name);
       if (obj) assert.equal(obj.objectiveLength, undefined, name);
+    }
+  });
+});
+
+describe("setup-v9.json, the first version with a frame's fill opacity", () => {
+  const solid = (name: string) => open(name).frames.find(({ id }) => id === "frame-solid");
+
+  it("opens the solid frame fully opaque, and keeps it through a save", () => {
+    assert.equal(solid("setup-v9.json")?.fillOpacity, 1);
+    const again = parseScene(JSON.parse(serializeScene(open("setup-v9.json"))));
+    assert.equal(again?.frames.find(({ id }) => id === "frame-solid")?.fillOpacity, 1);
+  });
+
+  it("is v8's setup plus that frame", () => {
+    const [v8, v9] = [open("setup-v8.json"), open("setup-v9.json")];
+    assert.deepEqual([v9.components, v9.beams, v9.connections], [v8.components, v8.beams, v8.connections]);
+    assert.deepEqual(v9.frames.slice(0, -1), v8.frames);
+  });
+
+  it("opens every older setup's frames at the faint default", () => {
+    for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v9.json"))) {
+      for (const frame of open(name).frames) assert.equal(frame.fillOpacity, undefined, `${name} ${frame.id}`);
     }
   });
 });

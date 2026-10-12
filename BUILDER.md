@@ -113,8 +113,12 @@ can go on top of a part. The finished frame is held to a saved one's limits
 (sides at least 10 mm, at most 5000 mm overall), arrives as one undo step and
 opens in the inspector with its Label field focused (not on a touch screen,
 where the keyboard would cover it), where you set its label and colour
-and switch its Fill: on (the default), it is a faint tint of its colour inside
-a solid edge; off, it is the coloured outline alone, on screen and in the PNG.
+and switch its Fill: on (the default), it is a tint of its colour inside a
+solid edge; off, it is the coloured outline alone, on screen and in the PNG.
+While Fill is on, a **Fill opacity** slider sets the tint from 1% to 100%
+(solid, a breadboard drawn as a block of colour); the default is a faint
+3.5%, and selecting a faint frame deepens it a little. Each drag of the
+slider is one undo step.
 A rectangle also has its width and depth there, which resize it from its
 back-left corner; any other shape shows its overall size, read-only ("850 ×
 250 mm overall"). The label sits on the back-left corner (the back-most, then
@@ -136,7 +140,9 @@ box, with an eye to hide it from the view and the PNG and a trash button; drag
 a row to reorder the list, as in the beams box; a selected hidden frame shows
 as a faint outline on screen, not in the export. Frames are saved with the
 setup (scene version 5; older setups open with none), and so is a frame's
-Fill, stored only when off (scene version 6; older frames open filled).
+Fill, stored only when off (scene version 6; older frames open filled), and
+its fill opacity, `fillOpacity` from 0.01 to 1, stored only when it isn't the
+default (scene version 9; older frames open at the faint default).
 Since scene version 7 a frame is saved as its `corners`, `[x, z]` in mm,
 from the back-left corner and clockwise in the top-down view; older frames,
 saved as a centre, width and depth, open as that rectangle's corners, and the
