@@ -15,11 +15,11 @@ type SectionCard = {
 };
 
 const CARDS: SectionCard[] = [
-  { glyph: "axes", href: "/plotters", name: "Plotter", tag: "visualize your data" },
+  { glyph: "axes", href: "/plotters", name: "Plotters", tag: "visualize your data" },
   {
     glyph: "brackets",
     href: "/calculators",
-    name: "Calculator",
+    name: "Calculators",
     tag: "quick maths for experiments",
   },
   { glyph: "integral", href: "/theory", name: "Theory", tag: "notes on physics, coming soon" },

@@ -35,17 +35,17 @@ const description = "Quantum optics notes, calculators, theory, and plotters.";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   // each page names itself in its tab, so several open tools can be told apart
-  title: { default: "quop", template: "%s · quop" },
+  title: { default: "QUOP · Quantum optics in the browser", template: "%s · QUOP" },
   description,
   openGraph: {
-    title: "quop",
+    title: "QUOP",
     description,
-    siteName: "quop",
+    siteName: "QUOP",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "quop",
+    title: "QUOP",
     description,
   },
   // read by report links, so a problem report says which version it's about

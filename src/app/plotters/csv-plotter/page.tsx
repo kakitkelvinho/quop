@@ -6,7 +6,7 @@ export const metadata = toolMetadata("/plotters/csv-plotter");
 export default function CsvPlotterPage() {
   return (
     <section className="pageSection">
-      <ToolIntro href="/plotters/csv-plotter">Time CSV Plotter</ToolIntro>
+      <ToolIntro href="/plotters/csv-plotter" />
       <CsvPlotter />
     </section>
   );

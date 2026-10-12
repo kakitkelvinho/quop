@@ -61,7 +61,7 @@ export function PaceCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolIntro href="/calculators/pace">Pace</ToolIntro>
+      <ToolIntro href="/calculators/pace" />
 
       <div className="paceCalculator">
         <section className="inputCard paceCalculator__panel">

@@ -59,12 +59,12 @@ function NavItem({
   );
 }
 
-/** the four sections, in header order; the desktop labels are their own */
+/** the four sections, in the order they run everywhere: the nav, the homepage's chapters and its cards */
 const PRIMARY_NAV = [
-  { href: "/experiment", label: "experiment" },
+  { href: "/plotters", label: "plotters" },
+  { href: "/calculators", label: "calculators" },
   { href: "/theory", label: "theory" },
-  { href: "/plotters", label: "plotter" },
-  { href: "/calculators", label: "calculator" },
+  { href: "/experiment", label: "experiment" },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -205,8 +205,8 @@ export function AppShell({
             aria-label="Primary"
           >
             <div className="flex items-stretch gap-1">
-              <NavItem href="/experiment" label="experiment" />
-              <NavItem href="/theory" label="theory" />
+              <NavItem href="/plotters" label="plotters" />
+              <NavItem href="/calculators" label="calculators" />
             </div>
 
             <Link
@@ -217,8 +217,8 @@ export function AppShell({
             </Link>
 
             <div className="flex items-stretch justify-end gap-1">
-              <NavItem href="/plotters" label="plotter" align="right" />
-              <NavItem href="/calculators" label="calculator" align="right" />
+              <NavItem href="/theory" label="theory" align="right" />
+              <NavItem href="/experiment" label="experiment" align="right" />
               <ThemeToggle />
             </div>
           </nav>

@@ -136,6 +136,16 @@ h2 {
   letter-spacing: -0.025em;
 }
 
+/* an abbreviated name spelled out, under the heading and quieter than it */
+.toolTitle__aside {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
 .lead {
   max-width: 44rem;
   font-size: 1.08rem;

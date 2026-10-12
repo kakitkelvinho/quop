@@ -6,7 +6,7 @@ export const metadata = toolMetadata("/plotters/fits-plotter");
 export default function FitsPlotterPage() {
   return (
     <section className="pageSection">
-      <ToolIntro href="/plotters/fits-plotter">FITS Plotter</ToolIntro>
+      <ToolIntro href="/plotters/fits-plotter" />
       <FitsPlotter />
     </section>
   );

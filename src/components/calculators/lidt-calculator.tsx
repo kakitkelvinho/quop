@@ -75,9 +75,7 @@ export function LidtCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolIntro href="/calculators/lidt-calculator">
-        Laser Induced Damage Threshold (LIDT)
-      </ToolIntro>
+      <ToolIntro href="/calculators/lidt-calculator" aside="Laser-induced damage threshold" />
 
       <div className="calculatorGrid calculatorGrid--single">
         <div className="inputCard">
