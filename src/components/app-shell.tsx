@@ -62,12 +62,15 @@ function NavItem({
   );
 }
 
-/** the four sections, in the order they run everywhere: the nav, the homepage's chapters and its cards */
+/**
+ * The four sections, in the order they run everywhere: the nav, the
+ * homepage's chapters and its cards. Builder is one tool, so it opens it.
+ */
 const PRIMARY_NAV = [
+  { href: "/builder/tabletop", label: "builder" },
+  { href: "/notes", label: "notes" },
   { href: "/plotters", label: "plotters" },
   { href: "/calculators", label: "calculators" },
-  { href: "/theory", label: "theory" },
-  { href: "/experiment", label: "experiment" },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -190,7 +193,7 @@ export function AppShell({
   footer?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isBuilderRoute = pathname.startsWith("/experiment/builder");
+  const isBuilderRoute = pathname.startsWith("/builder/tabletop");
 
   return (
     <div className="min-h-screen">
@@ -208,8 +211,8 @@ export function AppShell({
             aria-label="Primary"
           >
             <div className="flex items-stretch gap-1">
-              <NavItem href="/plotters" label="plotters" />
-              <NavItem href="/calculators" label="calculators" />
+              <NavItem href="/builder/tabletop" label="builder" />
+              <NavItem href="/notes" label="notes" />
             </div>
 
             <Link
@@ -220,8 +223,8 @@ export function AppShell({
             </Link>
 
             <div className="flex items-stretch justify-end gap-1">
-              <NavItem href="/theory" label="theory" align="right" />
-              <NavItem href="/experiment" label="experiment" align="right" />
+              <NavItem href="/plotters" label="plotters" align="right" />
+              <NavItem href="/calculators" label="calculators" align="right" />
               <ThemeToggle />
             </div>
           </nav>

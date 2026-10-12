@@ -111,7 +111,7 @@ function PlotterChapter({ trace }: { trace: TraceSketch }) {
       body="Drop in a CSV trace or a FITS frame straight off the lab's instruments and see it plotted in the browser. The line being drawn here is a real laser pulse, recorded on a photodiode in the lab."
       cta={{ href: "/plotters", label: "Open the plotters" }}
       heading="Drop in a file, get a plot."
-      index={1}
+      index={3}
       length={1.6}
       mode="scrub"
     >
@@ -174,10 +174,9 @@ function BuilderChapter() {
   return (
     <Chapter
       body="Place lasers, mirrors and lenses on a millimetre grid, draw where the beam is meant to go, and read off its path length and time of flight before touching the real bench."
-      cta={{ href: "/experiment/builder", label: "Open the builder" }}
-      flip
+      cta={{ href: "/builder/tabletop", label: "Open the tabletop" }}
       heading="Lay out an optical table."
-      index={4}
+      index={1}
       length={1.6}
       mode="scrub"
       onProgress={onProgress}
@@ -281,7 +280,7 @@ function CalculatorChapter() {
       }
       flip
       heading="Quick maths for the bench."
-      index={2}
+      index={4}
       length={1.6}
       mode="scrub"
       onProgress={onProgress}
@@ -308,8 +307,9 @@ function TheoryChapter() {
   return (
     <Chapter
       body="Short, visual notes on the quantum optics behind the lab's work: states, operators and the intuition that connects them. Still being written."
+      flip
       heading="Notes on the physics."
-      index={3}
+      index={2}
       length={1}
       mode="play"
       status="coming soon"
@@ -339,12 +339,11 @@ function TheoryChapter() {
 export function HomeChapters({ trace }: { trace: TraceSketch }) {
   return (
     <div className="chapters">
-      {/* the sections' order everywhere: plotters, calculators, theory, experiment,
-          which ends the story on the builder rather than on what isn't written yet */}
+      {/* the sections' order everywhere: builder, notes, plotters, calculators */}
+      <BuilderChapter />
+      <TheoryChapter />
       <PlotterChapter trace={trace} />
       <CalculatorChapter />
-      <TheoryChapter />
-      <BuilderChapter />
     </div>
   );
 }

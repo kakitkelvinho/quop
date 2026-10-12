@@ -66,7 +66,7 @@ export function ReportLine({
   return (
     <p className={className}>
       Something wrong or unclear? <ReportLink tool={tool} />
-      {showVersion && version ? <> · quop v{version}</> : null}
+      {showVersion && version ? <> · QUOP v{version}</> : null}
     </p>
   );
 }

@@ -107,7 +107,7 @@ The homepage states that literally: a board the visitor arrives at mid-session, 
 
 The mood is inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Invitation shows up in the hand-drawn marks, the unhurried writing and erasing, and cards that respond rather than sitting inert. Credibility shows up underneath: exact values in monospace, uppercase kicker labels on every card ("CALCULATOR", "PLOTTER"), and instrument-grade FITS readouts that don't soften their numbers for anyone.
 
-Two color systems run in parallel and must not be confused: the oxblood-ink/lamp-amber pair is the notebook's *own* ink — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Calculators, Theory, Plotters, Experiment) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink pair.
+Two color systems run in parallel and must not be confused: the oxblood-ink/lamp-amber pair is the notebook's *own* ink — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Builder, Notes, Plotters, Calculators) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink pair.
 
 **Key Characteristics:**
 - White paper by day, black board by night — a full hue swap on the accent, not just a lightness shift
@@ -128,9 +128,9 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 
 ### Section Wayfinding Colors (categorical, not brand accent)
 - **Ember Orange** (`#ff9d5c`) — Calculators.
-- **Sky Blue** (`#6da8ff`) — Theory.
+- **Sky Blue** (`#6da8ff`) — Notes.
 - **Seafoam Teal** (`#75d7c0`) — Plotters.
-- **Coral Pink** (`#f06f86`) — Experiment.
+- **Coral Pink** (`#f06f86`) — Builder.
 
 **The Divider Rule.** These four colors exist to answer "which section is this," nothing else. Do not promote one of them into a general UI accent, and do not let the ink pair (Oxblood/Amber) bleed into a wayfinding role — the two systems answer different questions and must stay visually separable.
 
@@ -170,7 +170,7 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 
 The page is a single centered column: `max-w-6xl`, `px-4`/`sm:px-6`, `pt-8 pb-16`, sitting under a sticky, blurred nav bar (`backdrop-filter: blur(14px)`) that never scrolls away. The nav itself is a three-column grid (`1fr auto 1fr`) — left links, centered wordmark, right links — with hover-revealed dropdown panels beneath section labels.
 
-Content grids adapt per surface: `toolGrid` lists a section's tools on its index page (Calculators, Plotters, Experiment), one column, two from 900px; `calculatorGrid` uses `repeat(auto-fit, minmax(250px, 1fr))` so calculator inputs reflow by available width; the pace calculator's dual-panel-with-swap layout (`1fr auto 1fr`) collapses to a single column under 900px. The homepage is the chalkboard hero (`min-height: clamp(400px, 66vh, 640px)`, centered welcome copy) followed by the four chalk section cards, which run `1fr` / `2×` / `4×` at 0 / 640px / 1000px.
+Content grids adapt per surface: `toolGrid` lists a section's tools on its index page (Calculators, Plotters), one column, two from 900px; `calculatorGrid` uses `repeat(auto-fit, minmax(250px, 1fr))` so calculator inputs reflow by available width; the pace calculator's dual-panel-with-swap layout (`1fr auto 1fr`) collapses to a single column under 900px. The homepage is the chalkboard hero (`min-height: clamp(400px, 66vh, 640px)`, centered welcome copy) followed by the four chalk section cards, which run `1fr` / `2×` / `4×` at 0 / 640px / 1000px.
 
 Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind's `sm:` (640px) on newer Tailwind-authored components — both idioms are currently live in the codebase; match whichever a given file already uses rather than introducing a third.
 
@@ -226,7 +226,7 @@ Four equations, one per domain — electromagnetism, classical mechanics, statis
 Everything the eye judges is a named constant at the top of `chalkboard-hero.tsx` (`ON_SCREEN_AT_ONCE`, `BOARD_HISTORY`, `HOLD_MS`, `RESPAWN_MS`, `SEED`, the equation and slot tables) or a CSS token (`--mark`, `--chalk-alpha`, `--chalk-dust`, `--chalk-filter`). Tuning belongs in those two places and nowhere else.
 
 ### Chalk Section Cards (homepage)
-Four cards — Plotter, Calculator, Theory, Experiment — each a hand-drawn frame around a glyph, a name, a one-line tag in muted text, and the route in mono at the foot. The frame is four wobbled SVG edges with a gap at each corner, seeded per card so no two are identical, drawn on with `stroke-dasharray` when the card scrolls into view; the glyph and text follow on a short stagger. Hover darkens the frame and turns the name to the ink accent. These cards are flat by design — see the Always-Lifted Rule's exception — and they carry the mono route instead of the uppercase kicker every other card opens with, because a route is a real value and the Case Rule applies.
+Four cards — Builder, Notes, Plotters, Calculators — each a hand-drawn frame around a glyph, a name, a one-line tag in muted text, and the route in mono at the foot. The frame is four wobbled SVG edges with a gap at each corner, seeded per card so no two are identical, drawn on with `stroke-dasharray` when the card scrolls into view; the glyph and text follow on a short stagger. Hover darkens the frame and turns the name to the ink accent. These cards are flat by design — see the Always-Lifted Rule's exception — and they carry the mono route instead of the uppercase kicker every other card opens with, because a route is a real value and the Case Rule applies.
 
 ### Signature Component — FITS Instrument Readout
 The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. Icon-button toolbars use amber highlighting (`rgba(230, 171, 88, 0.16)` background, `#8f5f12`/`#ffd99d` text) for active/open states rather than the primary Oxblood/Amber pair — this toolbar-amber is a separate, narrower accent scoped only to these instrument controls.

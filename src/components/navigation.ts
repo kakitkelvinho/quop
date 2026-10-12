@@ -53,8 +53,8 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    href: "/theory",
-    label: "Theory",
+    href: "/notes",
+    label: "Notes",
     description:
       "Reference notes for quantum optics, operators, and physical intuition.",
     accent: "#6da8ff",
@@ -99,16 +99,16 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    href: "/experiment",
-    label: "Experiment",
+    href: "/builder",
+    label: "Builder",
     description:
       "Lab setup notes, measurement workflows, and practical implementation details.",
     accent: "#f06f86",
     orbitalPhase: 4.9,
     links: [
       {
-        href: "/experiment/builder",
-        label: "Builder",
+        href: "/builder/tabletop",
+        label: "Tabletop",
         description:
           "Design and visualize your own optical setup on a virtual table.",
       },

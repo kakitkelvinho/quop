@@ -1,15 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Theory" };
-
-export default function TheoryPage() {
-  return (
-    <section className="pageSection">
-      <h1>Theory</h1>
-      <p className="lead">
-        This section is reserved for conceptual notes, derivations, and
-        reference material related to quantum optics.
-      </p>
-    </section>
-  );
+// Theory is now Notes; old links and bookmarks land there.
+export default function LegacyTheoryPage() {
+  redirect("/notes");
 }

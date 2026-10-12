@@ -398,19 +398,19 @@ function useEscapeCloses(onClose: () => void) {
 
 /** What the builder is for, from the navigation registry, then what it leaves to the author. */
 function AboutPanel({ onClose }: { onClose: () => void }) {
-  const tool = findTool("/experiment/builder");
+  const tool = findTool("/builder/tabletop");
   useEscapeCloses(onClose);
 
   return (
     <aside className="builderIsland builderAbout" aria-labelledby="builder-about-title">
       <h2 id="builder-about-title" className="builderAbout__title">
-        About the builder
+        About the Tabletop
         <BetaMark tool={tool} />
       </h2>
       {tool ? <p className="builderAbout__description">{tool.description}</p> : null}
       <h3 className="builderAbout__subtitle">Known limitations</h3>
       <p className="builderAbout__lead">
-        The builder records the setup you intend. It doesn’t simulate it.
+        The Tabletop records the setup you intend. It doesn’t simulate it.
       </p>
       <ul className="builderAbout__list">
         {LIMITATIONS.map((limitation) => (
@@ -521,8 +521,8 @@ function FileMenu({
         aria-haspopup="menu"
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="builderMenu__title">Experiment builder</span>
-        <BetaMark tool={findTool("/experiment/builder")} />
+        <span className="builderMenu__title">Tabletop</span>
+        <BetaMark tool={findTool("/builder/tabletop")} />
         <Icon name="chevron" size={14} />
       </button>
       {open ? (
@@ -555,7 +555,7 @@ function FileMenu({
           </button>
           <hr />
           <button type="button" role="menuitem" onClick={run(onShowAbout)}>
-            About the builder
+            About the Tabletop
           </button>
         </div>
       ) : null}
@@ -701,7 +701,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   return (
     <>
       <div className="builderIsland builderHud__file">
-        <Link href="/experiment" className="builderBack" aria-label="Back to the QUOP site">
+        <Link href="/" className="builderBack" aria-label="Back to the QUOP site">
           <Icon name="back" size={16} />
           QUOP
         </Link>

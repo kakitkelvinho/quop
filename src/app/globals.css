@@ -258,19 +258,6 @@ a.toolCard:hover .toolCard__open span {
   transform: translateX(3px);
 }
 
-/* not built yet: drawn, but nothing to open */
-.toolCard--soon {
-  box-shadow: none;
-  border-style: dashed;
-  background: transparent;
-}
-
-.toolCard--soon .toolCard__sample {
-  background: transparent;
-  color: var(--muted);
-  padding-left: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .toolCard,
   a.toolCard:hover {
