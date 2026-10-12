@@ -6,7 +6,7 @@ import { ToolIndex } from "@/components/tool-index";
 const experiment = navSections.find((section) => section.href === "/experiment");
 
 export const metadata: Metadata = {
-  title: "Experiment · quop",
+  title: "Experiment",
   description:
     "Lab-facing setup notes and tools for building optical experiments, including the interactive table builder.",
 };

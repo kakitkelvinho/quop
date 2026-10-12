@@ -43,7 +43,7 @@ function NavItem({
         {label}
       </Link>
       {links.length ? (
-        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100`}>
+        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100`}>
           {links.map((link) => (
             <Link
               className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
@@ -188,6 +188,11 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
+      {isBuilderRoute ? null : (
+        <a className="skipLink" href="#main">
+          Skip to content
+        </a>
+      )}
       {/* The builder is a full-window workspace with its own way back. */}
       {isBuilderRoute ? null : (
         <header className="sticky top-0 z-40">
@@ -219,6 +224,8 @@ export function AppShell({
       {isBuilderRoute ? null : <ThemeToggle />}
 
       <main
+        id="main"
+        tabIndex={-1}
         className={
           isBuilderRoute
             ? "builderMain"

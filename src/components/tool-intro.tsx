@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { BetaMark } from "@/components/beta-badge";
@@ -20,4 +21,19 @@ export function ToolIntro({ href, children }: { href: string; children: ReactNod
       {tool ? <p className="lead">{tool.description}</p> : null}
     </>
   );
+}
+
+/**
+ * A tool page's tab title and description, from the navigation registry, so
+ * several open tools can be told apart. Calculators say so, since "LIDT" or
+ * "Pace" alone don't.
+ */
+export function toolMetadata(href: string): Metadata {
+  const tool = findTool(href);
+  if (!tool) return {};
+  const calculator = href.startsWith("/calculators/");
+  return {
+    title: calculator ? `${tool.label} calculator` : tool.label,
+    description: tool.description,
+  };
 }

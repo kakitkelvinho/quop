@@ -1127,19 +1127,52 @@ html[data-theme="dark"] .visualizerOverlayState {
   color: var(--muted);
 }
 
+/* Keyboard focus anywhere, in the ink pair rather than the browser's blue.
+   Zero specificity, so any control that draws its own focus keeps it. */
+:where(:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* the header's items fill its height: their ring is drawn inside them */
+header :where(a, button):focus-visible {
+  outline-offset: -3px;
+}
+
+/* main takes focus from the skip link, which needs no ring of its own */
+main:focus {
+  outline: none;
+}
+
 .themeToggle:focus-visible,
 .buttonLink:focus-visible,
 .siteFooter a:focus-visible,
 .field__control:focus-within {
-  outline: 3px solid rgb(139 30 63 / 0.3);
+  outline: 3px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
-html[data-theme="dark"] .themeToggle:focus-visible,
-html[data-theme="dark"] .buttonLink:focus-visible,
-html[data-theme="dark"] html[data-theme="dark"] .siteFooter a:focus-visible,
-html[data-theme="dark"] .field__control:focus-within {
-  outline-color: rgb(244 185 66 / 0.4);
+/* off screen until a keyboard reaches it first thing on the page */
+.skipLink {
+  position: fixed;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 60;
+  padding: 0.6rem 0.9rem;
+  border-radius: 0.8rem;
+  background: var(--accent);
+  color: #fffaf1;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus-visible {
+  transform: none;
+}
+
+html[data-theme="dark"] .skipLink {
+  color: #1a1d26;
 }
 
 @media (max-width: 900px) {

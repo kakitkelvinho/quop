@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { title: "Theory" };
+
 export default function TheoryPage() {
   return (
     <section className="pageSection">
