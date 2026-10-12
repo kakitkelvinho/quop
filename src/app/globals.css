@@ -153,8 +153,7 @@ h2 {
   color: var(--muted);
 }
 
-.siteFooter a,
-.builderAbout__report a {
+.siteFooter a {
   color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 0.18em;
@@ -163,8 +162,7 @@ h2 {
 }
 
 /* the hovered-link wash from the ink pair */
-.siteFooter a:hover,
-.builderAbout__report a:hover {
+.siteFooter a:hover {
   background: var(--accent-soft);
 }
 
@@ -2542,7 +2540,7 @@ html[data-theme="dark"] .builderIsland {
 
 .builderPart {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.65rem;
   width: 100%;
   padding: 0.45rem;
@@ -2576,20 +2574,9 @@ html[data-theme="dark"] .builderIsland {
   color: var(--accent);
 }
 
-.builderPart__text {
-  display: grid;
-  gap: 0.1rem;
-}
-
 .builderPart__name {
   font-size: 0.84rem;
   font-weight: 600;
-}
-
-.builderPart__hint {
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.35;
 }
 
 .builderModeBadge {
@@ -2673,11 +2660,6 @@ html[data-theme="dark"] .builderIsland {
   user-select: none;
 }
 
-.builderControlsHint__alt {
-  font-weight: 500;
-  opacity: 0.8;
-}
-
 .builderControlsHint kbd {
   padding: 0 0.22rem;
   border: 1px solid var(--border);
@@ -2687,7 +2669,7 @@ html[data-theme="dark"] .builderIsland {
   line-height: 1.2;
 }
 
-/* left, where the parts panel opens: what the builder is for, and leaves out */
+/* left, where the parts panel opens: the brief and JSON panels */
 .builderAbout {
   top: 7.3rem;
   left: 0.9rem;
@@ -2713,42 +2695,6 @@ html[data-theme="dark"] .builderIsland {
   margin: 0.45rem 0 0;
   font-size: 0.82rem;
   line-height: 1.4;
-}
-
-/* a section heading, in the parts panel's group-name style */
-.builderAbout__subtitle {
-  margin: 0.9rem 0 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.builderAbout__lead {
-  margin: 0.3rem 0 0;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.builderAbout__list {
-  display: grid;
-  gap: 0.45rem;
-  margin: 0.65rem 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: 0.82rem;
-  line-height: 1.4;
-}
-
-.builderAbout__report {
-  margin: 0.9rem 0 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.8rem;
 }
 
 /* the quick guide's two sizes: coach marks from the Guide pill, and the cheat sheet strip */
@@ -3005,13 +2951,6 @@ html[data-theme="dark"] .builderCoach {
 
 .builderCoach__card p {
   margin: 0;
-}
-
-/* a touch screen has no hover */
-@media (hover: none) {
-  .builderCoach__hover {
-    display: none;
-  }
 }
 
 .builderCoach__card kbd {

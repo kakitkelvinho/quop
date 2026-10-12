@@ -38,7 +38,6 @@ import {
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
 import { findTool } from "@/components/navigation";
-import { ReportLine } from "@/components/report-link";
 import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
@@ -138,51 +137,50 @@ type Hint = [key: string, action: string];
 function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | null {
   if (props.beamMode)
     return {
-      label: "Drawing a beam",
+      label: "Beam",
       hints: [
-        ["Click", "add stop"],
-        ["Enter", "finish"],
+        ["Click", "stop"],
+        ["Enter", "done"],
         ["Esc", "cancel"],
       ],
     };
   // a drag makes a rectangle only before the first corner; after it, it pans
   if (props.drawingFrame)
     return {
-      label: "Drawing a frame",
+      label: "Frame",
       hints:
         props.frameCorners === 0
           ? [
               ["Drag", "rectangle"],
-              ["Click", "first corner"],
+              ["Click", "corner"],
               ["Esc", "cancel"],
             ]
           : [
               ["Click", "corner"],
-              ["Enter", "finish"],
-              ["⌫", "undo corner"],
+              ["Enter", "done"],
+              ["⌫", "undo"],
               ["Esc", "cancel"],
             ],
     };
   if (props.connectDraft)
     return {
-      label: `Connecting a ${CONNECTION_KINDS[props.connectDraft.kind].label.toLowerCase()}`,
+      label: CONNECTION_KINDS[props.connectDraft.kind].label,
       hints: [
-        ["Click", props.connectDraft.from ? "the part it goes to" : "the part it leaves from"],
+        ["Click", props.connectDraft.from ? "to" : "from"],
         ["Esc", "cancel"],
       ],
     };
   if (props.addingStops)
     return {
-      label: "Adding stops",
+      label: "Stops",
       hints: [
-        ["Click", "add to end"],
+        ["Click", "add"],
         ["Enter", "done"],
-        ["Esc", "done"],
       ],
     };
   if (props.placingType)
     return {
-      label: `Placing ${COMPONENT_SPECS[props.placingType].label.toLowerCase()}`,
+      label: COMPONENT_SPECS[props.placingType].label,
       hints: [
         ["Click", "place"],
         ["Esc", "cancel"],
@@ -376,15 +374,6 @@ function FrameList({
   );
 }
 
-/** What the builder leaves to the author: it is a notebook, not a simulator (BUILDER.md). */
-const LIMITATIONS = [
-  "A beam can pass through any component. Nothing checks that the light could really take that path.",
-  "Components can overlap; there is no collision check.",
-  "Marking a beam line, by tinting its mounts the beam’s colour, is up to you. Nothing enforces it.",
-  "There are no ruler or dimension annotations yet.",
-  "A fibre or cable’s route across the table is drawn for you and can pass under other parts. Its delay comes from the length you type, not from the route.",
-];
-
 /**
  * Esc closes the panel. Capture, and stop, so this Esc closes only the panel:
  * the scene's Esc chain peels one layer per press and would otherwise also deselect.
@@ -399,41 +388,6 @@ function useEscapeCloses(onClose: () => void) {
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
-}
-
-/** What the builder is for, from the navigation registry, then what it leaves to the author. */
-function AboutPanel({ onClose }: { onClose: () => void }) {
-  const tool = findTool("/builder/tabletop");
-  useEscapeCloses(onClose);
-
-  return (
-    <aside className="builderIsland builderAbout" aria-labelledby="builder-about-title">
-      <h2 id="builder-about-title" className="builderAbout__title">
-        About the Tabletop
-        <BetaMark tool={tool} />
-      </h2>
-      {tool ? <p className="builderAbout__description">{tool.description}</p> : null}
-      <h3 className="builderAbout__subtitle">Known limitations</h3>
-      <p className="builderAbout__lead">
-        The Tabletop records the setup you intend. It doesn’t simulate it.
-      </p>
-      <ul className="builderAbout__list">
-        {LIMITATIONS.map((limitation) => (
-          <li key={limitation}>{limitation}</li>
-        ))}
-      </ul>
-      <ReportLine tool={tool?.label} className="builderAbout__report" showVersion />
-      <button
-        type="button"
-        className="builderHud__close"
-        aria-label="Close panel"
-        title="Close (Esc)"
-        onClick={onClose}
-      >
-        <Icon name="close" size={16} />
-      </button>
-    </aside>
-  );
 }
 
 /** The setup brief, to copy into an AI assistant or save; it opens where the about panel does. */
@@ -455,8 +409,7 @@ function BriefPanel({
         Setup brief
       </h2>
       <p className="builderAbout__description">
-        Paste this into an AI assistant and describe your experiment. Open the .json file it gives you, or paste
-        its JSON, with Open JSON… in the file menu.
+        For an AI assistant. Open its reply with Open JSON….
       </p>
       <div className="builderBrief__actions">
         <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
@@ -512,19 +465,19 @@ function JsonPanel({
       await navigator.clipboard.writeText(text);
       setNote("Copied.");
     } catch {
-      setNote("This browser didn't allow copying: select the text and press ⌘C.");
+      setNote("Copy blocked: use ⌘C.");
     }
   };
   const paste = async () => {
     try {
       const pasted = await navigator.clipboard.readText();
-      if (pasted.length > SCENE_TEXT_MAX_BYTES) setNote("That's far too long to be a setup.");
+      if (pasted.length > SCENE_TEXT_MAX_BYTES) setNote("Too long.");
       else {
         setText(pasted);
-        setNote("Pasted. Check it, then Apply.");
+        setNote("Pasted.");
       }
     } catch {
-      setNote("This browser didn't allow pasting here: click in the box and press ⌘V.");
+      setNote("Paste blocked: use ⌘V.");
     }
   };
   const openFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -532,11 +485,11 @@ function JsonPanel({
     event.target.value = "";
     if (!file) return;
     if (file.size > SCENE_TEXT_MAX_BYTES) {
-      setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB, far more than any setup.`);
+      setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
       return;
     }
     setText(await file.text());
-    setNote(`Read ${file.name}. Check it, then Apply.`);
+    setNote(`Read ${file.name}.`);
   };
 
   return (
@@ -545,7 +498,7 @@ function JsonPanel({
         Setup JSON
       </h2>
       <p className="builderAbout__description">
-        Edit the setup as text, paste one in or open a file, then Apply. Apply replaces the table; ⌘Z undoes it.
+        Apply replaces the table. ⌘Z undoes it.
       </p>
       <div className="builderBrief__actions">
         <button
@@ -587,15 +540,13 @@ function JsonPanel({
       />
       <p id="builder-json-check" className={`builderJson__check${check.ok ? "" : " is-error"}`} role="status">
         {check.ok
-          ? `${changed ? "Ready to apply" : "The table as it stands"}: ${check.summary}.${
-              check.skipped ? ` ${check.skipped} ${check.skipped === 1 ? "entry" : "entries"} couldn't be read and will be left out.` : ""
-            }`
+          ? `${changed ? "Ready" : "Current"}: ${check.summary}.${check.skipped ? ` ${check.skipped} skipped.` : ""}`
           : check.error}
       </p>
       {note ? <p className="builderJson__note">{note}</p> : null}
       {changed ? (
         <button type="button" className="builderJson__revert" onClick={() => setText(opened)}>
-          Revert to the table as it stands
+          Revert
         </button>
       ) : null}
       <button
@@ -617,10 +568,8 @@ function FileMenu({
   onExportPng,
   onResetExample,
   onClear,
-  onShowAbout,
 }: Pick<BuilderHudProps, "onSave" | "onExportPng" | "onResetExample" | "onClear"> & {
   onShowJson: () => void;
-  onShowAbout: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -678,10 +627,6 @@ function FileMenu({
           <button type="button" role="menuitem" onClick={run(onClear)}>
             Clear table
           </button>
-          <hr />
-          <button type="button" role="menuitem" onClick={run(onShowAbout)}>
-            About the Tabletop
-          </button>
         </div>
       ) : null}
     </div>
@@ -703,35 +648,25 @@ export default function BuilderHud(props: BuilderHudProps) {
   } = props;
   const mode = modeHints(props);
   const selecting = !beamMode && !drawingFrame && !connectDraft && !placingType && !trayOpen;
-  // the about panel and the brief share the parts panel's spot, so opening one closes the others
-  const [aboutOpen, setAboutOpen] = useState(false);
+  // the brief and the JSON panel share the parts panel's spot, so opening one closes the others
   const [briefOpen, setBriefOpen] = useState(false);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
-  const closeAbout = useCallback(() => setAboutOpen(false), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
   const closeJson = useCallback(() => setJsonOpen(false), []);
   const { onCloseTray } = props;
-  const showAbout = useCallback(() => {
-    onCloseTray();
-    setBriefOpen(false);
-    setJsonOpen(false);
-    setAboutOpen(true);
-  }, [onCloseTray]);
   // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for them
   const besideParts = trayOpen || briefOpen || jsonOpen;
   const toggleBrief = useCallback(() => {
     onCloseTray();
-    setAboutOpen(false);
     setJsonOpen(false);
     setBriefOpen((open) => !open);
   }, [onCloseTray]);
   const showJson = useCallback(() => {
     onCloseTray();
-    setAboutOpen(false);
     setBriefOpen(false);
     setJsonOpen(true);
   }, [onCloseTray]);
@@ -848,11 +783,9 @@ export default function BuilderHud(props: BuilderHudProps) {
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
-          onShowAbout={showAbout}
         />
       </div>
 
-      {aboutOpen && !trayOpen ? <AboutPanel onClose={closeAbout} /> : null}
       {briefOpen && !trayOpen ? (
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
@@ -863,11 +796,10 @@ export default function BuilderHud(props: BuilderHudProps) {
       <div className="builderIsland builderHud__add">
         <IconButton
           icon="add"
-          label="Add a part"
+          label="Add part"
           guide="add"
           active={trayOpen}
           onClick={() => {
-            setAboutOpen(false);
             setBriefOpen(false);
             setJsonOpen(false);
             props.onToggleTray();
@@ -875,7 +807,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         />
         <IconButton
           icon="beam"
-          label="Draw a beam"
+          label="Beam"
           guide="beam"
           active={beamMode}
           onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
@@ -883,14 +815,14 @@ export default function BuilderHud(props: BuilderHudProps) {
         />
         <IconButton
           icon="frame"
-          label="Draw a frame to mark an area"
+          label="Frame"
           guide="frame"
           active={drawingFrame}
           onClick={drawingFrame ? props.onCancelFrame : props.onStartFrame}
         />
         <IconButton
           icon="connect"
-          label="Connect two parts with a fibre or cable"
+          label="Fibre or cable"
           guide="connect"
           active={Boolean(connectDraft)}
           onClick={connectDraft ? props.onCancelConnect : props.onStartConnect}
@@ -905,7 +837,7 @@ export default function BuilderHud(props: BuilderHudProps) {
             className="builderGuideButton"
             aria-haspopup="dialog"
             aria-expanded={coachOpen}
-            title="Quick guide: what each control does"
+            title="Guide"
             // one size of the guide at a time: the coach marks would tag through the sheet
             onClick={() => {
               setSheetOpen(false);
@@ -940,9 +872,9 @@ export default function BuilderHud(props: BuilderHudProps) {
             <button
               type="button"
               className={`builderIconBtn builderBriefButton${briefOpen ? " is-active" : ""}`}
-              aria-label="Setup brief: instructions for an AI assistant to write a setup file"
+              aria-label="AI brief"
               aria-pressed={briefOpen}
-              title="Setup brief: instructions for an AI assistant to write a setup file"
+              title="AI brief"
               data-guide="brief"
               onClick={toggleBrief}
             >
@@ -967,16 +899,11 @@ export default function BuilderHud(props: BuilderHudProps) {
         ) : null}
       </div>
 
-      {/* always on and faint: the Shift orbit and the ⌘ box are the ones
-          nobody finds alone. It sits above the inspector, which opens below
-          it on the right. */}
+      {/* always on and faint: the Shift orbit is the one nobody finds alone.
+          It sits above the inspector, which opens below it on the right. */}
       <p className="builderControlsHint" aria-label="Mouse controls">
         <span>
-          <kbd>⇧</kbd> drag rotate · drag pan · scroll zoom
-        </span>
-        <span className="builderControlsHint__alt">or middle / right drag to rotate</span>
-        <span>
-          <kbd>⌘</kbd> drag or click to select several
+          <kbd>⇧</kbd> drag orbit · drag pan · scroll zoom
         </span>
       </p>
 
@@ -1038,9 +965,9 @@ export default function BuilderHud(props: BuilderHudProps) {
       <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
         <span className="builderSegment">
           <IconButton icon="iso" label="Isometric view" active={view === "iso"} onClick={() => props.onViewChange("iso")} />
-          <IconButton icon="top" label="Top-down view" active={view === "top"} onClick={() => props.onViewChange("top")} />
+          <IconButton icon="top" label="Top view" active={view === "top"} onClick={() => props.onViewChange("top")} />
         </span>
-        <IconButton icon="fit" label="Fit the layout" onClick={props.onFit} />
+        <IconButton icon="fit" label="Fit" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />

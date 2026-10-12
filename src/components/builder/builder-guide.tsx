@@ -25,16 +25,16 @@ type Side = "below" | "above" | "right" | "left";
  * and no leader crosses a tag.
  */
 const TAGS: { key: string; text: string; sides: Side[] }[] = [
-  { key: "file", text: "Save · open · PNG", sides: ["right", "below"] },
+  { key: "file", text: "File", sides: ["right", "below"] },
   { key: "connect", text: "Fibre or cable", sides: ["below"] },
-  { key: "frame", text: "Draw a frame round an area", sides: ["below"] },
-  { key: "beam", text: "Draw a beam", sides: ["below"] },
-  { key: "add", text: "Add a part", sides: ["below"] },
-  { key: "brief", text: "Brief an AI to write a setup", sides: ["right", "below"] },
+  { key: "frame", text: "Frame", sides: ["below"] },
+  { key: "beam", text: "Beam", sides: ["below"] },
+  { key: "add", text: "Part", sides: ["below"] },
+  { key: "brief", text: "AI brief", sides: ["right", "below"] },
   { key: "tools", text: "Select · posts · grid · undo", sides: ["right", "below"] },
-  { key: "inspector", text: "Edit the selection", sides: ["left", "above"] },
-  { key: "beams", text: "Beams: drag a row to reorder", sides: ["above", "right"] },
-  { key: "frames", text: "Frames: reorder, hide or delete", sides: ["right", "above"] },
+  { key: "inspector", text: "Inspector", sides: ["left", "above"] },
+  { key: "beams", text: "Beams", sides: ["above", "right"] },
+  { key: "frames", text: "Frames", sides: ["right", "above"] },
   { key: "view", text: "Iso / top · fit · labels · day / night", sides: ["above", "left"] },
 ];
 
@@ -259,7 +259,6 @@ export function CoachMarks({ onClose, onShowCheatSheet }: { onClose: () => void;
         <p>
           <kbd>⌘ click</kbd> <kbd>⌘ drag</kbd> <kbd>⌘A</kbd> select several
         </p>
-        <p className="builderCoach__hover">Hover a button for its name and shortcut.</p>
         <div className="builderCoach__actions">
           <button
             type="button"
@@ -270,7 +269,7 @@ export function CoachMarks({ onClose, onShowCheatSheet }: { onClose: () => void;
               onShowCheatSheet();
             }}
           >
-            Open the cheat sheet
+            Cheat sheet
           </button>
           {/* closes like any other click on the overlay */}
           <button ref={closeRef} type="button" className="builderCoach__button is-primary">
@@ -290,39 +289,39 @@ const SHEET: { title: string; lines: Line[] }[] = [
   {
     title: "Build",
     lines: [
-      { icon: "add", text: "Pick a part, click to place" },
-      { icon: "beam", text: "Beam: click parts, Enter" },
-      { icon: "frame", text: "Frame: drag, or corners + Enter" },
-      { icon: "connect", text: "Fibre or cable: from, then to" },
-      { keys: ".md", text: "Brief an AI to write a setup" },
+      { icon: "add", text: "Pick, then click" },
+      { icon: "beam", text: "Click parts, Enter" },
+      { icon: "frame", text: "Drag, or corners + Enter" },
+      { icon: "connect", text: "From, then to" },
+      { keys: ".md", text: "AI brief" },
     ],
   },
   {
     title: "Edit",
     lines: [
-      { keys: "drag", text: "Move a part (⇧ for 5 mm)" },
-      { icon: "beam", text: "Stops snap back onto a beam" },
-      { keys: "⌘ drag", text: "Box select; ⌘ click adds" },
+      { keys: "drag", text: "Move (⇧ 5 mm)" },
+      { icon: "beam", text: "Stops snap to beam" },
+      { keys: "⌘ drag", text: "Select several" },
       { keys: "R D ⌫", text: "Turn, copy, delete" },
-      { icon: "frame", text: "Frame: reshape; Alt-drag moves" },
+      { icon: "frame", text: "Alt-drag moves" },
     ],
   },
   {
     title: "Reorder, hide",
     lines: [
-      { icon: "grip", text: "Drag a beam or stop row" },
-      { keys: "Alt ↑↓", text: "Move a focused row" },
-      { icon: "eye", text: "Hide a beam or frame" },
-      { icon: "trash", text: "Delete one" },
+      { icon: "grip", text: "Drag a row" },
+      { keys: "Alt ↑↓", text: "Move a row" },
+      { icon: "eye", text: "Hide" },
+      { icon: "trash", text: "Delete" },
     ],
   },
   {
     title: "Camera",
     lines: [
-      { keys: "drag", text: "Pan the table" },
+      { keys: "drag", text: "Pan" },
       { keys: "scroll", text: "Zoom" },
-      { keys: "⇧ drag", text: "Orbit, or right drag" },
-      { icon: "iso", text: "Iso / top, then fit" },
+      { keys: "⇧ drag", text: "Orbit" },
+      { icon: "iso", text: "Iso / top, fit" },
     ],
   },
 ];

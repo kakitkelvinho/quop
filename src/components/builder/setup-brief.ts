@@ -133,7 +133,7 @@ const CONNECTION_FIELDS: FieldDocs<Connection> = {
   color: {
     text: `a hex colour; default ${code(CONNECTION_KINDS.fiber.color)} for a fibre, ${code(CONNECTION_KINDS.cable.color)} for a cable.`,
   },
-  label: { text: `text, such as ${code(CONNECTION_KINDS.fiber.example)} or ${code(CONNECTION_KINDS.cable.example)}.` },
+  label: { text: "optional text." },
   lengthM: {
     text: `its length in **metres**, ${range(CONNECTION_LENGTH_RANGE_M)}; leave it out when unknown. The delay comes from this, never from the drawn route.`,
   },
@@ -180,7 +180,7 @@ function componentTypes(): string {
         .filter(([, doc]) => doc.only === type)
         .map(([key]) => `\`${key}\``);
       const fields = own.length ? ` Its own fields: ${own.join(", ")}.` : "";
-      return `- \`${type}\`: ${spec.label}. ${spec.hint} ${heightLine(type)}${fields}`;
+      return `- \`${type}\`: ${spec.label}. ${heightLine(type)}${fields}`;
     });
     return `### ${name}\n\n${entries.join("\n")}`;
   }).join("\n\n");
