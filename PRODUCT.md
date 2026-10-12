@@ -32,10 +32,10 @@ Used in two distinct modes: (1) mid-experiment, at a lab computer, for a fast ca
 - **Static hosting is a hard constraint**: deployed as a static export to GitHub Pages (`https://kitkatho.github.io/quop/`). No server, no backend, no API routes — every calculator and plotter must run entirely client-side.
 - **Calculators (live)**: energy-wavelength, LIDT (laser-induced damage threshold), light travel time, pace.
 - **Plotters (live)**: array plotter, generic CSV plotter, time-axis CSV plotter, FITS plotter, side-by-side CSV+FITS viewer. FITS parsing goes through a custom `@fits-js/core` package; charting via Chart.js.
-- **Experiment (live)**: an interactive optical-table builder — place, drag and rotate bench parts on a
+- **Builder (live)**: the Tabletop, an interactive optical-table builder — place, drag and rotate bench parts on a
   millimetre grid, draw beam paths through them, and read off path length and vacuum time of flight.
   Renders with react-three-fiber; scenes save to JSON and autosave to localStorage.
-- **Theory still holds only placeholder copy** — known-incomplete, not a deliberate minimal design.
+- **Notes (formerly Theory) still holds only placeholder copy** — known-incomplete, not a deliberate minimal design.
 - Audience is currently small; do not over-engineer for scale, but design and content should hold up if the visitor has never met the lab before.
 
 ## Brand Commitments
@@ -54,4 +54,4 @@ Used in two distinct modes: (1) mid-experiment, at a lab computer, for a fast ca
 2. Real lab correctness comes first: calculators and plotters must handle this lab's actual instruments, units, and data formats correctly before anything else.
 3. The same surfaces serve two audiences at once — an insider mid-experiment and an outsider with zero context — so nothing should require lab-internal knowledge to be usable or legible.
 4. Friction-free access is part of the value itself: opening a tool should be as fast as the answer it gives.
-5. Placeholder sections (Theory, Experiment) are known gaps to fill, not intentionally minimal — don't polish around their bareness as if it were final.
+5. Placeholder sections (Notes) are known gaps to fill, not intentionally minimal — don't polish around their bareness as if it were final.

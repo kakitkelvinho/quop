@@ -29,9 +29,7 @@ export function EnergyWavelengthCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolIntro href="/calculators/energy-wavelength-calculator">
-        Energy-Wavelength Calculator
-      </ToolIntro>
+      <ToolIntro href="/calculators/energy-wavelength-calculator" />
 
       <div className="calculatorGrid">
         <div className="inputCard">

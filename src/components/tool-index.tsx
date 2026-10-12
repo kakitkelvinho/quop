@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { BetaMark } from "@/components/beta-badge";
 import type { NavLink } from "@/components/navigation";
@@ -20,11 +19,11 @@ const SAMPLES: Record<string, string> = {
   "/plotters/csv-plotter": "time, ch1, ch2 … → traces",
   "/plotters/fits-plotter": "BITPIX · NAXIS1 × NAXIS2 → image",
   "/plotters/csv-fits-viewer": "trace.csv ⟷ frame.fits",
-  "/experiment/builder": "path 613 mm · flight 2.04 ns",
+  "/builder/tabletop": "path 613 mm · flight 2.04 ns",
 };
 
 /** A section's tools as cards, each one link: its result, its name, what it does. */
-export function ToolIndex({ links, children }: { links: NavLink[]; children?: ReactNode }) {
+export function ToolIndex({ links }: { links: NavLink[] }) {
   return (
     <div className="toolGrid">
       {links.map((link) => (
@@ -40,7 +39,6 @@ export function ToolIndex({ links, children }: { links: NavLink[]; children?: Re
           </span>
         </Link>
       ))}
-      {children}
     </div>
   );
 }

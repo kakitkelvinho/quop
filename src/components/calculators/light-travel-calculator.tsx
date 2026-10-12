@@ -68,7 +68,7 @@ export function LightTravelCalculator() {
 
   return (
     <section className="pageSection">
-      <ToolIntro href="/calculators/light-travel-calculator">Light Travel Calculator</ToolIntro>
+      <ToolIntro href="/calculators/light-travel-calculator" />
 
       <div className="calculatorGrid">
         <div className="inputCard">

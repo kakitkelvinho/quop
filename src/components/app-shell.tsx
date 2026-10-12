@@ -43,12 +43,15 @@ function NavItem({
         {label}
       </Link>
       {links.length ? (
-        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100`}>
+        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100`}>
           {links.map((link) => (
+            // out of the Tab order: the section page lists every tool, so the
+            // header is four stops for a keyboard, not fourteen
             <Link
               className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
               href={link.href}
               key={link.href}
+              tabIndex={-1}
             >
               {link.label}
             </Link>
@@ -59,12 +62,15 @@ function NavItem({
   );
 }
 
-/** the four sections, in header order; the desktop labels are their own */
+/**
+ * The four sections, in the order they run everywhere: the nav, the
+ * homepage's chapters and its cards. Builder is one tool, so it opens it.
+ */
 const PRIMARY_NAV = [
-  { href: "/experiment", label: "experiment" },
-  { href: "/theory", label: "theory" },
-  { href: "/plotters", label: "plotter" },
-  { href: "/calculators", label: "calculator" },
+  { href: "/builder/tabletop", label: "builder" },
+  { href: "/notes", label: "notes" },
+  { href: "/plotters", label: "plotters" },
+  { href: "/calculators", label: "calculators" },
 ];
 
 function MenuIcon({ open }: { open: boolean }) {
@@ -187,7 +193,7 @@ export function AppShell({
   footer?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isBuilderRoute = pathname.startsWith("/experiment/builder");
+  const isBuilderRoute = pathname.startsWith("/builder/tabletop");
 
   return (
     <div className="min-h-screen">
@@ -205,8 +211,8 @@ export function AppShell({
             aria-label="Primary"
           >
             <div className="flex items-stretch gap-1">
-              <NavItem href="/experiment" label="experiment" />
-              <NavItem href="/theory" label="theory" />
+              <NavItem href="/builder/tabletop" label="builder" />
+              <NavItem href="/notes" label="notes" />
             </div>
 
             <Link
@@ -217,8 +223,8 @@ export function AppShell({
             </Link>
 
             <div className="flex items-stretch justify-end gap-1">
-              <NavItem href="/plotters" label="plotter" align="right" />
-              <NavItem href="/calculators" label="calculator" align="right" />
+              <NavItem href="/plotters" label="plotters" align="right" />
+              <NavItem href="/calculators" label="calculators" align="right" />
               <ThemeToggle />
             </div>
           </nav>

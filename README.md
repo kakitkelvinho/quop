@@ -10,11 +10,11 @@ Version 1.0.0 is live! the builder is usable and can be used to sketch out exper
 
 It is currently divided into 4 sections:
 
-### Experiment
+### Builder
 
-This is currently populated by the `builder`, which allows users to build an experimental optical setup. There is a virtual optical table and users can drop individual optical components on the table.
+The Tabletop (`/builder/tabletop`, the `builder` in code) lets users build an experimental optical setup. There is a virtual optical table and users can drop individual optical components on the table.
 
-### Theory
+### Notes
 
 Coming soon.
 

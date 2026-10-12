@@ -74,14 +74,15 @@ function Chapter({
     >
       <div className="chapter__stage" ref={stageRef}>
         <div className="chapter__text">
-          {status ? <p {...fade([0, 0.12], "chapter__status")}>{status}</p> : null}
-          <h2 {...fade([0.03, 0.16], "chapter__heading")} id={`chapter-${index}`}>
+          {/* the words are there from the first frame; only the drawing is scrubbed */}
+          <h2 className="chapter__heading" id={`chapter-${index}`}>
             {heading}
           </h2>
-          <p {...fade([0.06, 0.2], "chapter__body")}>{body}</p>
+          <p className="chapter__body">{body}</p>
+          {status ? <p className="chapter__status">{status}</p> : null}
           {extra}
           {cta ? (
-            <Link {...fade([0.7, 0.86], "chapter__cta")} href={cta.href}>
+            <Link {...fade([0.05, 0.2], "chapter__cta")} href={cta.href}>
               {cta.label} <span aria-hidden="true">→</span>
             </Link>
           ) : null}
@@ -110,8 +111,8 @@ function PlotterChapter({ trace }: { trace: TraceSketch }) {
       body="Drop in a CSV trace or a FITS frame straight off the lab's instruments and see it plotted in the browser. The line being drawn here is a real laser pulse, recorded on a photodiode in the lab."
       cta={{ href: "/plotters", label: "Open the plotters" }}
       heading="Drop in a file, get a plot."
-      index={1}
-      length={2.5}
+      index={3}
+      length={1.6}
       mode="scrub"
     >
       <svg className="chapter__svg" viewBox="0 0 600 380">
@@ -173,11 +174,10 @@ function BuilderChapter() {
   return (
     <Chapter
       body="Place lasers, mirrors and lenses on a millimetre grid, draw where the beam is meant to go, and read off its path length and time of flight before touching the real bench."
-      cta={{ href: "/experiment/builder", label: "Open the builder" }}
-      flip
+      cta={{ href: "/builder/tabletop", label: "Open the tabletop" }}
       heading="Lay out an optical table."
-      index={2}
-      length={2.5}
+      index={1}
+      length={1.6}
       mode="scrub"
       onProgress={onProgress}
     >
@@ -266,7 +266,7 @@ function CalculatorChapter() {
       body="Photon energy from wavelength, laser damage thresholds, how far light gets in a given delay: the small sums that come up mid-experiment, answered as you type."
       cta={{ href: "/calculators", label: "Open the calculators" }}
       extra={
-        <ul {...fade([0.6, 0.72], "chapter__links")}>
+        <ul {...fade([0.1, 0.25], "chapter__links")}>
           <li>
             <Link href="/calculators/energy-wavelength-calculator">Energy ↔ wavelength</Link>
           </li>
@@ -278,9 +278,10 @@ function CalculatorChapter() {
           </li>
         </ul>
       }
+      flip
       heading="Quick maths for the bench."
-      index={3}
-      length={2.5}
+      index={4}
+      length={1.6}
       mode="scrub"
       onProgress={onProgress}
     >
@@ -308,7 +309,7 @@ function TheoryChapter() {
       body="Short, visual notes on the quantum optics behind the lab's work: states, operators and the intuition that connects them. Still being written."
       flip
       heading="Notes on the physics."
-      index={4}
+      index={2}
       length={1}
       mode="play"
       status="coming soon"
@@ -338,10 +339,11 @@ function TheoryChapter() {
 export function HomeChapters({ trace }: { trace: TraceSketch }) {
   return (
     <div className="chapters">
-      <PlotterChapter trace={trace} />
+      {/* the sections' order everywhere: builder, notes, plotters, calculators */}
       <BuilderChapter />
-      <CalculatorChapter />
       <TheoryChapter />
+      <PlotterChapter trace={trace} />
+      <CalculatorChapter />
     </div>
   );
 }

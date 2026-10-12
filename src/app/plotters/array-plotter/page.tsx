@@ -6,7 +6,7 @@ export const metadata = toolMetadata("/plotters/array-plotter");
 export default function VisualizerPage() {
   return (
     <section className="pageSection">
-      <ToolIntro href="/plotters/array-plotter">Array Plotter</ToolIntro>
+      <ToolIntro href="/plotters/array-plotter" />
       <ArrayPlotter />
     </section>
   );

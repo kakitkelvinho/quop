@@ -2,7 +2,8 @@
 
 The lab's public site and tools. This glossary covers the Experiment Builder, a
 notebook for sketching setups on an optical table (see `BUILDER.md`), and the
-plotters.
+plotters. On the site the builder is called the **Tabletop**, the one tool in
+the **Builder** section; the glossary keeps its own name for it.
 
 ## Experiment Builder
 

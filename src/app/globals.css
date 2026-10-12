@@ -14,8 +14,9 @@
   --shadow: 0 20px 50px rgb(31 41 51 / 0.1);
   /* the deeper shadow a card lifts into on hover */
   --shadow-lift: 0 26px 60px rgb(31 41 51 / 0.16);
-  /* keyboard focus, in the ink pair rather than the browser's blue */
-  --focus-ring: rgb(139 30 63 / 0.3);
+  /* keyboard focus, in the ink itself: the 0.3 wash it once was fell under
+     the 3:1 a focus indicator needs against the page */
+  --focus-ring: var(--accent);
   --mark: 17 17 17;
   --chalk-alpha: 0.26;
   --chalk-dust: 0.09;
@@ -35,7 +36,7 @@ html[data-theme="dark"] {
   --accent-soft: rgb(244 185 66 / 0.14);
   --shadow: 0 28px 60px rgb(0 0 0 / 0.6);
   --shadow-lift: 0 34px 72px rgb(0 0 0 / 0.7);
-  --focus-ring: rgb(244 185 66 / 0.4);
+  --focus-ring: var(--accent);
   --mark: 255 255 255;
   --chalk-alpha: 0.3;
   --chalk-dust: 0.15;
@@ -136,6 +137,16 @@ h2 {
   letter-spacing: -0.025em;
 }
 
+/* an abbreviated name spelled out, under the heading and quieter than it */
+.toolTitle__aside {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
 .lead {
   max-width: 44rem;
   font-size: 1.08rem;
@@ -207,7 +218,7 @@ a.toolCard:hover {
 }
 
 a.toolCard:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -245,19 +256,6 @@ a.toolCard:focus-visible {
 a.toolCard:hover .toolCard__open span {
   display: inline-block;
   transform: translateX(3px);
-}
-
-/* not built yet: drawn, but nothing to open */
-.toolCard--soon {
-  box-shadow: none;
-  border-style: dashed;
-  background: transparent;
-}
-
-.toolCard--soon .toolCard__sample {
-  background: transparent;
-  color: var(--muted);
-  padding-left: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -546,7 +544,7 @@ html[data-theme="dark"] .buttonLink--ghost {
 }
 
 .fileDrop:focus-within {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -1171,7 +1169,7 @@ html[data-theme="dark"] .visualizerOverlayState {
 /* Keyboard focus anywhere, in the ink pair rather than the browser's blue.
    Zero specificity, so any control that draws its own focus keeps it. */
 :where(:focus-visible) {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -1189,7 +1187,7 @@ main:focus {
 .buttonLink:focus-visible,
 .siteFooter a:focus-visible,
 .field__control:focus-within {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -4008,6 +4006,20 @@ html[data-theme="dark"] .builderOrderBadge {
   justify-items: center;
   max-width: 34rem;
   text-align: center;
+}
+
+.heroTools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.heroTools .buttonLink {
+  gap: 0.4rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 /* a real statement, so sentence case under the Case Rule, not a label */

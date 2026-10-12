@@ -1,6 +1,9 @@
-# Experiment Builder — design brief
+# Tabletop (the builder) — design brief
 
-The builder lives at `/experiment/builder`. It is a layout notebook for an
+The builder is called the **Tabletop** on the site, the one tool in its
+Builder section, and lives at `/builder/tabletop` (the old `/experiment` and
+`/experiment/builder` redirect there). In code and in this brief it is still
+"the builder". It is a layout notebook for an
 optical table, not a simulator: you place real bench parts on a millimetre
 grid, arrange them, and record the route light takes between them.
 
@@ -414,7 +417,7 @@ The render-style exploration that led here is kept on the
 
 ## Known gaps
 
-Visitors see these in the builder under File › About the builder
+Visitors see these in the builder under File › About the Tabletop
 (`LIMITATIONS` in `builder-hud.tsx`); keep the two lists in step.
 
 - A beam can pass through any component. Nothing checks that the light could

@@ -14,20 +14,16 @@ type SectionCard = {
   tag: string;
 };
 
+// in the sections' order everywhere: builder, notes, plotters, calculators
 const CARDS: SectionCard[] = [
-  { glyph: "axes", href: "/plotters", name: "Plotter", tag: "visualize your data" },
+  { glyph: "beam", href: "/builder/tabletop", name: "Builder", tag: "lay out an optical table" },
+  { glyph: "integral", href: "/notes", name: "Notes", tag: "on the physics, coming soon" },
+  { glyph: "axes", href: "/plotters", name: "Plotters", tag: "visualize your data" },
   {
     glyph: "brackets",
     href: "/calculators",
-    name: "Calculator",
+    name: "Calculators",
     tag: "quick maths for experiments",
-  },
-  { glyph: "integral", href: "/theory", name: "Theory", tag: "notes on physics, coming soon" },
-  {
-    glyph: "beam",
-    href: "/experiment",
-    name: "Experiment",
-    tag: "an optical table builder",
   },
 ];
 

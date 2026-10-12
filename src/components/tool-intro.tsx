@@ -1,39 +1,42 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 
 import { BetaMark } from "@/components/beta-badge";
 import { findTool } from "@/components/navigation";
 
 /**
+ * A tool's name, the same on its index card, its page and its tab: the
+ * navigation registry's label, with "Calculator" after a calculator's,
+ * since "LIDT" or "Pace" alone don't say what they are.
+ */
+export function toolName(href: string): string {
+  const label = findTool(href)?.label ?? "";
+  return href.startsWith("/calculators/") ? `${label} Calculator` : label;
+}
+
+/**
  * A tool page's heading and lead. The lead is the tool's description in the
  * navigation registry, the same words as its index card, so they're written
- * once; the heading is badged when the registry marks the tool beta. The
- * report link lives in the site footer, which names the tool by its page.
+ * once; the heading is badged when the registry marks the tool beta. An
+ * `aside` spells out a name the label abbreviates. The report link lives in
+ * the site footer, which names the tool by its page.
  */
-export function ToolIntro({ href, children }: { href: string; children: ReactNode }) {
+export function ToolIntro({ href, aside }: { href: string; aside?: string }) {
   const tool = findTool(href);
   return (
     <>
       <h1 className="toolTitle">
-        {children}
+        {toolName(href)}
         <BetaMark tool={tool} />
+        {aside ? <span className="toolTitle__aside">{aside}</span> : null}
       </h1>
       {tool ? <p className="lead">{tool.description}</p> : null}
     </>
   );
 }
 
-/**
- * A tool page's tab title and description, from the navigation registry, so
- * several open tools can be told apart. Calculators say so, since "LIDT" or
- * "Pace" alone don't.
- */
+/** A tool page's tab title and description, from the navigation registry. */
 export function toolMetadata(href: string): Metadata {
   const tool = findTool(href);
   if (!tool) return {};
-  const calculator = href.startsWith("/calculators/");
-  return {
-    title: calculator ? `${tool.label} calculator` : tool.label,
-    description: tool.description,
-  };
+  return { title: toolName(href), description: tool.description };
 }
