@@ -3,7 +3,9 @@
 import { useState } from "react";
 
 import { DecimalNote } from "@/components/calculators/decimal-note";
+import { formatSignificant } from "@/components/calculators/format-quantity";
 import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { Readout } from "@/components/calculators/readout";
 import { ToolIntro } from "@/components/tool-intro";
 
 export function EnergyWavelengthCalculator() {
@@ -47,11 +49,13 @@ export function EnergyWavelengthCalculator() {
             </div>
             <DecimalNote reading={readFlexibleDecimal(energyInput)} />
           </label>
-          <p className="resultCard">
-            {Number.isNaN(wavelengthFromEnergy)
-              ? "Invalid input."
-              : `${wavelengthFromEnergy.toFixed(4)} nm`}
-          </p>
+          <Readout
+            primary
+            label="Wavelength"
+            value={Number.isNaN(wavelengthFromEnergy) ? null : formatSignificant(wavelengthFromEnergy, 5)}
+            unit="nm"
+            empty="Enter a positive energy."
+          />
         </div>
 
         <div className="inputCard">
@@ -69,11 +73,13 @@ export function EnergyWavelengthCalculator() {
             </div>
             <DecimalNote reading={readFlexibleDecimal(wavelengthInput)} />
           </label>
-          <p className="resultCard">
-            {Number.isNaN(energyFromWavelength)
-              ? "Invalid input."
-              : `${energyFromWavelength.toFixed(6)} eV`}
-          </p>
+          <Readout
+            primary
+            label="Photon energy"
+            value={Number.isNaN(energyFromWavelength) ? null : formatSignificant(energyFromWavelength, 5)}
+            unit="eV"
+            empty="Enter a positive wavelength."
+          />
         </div>
       </div>
     </section>

@@ -209,8 +209,8 @@ export default function ArrayPlotter() {
     <div className="visualizerLayout">
       <div className="inputCard fieldStack">
         <div>
-          <h2>Array Input</h2>
-          <p className="lead">
+          <h2>Data</h2>
+          <p className="toolNote">
             Paste JSON arrays like <code>[0, 1, 2]</code> or plain values like
             <code> 0, 1, 2</code>. You can also load one or more CSV files with
             numeric x/y columns. Leading <code>%</code> comment lines and header
@@ -269,10 +269,7 @@ export default function ArrayPlotter() {
       </div>
 
       <div className="sectionCard visualizerChartCard">
-        <div>
-          <p className="sectionCard__kicker">Chart.js</p>
-          <h2>Data Plot</h2>
-        </div>
+        <h2>Plot</h2>
         <div className="visualizerChartSurface">
           <InteractiveScatterChart data={chartData} options={chartOptions} />
           {activeError ? (

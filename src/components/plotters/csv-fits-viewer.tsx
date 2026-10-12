@@ -170,8 +170,7 @@ function CsvCompactPanel() {
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
         <div>
-          <p className="sectionCard__kicker">CSV</p>
-          <h2>CSV Viewer</h2>
+          <h2>CSV</h2>
           <p>
             Upload a time-series CSV and plot all non-time columns against time.
           </p>
@@ -327,8 +326,7 @@ function FitsCompactPanel() {
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
         <div>
-          <p className="sectionCard__kicker">FITS</p>
-          <h2>FITS Viewer</h2>
+          <h2>FITS</h2>
           <p>
             Upload a FITS image and preview the first image HDU as a trace, a
             colormapped frame or a 3D Surface view.

@@ -13,7 +13,7 @@ export function ToolIntro({ href, children }: { href: string; children: ReactNod
   const tool = findTool(href);
   return (
     <>
-      <h1>
+      <h1 className="toolTitle">
         {children}
         <BetaMark tool={tool} />
       </h1>

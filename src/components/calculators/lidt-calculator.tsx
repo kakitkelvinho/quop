@@ -3,7 +3,9 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 
 import { DecimalNote } from "@/components/calculators/decimal-note";
+import { formatPrefixed, formatSignificant } from "@/components/calculators/format-quantity";
 import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
+import { Readout } from "@/components/calculators/readout";
 import { ToolIntro } from "@/components/tool-intro";
 
 type LaserState = {
@@ -69,6 +71,7 @@ export function LidtCalculator() {
       ? pulseEnergy / (Math.PI * radius ** 2)
       : Number.NaN;
   const peakFluence = 2 * fluence;
+  const energy = formatPrefixed(pulseEnergy, "J");
 
   return (
     <section className="pageSection">
@@ -109,36 +112,47 @@ export function LidtCalculator() {
             />
           </div>
 
-          <div className="resultStack">
-            <p className="resultCard">
-              {Number.isNaN(pulseEnergy)
-                ? "Enter a positive average power and repetition rate to compute pulse energy."
-                : `Pulse energy: ${pulseEnergy.toExponential(6)} J`}
-            </p>
-            <p className="resultCard">
-              {Number.isNaN(fluence)
-                ? "Enter a positive beam radius to compute fluence."
-                : `Fluence E/(πw²): ${fluence.toExponential(6)} J/cm²`}
-            </p>
-            {Number.isFinite(fluence) ? (
-              <>
-                <p className="resultCard">
-                  {`Gaussian peak fluence 2E/(πw²): ${peakFluence.toExponential(6)} J/cm²`}
-                </p>
-                <p className="infoPanel">
-                  Fluence here is E/(πw²), with w the 1/e² radius. Vendors
-                  such as Thorlabs quote LIDT this way, so compare the first
-                  number against the rating. The centre of a Gaussian beam
-                  sees twice that, the peak fluence. This calculator
-                  doesn&apos;t know your optic&apos;s damage threshold, and
-                  the fluence doesn&apos;t depend on wavelength or pulse
-                  length. Damage thresholds do, so only compare against a
-                  rating quoted at your wavelength and a similar pulse
-                  length.
-                </p>
-              </>
-            ) : null}
+          <div className="readoutGroup">
+            <Readout
+              primary
+              label={
+                <>
+                  Fluence <span className="readout__formula">E/(πw²)</span>
+                </>
+              }
+              value={Number.isFinite(fluence) ? formatSignificant(fluence, 3) : null}
+              unit="J/cm²"
+              empty="Enter a positive power, repetition rate and beam radius."
+            />
+            <Readout
+              label="Pulse energy"
+              value={Number.isFinite(pulseEnergy) ? energy.value : null}
+              unit={energy.unit}
+              empty="Needs a positive power and repetition rate."
+            />
+            <Readout
+              label={
+                <>
+                  Peak fluence <span className="readout__formula">2E/(πw²)</span>
+                </>
+              }
+              value={Number.isFinite(peakFluence) ? formatSignificant(peakFluence, 3) : null}
+              unit="J/cm²"
+              empty="Needs a positive beam radius."
+            />
           </div>
+          {Number.isFinite(fluence) ? (
+            <p className="readoutNote">
+              Fluence here is E/(πw²), with w the 1/e² radius. Vendors such as
+              Thorlabs quote LIDT this way, so compare the first number against
+              the rating. The centre of a Gaussian beam sees twice that, the
+              peak fluence. This calculator doesn&apos;t know your optic&apos;s
+              damage threshold, and the fluence doesn&apos;t depend on
+              wavelength or pulse length. Damage thresholds do, so only compare
+              against a rating quoted at your wavelength and a similar pulse
+              length.
+            </p>
+          ) : null}
         </div>
       </div>
     </section>

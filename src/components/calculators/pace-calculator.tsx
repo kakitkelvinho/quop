@@ -8,6 +8,7 @@ import {
   paceToSpeed,
   speedToPace,
 } from "@/components/calculators/pace";
+import { Readout } from "@/components/calculators/readout";
 import { ToolIntro } from "@/components/tool-intro";
 
 type ConversionMode = "pace-to-speed" | "speed-to-pace";
@@ -146,37 +147,25 @@ export function PaceCalculator() {
           </div>
 
           {isPaceToSpeed ? (
-            speedResult === null ? (
-              <p className="resultCard" aria-live="polite">
-                Enter a pace above zero to see the speed.
-              </p>
-            ) : (
-              <div className="paceCalculator__resultCard" aria-live="polite">
-                <span className="paceCalculator__resultValue">
-                  {formatSpeed(speedResult)}
-                </span>
-                <span className="paceCalculator__resultUnit"> km/h</span>
-              </div>
-            )
-          ) : paceResult === null ? (
-            <p className="resultCard" aria-live="polite">
-              Enter a speed above zero to see the pace.
-            </p>
+            <Readout
+              primary
+              label="Speed"
+              value={speedResult === null ? null : formatSpeed(speedResult)}
+              unit="km/h"
+              empty="Enter a pace above zero to see the speed."
+            />
           ) : (
-            <div className="paceCalculator__paceResult" aria-live="polite">
-              <div className="paceCalculator__resultCard">
-                <span className="paceCalculator__resultValue">
-                  {paceResult.minutes}
-                </span>
-                <span className="paceCalculator__resultUnit"> min</span>
-              </div>
-              <div className="paceCalculator__resultCard">
-                <span className="paceCalculator__resultValue">
-                  {paceResult.seconds}
-                </span>
-                <span className="paceCalculator__resultUnit"> sec</span>
-              </div>
-            </div>
+            <Readout
+              primary
+              label="Pace"
+              value={
+                paceResult === null
+                  ? null
+                  : `${paceResult.minutes}:${String(paceResult.seconds).padStart(2, "0")}`
+              }
+              unit="min/km"
+              empty="Enter a speed above zero to see the pace."
+            />
           )}
         </section>
       </div>

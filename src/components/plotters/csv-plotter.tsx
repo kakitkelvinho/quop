@@ -177,8 +177,8 @@ export default function CsvPlotter() {
         />
         <div className="inputCard fieldStack">
           <div>
-            <h2>Time-Series CSV</h2>
-            <p className="lead">
+            <h2>Data</h2>
+            <p className="toolNote">
               Upload a CSV that includes a <code>time</code> column and one or
               more channel columns. Time always stays on the x-axis, and each
               other header becomes its own y-series in the legend. Any
@@ -234,14 +234,7 @@ export default function CsvPlotter() {
       </div>
 
       <div className="sectionCard visualizerChartCard">
-        <div>
-          <p className="sectionCard__kicker">Time-series trace</p>
-          <h2>Time CSV Plot</h2>
-          <p>
-            Any non-time header is plotted as its own series against time, even
-            if the time column appears last in the file.
-          </p>
-        </div>
+        <h2>Plot</h2>
         <div className="visualizerChartSurface">
           <InteractiveScatterChart data={chartData} options={chartOptions} sourceLabel={sourceLabel} />
           {parsed.error ? (

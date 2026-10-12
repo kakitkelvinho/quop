@@ -168,8 +168,8 @@ export default function FitsPlotter() {
         />
         <div className="inputCard fieldStack">
           <div>
-            <h2>FITS Upload</h2>
-            <p className="lead">
+            <h2>Data</h2>
+            <p className="toolNote">
               Upload a <code>.fits</code> or <code>.fit</code> file. Image
               HDUs are previewed directly, and 1D FITS data are rendered as a
               trace.
@@ -213,13 +213,7 @@ export default function FitsPlotter() {
 
       <div className="sectionCard visualizerChartCard">
         <div>
-          <p className="sectionCard__kicker">FITS preview</p>
-          <h2>{summary?.kind === "series" ? "FITS Trace" : "FITS Image"}</h2>
-          <p>
-            {summary?.kind === "series"
-              ? "1D FITS data are plotted as a line trace from the decoded image array."
-              : "2D FITS image data are shown with a linear colormap, flat or as a Surface view."}
-          </p>
+          <h2>{summary?.kind === "series" ? "Trace" : "Image"}</h2>
         </div>
         <FitsHeaderDisplay header={summary?.header ?? null}>
           <div className="visualizerChartSurface">
