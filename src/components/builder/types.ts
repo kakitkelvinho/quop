@@ -446,7 +446,7 @@ export const PARTICLE_RADIUS_RANGE_MM: [number, number] = [0.5, 15];
 export const DEFAULT_BLOCK_COLOR = "#3b4a6b";
 export const DEFAULT_OBJECTIVE_COLOR = "#d5d9df";
 export const DEFAULT_OBJECTIVE_LENGTH_MM = 54;
-export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [10, 150];
+export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [30, 130];
 export const DEFAULT_PHOTODIODE_COLOR = "#b3261e";
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
@@ -597,7 +597,7 @@ export function componentRadius(component: BuilderComponent): number {
   }
   if (component.type === "objective") {
     // drawn from the thread's back at x = -29 to the nose, so the far end sets the ring
-    const length = component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM;
+    const length = clamp(component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM, OBJECTIVE_LENGTH_RANGE_MM);
     return Math.max(COMPONENT_SPECS.objective.radius, length - 29 + 8);
   }
   if (component.type === "block") {

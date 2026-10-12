@@ -22,6 +22,7 @@ import {
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   INTERNAL_PATH_RANGE_MM,
+  OBJECTIVE_LENGTH_RANGE_MM,
   PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
   clamp,
@@ -543,8 +544,10 @@ export function ComponentInspector({
             label="Length"
             unit="mm"
             step={2}
+            min={OBJECTIVE_LENGTH_RANGE_MM[0]}
+            max={OBJECTIVE_LENGTH_RANGE_MM[1]}
             value={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
-            onChange={(next) => onUpdate({ objectiveLength: next })}
+            onChange={(next) => onUpdate({ objectiveLength: clamp(next, OBJECTIVE_LENGTH_RANGE_MM) })}
           />
           <ColorField
             label="Barrel colour"
