@@ -2363,6 +2363,10 @@ html[data-theme="dark"] .builderIsland {
 .builderHud__file {
   top: 0.9rem;
   left: 0.9rem;
+  /* above the other islands and panels (5–7), so its file menu, which drops
+     down over the + island and the parts panel, is never painted under them;
+     below the coach marks (100) */
+  z-index: 8;
 }
 
 /* under it, on its own: the + that opens the parts panel */
