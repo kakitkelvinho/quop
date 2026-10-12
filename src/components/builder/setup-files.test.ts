@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
-import { beamLengthMm, parseScene, serializeScene } from "./types.ts";
+import { beamLengthMm, DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene } from "./types.ts";
 
 // ADR 0001: a setup file saved by a release keeps opening, with nothing
 // dropped, in every later release. Each fixture is a setup file in the shape
@@ -16,6 +16,7 @@ const FIXTURES = [
   "setup-v5.json",
   "setup-v6.json",
   "setup-v7.json",
+  "setup-v8.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -259,11 +260,40 @@ describe("setup-v7.json, the first version with frames saved as corners", () => 
   });
 
   it("opens every older setup's frames as rectangles of four corners, with no centre or size left", () => {
-    for (const name of FIXTURES.slice(0, -1)) {
+    for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v7.json"))) {
       for (const frame of open(name).frames) {
         assert.equal(frame.corners.length, 4, `${name} ${frame.id}`);
         assert.deepEqual(Object.keys(frame).filter((key) => ["position", "width", "depth"].includes(key)), []);
       }
+    }
+  });
+});
+
+describe("setup-v8.json, the first version with an objective length", () => {
+  const objective = (name: string) => open(name).components.find(({ id }) => id === "obj");
+
+  it("opens the objective 80 mm long", () => {
+    assert.equal(objective("setup-v8.json")?.objectiveLength, 80);
+  });
+
+  it("keeps the length after being saved and opened again", () => {
+    const setup = open("setup-v8.json");
+    assert.equal(
+      parseScene(JSON.parse(serializeScene(setup)))?.components.find(({ id }) => id === "obj")?.objectiveLength,
+      80,
+    );
+  });
+
+  it("is v7's setup in every other way", () => {
+    const [v7, v8] = [open("setup-v7.json"), open("setup-v8.json")];
+    const v7WithLength = v7.components.map((c) => (c.id === "obj" ? { ...c, objectiveLength: 80 } : c));
+    assert.deepEqual([v8.components, v8.beams, v8.connections, v8.frames], [v7WithLength, v7.beams, v7.connections, v7.frames]);
+  });
+
+  it(`opens every older setup's objective at the default ${DEFAULT_OBJECTIVE_LENGTH_MM} mm`, () => {
+    for (const name of FIXTURES.slice(0, -1)) {
+      const obj = objective(name);
+      if (obj) assert.equal(obj.objectiveLength, undefined, name);
     }
   });
 });

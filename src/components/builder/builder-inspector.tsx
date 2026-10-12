@@ -18,6 +18,7 @@ import {
   CONNECTION_LENGTH_RANGE_M,
   DEFAULT_BLOCK_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
+  DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   INTERNAL_PATH_RANGE_MM,
@@ -537,11 +538,20 @@ export function ComponentInspector({
         </>
       ) : null}
       {component.type === "objective" ? (
-        <ColorField
-          label="Barrel colour"
-          value={component.color ?? DEFAULT_OBJECTIVE_COLOR}
-          onChange={(color) => onUpdate({ color })}
-        />
+        <>
+          <NumberField
+            label="Length"
+            unit="mm"
+            step={2}
+            value={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+            onChange={(next) => onUpdate({ objectiveLength: next })}
+          />
+          <ColorField
+            label="Barrel colour"
+            value={component.color ?? DEFAULT_OBJECTIVE_COLOR}
+            onChange={(color) => onUpdate({ color })}
+          />
+        </>
       ) : null}
       {component.type === "photodiode" ? (
         <ColorField

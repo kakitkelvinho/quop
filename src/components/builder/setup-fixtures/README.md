@@ -5,7 +5,7 @@ saved. `setup-files.test.ts` checks that each still opens with every
 component, beam and connection intact: the promise in
 `docs/adr/0001-setup-files-stay-compatible.md`.
 
-v1 to v7 are hand-written. v3 is the first with fibre and cable
+v1 to v8 are hand-written. v3 is the first with fibre and cable
 connections, and carries a laser with a built-in path; v1 and v2 open with
 no connections and no built-in paths. v4 is the first with a hidden beam: it
 is v3's setup plus a reference arm with `"hidden": true`; v1 to v3 open with
@@ -15,6 +15,8 @@ v5's setup plus a frame with `"fill": false`; v1 to v5 open with every frame fil
 v7 saves each frame as its `corners` rather than a centre and a size: v6's setup,
 its three frames as the same rectangles, plus an L-shaped frame; v1 to v6 open
 with each frame as the rectangle of corners it was.
+v8 is the first with an objective length: v7's setup with the objective saved
+80 mm long; v1 to v7 open with every objective at the default length.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

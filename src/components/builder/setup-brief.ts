@@ -20,8 +20,10 @@ import {
   CONNECTION_LENGTH_RANGE_M,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
+  DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   FOCAL_LENGTH_RANGE_MM,
+  OBJECTIVE_LENGTH_RANGE_MM,
   FRAME_COLORS,
   FRAME_SIZE_RANGE_MM,
   HOST_TYPES,
@@ -84,6 +86,10 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
   cavityLength: {
     text: `mm between its two mirrors, ${range(CAVITY_LENGTH_RANGE_MM)}; default ${DEFAULT_CAVITY_LENGTH_MM}.`,
     only: "cavity",
+  },
+  objectiveLength: {
+    text: `mm from the back of its thread to its nose, ${range(OBJECTIVE_LENGTH_RANGE_MM)}; default ${DEFAULT_OBJECTIVE_LENGTH_MM}. Only the barrel stretches.`,
+    only: "objective",
   },
   opacity: { text: `${range(SAMPLE_OPACITY_RANGE)}; default ${SAMPLE_OPACITY}.`, only: "sample" },
   host: {

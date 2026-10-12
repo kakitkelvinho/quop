@@ -32,10 +32,12 @@ import {
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
+  DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
   FOCAL_LENGTH_RANGE_MM,
+  OBJECTIVE_LENGTH_RANGE_MM,
   PARTICLE_RADIUS_MM,
   SAMPLE_OPACITY,
   clamp,
@@ -1098,15 +1100,19 @@ function BeamBlock({ palette, axis }: ModelProps) {
  * tip toward the focus (+x): a brass RMS thread screwed into a small plate on
  * the post, a satin barrel with a black band, and a taper down to the front
  * lens. The barrel takes the component colour, so it can be chrome, champagne
- * or gunmetal like the real ones.
+ * or gunmetal like the real ones. Its length runs from the back of the thread
+ * to the nose; only the barrel stretches, so the thread stays put.
  */
 const OBJECTIVE_BRASS = "#c9a24a";
 const OBJECTIVE_PLATE_GEOMETRY = boredPlate(36, 4, 20, 6);
 /** the plate's middle along the beam: drawn at x = -23 and extruded 6 mm back */
 const OBJECTIVE_PLATE_X = -26;
 
-function Objective({ palette, color, axis }: ModelProps) {
+function Objective({ palette, color, axis, length }: ModelProps & { length: number }) {
   const barrel = color ?? DEFAULT_OBJECTIVE_COLOR;
+  // the barrel runs from x = -19 to `end`; the taper and nose add 14 mm, the thread 10
+  const barrelLength = clamp(length, OBJECTIVE_LENGTH_RANGE_MM) - 24;
+  const end = -19 + barrelLength;
   const satin = (
     <meshStandardMaterial color={barrel} roughness={0.28} metalness={0.85} />
   );
@@ -1131,8 +1137,8 @@ function Objective({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[14, 14, 4, 40]} />
         {satin}
       </mesh>
-      <mesh position={[-4, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[16, 16, 30, 48]} />
+      <mesh position={[-19 + barrelLength / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[16, 16, barrelLength, 48]} />
         {satin}
       </mesh>
       <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -1140,15 +1146,15 @@ function Objective({ palette, color, axis }: ModelProps) {
         <meshStandardMaterial color="#12161d" roughness={0.5} metalness={0.2} />
       </mesh>
       {/* the taper, the spring-loaded nose and the front lens */}
-      <mesh position={[16, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <mesh position={[end + 5, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <cylinderGeometry args={[6, 16, 10, 48]} />
         {satin}
       </mesh>
-      <mesh position={[23, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <mesh position={[end + 12, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <cylinderGeometry args={[4.2, 6, 4, 32]} />
         <Stainless palette={palette} />
       </mesh>
-      <mesh position={[25.05, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <mesh position={[end + 14.05, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <cylinderGeometry args={[2.4, 2.4, 0.2, 24]} />
         <meshStandardMaterial color="#3a4a5c" roughness={0.05} metalness={0.2} />
       </mesh>
@@ -1749,7 +1755,12 @@ export function ComponentMesh({
       ) : null}
       {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!fiberConnected} /> : null}
       {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
-      {component.type === "objective" ? <Objective {...modelProps} /> : null}
+      {component.type === "objective" ? (
+        <Objective
+          {...modelProps}
+          length={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+        />
+      ) : null}
       {component.type === "block" ? (
         <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
       ) : null}
