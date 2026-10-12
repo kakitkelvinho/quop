@@ -236,9 +236,11 @@ no path length.
 fibre coupler to a single-photon detector, a detector's coax to a time
 tagger. It is drawn as a tube that leaves one part, drops to the table, lies
 on it in a loose bend, and rises into the other, with no arrows and no glow,
-so it never reads as light in free space. A fibre at a fibre collimator or a
-photodiode takes the place of the yellow stub the part draws, leaving from
-the same connector. A connection has its own colour and an optional label.
+so it never reads as light in free space. A fibre at a fibre collimator, and
+any connection at a photodiode (fibre or coax: its one jack is on the back of
+the head), takes the place of the yellow stub the part draws: it leaves from
+the same connector along the same curve, curling to whichever side the other
+end is on, so it never leaves the head at a sharp angle. A connection has its own colour and an optional label.
 Its length, in metres, is optional too, and it is the only length it has: the
 drawn route is not measured. With a length, the inspector shows the delay:
 L·n/c along a fibre (n defaults to 1.468, a silica fibre) and L/(VF·c) along

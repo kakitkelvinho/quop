@@ -36,6 +36,7 @@ import {
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
+  CONNECTION_KINDS,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   PARTICLE_RADIUS_MM,
@@ -46,6 +47,7 @@ import {
   componentTop,
   type BuilderComponent,
   type ComponentType,
+  type ConnectionKind,
   type LensShape,
   type Vec3,
 } from "@/components/builder/types";
@@ -1301,6 +1303,20 @@ export const FIBER_STUBS: Partial<Record<ComponentType, (axis: number) => Catmul
 };
 
 /**
+ * The parts whose one connector takes a cable as well as a fibre: a
+ * photodiode's jack on the back of its head is where its signal leaves.
+ */
+const ANY_KIND_STUBS: ReadonlySet<ComponentType> = new Set<ComponentType>(["photodiode"]);
+
+/**
+ * Whether a connection of `kind` at a part of `type` leaves from the part's
+ * stub, along the stub's curve, and so takes the stub's place.
+ */
+export function leavesFromStub(type: ComponentType, kind: ConnectionKind): boolean {
+  return FIBER_STUBS[type] !== undefined && (CONNECTION_KINDS[kind].usesFiberStub || ANY_KIND_STUBS.has(type));
+}
+
+/**
  * An acousto-optic modulator, drawn bare: the crystal with the beam along x
  * and a piezo transducer bonded on top that launches the sound wave down
  * through it. The wavefronts are faint sheets, so the grating the beam
@@ -1656,8 +1672,8 @@ export type ComponentMeshProps = {
   showPosts: boolean;
   /** 1-based position in the beam currently being drawn, if any */
   beamOrder?: number;
-  /** a fibre connection leaves from this part's fibre stub, so the stub is not drawn */
-  fiberConnected?: boolean;
+  /** a connection leaves from this part's stub, so the stub is not drawn */
+  stubTaken?: boolean;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOver: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut: (event: ThreeEvent<PointerEvent>) => void;
@@ -1671,7 +1687,7 @@ export function ComponentMesh({
   showLabel,
   showPosts,
   beamOrder,
-  fiberConnected = false,
+  stubTaken = false,
   onPointerDown,
   onPointerOver,
   onPointerOut,
@@ -1714,7 +1730,7 @@ export function ComponentMesh({
         <LaserSource {...modelProps} />
       ) : null}
       {component.type === "fiber-collimator" ? (
-        <FiberCollimator {...modelProps} stub={!fiberConnected} />
+        <FiberCollimator {...modelProps} stub={!stubTaken} />
       ) : null}
       {component.type === "mirror-mount" ? (
         <MirrorMount {...modelProps} />
@@ -1753,7 +1769,7 @@ export function ComponentMesh({
           radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
         />
       ) : null}
-      {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!fiberConnected} /> : null}
+      {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!stubTaken} /> : null}
       {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
       {component.type === "objective" ? (
         <Objective

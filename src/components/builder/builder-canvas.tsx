@@ -48,7 +48,7 @@ import {
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
-import { ComponentMesh } from "@/components/builder/component-models";
+import { ComponentMesh, leavesFromStub } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
@@ -58,7 +58,6 @@ import {
   BEAM_WIDTH_MM,
   beamPoints,
   COMPONENT_SPECS,
-  CONNECTION_KINDS,
   TABLE_GUARD_MM,
   componentById,
   componentRadius,
@@ -959,15 +958,18 @@ export default function BuilderCanvas({
     beamDraft.forEach((id, index) => map.set(id, index + 1));
     return map;
   }, [beamDraft]);
-  const fiberEnds = useMemo(
-    () =>
-      new Set(
-        connections
-          .filter((connection) => CONNECTION_KINDS[connection.kind].usesFiberStub)
-          .flatMap((connection) => [connection.from, connection.to]),
-      ),
-    [connections],
-  );
+  // the parts whose stub a connection leaves from, which then isn't drawn
+  const stubEnds = useMemo(() => {
+    const types = new Map(components.map((component) => [component.id, component.type]));
+    const ends = new Set<string>();
+    for (const { from, to, kind } of connections) {
+      for (const id of [from, to]) {
+        const type = types.get(id);
+        if (type && leavesFromStub(type, kind)) ends.add(id);
+      }
+    }
+    return ends;
+  }, [components, connections]);
   return (
     <Canvas
       orthographic
@@ -1042,7 +1044,7 @@ export default function BuilderCanvas({
           showLabel={showLabels}
           showPosts={showPosts}
           beamOrder={draftOrder.get(component.id)}
-          fiberConnected={fiberEnds.has(component.id)}
+          stubTaken={stubEnds.has(component.id)}
           onPointerDown={(event) => {
             event.stopPropagation();
             onComponentPointerDown(component.id, event);
