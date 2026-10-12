@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { navSections } from "@/components/navigation";
-import { BetaMark } from "@/components/beta-badge";
+import { ToolIndex } from "@/components/tool-index";
 
 const experiment = navSections.find((section) => section.href === "/experiment");
 
@@ -21,23 +20,9 @@ export default function ExperimentPage() {
         touch a post, and notes on how the measurements actually run.
       </p>
 
-      <div className="cardGrid">
-        {experiment?.links.map((link) => (
-          <article className="sectionCard" key={link.href}>
-            <p className="sectionCard__kicker">Tool</p>
-            <h2>
-              {link.label}
-              <BetaMark tool={link} />
-            </h2>
-            <p>{link.description}</p>
-            <Link className="buttonLink" href={link.href}>
-              Open {link.label.toLowerCase()}
-            </Link>
-          </article>
-        ))}
-
-        <article className="sectionCard">
-          <p className="sectionCard__kicker">Coming next</p>
+      <ToolIndex links={experiment?.links ?? []}>
+        <article className="toolCard toolCard--soon">
+          <span className="toolCard__sample">Coming next</span>
           <h2>Measurement workflows</h2>
           <p>
             Step-by-step notes for the routines we run most — alignment,
@@ -45,7 +30,7 @@ export default function ExperimentPage() {
             someone new to the bench can follow them.
           </p>
         </article>
-      </div>
+      </ToolIndex>
     </section>
   );
 }
