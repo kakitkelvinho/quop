@@ -119,16 +119,19 @@ function MobileNav() {
         >
           QUOP
         </Link>
-        <button
-          className="inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]"
-          type="button"
-          aria-expanded={open}
-          aria-controls="mobile-nav-sheet"
-          onClick={() => setOpen((value) => !value)}
-        >
-          Menu
-          <MenuIcon open={open} />
-        </button>
+        <div className="flex items-stretch">
+          <ThemeToggle />
+          <button
+            className="inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]"
+            type="button"
+            aria-expanded={open}
+            aria-controls="mobile-nav-sheet"
+            onClick={() => setOpen((value) => !value)}
+          >
+            Menu
+            <MenuIcon open={open} />
+          </button>
+        </div>
       </div>
 
       {open ? (
@@ -216,12 +219,11 @@ export function AppShell({
             <div className="flex items-stretch justify-end gap-1">
               <NavItem href="/plotters" label="plotter" align="right" />
               <NavItem href="/calculators" label="calculator" align="right" />
+              <ThemeToggle />
             </div>
           </nav>
         </header>
       )}
-
-      {isBuilderRoute ? null : <ThemeToggle />}
 
       <main
         id="main"
