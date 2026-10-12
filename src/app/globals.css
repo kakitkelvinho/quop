@@ -4010,6 +4010,19 @@ html[data-theme="dark"] .builderOrderBadge {
   text-align: center;
 }
 
+.heroTools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+
+.heroTools .buttonLink {
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 /* a real statement, so sentence case under the Case Rule, not a label */
 .chalkboard__credit {
   color: var(--muted);

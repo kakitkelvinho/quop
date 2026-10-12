@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
 import { HomeChapters } from "@/components/home-chapters";
 import { loadPowerTrace } from "@/components/home-trace";
@@ -14,6 +16,18 @@ export default function Home() {
           install, free for anyone to try.
         </p>
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
+        {/* the way straight to the tools, for whoever came to use one rather than read the story */}
+        <nav aria-label="Tools" className="heroTools">
+          <Link className="buttonLink buttonLink--ghost" href="/plotters">
+            Plotters <span aria-hidden="true">→</span>
+          </Link>
+          <Link className="buttonLink buttonLink--ghost" href="/calculators">
+            Calculators <span aria-hidden="true">→</span>
+          </Link>
+          <Link className="buttonLink buttonLink--ghost" href="/experiment/builder">
+            Builder <span aria-hidden="true">→</span>
+          </Link>
+        </nav>
       </ChalkboardHero>
       <HomeChapters trace={loadPowerTrace()} />
       <nav aria-labelledby="home-index" className="homeIndex">
