@@ -215,6 +215,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 20,
     radius: 30,
+    referenceX: 10.5, // the lens window's face, where light leaves or enters: drawn 0.6 mm thick at x = 10.2
     hint: "Where light enters or leaves a fiber: a beam can start or end here.",
   },
   "mirror-mount": {

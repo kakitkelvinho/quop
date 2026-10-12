@@ -43,7 +43,7 @@ _Avoid_: deleted beam, disabled beam, muted beam
 The 3D length of a beam through its components' reference points, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
 
 **Reference point**:
-Where a beam meets a component, for drawing and for path length. For most components it is the optical centre. A detector's is its entrance: a photodiode's or single-photon detector's front window, a camera's lens-mount face, a spectrometer's entrance port. An objective's is its threaded plate, the pupil end, whichever side the beam comes from. A laser source's is its output face, where the light leaves it. Placement and grid snapping still use the centre.
+Where a beam meets a component, for drawing and for path length. For most components it is the optical centre. A detector's is its entrance: a photodiode's or single-photon detector's front window, a camera's lens-mount face, a spectrometer's entrance port. An objective's is its threaded plate, the pupil end, whichever side the beam comes from. A laser source's is its output face, where the light leaves it, and a fibre collimator's its lens window, where light leaves or enters the fibre. Placement and grid snapping still use the centre.
 _Avoid_: aperture, anchor
 
 **Frame**:

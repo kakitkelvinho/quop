@@ -96,3 +96,21 @@ describe("every other part meets the beam at its optical centre", () => {
     assert.equal(beamLengthMm(components, beam(["a", "lens", "b"])), 700);
   });
 });
+
+describe("a beam at a fibre collimator meets its lens window", () => {
+  // the collimator faces +x: its window is 10.5 mm in front of its centre
+  const collimator = part("c", "fiber-collimator", [0, 0]);
+  const mirror = part("m", "mirror-mount", [300, 0]);
+
+  it("starts there when light leaves the fibre: 300 mm between centres, 289.5 mm from the window", () => {
+    assert.equal(beamLengthMm([collimator, mirror], beam(["c", "m"])), 289.5);
+  });
+
+  it("ends there when light is coupled in, the same 289.5 mm", () => {
+    assert.equal(beamLengthMm([collimator, mirror], beam(["m", "c"])), 289.5);
+  });
+
+  it("turns with the collimator: turned to face -z, its window is at z = -10.5", () => {
+    assert.deepEqual(rounded(beamPoints([part("c", "fiber-collimator", [0, 0], 90)], ["c"])), [[0, 100, -10.5]]);
+  });
+});
