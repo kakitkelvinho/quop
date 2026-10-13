@@ -228,6 +228,13 @@ each time it passes, which its inspector names ("Includes … mm in delay
 lines"). A beam that only starts or ends at it gains nothing. Like a mirror,
 its port turns to face between the stops before and after it.
 
+**Light inside a part.** A cavity's mode and a delay line's internal beam
+(a faint glow from its port to the retroreflector, which follows the
+carriage) are drawn in the same red by default. Each part's inspector can
+hide that light or give it another colour, on screen and in a PNG; both are
+saved with the setup (`lightColor`, `lightHidden`). The light is a drawing
+only: it is not a beam and adds nothing to any path.
+
 **A periscope is two stops.** Placing a periscope puts down its lower mirror
 and, 100 mm above it, its top mirror: two parts, each a stop a beam can pass,
 so a beam runs `… → Peri → Peri top → …` and the rise between them counts in

@@ -38,6 +38,8 @@ import {
   FRAME_FILL_OPACITY_RANGE,
   FRAME_SIZE_RANGE_MM,
   MOUNTED_TYPES,
+  LIT_TYPES,
+  DEFAULT_LIGHT_COLOR,
   ROTATION_STEP_DEG,
   SAMPLE_OPACITY,
   SAMPLE_OPACITY_RANGE,
@@ -391,6 +393,43 @@ function DelayFields({
   );
 }
 
+/** The light drawn inside a cavity (its mode) or a delay line (its beam): shown or hidden, and its colour. */
+function LightFields({
+  component,
+  onUpdate,
+}: {
+  component: BuilderComponent;
+  onUpdate: (patch: ComponentPatch, record?: boolean) => void;
+}) {
+  const name = component.type === "cavity" ? "Mode" : "Internal beam";
+  const color = component.lightColor ?? DEFAULT_LIGHT_COLOR;
+  return (
+    <>
+      <div className="builderChoice" role="group" aria-label={name}>
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={!component.lightHidden}
+          onClick={() => onUpdate({ lightHidden: undefined })}
+        >
+          {name} shown
+        </button>
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={Boolean(component.lightHidden)}
+          onClick={() => onUpdate({ lightHidden: true })}
+        >
+          Hidden
+        </button>
+      </div>
+      {component.lightHidden ? null : (
+        <ColorField label={`${name} colour`} value={color} onChange={(next) => onUpdate({ lightColor: next })} />
+      )}
+    </>
+  );
+}
+
 /** A part's yaw, read-only and naming the beam when a beam turns it. */
 function YawRow({
   label,
@@ -581,6 +620,7 @@ export function ComponentInspector({
         </>
       ) : null}
       {component.type === "delay-line" ? <DelayFields component={component} onUpdate={onUpdate} onCheckpoint={onCheckpoint} /> : null}
+      {LIT_TYPES.has(component.type) ? <LightFields component={component} onUpdate={onUpdate} /> : null}
       {component.type === "cavity" ? (
         <NumberField
           label="Length"

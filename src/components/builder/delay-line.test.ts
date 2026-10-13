@@ -66,3 +66,33 @@ describe("a delay line", () => {
     assert.deepEqual(delaySetting(backwards.components[0]), { min: 300, max: 300, arm: 300 });
   });
 });
+
+describe("the light inside a cavity or delay line", () => {
+  it("keeps its colour and hidden flag through a setup file", () => {
+    const lit = [
+      { id: "c", type: "cavity", position: [0, 100, 0], rotation: 0, lightColor: "#16a34a", lightHidden: true },
+      { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0, lightColor: "#0891b2" },
+    ];
+    const scene = parseScene({ version: SCENE_VERSION, components: lit })!;
+    assert.deepEqual(
+      scene.components.map(({ lightColor, lightHidden }) => ({ lightColor, lightHidden })),
+      [
+        { lightColor: "#16a34a", lightHidden: true },
+        { lightColor: "#0891b2", lightHidden: undefined },
+      ],
+    );
+  });
+
+  it("is read only on a cavity or delay line, and only from a real colour", () => {
+    const scene = parseScene({
+      version: SCENE_VERSION,
+      components: [
+        { id: "m", type: "mirror-mount", position: [0, 100, 0], rotation: 0, lightColor: "#16a34a", lightHidden: true },
+        { id: "c", type: "cavity", position: [0, 100, 0], rotation: 0, lightColor: "url(x)" },
+      ],
+    })!;
+    assert.equal(scene.components[0].lightColor, undefined);
+    assert.equal(scene.components[0].lightHidden, undefined);
+    assert.equal(scene.components[1].lightColor, undefined);
+  });
+});
