@@ -1039,18 +1039,21 @@ export default function BuilderCanvas({
         );
       })}
 
-      {components.map((component) => (
+      {components.map((component) => {
+        const partner = periscopePartner(components, component);
+        return (
         <ComponentMesh
           key={component.id}
           component={component}
           palette={palette}
-          selected={selected.has(component.id)}
+          // a periscope is selected whole: its top mirror shows its lower one's selection
+          selected={selected.has(component.id) || (component.type === "periscope-top" && partner !== undefined && selected.has(partner.id))}
           hovered={component.id === hoveredId}
           showLabel={showLabels}
           showPosts={showPosts}
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
-          partner={periscopePartner(components, component)}
+          partner={partner}
           onPointerDown={(event) => {
             event.stopPropagation();
             onComponentPointerDown(component.id, event);
@@ -1061,7 +1064,8 @@ export default function BuilderCanvas({
           }}
           onPointerOut={() => onComponentHover(null)}
         />
-      ))}
+        );
+      })}
 
       {beams.map((beam) => {
         const ghost = beam.hidden && beam.id === ghostBeamId;

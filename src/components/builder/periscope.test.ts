@@ -9,6 +9,7 @@ import {
   beamLengthMm,
   parseScene,
   periscopePartner,
+  selectableId,
   serializeScene,
   settleAngles,
   settlePeriscopes,
@@ -40,6 +41,21 @@ describe("a periscope", () => {
   it("keeps its top mirror over its lower one, at the top mirror's own height", () => {
     const moved = settlePeriscopes(bench([laser, { ...peri, position: [50, 100, 25] }, top, pd]));
     assert.deepEqual(byId(moved, "peri-top")?.position, [50, 250, 25]);
+  });
+
+  it("gives its top mirror its label, marked as the top, and its mount colour", () => {
+    const named = settlePeriscopes(bench([laser, { ...peri, label: "P1", color: "#16a34a" }, top, pd]));
+    assert.equal(byId(named, "peri-top")?.label, "P1 top");
+    assert.equal(byId(named, "peri-top")?.color, "#16a34a");
+    const unnamed = settlePeriscopes({ ...named, components: named.components.map((part) => (part.id === "peri" ? { ...part, label: "" } : part)) });
+    assert.equal(byId(unnamed, "peri-top")?.label, undefined);
+  });
+
+  it("is selected by its lower mirror, whichever mirror is clicked", () => {
+    const { components } = bench();
+    assert.equal(selectableId(components, "peri-top"), "peri");
+    assert.equal(selectableId(components, "peri"), "peri");
+    assert.equal(selectableId([top], "peri-top"), "peri-top");
   });
 
   it("lets a top mirror go when its lower mirror is gone", () => {

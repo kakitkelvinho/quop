@@ -38,6 +38,7 @@ import {
   FRAME_FILL_OPACITY_RANGE,
   FRAME_SIZE_RANGE_MM,
   MOUNTED_TYPES,
+  ROTATION_STEP_DEG,
   SAMPLE_OPACITY,
   SAMPLE_OPACITY_RANGE,
   clampHeight,
@@ -332,10 +333,54 @@ export function BeamSwatches({
   );
 }
 
+/** A part's yaw, read-only and naming the beam when a beam turns it. */
+function YawRow({
+  label,
+  rotation,
+  angleBeam,
+  keys = false,
+  onChange,
+  onRotate,
+}: {
+  label: string;
+  rotation: number;
+  angleBeam?: Beam;
+  /** the buttons' titles name R and Shift R, which turn the selected part */
+  keys?: boolean;
+  onChange: (yaw: number) => void;
+  onRotate: (direction: 1 | -1) => void;
+}) {
+  const locked = Boolean(angleBeam);
+  return (
+    <>
+      <div className="builderFieldRow">
+        <NumberField
+          label={label}
+          unit="°"
+          step={15}
+          value={rotation}
+          disabled={locked}
+          onChange={(yaw) => onChange(((yaw % 360) + 360) % 360)}
+        />
+        <span className="builderInspector__rotate">
+          <IconButton icon="rotateLeft" label={keys ? "Rotate −15° (Shift R)" : "Rotate −15°"} disabled={locked} onClick={() => onRotate(-1)} />
+          <IconButton icon="rotateRight" label={keys ? "Rotate +15° (R)" : "Rotate +15°"} disabled={locked} onClick={() => onRotate(1)} />
+        </span>
+      </div>
+      {angleBeam ? (
+        <p className="builderInspector__hint">
+          Angle set by <strong>{beamDisplayName(angleBeam)}</strong>
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 export function ComponentInspector({
   component,
   components,
   angleBeam,
+  partnerAngleBeam,
   onUpdate,
   onUpdateOther,
   onCheckpoint,
@@ -347,6 +392,8 @@ export function ComponentInspector({
   components: BuilderComponent[];
   /** set when a beam turns this part; its yaw is then read-only */
   angleBeam?: Beam;
+  /** the same for a periscope's top mirror */
+  partnerAngleBeam?: Beam;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
   /** edits another part: a periscope mirror's other mirror */
   onUpdateOther: (id: string, patch: ComponentPatch, record?: boolean) => void;
@@ -417,24 +464,22 @@ export function ComponentInspector({
           </button>
         </div>
       ) : null}
-      <div className="builderFieldRow">
-        <NumberField
-          label="Yaw"
-          unit="°"
-          step={15}
-          value={component.rotation}
-          disabled={Boolean(angleBeam)}
-          onChange={(yaw) => onUpdate({ rotation: ((yaw % 360) + 360) % 360 })}
+      <YawRow
+        label={upper ? "Bottom yaw" : "Yaw"}
+        rotation={component.rotation}
+        angleBeam={angleBeam}
+        keys
+        onChange={(yaw) => onUpdate({ rotation: yaw })}
+        onRotate={onRotate}
+      />
+      {upper && upper !== component ? (
+        <YawRow
+          label="Top yaw"
+          rotation={upper.rotation}
+          angleBeam={partnerAngleBeam}
+          onChange={(yaw) => onUpdateOther(upper.id, { rotation: yaw })}
+          onRotate={(direction) => onUpdateOther(upper.id, { rotation: (upper.rotation + direction * ROTATION_STEP_DEG + 360) % 360 })}
         />
-        <span className="builderInspector__rotate">
-          <IconButton icon="rotateLeft" label="Rotate −15° (Shift R)" disabled={Boolean(angleBeam)} onClick={() => onRotate(-1)} />
-          <IconButton icon="rotateRight" label="Rotate +15° (R)" disabled={Boolean(angleBeam)} onClick={() => onRotate(1)} />
-        </span>
-      </div>
-      {angleBeam ? (
-        <p className="builderInspector__hint">
-          Angle set by <strong>{beamDisplayName(angleBeam)}</strong>
-        </p>
       ) : null}
       {component.type === "laser-source" ? (
         <>
