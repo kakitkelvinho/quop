@@ -24,7 +24,7 @@ import {
   type DrawingPreview,
   type DrawingStep,
 } from "@/components/builder/frame-drawing";
-import { useScenePalette } from "@/components/builder/scene-theme";
+import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/builder/scene-theme";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
@@ -230,6 +230,7 @@ export default function BuilderScene() {
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [showPosts, setShowPosts] = useState(true);
+  const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [view, setView] = useState<CameraView>("iso");
   const [fitToken, setFitToken] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -1156,6 +1157,7 @@ export default function BuilderScene() {
           connections={scene.connections}
           frames={scene.frames}
           palette={palette}
+          lighting={lighting}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
           ghostBeamId={ghostBeamId}
@@ -1219,6 +1221,7 @@ export default function BuilderScene() {
         showLabels={showLabels}
         showGrid={showGrid}
         showPosts={showPosts}
+        lighting={lighting}
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
@@ -1286,6 +1289,7 @@ export default function BuilderScene() {
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}
+        onLightingChange={(patch) => setLighting((current) => ({ ...current, ...patch }))}
         onViewChange={(next) => {
           // pressing the view you are already on still snaps back from an orbit
           setView(next);

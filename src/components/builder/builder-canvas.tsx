@@ -52,7 +52,7 @@ import { ComponentMesh, leavesFromStub } from "@/components/builder/component-mo
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
-import type { ScenePalette } from "@/components/builder/scene-theme";
+import type { Lighting, ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
@@ -399,10 +399,11 @@ function OrbitPivot({
 
 type TableProps = {
   palette: ScenePalette;
+  lighting: Lighting;
   onSurfaceClick: (x: number, z: number) => void;
 };
 
-function TableSurface({ palette, onSurfaceClick }: TableProps) {
+function TableSurface({ palette, lighting, onSurfaceClick }: TableProps) {
   const downAt = useRef<{ x: number; y: number } | null>(null);
 
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
@@ -447,7 +448,8 @@ function TableSurface({ palette, onSurfaceClick }: TableProps) {
       />
       <shadowMaterial
         color={palette.shadow}
-        opacity={palette.shadowOpacity}
+        // a brighter key light casts a darker shadow
+        opacity={Math.min(1, palette.shadowOpacity * lighting.brightness)}
       />
     </mesh>
   );
@@ -471,9 +473,11 @@ const SHADOW_MARGIN_MM = 250;
  */
 function Lights({
   palette,
+  lighting,
   components,
 }: {
   palette: ScenePalette;
+  lighting: Lighting;
   components: BuilderComponent[];
 }) {
   const invalidate = useThree((state) => state.invalidate);
@@ -511,8 +515,8 @@ function Lights({
       <ambientLight intensity={palette.ambient} />
       <directionalLight
         ref={keyRef}
-        castShadow
-        intensity={palette.keyLight}
+        castShadow={lighting.shadows}
+        intensity={palette.keyLight * lighting.brightness}
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.8}
@@ -846,6 +850,7 @@ export type BuilderCanvasProps = {
   connections: Connection[];
   frames: Frame[];
   palette: ScenePalette;
+  lighting: Lighting;
   /** the selected parts; the last is the one the orbit falls back to */
   selection: string[];
   selectedBeamId: string | null;
@@ -922,6 +927,7 @@ export default function BuilderCanvas({
   connections,
   frames,
   palette,
+  lighting,
   selection,
   selectedBeamId,
   ghostBeamId,
@@ -994,11 +1000,11 @@ export default function BuilderCanvas({
       <CanvasHandle onReady={onCanvasReady} />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights palette={palette} components={components} />
+      <Lights palette={palette} lighting={lighting} components={components} />
       <RingRoom dark={palette.mode === "dark"} />
       <Backdrop stops={palette.backdrop} />
 
-      <TableSurface palette={palette} onSurfaceClick={onSurfaceClick} />
+      <TableSurface palette={palette} lighting={lighting} onSurfaceClick={onSurfaceClick} />
       <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
 
       {/* with no table drawn, the grid is the one sign of the breadboard: it
