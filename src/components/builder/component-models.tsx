@@ -16,6 +16,8 @@ import {
 } from "three";
 import {
   createContext,
+  memo,
+  useCallback,
   useContext,
   useLayoutEffect,
   useMemo,
@@ -1923,12 +1925,31 @@ export type ComponentMeshProps = {
   stubTaken?: boolean;
   /** a periscope mirror's other mirror, if it has one */
   partner?: BuilderComponent;
-  onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
-  onPointerOver: (event: ThreeEvent<PointerEvent>) => void;
-  onPointerOut: (event: ThreeEvent<PointerEvent>) => void;
+  /**
+   * Handed the part's id, so one stable handler serves every part and a
+   * part re-renders only when its own props change.
+   */
+  onPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onPointerOver: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onPointerOut: (id: string, event: ThreeEvent<PointerEvent>) => void;
 };
 
-export function ComponentMesh({
+/**
+ * What decides which meshes a part's model mounts: everything about it but
+ * where it stands on the table and which way it faces, which a drag changes
+ * on every step without adding or removing a mesh.
+ */
+function modelSignature(
+  component: BuilderComponent,
+  showPosts: boolean,
+  stubTaken: boolean,
+  hasPartner: boolean,
+): string {
+  const placed = { ...component, position: component.position[1], rotation: undefined };
+  return JSON.stringify([placed, showPosts, stubTaken, hasPartner]);
+}
+
+export const ComponentMesh = memo(function ComponentMesh({
   component,
   palette,
   selected,
@@ -1954,6 +1975,7 @@ export function ComponentMesh({
   // flat selection rings don't (a transmissive optic throwing a solid shadow
   // is exactly the fake look the glass is there to avoid).
   const group = useRef<Group>(null);
+  const signature = modelSignature(component, showPosts, stubTaken, partner !== undefined);
   useLayoutEffect(() => {
     group.current?.traverse((object) => {
       if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
@@ -1963,7 +1985,21 @@ export function ComponentMesh({
       object.castShadow = solid;
       object.receiveShadow = solid;
     });
-  }, [component, showPosts, partner]);
+  }, [signature]);
+
+  const { id } = component;
+  const handlePointerDown = useCallback(
+    (event: ThreeEvent<PointerEvent>) => onPointerDown(id, event),
+    [id, onPointerDown],
+  );
+  const handlePointerOver = useCallback(
+    (event: ThreeEvent<PointerEvent>) => onPointerOver(id, event),
+    [id, onPointerOver],
+  );
+  const handlePointerOut = useCallback(
+    (event: ThreeEvent<PointerEvent>) => onPointerOut(id, event),
+    [id, onPointerOut],
+  );
 
   return (
     <PostsVisible.Provider value={showPosts}>
@@ -1972,9 +2008,9 @@ export function ComponentMesh({
       // the group stands on the table; the model reaches up to its height
       position={[x, 0, z]}
       rotation={[0, (component.rotation * Math.PI) / 180, 0]}
-      onPointerDown={onPointerDown}
-      onPointerOver={onPointerOver}
-      onPointerOut={onPointerOut}
+      onPointerDown={handlePointerDown}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
     >
       {/* the group stands at the part's port; its body is drawn behind it */}
       <group position={[-componentReferenceX(component), 0, 0]}>
@@ -2088,4 +2124,4 @@ export function ComponentMesh({
     </group>
     </PostsVisible.Provider>
   );
-}
+});

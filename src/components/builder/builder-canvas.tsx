@@ -468,17 +468,20 @@ const SHADOW_MARGIN_MM = 250;
 /**
  * One high key light casts the only real shadows — short and crisp, like a
  * ceiling fixture. A rim from behind the view lifts white parts off the
- * backdrop. The key light's shadow camera follows the layout, live while a
- * part is dragged: sharp on a small layout, softer on a sprawling one.
+ * backdrop. The key light's shadow camera follows the layout: sharp on a
+ * small layout, softer on a sprawling one. It holds still while a part is
+ * dragged and catches up when the drag ends, so a drag step doesn't redo it.
  */
 function Lights({
   palette,
   lighting,
   components,
+  dragging,
 }: {
   palette: ScenePalette;
   lighting: Lighting;
   components: BuilderComponent[];
+  dragging: boolean;
 }) {
   const invalidate = useThree((state) => state.invalidate);
   // mutated in place; the ref is how the effect reaches it
@@ -486,7 +489,7 @@ function Lights({
 
   useLayoutEffect(() => {
     const key = keyRef.current;
-    if (!key) return;
+    if (!key || dragging) return;
     const box = layoutBox(components);
     const centre = box.getCenter(new Vector3()).setY(0);
     const size = box.getSize(new Vector3());
@@ -508,7 +511,7 @@ function Lights({
     camera.far = KEY_LIGHT_OFFSET.length() + reach + 500;
     camera.updateProjectionMatrix();
     invalidate();
-  }, [components, invalidate]);
+  }, [components, dragging, invalidate]);
 
   return (
     <>
@@ -715,15 +718,7 @@ const SELECTED_HALO_FLOOR = 0.35;
  * inspector's slider shows while it drags, and gets a stronger halo, scaled
  * by that opacity down to a floor, so even a faint one can be found.
  */
-function BeamPath({
-  points,
-  color,
-  width = BEAM_WIDTH_MM,
-  opacity = 1,
-  selected = false,
-  core: coreWanted = true,
-  ghost = false,
-}: {
+type BeamPathProps = {
   points: Vector3[];
   color: string;
   width?: number;
@@ -733,7 +728,17 @@ function BeamPath({
   core?: boolean;
   /** a hidden beam that is selected: only a faint glow, so it can be found and edited */
   ghost?: boolean;
-}) {
+};
+
+const BeamPath = memo(function BeamPath({
+  points,
+  color,
+  width = BEAM_WIDTH_MM,
+  opacity = 1,
+  selected = false,
+  core: coreWanted = true,
+  ghost = false,
+}: BeamPathProps) {
   const core = coreWanted && !ghost;
   const alpha = ghost ? GHOST_OPACITY : opacity;
   const haloAlpha = selected && !ghost ? Math.max(alpha, SELECTED_HALO_FLOOR) : alpha;
@@ -839,6 +844,19 @@ function BeamPath({
       ))}
     </group>
   );
+}, sameBeamPath);
+
+/**
+ * The points are rebuilt on every render, so they are compared by value: a
+ * beam a drag doesn't touch keeps its legs and skips the render.
+ */
+function sameBeamPath(before: BeamPathProps, after: BeamPathProps): boolean {
+  for (const key of Object.keys(after) as (keyof BeamPathProps)[]) {
+    if (key !== "points" && before[key] !== after[key]) return false;
+  }
+  if (Object.keys(before).length !== Object.keys(after).length) return false;
+  const [a, b] = [before.points, after.points];
+  return a.length === b.length && a.every((point, index) => point.equals(b[index]));
 }
 
 function beamVectors(components: BuilderComponent[], path: string[]): Vector3[] {
@@ -960,6 +978,44 @@ export default function BuilderCanvas({
 }: BuilderCanvasProps) {
   // the orbit pivot: set when an orbit drag starts, cleared by a snap-back
   const pivotRef = useRef<Vector3 | null>(null);
+  // The handlers above change with every scene; reading them through a ref
+  // keeps the ones handed to each part, frame and connection fixed, so a drag
+  // re-renders only what it moves.
+  const handlers = useRef({
+    onComponentPointerDown,
+    onComponentHover,
+    onConnectionPointerDown,
+    onFramePointerDown,
+  });
+  useLayoutEffect(() => {
+    handlers.current = {
+      onComponentPointerDown,
+      onComponentHover,
+      onConnectionPointerDown,
+      onFramePointerDown,
+    };
+  }, [onComponentPointerDown, onComponentHover, onConnectionPointerDown, onFramePointerDown]);
+  const handlePartDown = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    handlers.current.onComponentPointerDown(id, event);
+  }, []);
+  const handlePartOver = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
+    event.stopPropagation();
+    handlers.current.onComponentHover(id);
+  }, []);
+  const handlePartOut = useCallback(() => handlers.current.onComponentHover(null), []);
+  const handleFrameDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => {
+      event.stopPropagation();
+      handlers.current.onFramePointerDown(id, event, grip);
+    },
+    [],
+  );
+  const handleConnectionDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>) =>
+      handlers.current.onConnectionPointerDown(id, event),
+    [],
+  );
   const selected = useMemo(() => new Set(selection), [selection]);
   const primary = selection.at(-1);
   const selectedPosition = useMemo(
@@ -1005,7 +1061,7 @@ export default function BuilderCanvas({
       <CanvasHandle onReady={onCanvasReady} />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights palette={palette} lighting={lighting} components={components} />
+      <Lights palette={palette} lighting={lighting} components={components} dragging={dragging} />
       <RingRoom dark={palette.mode === "dark"} />
       <Backdrop stops={palette.backdrop} />
 
@@ -1042,10 +1098,7 @@ export default function BuilderCanvas({
             ghost={ghost}
             showLabel={showLabels}
             interactive={framesInteractive}
-            onPointerDown={(event, grip) => {
-              event.stopPropagation();
-              onFramePointerDown(frame.id, event, grip);
-            }}
+            onPointerDown={handleFrameDown}
           />
         );
       })}
@@ -1065,15 +1118,9 @@ export default function BuilderCanvas({
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
           partner={partner}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-            onComponentPointerDown(component.id, event);
-          }}
-          onPointerOver={(event) => {
-            event.stopPropagation();
-            onComponentHover(component.id);
-          }}
-          onPointerOut={() => onComponentHover(null)}
+          onPointerDown={handlePartDown}
+          onPointerOver={handlePartOver}
+          onPointerOut={handlePartOut}
         />
         );
       })}
@@ -1127,10 +1174,11 @@ export default function BuilderCanvas({
         <ConnectionPath
           key={connection.id}
           connection={connection}
-          components={components}
+          from={componentById(components, connection.from)}
+          to={componentById(components, connection.to)}
           selected={connection.id === selectedConnectionId}
           showLabel={showLabels}
-          onPointerDown={(event) => onConnectionPointerDown(connection.id, event)}
+          onPointerDown={handleConnectionDown}
         />
       ))}
 

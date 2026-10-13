@@ -2,7 +2,7 @@
 
 import { Html, Line } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Shape, Vector2 } from "three";
 
 import type { DrawingPreview } from "@/components/builder/frame-drawing";
@@ -53,7 +53,7 @@ function sideStrips(corners: Corner[], thickness: number): Strip[] {
  * A selected frame also has a handle on each corner; a press says which side
  * or corner it took.
  */
-export function FrameMesh({
+export const FrameMesh = memo(function FrameMesh({
   frame,
   selected,
   ghost,
@@ -68,7 +68,8 @@ export function FrameMesh({
   showLabel: boolean;
   /** off while placing a part or drawing a beam or connection: the edge is then no more than a drawing */
   interactive: boolean;
-  onPointerDown: (event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
+  /** handed the frame's id, so one stable handler serves every frame */
+  onPointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
 }) {
   const { corners, color } = frame;
   const edge = selected ? SELECTED_EDGE_MM : EDGE_MM;
@@ -104,7 +105,7 @@ export function FrameMesh({
               key={index}
               position={[gx, 0.2, gz]}
               rotation={[-Math.PI / 2, 0, 0]}
-              onPointerDown={(event) => onPointerDown(event, { kind: "side", index })}
+              onPointerDown={(event) => onPointerDown(frame.id, event, { kind: "side", index })}
             >
               <planeGeometry args={[sx, sz]} />
               <meshBasicMaterial visible={false} />
@@ -123,7 +124,7 @@ export function FrameMesh({
                 <planeGeometry args={[HANDLE_MM - 2 * HANDLE_RIM_MM, HANDLE_MM - 2 * HANDLE_RIM_MM]} />
                 <meshBasicMaterial color="#ffffff" transparent opacity={strength} depthWrite={false} />
               </mesh>
-              <mesh position={[0, 0, 0.2]} onPointerDown={(event) => onPointerDown(event, { kind: "corner", index })}>
+              <mesh position={[0, 0, 0.2]} onPointerDown={(event) => onPointerDown(frame.id, event, { kind: "corner", index })}>
                 <planeGeometry args={[HANDLE_GRAB_MM, HANDLE_GRAB_MM]} />
                 <meshBasicMaterial visible={false} />
               </mesh>
@@ -142,7 +143,7 @@ export function FrameMesh({
       ) : null}
     </group>
   );
-}
+});
 
 const onTable = (corners: Corner[]): Vec3[] => corners.map(([x, z]): Vec3 => [x, 0, z]);
 

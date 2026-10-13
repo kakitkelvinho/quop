@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import * as groupEdits from "@/components/builder/group-edits";
 import {
@@ -46,6 +46,8 @@ import {
 // The key predates scene versions 2 and 3; parseScene reads every version.
 const STORAGE_KEY = "quop.builder.scene.v1";
 const HISTORY_LIMIT = 60;
+/** how long the scene must stay still before it is autosaved, ms */
+const AUTOSAVE_DELAY_MS = 500;
 
 type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 
@@ -147,13 +149,40 @@ export function useBuilderScene() {
   const [state, dispatch] = useReducer(reducer, null, initialState);
   const { scene } = state;
 
-  useEffect(() => {
+  // A drag previews a new scene on every pointer move; serialising each one
+  // stalls a slow machine. The write waits until the scene has been still for
+  // a moment, and is flushed at once when the page is hidden or closed, or
+  // the builder unmounts, so the last state is never lost.
+  const unsaved = useRef<BuilderSceneData | null>(null);
+  const flush = useCallback(() => {
+    const pending = unsaved.current;
+    if (!pending) return;
+    unsaved.current = null;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(scene));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pending));
     } catch {
       // Private mode / quota: autosave is a convenience, not a requirement.
     }
-  }, [scene]);
+  }, []);
+
+  useEffect(() => {
+    unsaved.current = scene;
+    const timer = window.setTimeout(flush, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [scene, flush]);
+
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHidden);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHidden);
+      flush();
+    };
+  }, [flush]);
 
   const commit = useCallback(
     (mutate: Mutation) => dispatch({ kind: "commit", mutate: settled(mutate) }),

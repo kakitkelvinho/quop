@@ -2,14 +2,13 @@
 
 import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { CatmullRomCurve3, Vector3 } from "three";
 
 import { FIBER_STUBS, leavesFromStub } from "@/components/builder/component-models";
 import {
   CONNECTION_KINDS,
   bodyCentre,
-  componentById,
   componentRadius,
   type BuilderComponent,
   type Connection,
@@ -129,21 +128,23 @@ export function connectionCurve(
  * which is what tells it apart from a beam. A selected one is drawn thicker.
  * Its label, if it has one, sits at the middle of the run.
  */
-export function ConnectionPath({
+export const ConnectionPath = memo(function ConnectionPath({
   connection,
-  components,
+  from,
+  to,
   selected,
   showLabel,
   onPointerDown,
 }: {
   connection: Connection;
-  components: BuilderComponent[];
+  /** the parts at its ends, passed alone so moving any other part leaves it be */
+  from: BuilderComponent | undefined;
+  to: BuilderComponent | undefined;
   selected: boolean;
   showLabel: boolean;
-  onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
+  /** handed the connection's id, so one stable handler serves every connection */
+  onPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
 }) {
-  const from = componentById(components, connection.from);
-  const to = componentById(components, connection.to);
   const { kind } = connection;
   const curve = useMemo(() => (from && to ? connectionCurve(from, to, kind) : null), [from, to, kind]);
   const middle = useMemo(() => curve?.getPointAt(0.5), [curve]);
@@ -160,7 +161,7 @@ export function ConnectionPath({
         <meshStandardMaterial color={connection.color} roughness={0.42} metalness={0} />
       </mesh>
       {/* a fatter, unseen tube catches the click: the drawn one is a few pixels wide */}
-      <mesh onPointerDown={onPointerDown}>
+      <mesh onPointerDown={(event) => onPointerDown(connection.id, event)}>
         <tubeGeometry args={[curve, Math.round(segments / 2), HIT_RADIUS_MM, 6]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
@@ -171,4 +172,4 @@ export function ConnectionPath({
       ) : null}
     </group>
   );
-}
+});
