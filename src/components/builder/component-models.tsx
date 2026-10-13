@@ -455,13 +455,13 @@ function KnurledKnob({
  * black front plate holding the mirror, an L-shaped frame behind it in the
  * mount colour, and two black knurled adjusters out the back.
  */
-function MirrorMount({ palette, color, axis }: ModelProps) {
+function MirrorMount({ palette, color, axis, post = true }: ModelProps & { post?: boolean }) {
   const frame = color ?? DEFAULT_MOUNT_COLOR;
   const corner = LIOP_FRAME_HALF - LIOP_FRAME_ARM / 2;
   return (
     <group>
       {/* flush with the underside of the frame, not sunk into it */}
-      <Pillar palette={palette} top={axis - LIOP_FRAME_HALF - LIOP_FRAME_BEVEL} />
+      {post ? <Pillar palette={palette} top={axis - LIOP_FRAME_HALF - LIOP_FRAME_BEVEL} /> : null}
       {/* front plate, x = +4 .. -3 */}
       <mesh
         geometry={LIOP_FRONT_GEOMETRY}
@@ -528,6 +528,138 @@ function MirrorMount({ palette, color, axis }: ModelProps) {
         <ringGeometry args={[OPTIC_D / 2 - 1.1, OPTIC_D / 2, 48]} />
         <meshBasicMaterial color="#7de8a0" toneMapped={false} />
       </mesh>
+    </group>
+  );
+}
+
+/**
+ * A periscope, simplified from a Thorlabs RS99: one tall stainless rod on a
+ * clamping foot, and the two mirrors on short arms off it, each a mirror mount
+ * tipped 45° so its face (+x) looks up or down the rod as well as along the
+ * table. The lower mirror's model draws the rod and both arms, up to its top
+ * mirror's height; the rod stands to one side, away from where the top mirror
+ * sends its light. Each mirror is drawn tipped toward the other, so a
+ * periscope that takes the beam down works as well as one that takes it up.
+ */
+const PERISCOPE_ROD_RADIUS = 8;
+/** how far to one side of the mirrors the rod stands, mm */
+const PERISCOPE_ROD_OFFSET = 40;
+
+/** +1 tips the face up toward a mirror above, −1 down toward one below. */
+function periscopeTilt(axis: number, partner: BuilderComponent | undefined, fallback: 1 | -1): 1 | -1 {
+  if (!partner || partner.position[1] === axis) return fallback;
+  return partner.position[1] > axis ? 1 : -1;
+}
+
+function PeriscopeMirror({ palette, color, axis, tilt }: ModelProps & { tilt: 1 | -1 }) {
+  return (
+    <group position={[0, axis, 0]} rotation={[0, 0, (tilt * Math.PI) / 4]}>
+      <MirrorMount palette={palette} color={color} axis={0} post={false} />
+    </group>
+  );
+}
+
+function PeriscopeStand({
+  palette,
+  axis,
+  rotation,
+  top,
+}: {
+  palette: ScenePalette;
+  axis: number;
+  /** the lower mirror's yaw, degrees */
+  rotation: number;
+  top: BuilderComponent | undefined;
+}) {
+  if (!useContext(PostsVisible)) return null;
+  // the rod goes on the side of the lower mirror the top mirror's face looks away from;
+  // local +z of a yaw b is world (sin b, cos b), the top's face (cos t, −sin t)
+  const facing = top ? Math.sin(((rotation - top.rotation) * Math.PI) / 180) : 0;
+  const side = facing > 0 ? -1 : 1;
+  const rodZ = side * PERISCOPE_ROD_OFFSET;
+  const heights = top ? [axis, top.position[1]] : [axis];
+  const rodTop = Math.max(...heights) + 14;
+  const armLength = PERISCOPE_ROD_OFFSET - 10;
+  return (
+    <group>
+      <mesh position={[0, PILLAR_BASE_HEIGHT / 2, rodZ]}>
+        <cylinderGeometry args={[15, 17, PILLAR_BASE_HEIGHT, 36]} />
+        <Enamel color={palette.post} />
+      </mesh>
+      <mesh position={[0, (PILLAR_BASE_HEIGHT + rodTop) / 2, rodZ]}>
+        <cylinderGeometry args={[PERISCOPE_ROD_RADIUS, PERISCOPE_ROD_RADIUS, rodTop - PILLAR_BASE_HEIGHT, 32]} />
+        <Hardware palette={palette} />
+      </mesh>
+      {heights.map((height, index) => (
+        <group key={index}>
+          {/* the clamp round the rod, and the arm out to the mirror */}
+          <mesh position={[0, height, rodZ]}>
+            <boxGeometry args={[22, 14, 22]} />
+            <Anodised color={palette.anodise} />
+          </mesh>
+          <mesh position={[0, height, rodZ - (side * armLength) / 2]}>
+            <boxGeometry args={[10, 8, armLength]} />
+            <Anodised color={palette.anodise} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * A free-space Faraday isolator, after Thorlabs' IO series: a black housing
+ * (the magnet round the rotator crystal) with a barrel out each end along x,
+ * the white arrow on top showing the way light is let through (+x), and the
+ * rejection port on its +z side, where the polarizer sends light coming back.
+ */
+const ISOLATOR_BODY: Vec3 = [40, 34, 32];
+
+function FaradayIsolator({ palette, axis }: ModelProps) {
+  const [length, height, width] = ISOLATOR_BODY;
+  const top = axis + height / 2;
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - height / 2 - 4} />
+      <RoundedBox args={[length - 6, 4, width - 4]} radius={0.8} smoothness={2} position={[0, axis - height / 2 - 2, 0]}>
+        <Anodised color={palette.anodise} />
+      </RoundedBox>
+      <RoundedBox args={ISOLATOR_BODY} radius={2} smoothness={3} position={[0, axis, 0]}>
+        <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+      </RoundedBox>
+      {/* the barrels: input polarizer (−x) and output polarizer (+x), each with its aperture */}
+      {[-1, 1].map((end) => (
+        <group key={end}>
+          <mesh position={[end * (length / 2 + 6), axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[11, 11, 12, 32]} />
+            <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+          </mesh>
+          <mesh position={[end * (length / 2 + 12.05), axis, 0]} rotation={[0, (end * Math.PI) / 2, 0]}>
+            <circleGeometry args={[3.5, 24]} />
+            <meshStandardMaterial color="#0b0d10" roughness={0.9} />
+          </mesh>
+        </group>
+      ))}
+      {/* the rejection port, on the +z side */}
+      <mesh position={[0, axis, width / 2 + 1.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[7, 7, 3, 28]} />
+        <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+      </mesh>
+      <mesh position={[0, axis, width / 2 + 3.05]}>
+        <circleGeometry args={[3.5, 24]} />
+        <meshStandardMaterial color="#0b0d10" roughness={0.9} />
+      </mesh>
+      {/* the arrow: which way light is let through */}
+      <group position={[0, top + 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={NO_RAYCAST}>
+        <mesh position={[-3, 0, 0]}>
+          <planeGeometry args={[20, 1.6]} />
+          <meshBasicMaterial color="#f4f4f4" toneMapped={false} />
+        </mesh>
+        <mesh position={[9, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
+          <circleGeometry args={[4, 3]} />
+          <meshBasicMaterial color="#f4f4f4" toneMapped={false} />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -1675,6 +1807,8 @@ export type ComponentMeshProps = {
   beamOrder?: number;
   /** a connection leaves from this part's stub, so the stub is not drawn */
   stubTaken?: boolean;
+  /** a periscope mirror's other mirror, if it has one */
+  partner?: BuilderComponent;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOver: (event: ThreeEvent<PointerEvent>) => void;
   onPointerOut: (event: ThreeEvent<PointerEvent>) => void;
@@ -1689,6 +1823,7 @@ export function ComponentMesh({
   showPosts,
   beamOrder,
   stubTaken = false,
+  partner,
   onPointerDown,
   onPointerOver,
   onPointerOut,
@@ -1714,7 +1849,7 @@ export function ComponentMesh({
       object.castShadow = solid;
       object.receiveShadow = solid;
     });
-  }, [component, showPosts]);
+  }, [component, showPosts, partner]);
 
   return (
     <PostsVisible.Provider value={showPosts}>
@@ -1785,6 +1920,16 @@ export function ComponentMesh({
         ) : null}
         {component.type === "aom" ? <Aom {...modelProps} /> : null}
         {component.type === "eom" ? <Eom {...modelProps} /> : null}
+        {component.type === "faraday-isolator" ? <FaradayIsolator {...modelProps} /> : null}
+        {component.type === "periscope" ? (
+          <>
+            <PeriscopeStand palette={palette} axis={axis} rotation={component.rotation} top={partner} />
+            <PeriscopeMirror {...modelProps} tilt={periscopeTilt(axis, partner, 1)} />
+          </>
+        ) : null}
+        {component.type === "periscope-top" ? (
+          <PeriscopeMirror {...modelProps} tilt={periscopeTilt(axis, partner, -1)} />
+        ) : null}
         {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
         {component.type === "spectrometer" ? (
           <Spectrometer {...modelProps} />

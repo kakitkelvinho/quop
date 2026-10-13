@@ -65,6 +65,10 @@ _Avoid_: link, wire, patch cord, fibre beam
 A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
 _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 
+**Periscope**:
+A pair of mirrors on one rod that takes a beam up or down to a new height: a lower mirror and a top mirror straight above it, each its own component and its own stop on a beam. They move, copy and go together.
+_Avoid_: beam elevator, riser
+
 **Mode**:
 The light standing inside a cavity, drawn as a Gaussian envelope between its mirrors. Part of the cavity, not a beam: it is not drawn by the author and adds nothing to any path length.
 _Avoid_: cavity beam
