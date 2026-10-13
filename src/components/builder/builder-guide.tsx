@@ -300,6 +300,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
     title: "Edit",
     lines: [
       { keys: "drag", text: "Move (⇧ 5 mm)" },
+      { keys: "◀▶", text: "Drag to turn (⇧ 5°)" },
       { icon: "beam", text: "Stops snap to beam" },
       { keys: "⌘ drag", text: "Select several" },
       { keys: "R D ⌫", text: "Turn, copy, delete" },

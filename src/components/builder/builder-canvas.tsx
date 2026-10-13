@@ -51,6 +51,11 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
 import { ComponentMesh, leavesFromStub } from "@/components/builder/component-models";
+import {
+  GroupRotationHandle,
+  PartRotationHandle,
+  type RotationHandleSpec,
+} from "@/components/builder/rotation-handle";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
@@ -984,6 +989,9 @@ export type BuilderCanvasProps = {
   onSurfaceDrag: (x: number, z: number, event: PointerEvent) => void;
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
+  /** the selection's rotation handle, if it gets one */
+  rotationHandle: RotationHandleSpec | null;
+  onRotationHandlePointerDown: (event: ThreeEvent<PointerEvent>) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
   onCanvasReady: (handle: CanvasApi) => void;
@@ -1056,6 +1064,8 @@ export default function BuilderCanvas({
   onSurfaceDrag,
   onComponentPointerDown,
   onComponentHover,
+  rotationHandle,
+  onRotationHandlePointerDown,
   onConnectionPointerDown,
   onFramePointerDown,
   onCanvasReady,
@@ -1217,6 +1227,27 @@ export default function BuilderCanvas({
         />
         );
       })}
+
+      {rotationHandle?.kind === "part" ? (
+        <PartRotationHandle
+          component={rotationHandle.component}
+          color={palette.accent}
+          dark={palette.mode === "dark"}
+          lockedBy={rotationHandle.lockedBy}
+          rotating={rotationHandle.rotating}
+          onPointerDown={onRotationHandlePointerDown}
+        />
+      ) : rotationHandle?.kind === "group" ? (
+        <GroupRotationHandle
+          centre={rotationHandle.centre}
+          radius={rotationHandle.radius}
+          turned={rotationHandle.turned}
+          color={palette.accent}
+          dark={palette.mode === "dark"}
+          rotating={rotationHandle.rotating}
+          onPointerDown={onRotationHandlePointerDown}
+        />
+      ) : null}
 
       {beams.map((beam) => {
         const ghost = beam.hidden && beam.id === ghostBeamId;

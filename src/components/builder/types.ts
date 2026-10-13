@@ -462,6 +462,24 @@ export const FINE_GRID_MM = 5;
  */
 export const TABLE_GUARD_MM = 5000;
 export const ROTATION_STEP_DEG = 15;
+/** The rotation handle's step with Shift held, as the fine grid is for a move. */
+export const FINE_ROTATION_STEP_DEG = 5;
+
+/** A yaw in degrees brought into [0, 360); never −0. */
+export function wrapYaw(degrees: number): number {
+  return ((degrees % 360) + 360) % 360 || 0;
+}
+
+/**
+ * How far a rotation handle has been swept, in degrees: from the pointer's
+ * angle about the pivot at the press to its angle now (both counter-clockwise
+ * from above, as yaw is), taken the short way round and snapped to `step`.
+ * Crossing ±180° doesn't jump, and a full turn is no turn.
+ */
+export function handleSweep(fromDeg: number, toDeg: number, step: number): number {
+  const sweep = wrapYaw(toDeg - fromDeg + 180) - 180;
+  return Math.round(sweep / step) * step || 0;
+}
 /**
  * The beam height, mm: the height a component gets when it is placed. The
  * lab's posts are cut so a mount's centre sits at 100 mm. A convention for

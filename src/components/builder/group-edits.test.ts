@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   deleteComponents,
+  posesOf,
+  turnCentre,
+  turnComponents,
   duplicateComponents,
   nudgeComponents,
   rotateComponents,
@@ -19,7 +22,9 @@ import {
   type Connection,
   type Vec3,
   SCENE_VERSION,
+  handleSweep,
   settleAngles,
+  wrapYaw,
   settleHosts,
 } from "./types.ts";
 
@@ -296,3 +301,60 @@ describe("setting a group's mount colour", () => {
     assert.equal(at(after, "l"), at(scene, "l"));
   });
 });
+
+describe("dragging a rotation handle", () => {
+  it("snaps the sweep to 15°, or 5° with Shift", () => {
+    assert.equal(handleSweep(10, 31, 15), 15);
+    assert.equal(handleSweep(10, 31, 5), 20);
+    assert.equal(handleSweep(10, 16, 15), 0);
+    assert.equal(handleSweep(40, 10, 15), -30);
+  });
+
+  it("goes the short way across ±180°, so the pointer crossing it doesn't jump", () => {
+    assert.equal(handleSweep(170, -170, 5), 20);
+    assert.equal(handleSweep(-170, 170, 5), -20);
+    assert.equal(handleSweep(0, 360, 15), 0);
+  });
+
+  it("wraps a yaw into 0–360", () => {
+    assert.equal(wrapYaw(370), 10);
+    assert.equal(wrapYaw(-15), 345);
+    assert.equal(wrapYaw(-360), 0);
+    assert.ok(!Object.is(wrapYaw(-0), -0));
+  });
+
+  const trio = bench([
+    part("a", "mirror-mount", 0, 0, { rotation: 350 }),
+    part("b", "lens", 100, 0),
+    part("c", "iris", 300, 0),
+  ]);
+
+  it("turns the group about the centre of its parts, from the poses it started at", () => {
+    const origins = posesOf(trio, ["a", "b"]);
+    const centre = turnCentre(trio, ["a", "b"]);
+    assert.deepEqual(centre, [50, 0]);
+    const once = turnComponents(trio, origins, centre!, 90);
+    assert.deepEqual(where(once, "a"), [50, 100, 50]);
+    assert.deepEqual(where(once, "b"), [50, 100, -50]);
+    assert.equal(at(once, "a")?.rotation, 80);
+    assert.equal(at(once, "b")?.rotation, 90);
+    assert.equal(at(once, "c"), at(trio, "c"));
+  });
+
+  it("previews each step from the origins, so sweeping back lands exactly where it began", () => {
+    const origins = posesOf(trio, ["a", "b"]);
+    const centre = turnCentre(trio, ["a", "b"])!;
+    const there = turnComponents(trio, origins, centre, 35);
+    const back = turnComponents(there, origins, centre, 0);
+    assert.deepEqual(where(back, "a"), [0, 100, 0]);
+    assert.equal(at(back, "a")?.rotation, 350);
+  });
+
+  it("turns one part about its own position, its reference point", () => {
+    const scene = bench([part("pd", "photodiode", 12.5, -40, { rotation: 0 })]);
+    const turned = turnComponents(scene, posesOf(scene, ["pd"]), turnCentre(scene, ["pd"])!, -45);
+    assert.deepEqual(where(turned, "pd"), [12.5, 100, -40]);
+    assert.equal(at(turned, "pd")?.rotation, 315);
+  });
+});
+

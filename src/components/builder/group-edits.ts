@@ -18,6 +18,7 @@ import {
   createConnectionId,
   dropComponentFromBeams,
   withPeriscopePartners,
+  wrapYaw,
   type Beam,
   type Connection,
   type BuilderComponent,
@@ -95,41 +96,81 @@ function toHundredth(value: number): number {
   return Math.round(value * 100) / 100 || 0;
 }
 
+/** Where a part stood and which way it faced when a turn began. */
+export type Pose = { position: Vec3; rotation: number };
+
+/** The parts a turn of `ids` carries: a periscope swings round with a group whole; one mirror alone turns in place. */
+function turnGroup(scene: BuilderSceneData, ids: string[]): Set<string> {
+  return new Set(ids.length > 1 ? withPeriscopePartners(scene.components, ids) : ids);
+}
+
+/**
+ * The point on the table, [x, z] mm, that a group turns about: the centre of
+ * its parts. One part alone turns about its own position, its reference
+ * point. Null when nothing in `ids` turns.
+ */
+export function turnCentre(scene: BuilderSceneData, ids: string[]): [number, number] | null {
+  const turning = movers(scene, turnGroup(scene, ids));
+  if (turning.length === 0) return null;
+  return [
+    turning.reduce((sum, component) => sum + component.position[0], 0) / turning.length,
+    turning.reduce((sum, component) => sum + component.position[2], 0) / turning.length,
+  ];
+}
+
+/** Each part a turn of `ids` carries, as it stands now: the origins a dragged turn previews from. */
+export function posesOf(scene: BuilderSceneData, ids: string[]): Record<string, Pose> {
+  const poses: Record<string, Pose> = {};
+  for (const component of movers(scene, turnGroup(scene, ids))) {
+    poses[component.id] = { position: component.position, rotation: component.rotation };
+  }
+  return poses;
+}
+
+/**
+ * Each part in `origins` turned `degrees` about `centre` from its pose there,
+ * and faced round by as much. A yaw θ maps local +x to world
+ * (cos θ, 0, −sin θ), so an offset (x, z) from the centre turns to
+ * (x cos θ + z sin θ, −x sin θ + z cos θ). A drag previews from the poses the
+ * group had when it started, so it never drifts.
+ */
+export function turnComponents(
+  scene: BuilderSceneData,
+  origins: Record<string, Pose>,
+  [centreX, centreZ]: [number, number],
+  degrees: number,
+): BuilderSceneData {
+  const cos = Math.cos((degrees * Math.PI) / 180);
+  const sin = Math.sin((degrees * Math.PI) / 180);
+  return editGroup(scene, new Set(Object.keys(origins)), (component) => {
+    const origin = origins[component.id];
+    const offsetX = origin.position[0] - centreX;
+    const offsetZ = origin.position[2] - centreZ;
+    const placed =
+      offsetX === 0 && offsetZ === 0
+        ? placedAt(component, origin.position[0], origin.position[2])
+        : placedAt(
+            component,
+            toHundredth(centreX + offsetX * cos + offsetZ * sin),
+            toHundredth(centreZ - offsetX * sin + offsetZ * cos),
+          );
+    const rotation = wrapYaw(origin.rotation + degrees);
+    return rotation === placed.rotation ? placed : { ...placed, rotation };
+  });
+}
+
 /**
  * Turn the group one ROTATION_STEP_DEG about the centre of its parts on the
- * table, and each part with it. A yaw θ maps local +x to world
- * (cos θ, 0, −sin θ), so an offset (x, z) from the centre turns to
- * (x cos θ + z sin θ, −x sin θ + z cos θ). One part alone only turns in place.
+ * table, and each part with it. One part alone only turns in place.
  */
 export function rotateComponents(
   scene: BuilderSceneData,
   ids: string[],
   direction: 1 | -1,
 ): BuilderSceneData {
-  // a periscope swings round with a group whole; one mirror alone turns in place
-  const group = new Set(ids.length > 1 ? withPeriscopePartners(scene.components, ids) : ids);
-  const turning = movers(scene, group);
-  if (turning.length === 0) return scene;
-
-  const centreX = turning.reduce((sum, component) => sum + component.position[0], 0) / turning.length;
-  const centreZ = turning.reduce((sum, component) => sum + component.position[2], 0) / turning.length;
-  const step = direction * ROTATION_STEP_DEG;
-  const cos = Math.cos((step * Math.PI) / 180);
-  const sin = Math.sin((step * Math.PI) / 180);
-
-  return editGroup(scene, group, (component) => {
-    const offsetX = component.position[0] - centreX;
-    const offsetZ = component.position[2] - centreZ;
-    const placed =
-      offsetX === 0 && offsetZ === 0
-        ? component
-        : placedAt(
-            component,
-            toHundredth(centreX + offsetX * cos + offsetZ * sin),
-            toHundredth(centreZ - offsetX * sin + offsetZ * cos),
-          );
-    return { ...placed, rotation: (component.rotation + step + 360) % 360 };
-  });
+  const centre = turnCentre(scene, ids);
+  if (!centre) return scene;
+  return turnComponents(scene, posesOf(scene, ids), centre, direction * ROTATION_STEP_DEG);
 }
 
 /**
