@@ -60,6 +60,7 @@ import {
   type ComponentType,
   type Corner,
   type Vec3,
+  ROTATION_STEP_DEG,
 } from "@/components/builder/types";
 
 type DragState = {
@@ -239,6 +240,9 @@ export default function BuilderScene() {
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
+  // PROTOTYPE (#186): a turn by the rotation handle, about the part's reference point
+  const rotateRef = useRef<{ id: string; startYaw: number; startAngle: number; started: boolean } | null>(null);
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
   const frameDragRef = useRef<FrameDragState | null>(null);
   const frameReshapeRef = useRef<FrameReshapeState | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -391,6 +395,25 @@ export default function BuilderScene() {
     [addingStops, announce, api, beamMode, connectDraft, drawing, selectedBeamId, selectedIds],
   );
 
+  const handleRotateHandlePointerDown = useCallback(
+    (id: string, event: ThreeEvent<PointerEvent>) => {
+      if (event.nativeEvent.button !== 0) return;
+      const part = componentById(sceneRef.current.components, id);
+      const grab = tablePoint(event.ray);
+      if (!part || !grab) return;
+      rotateRef.current = {
+        id,
+        startYaw: part.rotation,
+        startAngle: (Math.atan2(-(grab[1] - part.position[2]), grab[0] - part.position[0]) * 180) / Math.PI,
+        started: false,
+      };
+      setRotatingId(id);
+      setDragging(true);
+      document.body.style.cursor = "grabbing";
+    },
+    [],
+  );
+
   const handleComponentHover = useCallback((id: string | null) => {
     hoveredRef.current = id;
     setHoveredId(id);
@@ -435,6 +458,20 @@ export default function BuilderScene() {
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: PointerEvent) => {
+      const turn = rotateRef.current;
+      if (turn) {
+        const part = componentById(sceneRef.current.components, turn.id);
+        if (!part) return;
+        // yaw is counter-clockwise from above, 0 along +x: so is this angle
+        const angle = (Math.atan2(-(z - part.position[2]), x - part.position[0]) * 180) / Math.PI;
+        const step = event.shiftKey ? 5 : ROTATION_STEP_DEG;
+        const raw = turn.startYaw + angle - turn.startAngle;
+        const yaw = (((Math.round(raw / step) * step) % 360) + 360) % 360;
+        if (yaw === part.rotation) return;
+        api.updateComponent(turn.id, { rotation: yaw }, !turn.started);
+        turn.started = true;
+        return;
+      }
       const reshape = frameReshapeRef.current;
       if (reshape) {
         const frame = sceneRef.current.frames.find((entry) => entry.id === reshape.id);
@@ -556,6 +593,12 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
+      if (rotateRef.current) {
+        rotateRef.current = null;
+        setRotatingId(null);
+        setDragging(false);
+        document.body.style.cursor = "";
+      }
       if (frameDragRef.current || frameReshapeRef.current) {
         frameDragRef.current = null;
         frameReshapeRef.current = null;
@@ -1180,6 +1223,8 @@ export default function BuilderScene() {
           onSurfaceDrag={handleSurfaceDrag}
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={handleComponentHover}
+          rotatingId={rotatingId}
+          onRotateHandlePointerDown={handleRotateHandlePointerDown}
           onConnectionPointerDown={handleConnectionPointerDown}
           onFramePointerDown={handleFramePointerDown}
           onCanvasReady={handleCanvasReady}

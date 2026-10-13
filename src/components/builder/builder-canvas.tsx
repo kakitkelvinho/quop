@@ -51,13 +51,16 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { ComponentMesh, leavesFromStub } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
+import { RotationHandle } from "@/components/builder/rotation-handle";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
+  beamDisplayName,
   beamPoints,
   COMPONENT_SPECS,
+  derivedAngleBeam,
   TABLE_GUARD_MM,
   bodyCentre,
   componentById,
@@ -875,6 +878,9 @@ export type BuilderCanvasProps = {
   onSurfaceDrag: (x: number, z: number, event: PointerEvent) => void;
   onComponentPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onComponentHover: (id: string | null) => void;
+  /** PROTOTYPE (#186): the part being turned by its rotation handle, if any */
+  rotatingId: string | null;
+  onRotateHandlePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
   onCanvasReady: (handle: CanvasApi) => void;
@@ -943,6 +949,8 @@ export default function BuilderCanvas({
   onSurfaceDrag,
   onComponentPointerDown,
   onComponentHover,
+  rotatingId,
+  onRotateHandlePointerDown,
   onConnectionPointerDown,
   onFramePointerDown,
   onCanvasReady,
@@ -1066,6 +1074,22 @@ export default function BuilderCanvas({
         />
         );
       })}
+
+      {/* PROTOTYPE (#186): a rotation handle on a lone selected part */}
+      {(() => {
+        const part = selection.length === 1 ? componentById(components, selection[0]) : undefined;
+        if (!part || part.host || part.type === "periscope-top") return null;
+        const locked = derivedAngleBeam(beams, part);
+        return (
+          <RotationHandle
+            component={part}
+            color={palette.accent}
+            lockedBy={locked ? beamDisplayName(locked) : null}
+            rotating={rotatingId === part.id}
+            onPointerDown={(event) => onRotateHandlePointerDown(part.id, event)}
+          />
+        );
+      })()}
 
       {beams.map((beam) => {
         const ghost = beam.hidden && beam.id === ghostBeamId;
