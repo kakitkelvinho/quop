@@ -1027,7 +1027,7 @@ function mirrorAngleStop(
   return undefined;
 }
 
-/** A delay line turns like a mirror: its port looks back between where the light comes from and where it goes. */
+/** A delay line takes its angle from the beam it sits in, like a mirror, but stands across it (see delayLineYaw). */
 const MIRROR_LIKE = new Set<ComponentType>(["mirror-mount", "delay-line"]);
 
 /** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
@@ -1119,6 +1119,30 @@ export function periscopeYaw(mirror: Vec3, previous: Vec3, next: Vec3): number |
   return toward ? yawDegrees(Math.atan2(-toward[1], toward[0])) : undefined;
 }
 
+/**
+ * The yaw, degrees in [0, 360), of a delay line: it stands across the beam
+ * line, its rail perpendicular to the way the light travels through its port.
+ * Its two fold mirrors sit on the line and send the light down the rail to the
+ * retroreflector and back, so the light leaves along the line it came in on.
+ * Its face (local +x) is turned to whichever side of the line is nearer its
+ * current yaw, so turning it round by hand puts the rail on the other side.
+ * At a bend it is perpendicular to the mean of the two directions, so its face
+ * lies along the bisector of the stops, toward them or away.
+ * Undefined when the light doubles straight back or both neighbours sit on it.
+ */
+export function delayLineYaw(port: Vec3, previous: Vec3, next: Vec3, current: number): number | undefined {
+  const arriving = unitXZ(previous, port);
+  const leaving = unitXZ(port, next);
+  if (!arriving && !leaving) return undefined;
+  const dx = (arriving?.[0] ?? 0) + (leaving?.[0] ?? 0);
+  const dz = (arriving?.[1] ?? 0) + (leaving?.[1] ?? 0);
+  if (Math.hypot(dx, dz) < 1e-9) return undefined;
+  // the face (cos θ, −sin θ) is perpendicular to (dx, dz): θ = atan2(dx, dz), or that turned 180°
+  const yaw = yawDegrees(Math.atan2(dx, dz));
+  const away = Math.abs(((current - yaw + 540) % 360) - 180);
+  return away > 90 ? (yaw + 180) % 360 : yaw;
+}
+
 /** A part's derived yaw, or undefined when it is turned by hand. */
 function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): number | undefined {
   const at = (stop: { beam: Beam; index: number }, offset: number) =>
@@ -1128,6 +1152,9 @@ function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): numbe
     const previous = at(mirror, -1);
     const next = at(mirror, 1);
     if (!previous || !next) return undefined;
+    if (component.type === "delay-line") {
+      return delayLineYaw(component.position, previous.position, next.position, component.rotation);
+    }
     return PERISCOPE_MIRRORS.has(component.type)
       ? periscopeYaw(component.position, previous.position, next.position)
       : bisectingYaw(component.position, previous.position, next.position);

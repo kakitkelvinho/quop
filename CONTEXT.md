@@ -66,7 +66,7 @@ A cube that divides a beam in two, at the reflective plane across its diagonal. 
 _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 
 **Delay line**:
-A translation stage with a retroreflector, on one port: light goes in, out to the retroreflector and back, and leaves where it came in. The beam is drawn to its port; the round trip, twice its arm, is added to the beam's path length.
+A translation stage with a retroreflector, standing across a beam line: two fold mirrors at its port send the light down the rail to the retroreflector and back, and it leaves along the line it came in on. The beam is drawn through its port; the round trip, twice its arm, is added to the beam's path length.
 _Avoid_: delay stage, translation stage, retro
 
 **Periscope**:

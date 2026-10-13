@@ -217,20 +217,24 @@ other. A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
 **A delay line adds its round trip.** A delay line is a translation stage
-with one port at its front, where light goes in and comes back out, and a
-retroreflector on a carriage behind it. It is placed by its port, and its
-rail runs back from it, as long as its longest arm. Its inspector sets the
+that stands across a beam line, as one does on a real table: two fold mirrors
+at its port, on the line, send the light down the rail to a retroreflector on
+a carriage and back, and it leaves along the line it came in on. It is placed
+by its port, and its rail runs off to one side of the line, as long as its
+longest arm. Its inspector sets the
 shortest and longest arm (port to retroreflector, 50–350 mm by default, up
 to 2000 mm) and, with a slider, where the retroreflector sits between them;
 the carriage slides to match. A beam through it (a stop in the middle) is
 drawn to the port and away from it, and gains twice the arm, out and back,
 each time it passes, which its inspector names ("Includes … mm in delay
-lines"). A beam that only starts or ends at it gains nothing. Like a mirror,
-its port turns to face between the stops before and after it.
+lines"). A beam that only starts or ends at it gains nothing. It turns
+itself, like a mirror: its rail stays perpendicular to the light through its
+port, on whichever side of the line it already faces, so turning it 180° by
+hand puts the rail on the other side.
 
 **Light inside a part.** A cavity's mode and a delay line's internal beam
-(a faint glow from its port to the retroreflector, which follows the
-carriage) are drawn in the same red by default. Each part's inspector can
+(a faint glow from its fold mirrors down to the retroreflector and back,
+which follows the carriage) are drawn in the same red by default. Each part's inspector can
 hide that light or give it another colour, on screen and in a PNG; both are
 saved with the setup (`lightColor`, `lightHidden`). The light is a drawing
 only: it is not a beam and adds nothing to any path.
