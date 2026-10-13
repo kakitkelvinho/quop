@@ -35,7 +35,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "inspector", text: "Inspector", sides: ["left", "above"] },
   { key: "beams", text: "Beams", sides: ["above", "right"] },
   { key: "frames", text: "Frames", sides: ["right", "above"] },
-  { key: "view", text: "Iso / top · fit · labels · day / night", sides: ["above", "left"] },
+  { key: "view", text: "Iso / top · fit · labels · distances · day / night", sides: ["above", "left"] },
 ];
 
 const GAP = 10;

@@ -71,6 +71,7 @@ export type BuilderHudProps = {
   beamDraft: string[];
   beamColor: string;
   showLabels: boolean;
+  showDistances: boolean;
   showGrid: boolean;
   showPosts: boolean;
   lighting: Lighting;
@@ -122,6 +123,7 @@ export type BuilderHudProps = {
   onMoveFrame: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetFrameHidden: (id: string, hidden: boolean) => void;
   onToggleLabels: () => void;
+  onToggleDistances: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
   onLightingChange: (patch: Partial<Lighting>) => void;
@@ -1051,6 +1053,12 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton icon="fit" label="Fit" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
+        <IconButton
+          icon="ruler"
+          label="Beam distances"
+          active={props.showDistances}
+          onClick={props.onToggleDistances}
+        />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}

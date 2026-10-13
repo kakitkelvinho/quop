@@ -228,6 +228,7 @@ export default function BuilderScene() {
   const [addingStopsTo, setAddingStopsTo] = useState<string | null>(null);
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
+  const [showDistances, setShowDistances] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [showPosts, setShowPosts] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
@@ -1172,6 +1173,7 @@ export default function BuilderScene() {
           // the part a connection leaves from carries the "1" badge until the second click
           beamDraft={connectDraft?.from ? [connectDraft.from] : beamDraft}
           showLabels={showLabels}
+          showDistances={showDistances}
           showGrid={showGrid}
           showPosts={showPosts}
           view={view}
@@ -1219,6 +1221,7 @@ export default function BuilderScene() {
         beamDraft={beamDraft}
         beamColor={beamColor}
         showLabels={showLabels}
+        showDistances={showDistances}
         showGrid={showGrid}
         showPosts={showPosts}
         lighting={lighting}
@@ -1287,6 +1290,7 @@ export default function BuilderScene() {
         onMoveFrame={handleMoveFrame}
         onSetFrameHidden={handleSetFrameHidden}
         onToggleLabels={() => setShowLabels((current) => !current)}
+        onToggleDistances={() => setShowDistances((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}
         onLightingChange={(patch) => setLighting((current) => ({ ...current, ...patch }))}

@@ -15,6 +15,7 @@ import {
 } from "@react-three/fiber";
 import { EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
 import {
+  Fragment,
   memo,
   useCallback,
   useEffect,
@@ -48,6 +49,7 @@ import {
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
+import { BeamDistances } from "@/components/builder/beam-distances";
 import { ComponentMesh, leavesFromStub } from "@/components/builder/component-models";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
@@ -56,6 +58,7 @@ import type { Lighting, ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
+  beamLegLengthsMm,
   beamPoints,
   COMPONENT_SPECS,
   TABLE_GUARD_MM,
@@ -890,6 +893,8 @@ export type BuilderCanvasProps = {
   hoveredId: string | null;
   beamDraft: string[];
   showLabels: boolean;
+  /** label the legs of every shown beam, not only the selected one's */
+  showDistances: boolean;
   showGrid: boolean;
   /** draw posts; off, the parts float at their heights over their shadows */
   showPosts: boolean;
@@ -962,6 +967,7 @@ export default function BuilderCanvas({
   hoveredId,
   beamDraft,
   showLabels,
+  showDistances,
   showGrid,
   showPosts,
   view,
@@ -1130,17 +1136,22 @@ export default function BuilderCanvas({
         if (beam.hidden && !ghost) return null;
         const points = beamVectors(components, beam.path);
         if (points.length < 2) return null;
+        const selected = beam.id === selectedBeamId;
         return (
-          <BeamPath
-            key={beam.id}
-            points={points}
-            color={beam.color}
-            width={beam.width}
-            opacity={beam.opacity}
-            selected={beam.id === selectedBeamId}
-            core={beam.arrows !== false}
-            ghost={ghost}
-          />
+          <Fragment key={beam.id}>
+            <BeamPath
+              points={points}
+              color={beam.color}
+              width={beam.width}
+              opacity={beam.opacity}
+              selected={selected}
+              core={beam.arrows !== false}
+              ghost={ghost}
+            />
+            {selected || (showDistances && !beam.hidden) ? (
+              <BeamDistances points={points} lengths={beamLegLengthsMm(components, beam)} />
+            ) : null}
+          </Fragment>
         );
       })}
 
