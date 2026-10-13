@@ -594,7 +594,8 @@ export function beamDisplayName(beam: Beam): string {
 /** Selection-ring radius: a cavity grows with its length. */
 export function componentRadius(component: BuilderComponent): number {
   if (component.type === "cavity") {
-    return Math.max(COMPONENT_SPECS.cavity.radius, (component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM) / 2 + 12);
+    const length = clamp(component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM, CAVITY_LENGTH_RANGE_MM);
+    return Math.max(COMPONENT_SPECS.cavity.radius, length / 2 + 12);
   }
   if (component.type === "objective") {
     // drawn from the thread's back at x = -29 to the nose, so the far end sets the ring

@@ -23,6 +23,8 @@ import {
   DEFAULT_PHOTODIODE_COLOR,
   INTERNAL_PATH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
+  CAVITY_LENGTH_RANGE_MM,
+  FOCAL_LENGTH_RANGE_MM,
   PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
   clamp,
@@ -441,8 +443,10 @@ export function ComponentInspector({
             label="Focal length"
             unit="mm"
             step={5}
+            min={FOCAL_LENGTH_RANGE_MM[0]}
+            max={FOCAL_LENGTH_RANGE_MM[1]}
             value={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
-            onChange={(next) => onUpdate({ focalLength: next })}
+            onChange={(next) => onUpdate({ focalLength: clamp(next, FOCAL_LENGTH_RANGE_MM) })}
           />
         </>
       ) : null}
@@ -451,8 +455,10 @@ export function ComponentInspector({
           label="Length"
           unit="mm"
           step={5}
+          min={CAVITY_LENGTH_RANGE_MM[0]}
+          max={CAVITY_LENGTH_RANGE_MM[1]}
           value={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
-          onChange={(next) => onUpdate({ cavityLength: next })}
+          onChange={(next) => onUpdate({ cavityLength: clamp(next, CAVITY_LENGTH_RANGE_MM) })}
         />
       ) : null}
       {MOUNTED_TYPES.has(component.type) ? (
