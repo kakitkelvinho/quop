@@ -20,6 +20,7 @@ import {
   GroupInspector,
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
+import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
@@ -130,6 +131,8 @@ export type BuilderHudProps = {
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
+  quality: GraphicsQuality;
+  onToggleQuality: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -1060,6 +1063,12 @@ export default function BuilderHud(props: BuilderHudProps) {
           onClick={props.onToggleDistances}
         />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
+        <IconButton
+          icon="bolt"
+          label="Light graphics (faster)"
+          active={props.quality === "light"}
+          onClick={props.onToggleQuality}
+        />
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 

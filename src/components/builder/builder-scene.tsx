@@ -25,6 +25,7 @@ import {
   type DrawingStep,
 } from "@/components/builder/frame-drawing";
 import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/builder/scene-theme";
+import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/components/builder/graphics-quality";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
@@ -232,6 +233,10 @@ export default function BuilderScene() {
   const [showGrid, setShowGrid] = useState(false);
   const [showPosts, setShowPosts] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
+  const [quality, setQuality] = useState<GraphicsQuality>("full");
+  // whether a slow view may still step down to Light by itself: once a session,
+  // and never over a choice made on the toggle, this visit or an earlier one
+  const [autoQuality, setAutoQuality] = useState(true);
   const [view, setView] = useState<CameraView>("iso");
   const [fitToken, setFitToken] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -275,6 +280,13 @@ export default function BuilderScene() {
   );
   // a selected hidden beam shows on screen as a ghost, so it can be edited; a PNG leaves it out
   const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    const stored = readStoredQuality();
+    if (!stored) return;
+    setQuality(stored);
+    setAutoQuality(false);
+  }, []);
   const ghostBeamId = selectedBeam?.hidden && !exporting ? selectedBeam.id : null;
   const selectedFrame = useMemo(
     () => scene.frames.find((frame) => frame.id === selectedFrameId) ?? null,
@@ -937,9 +949,13 @@ export default function BuilderScene() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     try {
-      if (ghostBeamId || ghostFrameId) {
+      // an export is drawn at full quality, with no ghosts: switch for the
+      // capture and give the canvas a few frames to redraw at its new size
+      if (ghostBeamId || ghostFrameId || quality !== "full") {
         setExporting(true);
-        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        for (let frame = 0; frame < 3; frame += 1) {
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
       }
       const link = document.createElement("a");
       link.href = exportViewPng(canvas);
@@ -951,7 +967,20 @@ export default function BuilderScene() {
     } finally {
       setExporting(false);
     }
-  }, [announce, ghostBeamId, ghostFrameId]);
+  }, [announce, ghostBeamId, ghostFrameId, quality]);
+
+  const handleSlowView = useCallback(() => {
+    setQuality("light");
+    setAutoQuality(false);
+    announce("Switched to light graphics. Click ⚡ in the View toolbar to undo.");
+  }, [announce]);
+
+  const toggleQuality = useCallback(() => {
+    const next: GraphicsQuality = quality === "full" ? "light" : "full";
+    setQuality(next);
+    setAutoQuality(false);
+    storeQuality(next);
+  }, [quality]);
 
   const handleCanvasReady = useCallback((handle: CanvasApi) => {
     canvasRef.current = handle.canvas;
@@ -1159,6 +1188,8 @@ export default function BuilderScene() {
           frames={scene.frames}
           palette={palette}
           lighting={lighting}
+          quality={exporting ? "full" : quality}
+          onSlowView={autoQuality && quality === "full" ? handleSlowView : undefined}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
           ghostBeamId={ghostBeamId}
@@ -1301,6 +1332,8 @@ export default function BuilderScene() {
         }}
         onFit={() => setFitToken((token) => token + 1)}
         onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}
+        quality={quality}
+        onToggleQuality={toggleQuality}
         onUndo={api.undo}
         onRedo={api.redo}
         onSave={handleSave}

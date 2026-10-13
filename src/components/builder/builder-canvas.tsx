@@ -54,6 +54,13 @@ import { ComponentMesh, leavesFromStub } from "@/components/builder/component-mo
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
+import {
+  FRESH_WATCH,
+  QUALITY_SETTINGS,
+  endRun,
+  watchFrame,
+  type GraphicsQuality,
+} from "@/components/builder/graphics-quality";
 import type { Lighting, ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
@@ -469,6 +476,59 @@ const MIN_SHADOW_REACH_MM = 650;
 const SHADOW_MARGIN_MM = 250;
 
 /**
+ * Times the frames drawn while the view is being moved (the orbit controls
+ * between their start and end, or a part being dragged) and calls `onSlow`
+ * when those runs keep coming out slow (see endRun). It only watches: what to
+ * give up is the scene's call.
+ */
+function FrameWatcher({ dragging, onSlow }: { dragging: boolean; onSlow: () => void }) {
+  const controls = useThree((state) => state.controls) as unknown as EventDispatcherLike | null;
+  const watch = useRef(FRESH_WATCH);
+  const orbiting = useRef(false);
+  const moving = useRef(false);
+  const last = useRef<number | null>(null);
+  const report = useRef(onSlow);
+  useEffect(() => {
+    report.current = onSlow;
+  });
+
+  useEffect(() => {
+    if (!controls) return;
+    const start = () => (orbiting.current = true);
+    const end = () => (orbiting.current = false);
+    controls.addEventListener("start", start);
+    controls.addEventListener("end", end);
+    return () => {
+      controls.removeEventListener("start", start);
+      controls.removeEventListener("end", end);
+    };
+  }, [controls]);
+
+  useFrame(() => {
+    const now = performance.now();
+    const active = orbiting.current || dragging;
+    if (active && moving.current && last.current !== null) {
+      const next = watchFrame(watch.current, now - last.current);
+      watch.current = next.watch;
+      if (next.slow) report.current();
+    } else if (!active && moving.current) {
+      // the run is over: the gap before this frame may be rest, so it isn't timed
+      const next = endRun(watch.current);
+      watch.current = next.watch;
+      if (next.slow) report.current();
+    }
+    moving.current = active;
+    last.current = now;
+  });
+  return null;
+}
+
+type EventDispatcherLike = {
+  addEventListener: (type: string, listener: () => void) => void;
+  removeEventListener: (type: string, listener: () => void) => void;
+};
+
+/**
  * One high key light casts the only real shadows — short and crisp, like a
  * ceiling fixture. A rim from behind the view lifts white parts off the
  * backdrop. The key light's shadow camera follows the layout: sharp on a
@@ -480,15 +540,28 @@ function Lights({
   lighting,
   components,
   dragging,
+  shadowMapSize,
 }: {
   palette: ScenePalette;
   lighting: Lighting;
   components: BuilderComponent[];
   dragging: boolean;
+  /** px a side, from the graphics quality */
+  shadowMapSize: number;
 }) {
   const invalidate = useThree((state) => state.invalidate);
   // mutated in place; the ref is how the effect reaches it
   const keyRef = useRef<DirectionalLight>(null);
+
+  // A new map size takes only once the old map goes: three.js keeps the
+  // render target it made and builds the next one at the new size.
+  useEffect(() => {
+    const shadow = keyRef.current?.shadow;
+    if (!shadow?.map) return;
+    shadow.map.dispose();
+    shadow.map = null;
+    invalidate();
+  }, [shadowMapSize, invalidate]);
 
   useLayoutEffect(() => {
     const key = keyRef.current;
@@ -523,7 +596,7 @@ function Lights({
         ref={keyRef}
         castShadow={lighting.shadows}
         intensity={palette.keyLight * lighting.brightness}
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[shadowMapSize, shadowMapSize]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.8}
       />
@@ -877,6 +950,9 @@ export type BuilderCanvasProps = {
   frames: Frame[];
   palette: ScenePalette;
   lighting: Lighting;
+  quality: GraphicsQuality;
+  /** called when orbiting or dragging keeps running slow (see watchFrame); left out, nothing is watched */
+  onSlowView?: () => void;
   /** the selected parts; the last is the one the orbit falls back to */
   selection: string[];
   selectedBeamId: string | null;
@@ -956,6 +1032,8 @@ export default function BuilderCanvas({
   frames,
   palette,
   lighting,
+  quality,
+  onSlowView,
   selection,
   selectedBeamId,
   ghostBeamId,
@@ -1048,6 +1126,7 @@ export default function BuilderCanvas({
     }
     return ends;
   }, [components, connections]);
+  const settings = QUALITY_SETTINGS[quality];
   return (
     <Canvas
       orthographic
@@ -1058,16 +1137,24 @@ export default function BuilderCanvas({
       camera={{ position: [1400, 1150, 1400], near: -16000, far: 20000, zoom: 1 }}
       gl={{
         alpha: false,
-        antialias: true,
+        // the composer's MSAA smooths the edges; the context's own would pay for it twice
+        antialias: false,
         preserveDrawingBuffer: true,
         toneMapping: NeutralToneMapping,
       }}
-      dpr={[1, 2]}
+      dpr={settings.dpr}
     >
       <CanvasHandle onReady={onCanvasReady} />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights palette={palette} lighting={lighting} components={components} dragging={dragging} />
+      <Lights
+        palette={palette}
+        lighting={lighting}
+        components={components}
+        dragging={dragging}
+        shadowMapSize={settings.shadowMapSize}
+      />
+      {onSlowView ? <FrameWatcher dragging={dragging} onSlow={onSlowView} /> : null}
       <RingRoom dark={palette.mode === "dark"} />
       <Backdrop stops={palette.backdrop} />
 
@@ -1225,16 +1312,23 @@ export default function BuilderCanvas({
       />
 
       {/* the miniature finish: contact occlusion grounds every part, the
-          vignette pulls the eye to the middle of the layout */}
+          vignette pulls the eye to the middle of the layout. Light quality
+          keeps only the composer's anti-aliasing. */}
       <EffectComposer multisampling={4}>
-        <N8AO
-          aoRadius={30}
-          distanceFalloff={1}
-          intensity={palette.occlusion}
-          color="#000000"
-          halfRes
-        />
-        <Vignette offset={0.35} darkness={palette.vignette} />
+        {settings.effects ? (
+          <>
+            <N8AO
+              aoRadius={30}
+              distanceFalloff={1}
+              intensity={palette.occlusion}
+              color="#000000"
+              halfRes
+            />
+            <Vignette offset={0.35} darkness={palette.vignette} />
+          </>
+        ) : (
+          <></>
+        )}
       </EffectComposer>
     </Canvas>
   );

@@ -81,6 +81,8 @@ const ICONS = {
       <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
     </>
   ),
+  // a lightning bolt: light graphics, for speed
+  bolt: <path d="M13 3 5 13.5h6L10 21l8-10.5h-6Z" />,
   // a bulb: the lighting settings
   light: (
     <>
