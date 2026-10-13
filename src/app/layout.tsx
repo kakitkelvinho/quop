@@ -29,7 +29,7 @@ const ebGaramond = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kitkatho.github.io/quop";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kakitkelvinho.github.io/quop";
 const description = "Quantum optics notes, calculators, theory, and plotters.";
 
 export const metadata: Metadata = {
