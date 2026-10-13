@@ -18,7 +18,13 @@ const DEG = Math.PI / 180;
 /** how high over the table the handle floats, mm: just above the selection ring */
 const LIFT_MM = 0.9;
 /** half the bubble's width, mm */
-const BUBBLE_HALF_MM = 8;
+const BUBBLE_HALF_MM = 5.5;
+/** the bubble's length along the circle, mm, end caps included */
+const BUBBLE_LENGTH_MM = 30;
+/** half an arrowhead's width, mm */
+const HEAD_HALF_MM = 3;
+/** the skewer: the circle line running through the bubble, mm wide */
+const SKEWER_MM = 1.6;
 /** the bubble under the pointer or being dragged */
 const BUBBLE_HOVER = "#b8325a";
 const ARROW_INK = "#fffaf1";
@@ -53,19 +59,19 @@ function arcBand(cx: number, r0: number, r1: number, a0: number, a1: number, fad
   return geometry;
 }
 
-/** A two-headed arrow along a circle of radius r from a0 to a1. */
-function twoWayArrow(cx: number, r: number, a0: number, a1: number, width: number) {
-  const head = width * 2.6;
-  const reach = (head * 1.3) / r;
+/** Two arrowheads inside the bubble, pointing round the circle each way from its middle. */
+function arrowheads(cx: number, r: number, mid: number, half: number) {
   const point = (radius: number, t: number) => [cx + radius * Math.cos(t), LIFT_MM + 0.2, -radius * Math.sin(t)];
+  const gap = 2 / r; // between the two heads
+  const length = half / r; // along the circle
+  const spread = HEAD_HALF_MM; // across it
   const positions = [
-    // each head: two corners at the shaft's end, the tip further round the circle
-    ...point(r - head, a0 + reach), ...point(r + head, a0 + reach), ...point(r, a0),
-    ...point(r - head, a1 - reach), ...point(r + head, a1 - reach), ...point(r, a1),
+    ...point(r - spread, mid + gap), ...point(r + spread, mid + gap), ...point(r, mid + gap + length),
+    ...point(r - spread, mid - gap), ...point(r + spread, mid - gap), ...point(r, mid - gap - length),
   ];
   const geometry = new BufferGeometry();
   geometry.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
-  return { heads: geometry, shaft: arcBand(cx, r - width / 2, r + width / 2, a0 + reach * 0.9, a1 - reach * 0.9, 0) };
+  return geometry;
 }
 
 export type RotationHandleProps = {
@@ -89,26 +95,29 @@ export function RotationHandle({ component, color, lockedBy, rotating, onPointer
   const centred = offset === 0;
 
   const shapes = useMemo(() => {
-    // the bubble: an oval following the circle, with the two-way arrow inside it
-    const bubble = (r: number, a0: number, a1: number) => ({
-      fill: arcBand(0, r - BUBBLE_HALF_MM, r + BUBBLE_HALF_MM, a0, a1, 0),
-      caps: [a0, a1].map((t) => [r * Math.cos(t), LIFT_MM, -r * Math.sin(t)] as [number, number, number]),
-      arrow: twoWayArrow(0, r, a0 - 0.02, a1 + 0.02, 1.8),
-    });
+    // the bubble: a short sausage threaded on the circle, two arrowheads inside
+    const bubble = (r: number, mid: number) => {
+      const half = (BUBBLE_LENGTH_MM / 2 - BUBBLE_HALF_MM) / r;
+      return {
+        fill: arcBand(0, r - BUBBLE_HALF_MM, r + BUBBLE_HALF_MM, mid - half, mid + half, 0),
+        caps: [mid - half, mid + half].map((t) => [r * Math.cos(t), LIFT_MM, -r * Math.sin(t)] as [number, number, number]),
+        heads: arrowheads(0, r, mid, 5),
+      };
+    };
     if (centred) {
-      // just outside the ring, at the part's front-right
-      const r = ring + 14;
-      const a0 = -70 * DEG;
-      const a1 = -20 * DEG;
-      return { guide: null, ...bubble(r, a0, a1), mid: (a0 + a1) / 2, radius: r };
+      // threaded on the selection ring itself, at the part's front-right
+      const r = ring + 1.5;
+      const mid = -45 * DEG;
+      return { skewer: null, ...bubble(r, mid), mid, radius: r };
     }
-    // a faint quarter circle about the port, on the side away from the beam
-    // (local +z, which is the part's right), with the bubble at its middle
+    // a faint quarter circle about the port, on the part's right (local +z),
+    // threaded through the bubble at its middle
     const r = Math.max(38, ring + 10);
+    const mid = -90 * DEG;
     return {
-      guide: arcBand(0, r - 1.2, r + 1.2, -140 * DEG, -40 * DEG, 0.3),
-      ...bubble(r, -108 * DEG, -72 * DEG),
-      mid: -Math.PI / 2,
+      skewer: arcBand(0, r - SKEWER_MM / 2, r + SKEWER_MM / 2, mid - 50 * DEG, mid + 50 * DEG, 0.3),
+      ...bubble(r, mid),
+      mid,
       radius: r,
     };
   }, [centred, ring]);
@@ -128,9 +137,9 @@ export function RotationHandle({ component, color, lockedBy, rotating, onPointer
   }
 
   const labelAt: [number, number, number] = [
-    (shapes.radius + 26) * Math.cos(shapes.mid),
+    (shapes.radius + 20) * Math.cos(shapes.mid),
     4,
-    -(shapes.radius + 26) * Math.sin(shapes.mid),
+    -(shapes.radius + 20) * Math.sin(shapes.mid),
   ];
   const press = {
     onPointerDown: (event: ThreeEvent<PointerEvent>) => {
@@ -152,8 +161,8 @@ export function RotationHandle({ component, color, lockedBy, rotating, onPointer
 
   return (
     <group position={[x, 0, z]} rotation={[0, yaw, 0]}>
-      {shapes.guide ? (
-        <mesh geometry={shapes.guide} renderOrder={2}>
+      {shapes.skewer ? (
+        <mesh geometry={shapes.skewer} renderOrder={2}>
           <meshBasicMaterial color={color} vertexColors transparent opacity={0.85} {...over} />
         </mesh>
       ) : null}
@@ -166,10 +175,7 @@ export function RotationHandle({ component, color, lockedBy, rotating, onPointer
           <meshBasicMaterial color={active ? BUBBLE_HOVER : color} {...over} />
         </mesh>
       ))}
-      <mesh geometry={shapes.arrow.shaft} renderOrder={4}>
-        <meshBasicMaterial color={ARROW_INK} {...over} />
-      </mesh>
-      <mesh geometry={shapes.arrow.heads} renderOrder={4}>
+      <mesh geometry={shapes.heads} renderOrder={4}>
         <meshBasicMaterial color={ARROW_INK} {...over} />
       </mesh>
       {rotating ? (
