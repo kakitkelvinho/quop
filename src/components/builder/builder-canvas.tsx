@@ -704,12 +704,16 @@ const HALO = {
 /** A selected hidden beam's glow, × the halo's own opacity: enough to see where it runs, far short of a shown beam. */
 const GHOST_OPACITY = 0.5;
 
+/** The least a selected beam's halo is scaled by, so even a 10% beam is findable when selected. */
+const SELECTED_HALO_FLOOR = 0.35;
+
 /**
  * A beam, drawn in millimetres on the table: its width scales with the zoom
  * like the parts do. The core is a lit tube, one per leg with a ball at each
  * turn, so it reads as a round beam passing through the parts rather than a
- * flat stroke. A selected beam draws fully opaque with a stronger halo, so
- * even a faint one can be found by clicking its row.
+ * flat stroke. A selected beam keeps its own opacity, so the
+ * inspector's slider shows while it drags, and gets a stronger halo, scaled
+ * by that opacity down to a floor, so even a faint one can be found.
  */
 function BeamPath({
   points,
@@ -731,7 +735,8 @@ function BeamPath({
   ghost?: boolean;
 }) {
   const core = coreWanted && !ghost;
-  const alpha = ghost ? GHOST_OPACITY : selected ? 1 : opacity;
+  const alpha = ghost ? GHOST_OPACITY : opacity;
+  const haloAlpha = selected && !ghost ? Math.max(alpha, SELECTED_HALO_FLOOR) : alpha;
   const halo = core
     ? selected
       ? HALO.underCoreSelected
@@ -741,7 +746,7 @@ function BeamPath({
       : HALO.alone;
   const radius = width / 2;
   const haloRadius = radius * halo.width;
-  const haloMaterial = <HaloMaterial color={color} opacity={halo.opacity * alpha} />;
+  const haloMaterial = <HaloMaterial color={color} opacity={halo.opacity * haloAlpha} />;
   const arrowRadius = Math.max(3.5, width * 1.9);
   const legs = useMemo(() => {
     const result: {
