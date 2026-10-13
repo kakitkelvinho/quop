@@ -65,6 +65,10 @@ _Avoid_: link, wire, patch cord, fibre beam
 A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
 _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 
+**Delay line**:
+A translation stage with a retroreflector, on one port: light goes in, out to the retroreflector and back, and leaves where it came in. The beam is drawn to its port; the round trip, twice its arm, is added to the beam's path length.
+_Avoid_: delay stage, translation stage, retro
+
 **Periscope**:
 A pair of mirrors on one rod that takes a beam up or down to a new height: a lower mirror and a top mirror straight above it, each its own component and its own stop on a beam. They move, copy and go together.
 _Avoid_: beam elevator, riser

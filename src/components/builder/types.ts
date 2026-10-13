@@ -35,7 +35,8 @@ export type ComponentType =
   | "eom"
   | "faraday-isolator"
   | "periscope"
-  | "periscope-top";
+  | "periscope-top"
+  | "delay-line";
 
 export type LensShape = "plano-convex" | "biconvex";
 
@@ -85,6 +86,15 @@ export type BuilderComponent = {
    * it stands straight above or below it, at its own height
    */
   periscope?: string;
+  /** delay line only, mm: the shortest and longest the arm can be set to; missing means DELAY_RANGE_MM */
+  delayMinMm?: number;
+  delayMaxMm?: number;
+  /**
+   * delay line only, mm from its port to the retroreflector, held between its
+   * shortest and longest; missing means its shortest. A beam through it
+   * travels this twice, out and back.
+   */
+  delayMm?: number;
   /** particle only: the trap or cavity it sits in; it sits at the host's centre */
   host?: string;
   /** particle only, mm; missing means PARTICLE_RADIUS_MM */
@@ -403,6 +413,14 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 30,
     radius: 30,
   },
+  "delay-line": {
+    label: "Delay line",
+    tag: "Delay",
+    aliases: ["delay stage", "translation stage", "retroreflector", "corner cube", "optical delay"],
+    top: 22,
+    minHeight: 30,
+    radius: 40,
+  },
 };
 
 export type ComponentGroup = { name: string; types: ComponentType[] };
@@ -410,7 +428,7 @@ export type ComponentGroup = { name: string; types: ComponentType[] };
 /** Palette grouping — reads as a bench walk-through: make it, steer it, shape it, read it. */
 export const COMPONENT_GROUPS: ComponentGroup[] = [
   { name: "Source", types: ["laser-source", "fiber-collimator"] },
-  { name: "Steering", types: ["mirror-mount", "beam-splitter", "periscope", "periscope-top"] },
+  { name: "Steering", types: ["mirror-mount", "beam-splitter", "periscope", "periscope-top", "delay-line"] },
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
   { name: "Modulation", types: ["aom", "eom", "faraday-isolator"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
@@ -471,6 +489,9 @@ export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [30, 130];
 export const DEFAULT_PHOTODIODE_COLOR = "#b3261e";
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
+/** A delay line's arm, port to retroreflector, mm: the range a new one has, and the most any can have. */
+export const DELAY_RANGE_MM: [number, number] = [50, 350];
+export const DELAY_LIMIT_MM: [number, number] = [0, 2000];
 /** How far above its lower mirror a new periscope's top mirror stands, mm. */
 export const PERISCOPE_RISE_MM = 100;
 /** A particle dropped within this distance of a host's centre snaps into it, mm. */
@@ -557,9 +578,44 @@ export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): 
   return first?.type === "laser-source" ? (first.internalPathMm ?? 0) : 0;
 }
 
+/** A delay line's arm, mm: its shortest, its longest, and where its retroreflector is set between them. */
+export function delaySetting(component: BuilderComponent): { min: number; max: number; arm: number } {
+  const min = clamp(component.delayMinMm ?? DELAY_RANGE_MM[0], DELAY_LIMIT_MM);
+  const max = clamp(component.delayMaxMm ?? DELAY_RANGE_MM[1], [min, DELAY_LIMIT_MM[1]]);
+  return { min, max, arm: clamp(component.delayMm ?? min, [min, max]) };
+}
+
+/**
+ * The path a beam picks up inside delay lines, mm: out to the retroreflector
+ * and back, each time it passes through one (a stop in the middle of it).
+ */
+export function beamDelayMm(components: BuilderComponent[], beam: Beam): number {
+  let total = 0;
+  beam.path.forEach((id, index) => {
+    if (index === 0 || index === beam.path.length - 1) return;
+    const component = componentById(components, id);
+    if (component?.type === "delay-line") total += 2 * delaySetting(component).arm;
+  });
+  return total;
+}
+
+/**
+ * Where a part's port sits along its local x, mm from its body's centre. A
+ * delay line's port is the front of its rail, half the rail ahead of its middle.
+ */
+export function componentReferenceX(component: BuilderComponent): number {
+  if (component.type === "delay-line") return delayRailMm(component) / 2;
+  return COMPONENT_SPECS[component.type].referenceX ?? 0;
+}
+
+/** A delay line's rail, front to back, mm: its longest arm and room for the carriage behind it. */
+export function delayRailMm(component: BuilderComponent): number {
+  return delaySetting(component).max + 40;
+}
+
 /** How far, in world x and z, a part's port sits from its body's centre: its referenceX turned with it. */
-function portShift(type: ComponentType, rotation: number): [number, number] {
-  const offset = COMPONENT_SPECS[type].referenceX ?? 0;
+function portShift(component: BuilderComponent, rotation = component.rotation): [number, number] {
+  const offset = componentReferenceX(component);
   const yaw = (rotation * Math.PI) / 180;
   return [offset * Math.cos(yaw), -offset * Math.sin(yaw)];
 }
@@ -580,7 +636,7 @@ export function referencePoint(component: BuilderComponent): Vec3 {
  */
 export function bodyCentre(component: BuilderComponent): Vec3 {
   const [x, y, z] = component.position;
-  const [dx, dz] = portShift(component.type, component.rotation);
+  const [dx, dz] = portShift(component);
   return [x - dx, y, z - dz];
 }
 
@@ -594,12 +650,13 @@ export function beamPoints(components: BuilderComponent[], path: string[]): Vec3
 
 /**
  * Length of the beam, mm: the straight 3D run through its reference points,
- * plus the built-in path of the laser it starts at.
+ * plus the built-in path of the laser it starts at and the round trip in
+ * every delay line it passes through.
  */
 export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
   const points = beamPoints(components, beam.path);
 
-  let total = beamInternalPathMm(components, beam);
+  let total = beamInternalPathMm(components, beam) + beamDelayMm(components, beam);
   for (let index = 1; index < points.length; index += 1) {
     const [ax, ay, az] = points[index - 1];
     const [bx, by, bz] = points[index];
@@ -639,6 +696,9 @@ export function componentRadius(component: BuilderComponent): number {
     // drawn from the thread's back at x = -29 to the nose, so the far end sets the ring
     const length = clamp(component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM, OBJECTIVE_LENGTH_RANGE_MM);
     return Math.max(COMPONENT_SPECS.objective.radius, length - 29 + 8);
+  }
+  if (component.type === "delay-line") {
+    return Math.max(COMPONENT_SPECS["delay-line"].radius, delayRailMm(component) / 2 + 12);
   }
   if (component.type === "block") {
     const [dx, , dz] = component.size ?? BLOCK_SIZE_MM;
@@ -950,13 +1010,16 @@ function mirrorAngleStop(
   beams: Beam[],
   component: BuilderComponent,
 ): { beam: Beam; index: number } | undefined {
-  if (component.type !== "mirror-mount" && !PERISCOPE_MIRRORS.has(component.type)) return undefined;
+  if (!MIRROR_LIKE.has(component.type) && !PERISCOPE_MIRRORS.has(component.type)) return undefined;
   for (const beam of beams) {
     const index = beam.path.indexOf(component.id, 1);
     if (index > 0 && index < beam.path.length - 1) return { beam, index };
   }
   return undefined;
 }
+
+/** A delay line turns like a mirror: its port looks back between where the light comes from and where it goes. */
+const MIRROR_LIKE = new Set<ComponentType>(["mirror-mount", "delay-line"]);
 
 /** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
 const PERISCOPE_MIRRORS = new Set<ComponentType>(["periscope", "periscope-top"]);
@@ -1395,6 +1458,19 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
   }
   if (type === "periscope-top" && typeof raw.periscope === "string") component.periscope = raw.periscope;
+  if (type === "delay-line") {
+    const min = finiteNumber(raw.delayMinMm);
+    const max = finiteNumber(raw.delayMaxMm);
+    const arm = finiteNumber(raw.delayMm);
+    if (min !== undefined) component.delayMinMm = clamp(min, DELAY_LIMIT_MM);
+    if (max !== undefined) component.delayMaxMm = clamp(max, DELAY_LIMIT_MM);
+    if (arm !== undefined) component.delayMm = clamp(arm, DELAY_LIMIT_MM);
+    // a range given backwards, or an arm outside it, is read as the builder would hold it
+    const held = delaySetting(component);
+    if (min !== undefined) component.delayMinMm = held.min;
+    if (max !== undefined) component.delayMaxMm = held.max;
+    if (arm !== undefined) component.delayMm = held.arm;
+  }
   if (type === "laser-source") {
     const internal = finiteNumber(raw.internalPathMm);
     if (internal !== undefined) component.internalPathMm = clamp(internal, INTERNAL_PATH_RANGE_MM);
@@ -1630,7 +1706,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
  */
 function movedToPorts(scene: BuilderSceneData): BuilderSceneData {
   const components = scene.components.map((component) => {
-    const [dx, dz] = portShift(component.type, component.rotation);
+    const [dx, dz] = portShift(component);
     if (dx === 0 && dz === 0) return component;
     const [x, y, z] = component.position;
     const [px, pz] = clampToTable(x + dx, z + dz);

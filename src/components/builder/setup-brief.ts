@@ -22,6 +22,8 @@ import {
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
+  DELAY_LIMIT_MM,
+  DELAY_RANGE_MM,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   FRAME_COLORS,
@@ -101,6 +103,18 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
   periscope: {
     text: "the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.",
     only: "periscope-top",
+  },
+  delayMinMm: {
+    text: `mm, the shortest its arm (port to retroreflector) can be set to, ${range(DELAY_LIMIT_MM)}; default ${DELAY_RANGE_MM[0]}.`,
+    only: "delay-line",
+  },
+  delayMaxMm: {
+    text: `mm, the longest its arm can be set to, from \`delayMinMm\` to ${DELAY_LIMIT_MM[1]}; default ${DELAY_RANGE_MM[1]}. Its rail is drawn this long.`,
+    only: "delay-line",
+  },
+  delayMm: {
+    text: "mm from its port to the retroreflector, between `delayMinMm` and `delayMaxMm`; default `delayMinMm`. A beam through it travels this twice, out and back, and counts both in its path length.",
+    only: "delay-line",
   },
   particleRadius: {
     text: `mm, ${range(PARTICLE_RADIUS_RANGE_MM)}; default ${PARTICLE_RADIUS_MM}.`,
@@ -269,6 +283,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 - **Beams are not traced.** A beam is drawn as straight lines between the parts in its \`path\`, whatever way they face. A rotation only makes the drawing look right, so to turn a beam, put a mirror at the corner in its path.
 - A **laser** or **fibre collimator** emits along its own +x: rotation 0 fires toward +x, 90 toward −z, 180 toward −x, 270 toward +z.
 - A part the beam passes through (a lens, waveplate, filter, iris, sample, objective, AOM, EOM, Faraday isolator or cavity) has its optical axis along its own x: rotation 0 for a beam along x, 90 for a beam along z. A **Faraday isolator** lets light through travelling along its +x, and its rejection port is on its +z side: draw light leaving that port as its own beam, starting at the isolator.
+- A **delay line** has one port, at its position, where light goes in and comes back out: put it in the middle of a beam, \`[..., "m1", "delay", "m2", ...]\`, and the builder turns its port to face between the stops before and after it, like a mirror. Its rail runs back from the port along its −x. The beam is drawn to the port and away from it; the round trip to the retroreflector, twice \`delayMm\`, is added to its path length.
 - A **periscope** is two parts: a \`periscope\` (its lower mirror, on the rod) and a \`periscope-top\` (its upper mirror) whose \`periscope\` field names it. Give both the same x and z and their own heights, and put both in the beam's path, one after the other: \`[..., "peri", "peri-top", ...]\`. The beam runs straight up (or down) between them, and that rise counts in its path length. Each mirror is turned by the builder to face its neighbour off to the side, like a mirror in the middle of a beam. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the rotation of the beam's direction of travel.
 - A **mirror** in the middle of a beam, and a **photodiode**, **camera**, **spectrometer** or **single-photon detector** at the end of one, are turned by the builder: the mirror to reflect the beam from the stop before it to the stop after, the detector to face the stop before it. Any rotation you write for them is replaced, so 0 will do. A mirror at either end of a path keeps the rotation you give it; its reflecting face looks along its +x.
 - A **beam cube**'s reflecting diagonal runs from its −x−z corner to its +x+z corner: at rotation 0, light travelling +x carries on along +x and is reflected toward +z; at rotation 90, light travelling +x is reflected toward −z. Draw the reflected arm as its own beam, starting at the cube.

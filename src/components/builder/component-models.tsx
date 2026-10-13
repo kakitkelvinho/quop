@@ -36,7 +36,6 @@ import {
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
-  COMPONENT_SPECS,
   CONNECTION_KINDS,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
@@ -45,7 +44,10 @@ import {
   clamp,
   componentDisplayName,
   componentRadius,
+  componentReferenceX,
   componentTop,
+  delayRailMm,
+  delaySetting,
   type BuilderComponent,
   type ComponentType,
   type ConnectionKind,
@@ -660,6 +662,69 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
           <meshBasicMaterial color="#f4f4f4" toneMapped={false} />
         </mesh>
       </group>
+    </group>
+  );
+}
+
+/**
+ * A delay line: a translation stage's rail along the beam, a port plate at its
+ * front (+x) end where light goes in and comes back out, and a carriage on the
+ * rail with a hollow corner-cube retroreflector facing the port, `arm` mm
+ * behind it. Setting the arm slides the carriage; the rail is as long as the
+ * longest arm. A drive knob stands at the back.
+ */
+function DelayLine({ palette, axis, rail, arm }: ModelProps & { rail: number; arm: number }) {
+  const front = rail / 2;
+  const railY = axis - 26;
+  const retroX = front - arm;
+  return (
+    <group>
+      {[front - 18, -front + 18].map((x) => (
+        <group key={x} position={[x, 0, 0]}>
+          <Pillar palette={palette} top={railY - 5} />
+        </group>
+      ))}
+      <RoundedBox args={[rail, 10, 34]} radius={1} smoothness={2} position={[0, railY, 0]}>
+        <Anodised color={palette.anodise} />
+      </RoundedBox>
+      {/* the guide on top of the rail */}
+      <mesh position={[0, railY + 6, 0]}>
+        <boxGeometry args={[rail - 8, 2, 12]} />
+        <Hardware palette={palette} />
+      </mesh>
+      {/* the port: an upright plate with its aperture on the beam */}
+      <mesh position={[front - 3, axis - 6, 0]}>
+        <boxGeometry args={[6, 52, 34]} />
+        <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+      </mesh>
+      <mesh position={[front + 0.05, axis, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <circleGeometry args={[6, 24]} />
+        <meshStandardMaterial color="#0b0d10" roughness={0.9} />
+      </mesh>
+      {/* the carriage, and the retroreflector on it facing the port */}
+      <group position={[retroX, 0, 0]}>
+        <RoundedBox args={[34, 8, 40]} radius={1} smoothness={2} position={[-8, railY + 11, 0]}>
+          <Enamel color={palette.body} />
+        </RoundedBox>
+        <mesh position={[-8, (railY + 15 + axis - 15) / 2, 0]}>
+          <boxGeometry args={[14, axis - railY - 30, 22]} />
+          <Enamel color={palette.body} />
+        </mesh>
+        <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[15, 15, 16, 36]} />
+          <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+        </mesh>
+        {/* the corner cube: three mirror facets meeting at a point behind the face */}
+        <mesh position={[-4, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <coneGeometry args={[12.5, 8, 3]} />
+          <meshStandardMaterial color="#ffffff" roughness={0.05} metalness={1} envMapIntensity={3} />
+        </mesh>
+      </group>
+      {/* the drive knob at the back */}
+      <mesh position={[-front - 6, railY, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[9, 9, 12, 28]} />
+        <meshStandardMaterial color={palette.anodise} roughness={0.55} metalness={0.3} flatShading />
+      </mesh>
     </group>
   );
 }
@@ -1863,7 +1928,7 @@ export function ComponentMesh({
       onPointerOut={onPointerOut}
     >
       {/* the group stands at the part's port; its body is drawn behind it */}
-      <group position={[-(COMPONENT_SPECS[component.type].referenceX ?? 0), 0, 0]}>
+      <group position={[-componentReferenceX(component), 0, 0]}>
         {component.type === "laser-source" ? (
           <LaserSource {...modelProps} />
         ) : null}
@@ -1921,6 +1986,9 @@ export function ComponentMesh({
         {component.type === "aom" ? <Aom {...modelProps} /> : null}
         {component.type === "eom" ? <Eom {...modelProps} /> : null}
         {component.type === "faraday-isolator" ? <FaradayIsolator {...modelProps} /> : null}
+        {component.type === "delay-line" ? (
+          <DelayLine {...modelProps} rail={delayRailMm(component)} arm={delaySetting(component).arm} />
+        ) : null}
         {component.type === "periscope" ? (
           <>
             <PeriscopeStand palette={palette} axis={axis} rotation={component.rotation} top={partner} />

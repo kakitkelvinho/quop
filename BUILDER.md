@@ -216,6 +216,18 @@ pass through it, the first in the beam list wins, and the inspector names it
 other. A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
+**A delay line adds its round trip.** A delay line is a translation stage
+with one port at its front, where light goes in and comes back out, and a
+retroreflector on a carriage behind it. It is placed by its port, and its
+rail runs back from it, as long as its longest arm. Its inspector sets the
+shortest and longest arm (port to retroreflector, 50–350 mm by default, up
+to 2000 mm) and, with a slider, where the retroreflector sits between them;
+the carriage slides to match. A beam through it (a stop in the middle) is
+drawn to the port and away from it, and gains twice the arm, out and back,
+each time it passes, which its inspector names ("Includes … mm in delay
+lines"). A beam that only starts or ends at it gains nothing. Like a mirror,
+its port turns to face between the stops before and after it.
+
 **A periscope is two stops.** Placing a periscope puts down its lower mirror
 and, 100 mm above it, its top mirror: two parts, each a stop a beam can pass,
 so a beam runs `… → Peri → Peri top → …` and the rise between them counts in
