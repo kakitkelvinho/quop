@@ -19,6 +19,7 @@ import {
   FrameInspector,
   GroupInspector,
 } from "@/components/builder/builder-inspector";
+import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
@@ -72,6 +73,7 @@ export type BuilderHudProps = {
   showLabels: boolean;
   showGrid: boolean;
   showPosts: boolean;
+  lighting: Lighting;
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
@@ -122,6 +124,7 @@ export type BuilderHudProps = {
   onToggleLabels: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
+  onLightingChange: (patch: Partial<Lighting>) => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -642,6 +645,72 @@ function FileMenu({
   );
 }
 
+/** The lightbulb: a bubble of lighting settings under the tool pill. */
+function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (patch: Partial<Lighting>) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div className="builderLighting" ref={ref}>
+      <button
+        type="button"
+        className={`builderIconBtn${open ? " is-active" : ""}`}
+        aria-label="Lighting"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        title="Lighting"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <Icon name="light" />
+      </button>
+      {open ? (
+        <div className="builderLighting__bubble" role="dialog" aria-label="Lighting">
+          <label className="builderField">
+            <span className="builderField__label">
+              Brightness
+              <span className="builderReadout">{Math.round(lighting.brightness * 100)}%</span>
+            </span>
+            <input
+              className="builderSlider"
+              type="range"
+              min={BRIGHTNESS_RANGE[0]}
+              max={BRIGHTNESS_RANGE[1]}
+              step={0.05}
+              value={lighting.brightness}
+              onChange={(event) => onChange({ brightness: Number(event.target.value) })}
+            />
+          </label>
+          <label className="builderLighting__toggle">
+            Shadows
+            <input
+              type="checkbox"
+              role="switch"
+              checked={lighting.shadows}
+              onChange={(event) => onChange({ shadows: event.target.checked })}
+            />
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function BuilderHud(props: BuilderHudProps) {
   const {
     components,
@@ -863,6 +932,7 @@ export default function BuilderHud(props: BuilderHudProps) {
               <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
               <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
               <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
+              <LightingMenu lighting={props.lighting} onChange={props.onLightingChange} />
               <span className="builderIsland__sep" />
               <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
               <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />

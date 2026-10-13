@@ -2464,6 +2464,44 @@ html[data-theme="dark"] .builderIsland {
   border-top: 1px solid var(--border);
 }
 
+/* the lightbulb's bubble hangs under the tool pill, over the cheat sheet tab */
+.builderLighting {
+  position: relative;
+  display: flex;
+}
+
+.builderLighting__bubble {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  z-index: 50;
+  display: grid;
+  gap: 0.6rem;
+  width: 13rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  translate: -50% 0;
+  animation: builderDrop 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.builderLighting__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.builderLighting__toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 /* top centre: tools, the parts tray, and the mode badge */
 .builderHud__center {
   position: absolute;
@@ -3669,6 +3707,7 @@ html[data-theme="dark"] .builderButton--primary {
   .builderParts,
   .builderAbout,
   .builderMenu__list,
+  .builderLighting__bubble,
   .builderHud__inspector {
     animation: none;
   }
