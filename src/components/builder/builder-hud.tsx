@@ -26,6 +26,7 @@ import {
   beamLengthMm,
   derivedAngleBeam,
   frameDisplayName,
+  periscopePartner,
   type Beam,
   type BuilderComponent,
   type ComponentType,
@@ -34,6 +35,12 @@ import {
   type Frame,
   type BuilderSceneData,
 } from "@/components/builder/types";
+
+/** The beam that turns a periscope's top mirror, when the lower one is the part shown. */
+function partnerAngleBeam(components: BuilderComponent[], beams: Beam[], component: BuilderComponent): Beam | undefined {
+  const partner = component.type === "periscope" ? periscopePartner(components, component) : undefined;
+  return partner && derivedAngleBeam(beams, partner);
+}
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
@@ -713,6 +720,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         component={selected[0]}
         components={components}
         angleBeam={derivedAngleBeam(beams, selected[0])}
+        partnerAngleBeam={partnerAngleBeam(components, beams, selected[0])}
         onUpdate={props.onUpdateSelected}
         onUpdateOther={props.onUpdateComponent}
         onCheckpoint={props.onCheckpoint}

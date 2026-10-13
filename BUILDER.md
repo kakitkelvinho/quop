@@ -219,9 +219,13 @@ hand. Beam cubes always turn by hand.
 **A periscope is two stops.** Placing a periscope puts down its lower mirror
 and, 100 mm above it, its top mirror: two parts, each a stop a beam can pass,
 so a beam runs `… → Peri → Peri top → …` and the rise between them counts in
-its path length. The top mirror always stands straight above (or below) the
-lower one: dragging, nudging, copying or deleting either takes the whole
-periscope, and either one's inspector sets both mirrors' heights. Each mirror
+its path length. It is one part everywhere but the beam: clicking either
+mirror selects the periscope, and its one inspector sets its label, place
+and mount colour, each mirror's height and each mirror's yaw. The top
+mirror always stands straight above (or below) the lower one and takes its
+label (marked "top") and colour; dragging, nudging, copying or deleting
+either mirror takes the whole periscope. While a beam is drawn, a click on
+a mirror adds that mirror. Each mirror
 is tipped 45° and angles itself like a mirror, turning to face the one
 neighbour that is not straight above or below it; with both neighbours off to
 the side it bisects them as a flat mirror would. Its rod stands to one side,

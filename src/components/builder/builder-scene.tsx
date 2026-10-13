@@ -41,6 +41,7 @@ import {
   clampToTable,
   componentById,
   periscopePartner,
+  selectableId,
   withPeriscopePartners,
   componentDisplayName,
   findHost,
@@ -253,10 +254,11 @@ export default function BuilderScene() {
     sceneRef.current = scene;
   }, [scene]);
 
-  // an id undo or a delete took off the table drops out here
+  // an id undo or a delete took off the table drops out here, and a
+  // periscope's top mirror stands for its periscope, selected by its lower one
   const selectedComponents = useMemo(
     () =>
-      selection
+      [...new Set(selection.map((id) => selectableId(scene.components, id)))]
         .map((id) => componentById(scene.components, id))
         .filter((component): component is BuilderComponent => component !== undefined),
     [scene.components, selection],
@@ -366,12 +368,12 @@ export default function BuilderScene() {
       setSelectedBeamId(null);
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
-      // pressed as one of several selected parts, it drags them all
-      const group = selectedIds.length > 1 && selectedIds.includes(id) ? selectedIds : null;
-      if (!group) setSelection([id]);
-      // a periscope's top mirror is dragged by its lower one, which carries it
+      // a periscope is selected, and dragged, by its lower mirror, which carries its top one
       const base = pressed.type === "periscope-top" ? periscopePartner(sceneRef.current.components, pressed) : undefined;
       const component = base ?? pressed;
+      // pressed as one of several selected parts, it drags them all
+      const group = selectedIds.length > 1 && selectedIds.includes(component.id) ? selectedIds : null;
+      if (!group) setSelection([component.id]);
       // the press hits the part up at its height; the drag follows the table
       const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
       dragRef.current = {
@@ -396,7 +398,7 @@ export default function BuilderScene() {
 
   // Ctrl/⌘ + click adds the part under the pointer to the selection, or takes it out.
   const togglePointedPart = useCallback(() => {
-    const id = hoveredRef.current;
+    const id = hoveredRef.current && selectableId(sceneRef.current.components, hoveredRef.current);
     if (!id) return;
     setSelection((current) =>
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],

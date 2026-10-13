@@ -719,6 +719,12 @@ export function periscopePartner(
   return components.find((entry) => entry.type === "periscope-top" && entry.periscope === component.id);
 }
 
+/** The part that is selected when this one is clicked: a periscope's top mirror selects its periscope. */
+export function selectableId(components: BuilderComponent[], id: string): string {
+  const component = componentById(components, id);
+  return (component?.type === "periscope-top" && periscopePartner(components, component)?.id) || id;
+}
+
 /** The ids, with the other mirror of every periscope among them added: the two move, copy and go as one. */
 export function withPeriscopePartners(components: BuilderComponent[], ids: string[]): string[] {
   const all = new Set(ids);
@@ -730,11 +736,17 @@ export function withPeriscopePartners(components: BuilderComponent[], ids: strin
   return [...all];
 }
 
+/** A periscope top mirror's label: its periscope's, marked as the top. */
+export function periscopeTopLabel(base: BuilderComponent): string | undefined {
+  const label = base.label?.trim();
+  return label ? `${label} top` : undefined;
+}
+
 /**
  * Keep every periscope top mirror straight above (or below) its lower mirror,
- * at its own height, and let go of a lower mirror that no longer exists. Run
- * after every edit, like settleHosts, so moving either mirror's periscope
- * carries the other.
+ * at its own height, with its periscope's label (marked as the top) and mount
+ * colour, and let go of a lower mirror that no longer exists. Run after every
+ * edit, like settleHosts, so the periscope is edited as one part.
  */
 export function settlePeriscopes(scene: BuilderSceneData): BuilderSceneData {
   let changed = false;
@@ -748,9 +760,15 @@ export function settlePeriscopes(scene: BuilderSceneData): BuilderSceneData {
       return loose;
     }
     const [x, y, z] = component.position;
-    if (x === base.position[0] && z === base.position[2]) return component;
+    const label = periscopeTopLabel(base);
+    if (x === base.position[0] && z === base.position[2] && component.label === label && component.color === base.color) {
+      return component;
+    }
     changed = true;
-    return { ...component, position: [base.position[0], y, base.position[2]] as Vec3 };
+    const next: BuilderComponent = { ...component, position: [base.position[0], y, base.position[2]], color: base.color };
+    if (label === undefined) delete next.label;
+    else next.label = label;
+    return next;
   });
   return changed ? { ...scene, components } : scene;
 }
