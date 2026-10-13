@@ -21,6 +21,7 @@ import {
   DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
+  DEFAULT_HOUSING_COLORS,
   INTERNAL_PATH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   CAVITY_LENGTH_RANGE_MM,
@@ -737,6 +738,13 @@ export function ComponentInspector({
         <ColorField
           label="Dome colour"
           value={component.color ?? DEFAULT_PHOTODIODE_COLOR}
+          onChange={(color) => onUpdate({ color })}
+        />
+      ) : null}
+      {DEFAULT_HOUSING_COLORS[component.type] ? (
+        <ColorField
+          label="Housing colour"
+          value={component.color ?? DEFAULT_HOUSING_COLORS[component.type]!}
           onChange={(color) => onUpdate({ color })}
         />
       ) : null}

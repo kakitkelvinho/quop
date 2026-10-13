@@ -1667,7 +1667,7 @@ const CAMERA_DEPTH_MM = 25;
 const CAMERA_HALF_MM = 25;
 const CAMERA_FRONT_X = -9;
 
-function CameraBody({ palette, axis }: ModelProps) {
+function CameraBody({ palette, color, axis }: ModelProps) {
   return (
     <group>
       {/* flush with the body's underside, not sunk into it */}
@@ -1678,7 +1678,7 @@ function CameraBody({ palette, axis }: ModelProps) {
         smoothness={3}
         position={[CAMERA_FRONT_X + CAMERA_DEPTH_MM / 2, axis, 0]}
       >
-        <Enamel color={palette.body} />
+        <Enamel color={color ?? palette.body} />
       </RoundedBox>
       {/* C-mount barrel on the axis */}
       <mesh position={[-12, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -1693,13 +1693,13 @@ function CameraBody({ palette, axis }: ModelProps) {
   );
 }
 
-function Spectrometer({ palette, axis }: ModelProps) {
+function Spectrometer({ palette, color, axis }: ModelProps) {
   const body = axis + 20;
   return (
     <group>
       <mesh position={[0, body / 2, 0]}>
         <boxGeometry args={[110, body, 80]} />
-        <Enamel color={palette.body} />
+        <Enamel color={color ?? palette.body} />
       </mesh>
       {/* input slit / fibre port, on the shared axis */}
       <mesh position={[-57, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
@@ -1736,7 +1736,7 @@ const FC_TIP_LENGTH_MM = 2;
 /** where the thread ridges sit on the barrel, mm out from the flange */
 const FC_THREAD_MM = [1.5, 3.5, 5.5];
 
-function SinglePhotonDetector({ palette, axis }: ModelProps) {
+function SinglePhotonDetector({ palette, color, axis }: ModelProps) {
   const flangeOut = SPCM_FACE_X - FC_FLANGE_DEPTH_MM;
   const barrelEnd = flangeOut - FC_BARREL_LENGTH_MM;
   const tipEnd = barrelEnd - FC_TIP_LENGTH_MM;
@@ -1749,7 +1749,7 @@ function SinglePhotonDetector({ palette, axis }: ModelProps) {
         smoothness={3}
         position={[SPCM_FACE_X + SPCM_DEPTH_MM / 2, axis, 0]}
       >
-        <Enamel color={palette.anodise} />
+        <Enamel color={color ?? palette.anodise} />
       </RoundedBox>
       {/* the FC receptacle: a square flange flat on the face, a threaded
           barrel, and the ceramic sleeve with the dark bore the fiber meets */}
