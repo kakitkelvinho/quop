@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 export default function BuilderPage() {
   return (
     <section className="builderPage">
+      <h1 className="sr-only">Tabletop</h1>
       <BuilderSceneLoader />
     </section>
   );

@@ -1416,7 +1416,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           <div className="fitsInspectorGrid">
             <section className="fitsInspectorCard">
               <div className="fitsInspectorCard__header">
-                <p className="sectionCard__kicker">Slice</p>
                 <h3>1D intensity plot</h3>
               </div>
               <div className="fitsSliceControls">
@@ -1491,7 +1490,6 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           <section className="fitsSlicePanel">
             <div className="fitsSlicePanel__header">
               <div>
-                <p className="sectionCard__kicker">Slice Plot</p>
                 <h3>{sliceSeries.selectionLabel}</h3>
               </div>
             </div>

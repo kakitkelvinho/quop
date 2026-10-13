@@ -51,40 +51,62 @@ html[data-theme="dark"] {
   --font-serif: var(--font-eb-garamond), Georgia, "Times New Roman", serif;
 }
 
-* {
-  box-sizing: border-box;
-}
+/* Element defaults sit in the base layer, under Tailwind's utilities, so a
+   utility class on an element (font-bold on a button) still wins. */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-html {
-  min-height: 100%;
-  background: var(--background);
-}
+  html {
+    min-height: 100%;
+    background: var(--background);
+  }
 
-body {
-  min-height: 100vh;
-  margin: 0;
-  color: var(--foreground);
-  font-family: var(--font-sans);
-  line-height: 1.6;
-  background: var(--background);
-}
+  body {
+    min-height: 100vh;
+    margin: 0;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    background: var(--background);
+  }
 
-a {
-  color: inherit;
-}
+  a {
+    color: inherit;
+  }
 
-button,
-input,
-select {
-  font: inherit;
-}
+  button,
+  input,
+  select {
+    font: inherit;
+  }
 
-code {
-  padding: 0.1rem 0.35rem;
-  border-radius: 0.35rem;
-  background: var(--accent-soft);
-  font-family: var(--font-mono);
-  font-size: 0.92em;
+  code {
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.35rem;
+    background: var(--accent-soft);
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
+
+  h1,
+  h2 {
+    text-wrap: balance;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
+  html {
+    scrollbar-color: color-mix(in srgb, var(--muted) 50%, transparent) transparent;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--accent);
+  }
 }
 
 .themeToggle__iconWrap {
@@ -154,6 +176,7 @@ h2 {
 }
 
 .siteFooter a {
+  padding: 0.15rem 0.1rem;
   color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 0.18em;
@@ -1043,7 +1066,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   width: 1rem;
   height: 1rem;
   margin: 0;
-  accent-color: #d17a22;
+  accent-color: var(--accent);
 }
 
 .interactiveChart__checkboxRow span {
@@ -1095,7 +1118,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 
 .interactiveChart__slider {
   width: 100%;
-  accent-color: #d17a22;
+  accent-color: var(--accent);
 }
 
 .interactiveChart__applyButton {
@@ -1166,7 +1189,6 @@ main:focus {
   outline: none;
 }
 
-.themeToggle:focus-visible,
 .buttonLink:focus-visible,
 .siteFooter a:focus-visible,
 .field__control:focus-within {
@@ -1224,6 +1246,12 @@ html[data-theme="dark"] .skipLink {
 @media (max-width: 640px) {
   .field__control {
     flex-wrap: wrap;
+  }
+
+  /* a short unit stays beside its number; only a select too wide for the row wraps */
+  .field__control input {
+    flex: 1 1 4rem;
+    width: auto;
   }
 
   .csvRoleRow {
@@ -2082,10 +2110,10 @@ html[data-theme="dark"] .fitsColorControl__select {
   aspect-ratio: var(--fits-aspect, 1);
 }
 
-/* the pixel numbers hang off the plot's left and bottom edges, in room the
-   viewport keeps for them */
+/* the pixel numbers hang off the plot's left and bottom edges, and the last
+   x tick half over its right edge, in room the viewport keeps for them */
 .fitsImageViewport--ticked {
-  padding: 0 0 1.1rem 2.4rem;
+  padding: 0 0.75rem 1.1rem 2.4rem;
 }
 
 .fitsImageTicks {
@@ -2332,7 +2360,7 @@ html[data-theme="dark"] .builderIsland {
 .builderReadout {
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -2360,7 +2388,7 @@ html[data-theme="dark"] .builderIsland {
   padding: 0 0.55rem 0 0.35rem;
   border-radius: 0.55rem;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-decoration: none;
@@ -2739,7 +2767,7 @@ html[data-theme="dark"] .builderGuideButton {
   background: var(--surface);
   color: var(--muted);
   font: inherit;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3494,7 +3522,7 @@ html[data-theme="dark"] .builderButton--primary {
 /* a text button in an icon button's square */
 .builderBriefButton {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -3790,7 +3818,7 @@ html[data-theme="dark"] .builderButton--primary {
   border-radius: 0.4rem;
   background: var(--surface);
   color: var(--foreground);
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;

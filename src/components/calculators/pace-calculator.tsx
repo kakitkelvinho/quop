@@ -66,7 +66,6 @@ export function PaceCalculator() {
       <div className="paceCalculator">
         <section className="inputCard paceCalculator__panel">
           <div className="paceCalculator__panelHeader">
-            <p className="sectionCard__kicker">Input</p>
             <h2>{isPaceToSpeed ? "Running pace" : "Speed"}</h2>
           </div>
 
@@ -132,7 +131,6 @@ export function PaceCalculator() {
 
         <section className="inputCard paceCalculator__panel">
           <div className="paceCalculator__panelHeader">
-            <p className="sectionCard__kicker">Output</p>
             <h2>{isPaceToSpeed ? "Speed" : "Running pace"}</h2>
           </div>
 
