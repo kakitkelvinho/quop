@@ -667,12 +667,16 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
   );
 }
 
+/** Half the gap between a delay line's two fold mirrors, and so between its beams out and back, mm. */
+const DELAY_FOLD_MM = 10;
+
 /**
- * A delay line: a translation stage's rail along the beam, a port plate at its
- * front (+x) end where light goes in and comes back out, and a carriage on the
- * rail with a hollow corner-cube retroreflector facing the port, `arm` mm
- * behind it. Setting the arm slides the carriage; the rail is as long as the
- * longest arm. A drive knob stands at the back.
+ * A delay line, standing across the beam line: two fold mirrors at its port
+ * (+x end), on the line, turn the light down the rail and back up it, so it
+ * leaves along the line it came in on. A carriage on the rail holds a hollow
+ * corner-cube retroreflector facing the port, `arm` mm behind it; setting the
+ * arm slides the carriage. The rail is as long as the longest arm, and a drive
+ * knob stands at its far end.
  */
 function DelayLine({
   palette,
@@ -686,21 +690,29 @@ function DelayLine({
   const retroX = front - arm;
   return (
     <group>
-      {/* the light out to the retroreflector and back, a glow like a cavity's mode */}
+      {/* the light down the rail, across the retroreflector and back, a glow like a cavity's mode */}
       {light
         ? [
             { radius: 2.4, opacity: 0.28 },
             { radius: 0.9, opacity: 0.75 },
           ].map(({ radius, opacity }) => (
-            <mesh
-              key={radius}
-              position={[(front + retroX) / 2, axis, 0]}
-              rotation={[0, 0, Math.PI / 2]}
-              raycast={NO_RAYCAST}
-            >
-              <cylinderGeometry args={[radius, radius, Math.max(0.1, arm), 16]} />
-              <meshBasicMaterial color={light} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
-            </mesh>
+            <group key={radius}>
+              {[-DELAY_FOLD_MM, DELAY_FOLD_MM].map((z) => (
+                <mesh
+                  key={z}
+                  position={[(front + retroX) / 2, axis, z]}
+                  rotation={[0, 0, Math.PI / 2]}
+                  raycast={NO_RAYCAST}
+                >
+                  <cylinderGeometry args={[radius, radius, Math.max(0.1, arm), 16]} />
+                  <meshBasicMaterial color={light} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
+                </mesh>
+              ))}
+              <mesh position={[retroX, axis, 0]} rotation={[Math.PI / 2, 0, 0]} raycast={NO_RAYCAST}>
+                <cylinderGeometry args={[radius, radius, 2 * DELAY_FOLD_MM, 16]} />
+                <meshBasicMaterial color={light} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
+              </mesh>
+            </group>
           ))
         : null}
       {[front - 18, -front + 18].map((x) => (
@@ -716,35 +728,39 @@ function DelayLine({
         <boxGeometry args={[rail - 8, 2, 12]} />
         <Hardware palette={palette} />
       </mesh>
-      {/* the port: an upright plate with its aperture on the beam */}
-      <mesh position={[front - 3, axis - 6, 0]}>
-        <boxGeometry args={[6, 52, 34]} />
+      {/* the fold mirrors on the beam line, each at 45°, backed by an upright plate */}
+      <mesh position={[front + 9, axis - 6, 0]}>
+        <boxGeometry args={[6, 52, 2 * DELAY_FOLD_MM + 26]} />
         <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
       </mesh>
-      <mesh position={[front + 0.05, axis, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <circleGeometry args={[6, 24]} />
-        <meshStandardMaterial color="#0b0d10" roughness={0.9} />
-      </mesh>
+      {[-1, 1].map((side) => (
+        <group key={side} position={[front, axis, side * DELAY_FOLD_MM]} rotation={[0, (-side * 3 * Math.PI) / 4, 0]}>
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[6.35, 6.35, 3, 28]} />
+            <meshStandardMaterial color="#e8eef5" roughness={0.05} metalness={0.95} />
+          </mesh>
+          <mesh position={[-3, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[8, 8, 3, 28]} />
+            <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+          </mesh>
+        </group>
+      ))}
       {/* the carriage, and the retroreflector on it facing the port */}
       <group position={[retroX, 0, 0]}>
-        <RoundedBox args={[34, 8, 40]} radius={1} smoothness={2} position={[-8, railY + 11, 0]}>
+        <RoundedBox args={[34, 8, 46]} radius={1} smoothness={2} position={[-8, railY + 11, 0]}>
           <Enamel color={palette.body} />
         </RoundedBox>
-        <mesh position={[-8, (railY + 15 + axis - 15) / 2, 0]}>
-          <boxGeometry args={[14, axis - railY - 30, 22]} />
-          <Enamel color={palette.body} />
-        </mesh>
         <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[15, 15, 16, 36]} />
+          <cylinderGeometry args={[19, 19, 16, 36]} />
           <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
         </mesh>
         {/* the corner cube: three mirror facets meeting at a point behind the face */}
-        <mesh position={[-4, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <coneGeometry args={[12.5, 8, 3]} />
+        <mesh position={[-5, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+          <coneGeometry args={[16.5, 10, 3]} />
           <meshStandardMaterial color="#ffffff" roughness={0.05} metalness={1} envMapIntensity={3} />
         </mesh>
       </group>
-      {/* the drive knob at the back */}
+      {/* the drive knob at the far end */}
       <mesh position={[-front - 6, railY, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[9, 9, 12, 28]} />
         <meshStandardMaterial color={palette.anodise} roughness={0.55} metalness={0.3} flatShading />

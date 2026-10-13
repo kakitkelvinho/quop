@@ -340,13 +340,14 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M3 17.5h9.5V7H21" strokeDasharray="1.6 1.8" />
     </>
   ),
-  // a rail, the port at its front, and the retroreflector's beam out and back
+  // the beam line along the top, folded down the rail to the retroreflector and back
   "delay-line": (
     <>
-      <path d="M3 18.5h18" />
-      <rect x="18" y="6" width="3" height="12.5" rx="0.6" />
-      <path d="M9 7.5 6 10.5l3 3" />
-      <path d="M18 9H9M18 12H9" strokeDasharray="1.6 1.6" />
+      <path d="M3 5h18" strokeDasharray="1.6 1.6" />
+      <path d="M8 3.5l3 3M13 6.5l3-3" />
+      <path d="M10 6v10M14 6v10" strokeDasharray="1.6 1.6" />
+      <path d="M8.5 16.5 12 20l3.5-3.5" />
+      <path d="M5 21h14" />
     </>
   ),
   "periscope-top": (

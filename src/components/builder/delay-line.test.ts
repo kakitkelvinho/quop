@@ -9,14 +9,16 @@ import {
   beamDelayMm,
   beamLengthMm,
   bodyCentre,
+  delayLineYaw,
   delaySetting,
   parseScene,
   serializeScene,
   settleAngles,
 } from "./types.ts";
 
-// A delay line has one port: light goes in, out to the retroreflector and
-// back, and leaves where it came in. The round trip counts in path length.
+// A delay line stands across a beam line: fold mirrors at its port send the
+// light down its rail to the retroreflector and back, and it leaves along the
+// line it came in on. The round trip counts in path length.
 
 const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [0, 100, 100], rotation: 0 };
 const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [200, 100, 50], rotation: 0, delayMm: 120 };
@@ -45,10 +47,28 @@ describe("a delay line", () => {
     assert.equal(delaySetting({ ...delay, delayMinMm: 300, delayMaxMm: 100 }).max, 300);
   });
 
-  it("turns its port to face between the stops before and after it", () => {
-    const settled = settleAngles({ version: SCENE_VERSION, components, beams: [beam], connections: [], frames: [] });
-    // both mirrors lie toward −x of the port, so it looks back along −x
-    assert.equal(settled.components.find((part) => part.id === "delay")?.rotation, 180);
+  it("stands across a straight beam line, its rail on the side it already faces", () => {
+    const a: BuilderComponent = { id: "a", type: "mirror-mount", position: [0, 100, 0], rotation: 0 };
+    const b: BuilderComponent = { id: "b", type: "mirror-mount", position: [400, 100, 0], rotation: 0 };
+    const across = (rotation: number) =>
+      settleAngles({
+        version: SCENE_VERSION,
+        components: [a, { ...delay, position: [200, 100, 0], rotation }, b],
+        beams: [{ ...beam, path: ["a", "delay", "b"] }],
+        connections: [],
+        frames: [],
+      }).components.find((part) => part.id === "delay")?.rotation;
+    // a beam along +x: the rail (local −x) points along +z at 90, −z at 270
+    assert.equal(across(300), 270);
+    assert.equal(across(60), 90);
+    assert.equal(across(200), 270);
+    assert.equal(across(90), 90);
+  });
+
+  it("at a bend, lies along the bisector of the stops", () => {
+    assert.equal(delayLineYaw([200, 100, 50], m1.position, m2.position, 0), 0);
+    assert.equal(delayLineYaw([200, 100, 50], m1.position, m2.position, 170), 180);
+    assert.equal(delayLineYaw([0, 0, 0], [0, 0, 0], [0, 0, 0], 0), undefined);
   });
 
   it("keeps its port where it is when its rail grows; the rail runs back from it", () => {
