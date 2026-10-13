@@ -74,6 +74,13 @@ const ICONS = {
       <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
     </>
   ),
+  // a bulb: the lighting settings
+  light: (
+    <>
+      <path d="M9 17.5h6M10 20.5h4" />
+      <path d="M9 17.5v-1.8c0-1.2-.6-2-1.4-2.9A5.5 5.5 0 1 1 16.4 12.8c-.8.9-1.4 1.7-1.4 2.9v1.8" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="8" />

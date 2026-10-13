@@ -21,6 +21,18 @@ export function isStepInput(event: { inputType?: string }): boolean {
   return event.inputType === undefined || event.inputType === "insertReplacementText";
 }
 
+/**
+ * Whether a field shows typed text that settling would change: a draft that
+ * isn't the value. `shown` is what the field shows, its draft or its value.
+ * A field showing its value shows a number (or "" for none), never a draft.
+ */
+export function isPendingDraft(shown: string | number, value: number | undefined): boolean {
+  if (typeof shown === "number") return false;
+  const number = parseNumberDraft(shown);
+  if (number === null) return shown.trim() !== "" || value !== undefined;
+  return number !== value;
+}
+
 export type DraftEvent =
   /** the text changed because someone typed or pasted */
   | { type: "type"; text: string }

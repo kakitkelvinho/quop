@@ -2464,6 +2464,44 @@ html[data-theme="dark"] .builderIsland {
   border-top: 1px solid var(--border);
 }
 
+/* the lightbulb's bubble hangs under the tool pill, over the cheat sheet tab */
+.builderLighting {
+  position: relative;
+  display: flex;
+}
+
+.builderLighting__bubble {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  z-index: 50;
+  display: grid;
+  gap: 0.6rem;
+  width: 13rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  translate: -50% 0;
+  animation: builderDrop 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.builderLighting__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.builderLighting__toggle input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 /* top centre: tools, the parts tray, and the mode badge */
 .builderHud__center {
   position: absolute;
@@ -3159,6 +3197,25 @@ html[data-theme="dark"] .builderCoach {
   cursor: pointer;
 }
 
+/* a number field holding typed text it hasn't applied yet: tinted, with a ↵
+   that is always laid out so showing it doesn't shift the field */
+.builderField--pending .builderField__control {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--background));
+}
+
+.builderField__pending {
+  visibility: hidden;
+  margin-right: 0.3rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  cursor: help;
+}
+
+.builderField--pending .builderField__pending {
+  visibility: visible;
+}
+
 .builderField__unit {
   color: var(--muted);
   font-size: 0.7rem;
@@ -3669,6 +3726,7 @@ html[data-theme="dark"] .builderButton--primary {
   .builderParts,
   .builderAbout,
   .builderMenu__list,
+  .builderLighting__bubble,
   .builderHud__inspector {
     animation: none;
   }
