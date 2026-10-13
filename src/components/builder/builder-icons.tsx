@@ -59,6 +59,13 @@ const ICONS = {
       <circle cx="7.5" cy="8.5" r="1.2" />
     </>
   ),
+  // a ruler laid at a slant, with its ticks
+  ruler: (
+    <>
+      <path d="m3.5 15.5 12-12 5 5-12 12z" />
+      <path d="m7.5 11.5 2 2M10.5 8.5 12 10M13.5 5.5l2 2M6 13l1.5 1.5" />
+    </>
+  ),
   // a fluted classical column: abacus and echinus, three flutes, base and plinth
   posts: (
     <>

@@ -3899,6 +3899,21 @@ html[data-theme="dark"] .builderLabel.is-selected {
   color: #1a1d26;
 }
 
+/* a leg's length along a beam: smaller and quieter than a part's label, and
+   turned to run along the leg by BeamDistances */
+.builderDistance {
+  display: inline-block;
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.3rem;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform-origin: center;
+}
+
 .builderOrderBadge {
   display: inline-flex;
   align-items: center;

@@ -680,6 +680,31 @@ export function beamLengthMm(components: BuilderComponent[], beam: Beam): number
   return total;
 }
 
+/**
+ * The length of each leg of a beam, mm, for the distance labels along it: the
+ * straight 3D run between consecutive reference points (skipping stops whose
+ * part is gone, as beamPoints does). A leg into a delay line the beam passes
+ * through adds that delay line's shortest round trip, twice its shortest arm,
+ * not its current setting; one the beam ends at adds nothing, as in
+ * beamDelayMm. A laser's built-in path is in no leg: it counts toward the
+ * beam's total only.
+ */
+export function beamLegLengthsMm(components: BuilderComponent[], beam: Beam): number[] {
+  const stops = beam.path
+    .map((id) => componentById(components, id))
+    .filter((component): component is BuilderComponent => Boolean(component));
+  const legs: number[] = [];
+  for (let index = 1; index < stops.length; index += 1) {
+    const [ax, ay, az] = referencePoint(stops[index - 1]);
+    const end = stops[index];
+    const [bx, by, bz] = referencePoint(end);
+    const passed = index < stops.length - 1;
+    const delay = passed && end.type === "delay-line" ? 2 * delaySetting(end).min : 0;
+    legs.push(Math.hypot(bx - ax, by - ay, bz - az) + delay);
+  }
+  return legs;
+}
+
 /** Vacuum time-of-flight along a path length, in picoseconds. */
 export function lengthToPicoseconds(lengthMm: number): number {
   return (lengthMm / C_MM_PER_NS) * 1000;
