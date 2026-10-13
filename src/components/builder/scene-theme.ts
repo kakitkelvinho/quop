@@ -46,6 +46,19 @@ export type ScenePalette = {
   anodise: string;
 };
 
+/**
+ * The viewer's lighting settings, laid over the palette: not part of the
+ * setup, so neither saved nor undone. Brightness scales the key light, and
+ * with it how dark the shadows it casts fall.
+ */
+export type Lighting = {
+  /** the key light's strength, as a multiple of the palette's */
+  brightness: number;
+  shadows: boolean;
+};
+
+export const DEFAULT_LIGHTING: Lighting = { brightness: 1, shadows: true };
+export const BRIGHTNESS_RANGE: [number, number] = [0.25, 2];
 
 export const LIGHT_PALETTE: ScenePalette = {
   mode: "light",

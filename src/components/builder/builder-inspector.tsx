@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { IconButton } from "@/components/builder/builder-icons";
 import { useRowDrag } from "@/components/builder/use-row-drag";
-import { useNumberDraft } from "@/components/use-number-draft";
+import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
   BEAM_OPACITY_RANGE,
@@ -21,6 +21,7 @@ import {
   DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
+  DEFAULT_HOUSING_COLORS,
   INTERNAL_PATH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   CAVITY_LENGTH_RANGE_MM,
@@ -116,12 +117,18 @@ function NumberField({
   onClear?: () => void;
 }) {
   const scale = 10 ** decimals;
-  const field = useNumberDraft(value === undefined ? undefined : Math.round(value * scale) / scale, onChange, { onClear });
+  const shown = value === undefined ? undefined : Math.round(value * scale) / scale;
+  const field = useNumberDraft(shown, onChange, { onClear });
+  // typed but not yet applied: Enter or clicking away applies it, Esc drops it
+  const pending = isPendingDraft(field.value, shown);
   return (
-    <label className="builderField" title={title}>
+    <label className={pending ? "builderField builderField--pending" : "builderField"} title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control">
         <input type="number" step={step} min={min} max={max} disabled={disabled} placeholder={placeholder} {...field} />
+        <span className="builderField__pending" title="Press Enter or click away to apply · Esc to undo" aria-hidden>
+          ↵
+        </span>
         <span className="builderField__unit">{unit}</span>
       </span>
     </label>
@@ -737,6 +744,13 @@ export function ComponentInspector({
         <ColorField
           label="Dome colour"
           value={component.color ?? DEFAULT_PHOTODIODE_COLOR}
+          onChange={(color) => onUpdate({ color })}
+        />
+      ) : null}
+      {DEFAULT_HOUSING_COLORS[component.type] ? (
+        <ColorField
+          label="Housing colour"
+          value={component.color ?? DEFAULT_HOUSING_COLORS[component.type]!}
           onChange={(color) => onUpdate({ color })}
         />
       ) : null}

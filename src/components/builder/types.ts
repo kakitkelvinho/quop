@@ -496,6 +496,12 @@ export const DEFAULT_OBJECTIVE_COLOR = "#d5d9df";
 export const DEFAULT_OBJECTIVE_LENGTH_MM = 54;
 export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [30, 130];
 export const DEFAULT_PHOTODIODE_COLOR = "#b3261e";
+/** A detector's housing until it is given a colour: the light theme's own, so the picker opens on what is drawn there. */
+export const DEFAULT_HOUSING_COLORS: Partial<Record<ComponentType, string>> = {
+  camera: "#fbfbf8",
+  spectrometer: "#fbfbf8",
+  "single-photon-detector": "#1b1c1f",
+};
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
 /** A delay line's arm, port to retroreflector, mm: the range a new one has, and the most any can have. */

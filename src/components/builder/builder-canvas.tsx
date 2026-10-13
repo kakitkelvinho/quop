@@ -52,7 +52,7 @@ import { ComponentMesh, leavesFromStub } from "@/components/builder/component-mo
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
-import type { ScenePalette } from "@/components/builder/scene-theme";
+import type { Lighting, ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
@@ -399,10 +399,11 @@ function OrbitPivot({
 
 type TableProps = {
   palette: ScenePalette;
+  lighting: Lighting;
   onSurfaceClick: (x: number, z: number) => void;
 };
 
-function TableSurface({ palette, onSurfaceClick }: TableProps) {
+function TableSurface({ palette, lighting, onSurfaceClick }: TableProps) {
   const downAt = useRef<{ x: number; y: number } | null>(null);
 
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
@@ -447,7 +448,8 @@ function TableSurface({ palette, onSurfaceClick }: TableProps) {
       />
       <shadowMaterial
         color={palette.shadow}
-        opacity={palette.shadowOpacity}
+        // a brighter key light casts a darker shadow
+        opacity={Math.min(1, palette.shadowOpacity * lighting.brightness)}
       />
     </mesh>
   );
@@ -472,10 +474,12 @@ const SHADOW_MARGIN_MM = 250;
  */
 function Lights({
   palette,
+  lighting,
   components,
   dragging,
 }: {
   palette: ScenePalette;
+  lighting: Lighting;
   components: BuilderComponent[];
   dragging: boolean;
 }) {
@@ -514,8 +518,8 @@ function Lights({
       <ambientLight intensity={palette.ambient} />
       <directionalLight
         ref={keyRef}
-        castShadow
-        intensity={palette.keyLight}
+        castShadow={lighting.shadows}
+        intensity={palette.keyLight * lighting.brightness}
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0004}
         shadow-normalBias={0.8}
@@ -703,12 +707,16 @@ const HALO = {
 /** A selected hidden beam's glow, × the halo's own opacity: enough to see where it runs, far short of a shown beam. */
 const GHOST_OPACITY = 0.5;
 
+/** The least a selected beam's halo is scaled by, so even a 10% beam is findable when selected. */
+const SELECTED_HALO_FLOOR = 0.35;
+
 /**
  * A beam, drawn in millimetres on the table: its width scales with the zoom
  * like the parts do. The core is a lit tube, one per leg with a ball at each
  * turn, so it reads as a round beam passing through the parts rather than a
- * flat stroke. A selected beam draws fully opaque with a stronger halo, so
- * even a faint one can be found by clicking its row.
+ * flat stroke. A selected beam keeps its own opacity, so the
+ * inspector's slider shows while it drags, and gets a stronger halo, scaled
+ * by that opacity down to a floor, so even a faint one can be found.
  */
 type BeamPathProps = {
   points: Vector3[];
@@ -732,7 +740,8 @@ const BeamPath = memo(function BeamPath({
   ghost = false,
 }: BeamPathProps) {
   const core = coreWanted && !ghost;
-  const alpha = ghost ? GHOST_OPACITY : selected ? 1 : opacity;
+  const alpha = ghost ? GHOST_OPACITY : opacity;
+  const haloAlpha = selected && !ghost ? Math.max(alpha, SELECTED_HALO_FLOOR) : alpha;
   const halo = core
     ? selected
       ? HALO.underCoreSelected
@@ -742,7 +751,7 @@ const BeamPath = memo(function BeamPath({
       : HALO.alone;
   const radius = width / 2;
   const haloRadius = radius * halo.width;
-  const haloMaterial = <HaloMaterial color={color} opacity={halo.opacity * alpha} />;
+  const haloMaterial = <HaloMaterial color={color} opacity={halo.opacity * haloAlpha} />;
   const arrowRadius = Math.max(3.5, width * 1.9);
   const legs = useMemo(() => {
     const result: {
@@ -864,6 +873,7 @@ export type BuilderCanvasProps = {
   connections: Connection[];
   frames: Frame[];
   palette: ScenePalette;
+  lighting: Lighting;
   /** the selected parts; the last is the one the orbit falls back to */
   selection: string[];
   selectedBeamId: string | null;
@@ -940,6 +950,7 @@ export default function BuilderCanvas({
   connections,
   frames,
   palette,
+  lighting,
   selection,
   selectedBeamId,
   ghostBeamId,
@@ -1050,11 +1061,11 @@ export default function BuilderCanvas({
       <CanvasHandle onReady={onCanvasReady} />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights palette={palette} components={components} dragging={dragging} />
+      <Lights palette={palette} lighting={lighting} components={components} dragging={dragging} />
       <RingRoom dark={palette.mode === "dark"} />
       <Backdrop stops={palette.backdrop} />
 
-      <TableSurface palette={palette} onSurfaceClick={onSurfaceClick} />
+      <TableSurface palette={palette} lighting={lighting} onSurfaceClick={onSurfaceClick} />
       <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
 
       {/* with no table drawn, the grid is the one sign of the breadboard: it

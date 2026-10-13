@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { isStepInput, parseNumberDraft, reduceDraft, type DraftEvent } from "./use-number-draft.ts";
+import { isPendingDraft, isStepInput, parseNumberDraft, reduceDraft, type DraftEvent } from "./use-number-draft.ts";
 
 /** Plays events against a field and returns what it handed on and what it shows. */
 function play(events: DraftEvent[], live = false) {
@@ -122,5 +122,24 @@ describe("an optional number field", () => {
 
   it("still reverts an emptied field that is not optional", () => {
     assert.deepEqual(reduceDraft("", { type: "settle" }, false), { draft: null, commit: null });
+  });
+});
+
+describe("isPendingDraft", () => {
+  it("is never pending while the field shows its value", () => {
+    assert.equal(isPendingDraft(125, 125), false);
+    assert.equal(isPendingDraft("", undefined), false);
+  });
+
+  it("is pending while the typed text differs from the value", () => {
+    assert.equal(isPendingDraft("12", 125), true);
+    assert.equal(isPendingDraft("-", 125), true);
+    assert.equal(isPendingDraft("", 125), true);
+    assert.equal(isPendingDraft("7", undefined), true);
+  });
+
+  it("is not pending once the text is typed back to the value", () => {
+    assert.equal(isPendingDraft("125", 125), false);
+    assert.equal(isPendingDraft(" 125.0 ", 125), false);
   });
 });
