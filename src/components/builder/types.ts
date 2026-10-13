@@ -40,6 +40,11 @@ export type ComponentType =
 
 export type LensShape = "plano-convex" | "biconvex";
 
+/** Components drawn with light inside them, a cavity's mode or a delay line's beam, whose colour and visibility can be set. */
+export const LIT_TYPES: ReadonlySet<ComponentType> = new Set(["cavity", "delay-line"]);
+/** The light inside a cavity or delay line, unless its colour is set. */
+export const DEFAULT_LIGHT_COLOR = "#ff5a36";
+
 /** Components a particle can be placed in — its host. */
 export const HOST_TYPES: ReadonlySet<ComponentType> = new Set(["paul-trap", "cavity"]);
 
@@ -95,6 +100,10 @@ export type BuilderComponent = {
    * travels this twice, out and back.
    */
   delayMm?: number;
+  /** cavity and delay line only: the colour of the light drawn inside (a cavity's mode, a delay line's beam); missing means DEFAULT_LIGHT_COLOR */
+  lightColor?: string;
+  /** cavity and delay line only: true leaves the light inside out of the drawing; stored only when true */
+  lightHidden?: true;
   /** particle only: the trap or cavity it sits in; it sits at the host's centre */
   host?: string;
   /** particle only, mm; missing means PARTICLE_RADIUS_MM */
@@ -1458,6 +1467,11 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
   }
   if (type === "periscope-top" && typeof raw.periscope === "string") component.periscope = raw.periscope;
+  if (LIT_TYPES.has(type as ComponentType)) {
+    const light = cssColor(raw.lightColor, undefined);
+    if (light !== undefined) component.lightColor = light;
+    if (raw.lightHidden === true) component.lightHidden = true;
+  }
   if (type === "delay-line") {
     const min = finiteNumber(raw.delayMinMm);
     const max = finiteNumber(raw.delayMaxMm);

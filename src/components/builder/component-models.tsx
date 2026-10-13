@@ -30,6 +30,7 @@ import {
   DEFAULT_BLOCK_COLOR,
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
+  DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
   DEFAULT_OBJECTIVE_LENGTH_MM,
@@ -70,7 +71,7 @@ const CRYSTAL_AMBER = "#f3d9a0";
 /** the sound wavefronts drawn inside an AOM's crystal */
 const ACOUSTIC_TEAL = "#2f7f86";
 /** Light held in place — a cavity's mode and a trapped particle share it. */
-const MODE_COLOR = "#ff5a36";
+const MODE_COLOR = DEFAULT_LIGHT_COLOR;
 
 /** `axis` is the component's height: the model draws its optical centre there. */
 type ModelProps = { palette: ScenePalette; color?: string; axis: number };
@@ -673,12 +674,35 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
  * behind it. Setting the arm slides the carriage; the rail is as long as the
  * longest arm. A drive knob stands at the back.
  */
-function DelayLine({ palette, axis, rail, arm }: ModelProps & { rail: number; arm: number }) {
+function DelayLine({
+  palette,
+  axis,
+  rail,
+  arm,
+  light,
+}: ModelProps & { rail: number; arm: number; light: string | null }) {
   const front = rail / 2;
   const railY = axis - 26;
   const retroX = front - arm;
   return (
     <group>
+      {/* the light out to the retroreflector and back, a glow like a cavity's mode */}
+      {light
+        ? [
+            { radius: 2.4, opacity: 0.28 },
+            { radius: 0.9, opacity: 0.75 },
+          ].map(({ radius, opacity }) => (
+            <mesh
+              key={radius}
+              position={[(front + retroX) / 2, axis, 0]}
+              rotation={[0, 0, Math.PI / 2]}
+              raycast={NO_RAYCAST}
+            >
+              <cylinderGeometry args={[radius, radius, Math.max(0.1, arm), 16]} />
+              <meshBasicMaterial color={light} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
+            </mesh>
+          ))
+        : null}
       {[front - 18, -front + 18].map((x) => (
         <group key={x} position={[x, 0, 0]}>
           <Pillar palette={palette} top={railY - 5} />
@@ -1148,8 +1172,13 @@ function cavityMirrorProfile(length: number): Vector2[] {
   return [new Vector2(0, -half), new Vector2(a, -half), ...face];
 }
 
+/** The colour of the light drawn inside a cavity or delay line, or null when it is hidden. */
+function innerLight(component: BuilderComponent): string | null {
+  return component.lightHidden ? null : (component.lightColor ?? DEFAULT_LIGHT_COLOR);
+}
+
 /** Two facing concave mirrors along local x, floating, with the mode between. */
-function Cavity({ color, axis, length }: ModelProps & { length: number }) {
+function Cavity({ axis, length, light }: ModelProps & { length: number; light: string | null }) {
   const span = clamp(length, CAVITY_LENGTH_RANGE_MM);
   const halo = useMemo(() => modeProfile(span, 1), [span]);
   const core = useMemo(() => modeProfile(span, 0.45), [span]);
@@ -1169,34 +1198,38 @@ function Cavity({ color, axis, length }: ModelProps & { length: number }) {
           </mesh>
         </group>
       ))}
-      <mesh
-        position={[0, axis, 0]}
-        rotation={[0, 0, -Math.PI / 2]}
-        raycast={NO_RAYCAST}
-      >
-        <latheGeometry args={[halo, 32]} />
-        <meshBasicMaterial
-          color={MODE_COLOR}
-          transparent
-          opacity={0.28}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </mesh>
-      <mesh
-        position={[0, axis, 0]}
-        rotation={[0, 0, -Math.PI / 2]}
-        raycast={NO_RAYCAST}
-      >
-        <latheGeometry args={[core, 24]} />
-        <meshBasicMaterial
-          color={MODE_COLOR}
-          transparent
-          opacity={0.75}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      </mesh>
+      {light ? (
+        <>
+          <mesh
+            position={[0, axis, 0]}
+            rotation={[0, 0, -Math.PI / 2]}
+            raycast={NO_RAYCAST}
+          >
+            <latheGeometry args={[halo, 32]} />
+            <meshBasicMaterial
+              color={light}
+              transparent
+              opacity={0.28}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
+          <mesh
+            position={[0, axis, 0]}
+            rotation={[0, 0, -Math.PI / 2]}
+            raycast={NO_RAYCAST}
+          >
+            <latheGeometry args={[core, 24]} />
+            <meshBasicMaterial
+              color={light}
+              transparent
+              opacity={0.75}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
+        </>
+      ) : null}
     </group>
   );
 }
@@ -1963,6 +1996,7 @@ export function ComponentMesh({
           <Cavity
             {...modelProps}
             length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
+            light={innerLight(component)}
           />
         ) : null}
         {component.type === "particle" ? (
@@ -1987,7 +2021,12 @@ export function ComponentMesh({
         {component.type === "eom" ? <Eom {...modelProps} /> : null}
         {component.type === "faraday-isolator" ? <FaradayIsolator {...modelProps} /> : null}
         {component.type === "delay-line" ? (
-          <DelayLine {...modelProps} rail={delayRailMm(component)} arm={delaySetting(component).arm} />
+          <DelayLine
+            {...modelProps}
+            rail={delayRailMm(component)}
+            arm={delaySetting(component).arm}
+            light={innerLight(component)}
+          />
         ) : null}
         {component.type === "periscope" ? (
           <>

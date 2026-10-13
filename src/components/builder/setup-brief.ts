@@ -21,6 +21,7 @@ import {
   DEFAULT_CAVITY_LENGTH_MM,
   DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_OBJECTIVE_LENGTH_MM,
+  DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
   DELAY_LIMIT_MM,
   DELAY_RANGE_MM,
@@ -32,6 +33,7 @@ import {
   FRAME_SIZE_RANGE_MM,
   HOST_TYPES,
   INTERNAL_PATH_RANGE_MM,
+  LIT_TYPES,
   MOUNTED_TYPES,
   PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
@@ -51,7 +53,11 @@ import {
 } from "./types.ts";
 
 /** One line per field. `only` names the type a component field belongs to. */
-type FieldDocs<T> = { [K in keyof T]-?: { text: string; only?: ComponentType } };
+type FieldDocs<T> = { [K in keyof T]-?: { text: string; only?: ComponentType | ComponentType[] } };
+
+/** Whether a field documented as `only` some types is one of `type`'s own. */
+const ownField = (only: ComponentType | ComponentType[] | undefined, type: ComponentType) =>
+  Array.isArray(only) ? only.includes(type) : only === type;
 
 const range = ([min, max]: [number, number], unit = "") => `${min}–${max}${unit}`;
 const code = (value: unknown) => `\`${JSON.stringify(value)}\``;
@@ -116,6 +122,14 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
     text: "mm from its port to the retroreflector, between `delayMinMm` and `delayMaxMm`; default `delayMinMm`. A beam through it travels this twice, out and back, and counts both in its path length.",
     only: "delay-line",
   },
+  lightColor: {
+    text: `a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam to its retroreflector); default ${code(DEFAULT_LIGHT_COLOR)}.`,
+    only: [...LIT_TYPES],
+  },
+  lightHidden: {
+    text: "`true` leaves the light inside it out of the drawing; leave it out otherwise.",
+    only: [...LIT_TYPES],
+  },
   particleRadius: {
     text: `mm, ${range(PARTICLE_RADIUS_RANGE_MM)}; default ${PARTICLE_RADIUS_MM}.`,
     only: "particle",
@@ -177,8 +191,8 @@ const FRAME_FIELDS: FieldDocs<Frame> = {
   },
 };
 
-function fieldList<T>(fields: FieldDocs<T>, keep: (doc: { only?: ComponentType }) => boolean = () => true): string {
-  return (Object.entries(fields) as [string, { text: string; only?: ComponentType }][])
+function fieldList<T>(fields: FieldDocs<T>, keep: (doc: { only?: ComponentType | ComponentType[] }) => boolean = () => true): string {
+  return (Object.entries(fields) as [string, { text: string; only?: ComponentType | ComponentType[] }][])
     .filter(([, doc]) => keep(doc))
     .map(([key, doc]) => `- \`${key}\`: ${doc.text}`)
     .join("\n");
@@ -194,8 +208,8 @@ function componentTypes(): string {
   return COMPONENT_GROUPS.map(({ name, types }) => {
     const entries = types.map((type) => {
       const spec = COMPONENT_SPECS[type];
-      const own = (Object.entries(COMPONENT_FIELDS) as [string, { only?: ComponentType }][])
-        .filter(([, doc]) => doc.only === type)
+      const own = (Object.entries(COMPONENT_FIELDS) as [string, { only?: ComponentType | ComponentType[] }][])
+        .filter(([, doc]) => ownField(doc.only, type))
         .map(([key]) => `\`${key}\``);
       const fields = own.length ? ` Its own fields: ${own.join(", ")}.` : "";
       return `- \`${type}\`: ${spec.label}. ${heightLine(type)}${fields}`;
@@ -302,9 +316,9 @@ ${fieldList(COMPONENT_FIELDS, (doc) => !doc.only)}
 
 Some types read fields of their own; leave them out to take the default:
 
-${(Object.entries(COMPONENT_FIELDS) as [string, { text: string; only?: ComponentType }][])
+${(Object.entries(COMPONENT_FIELDS) as [string, { text: string; only?: ComponentType | ComponentType[] }][])
   .filter(([, doc]) => doc.only)
-  .map(([key, doc]) => `- \`${key}\` (\`${doc.only}\` only): ${doc.text}`)
+  .map(([key, doc]) => `- \`${key}\` (${typeList([doc.only!].flat(), "and")} only): ${doc.text}`)
   .join("\n")}
 
 ### A beam
