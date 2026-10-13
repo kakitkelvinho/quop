@@ -3197,6 +3197,25 @@ html[data-theme="dark"] .builderCoach {
   cursor: pointer;
 }
 
+/* a number field holding typed text it hasn't applied yet: tinted, with a ↵
+   that is always laid out so showing it doesn't shift the field */
+.builderField--pending .builderField__control {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--background));
+}
+
+.builderField__pending {
+  visibility: hidden;
+  margin-right: 0.3rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  cursor: help;
+}
+
+.builderField--pending .builderField__pending {
+  visibility: visible;
+}
+
 .builderField__unit {
   color: var(--muted);
   font-size: 0.7rem;

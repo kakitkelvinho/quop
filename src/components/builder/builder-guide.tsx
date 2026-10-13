@@ -303,6 +303,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Stops snap to beam" },
       { keys: "⌘ drag", text: "Select several" },
       { keys: "R D ⌫", text: "Turn, copy, delete" },
+      { keys: "↵ Esc", text: "Apply, undo a number" },
       { icon: "frame", text: "Alt-drag moves" },
     ],
   },
