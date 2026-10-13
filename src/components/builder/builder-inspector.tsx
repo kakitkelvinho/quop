@@ -46,6 +46,7 @@ import {
   beamInternalPathMm,
   beamLengthMm,
   componentById,
+  periscopePartner,
   componentDisplayName,
   componentTag,
   cornerBounds,
@@ -124,16 +125,18 @@ function NumberField({
 /** Height is clamped to what the part allows, and shows the range it may take. */
 function HeightField({
   component,
+  label = "Height",
   onChange,
 }: {
   component: BuilderComponent;
+  label?: string;
   onChange: (height: number) => void;
 }) {
   const [min, max] = heightRange(component.type);
   const fixed = min === max;
   return (
     <NumberField
-      label="Height"
+      label={label}
       unit="mm"
       step={5}
       min={min}
@@ -334,6 +337,7 @@ export function ComponentInspector({
   components,
   angleBeam,
   onUpdate,
+  onUpdateOther,
   onCheckpoint,
   onRotate,
   onDuplicate,
@@ -344,14 +348,30 @@ export function ComponentInspector({
   /** set when a beam turns this part; its yaw is then read-only */
   angleBeam?: Beam;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
+  /** edits another part: a periscope mirror's other mirror */
+  onUpdateOther: (id: string, patch: ComponentPatch, record?: boolean) => void;
   onCheckpoint: () => void;
   onRotate: (direction: 1 | -1) => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }) {
   const spec = COMPONENT_SPECS[component.type];
-  const [x, y, z] = component.position;
+  const [x, , z] = component.position;
   const host = component.host ? componentById(components, component.host) : undefined;
+  // a periscope shows both its mirrors' heights, and its top mirror moves it by its lower one
+  const partner = periscopePartner(components, component);
+  const [lower, upper] = component.type === "periscope-top" ? [partner, component] : [component, partner];
+  const moved = component.type === "periscope-top" && lower ? lower : component;
+  const moveTo = (nextX: number, nextZ: number) => {
+    const patch = { position: [nextX, moved.position[1], nextZ] as Vec3 };
+    if (moved === component) onUpdate(patch);
+    else onUpdateOther(moved.id, patch);
+  };
+  const setHeight = (part: BuilderComponent, height: number) => {
+    const [px, , pz] = part.position;
+    if (part === component) onUpdate({ position: [px, height, pz] });
+    else onUpdateOther(part.id, { position: [px, height, pz] });
+  };
 
   return (
     <div className="builderInspector">
@@ -372,14 +392,21 @@ export function ComponentInspector({
         </span>
       </label>
       <div className="builderFieldRow">
-        <NumberField label="x" unit="mm" step={5} value={x} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [next, y, z] })} />
-        <NumberField label="z" unit="mm" step={5} value={z} disabled={Boolean(host)} onChange={(next) => onUpdate({ position: [x, y, next] })} />
+        <NumberField label="x" unit="mm" step={5} value={x} disabled={Boolean(host)} onChange={(next) => moveTo(next, z)} />
+        <NumberField label="z" unit="mm" step={5} value={z} disabled={Boolean(host)} onChange={(next) => moveTo(x, next)} />
       </div>
-      <HeightField
-        key={component.id}
-        component={component}
-        onChange={(height) => onUpdate({ position: [x, height, z] })}
-      />
+      {lower && upper ? (
+        <div className="builderFieldRow">
+          <HeightField key={lower.id} component={lower} label="Bottom mirror" onChange={(height) => setHeight(lower, height)} />
+          <HeightField key={upper.id} component={upper} label="Top mirror" onChange={(height) => setHeight(upper, height)} />
+        </div>
+      ) : (
+        <HeightField
+          key={component.id}
+          component={component}
+          onChange={(height) => onUpdate({ position: [x, height, z] })}
+        />
+      )}
       {host ? (
         <div className="builderInspector__host">
           <span>

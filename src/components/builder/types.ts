@@ -32,7 +32,10 @@ export type ComponentType =
   | "objective"
   | "block"
   | "aom"
-  | "eom";
+  | "eom"
+  | "faraday-isolator"
+  | "periscope"
+  | "periscope-top";
 
 export type LensShape = "plano-convex" | "biconvex";
 
@@ -51,6 +54,8 @@ export const MOUNTED_TYPES: ReadonlySet<ComponentType> = new Set([
   "filter",
   "iris",
   "fiber-collimator",
+  "periscope",
+  "periscope-top",
 ]);
 
 export type Vec3 = [number, number, number];
@@ -75,6 +80,11 @@ export type BuilderComponent = {
   cavityLength?: number;
   /** objective only, mm from the back of the thread to the nose; missing means DEFAULT_OBJECTIVE_LENGTH_MM */
   objectiveLength?: number;
+  /**
+   * periscope top only: the periscope (its lower mirror) whose post it shares;
+   * it stands straight above or below it, at its own height
+   */
+  periscope?: string;
   /** particle only: the trap or cavity it sits in; it sits at the host's centre */
   host?: string;
   /** particle only, mm; missing means PARTICLE_RADIUS_MM */
@@ -193,6 +203,8 @@ export type ComponentSpec = {
    * drawn this far behind it. Missing means the port is the centre.
    */
   referenceX?: number;
+  /** set on a part that comes with another and is never placed alone: it is left out of the parts panel */
+  partOf?: ComponentType;
 };
 
 /**
@@ -367,6 +379,30 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 24,
     radius: 40,
   },
+  "faraday-isolator": {
+    label: "Faraday isolator",
+    tag: "FI",
+    aliases: ["isolator", "optical isolator", "Faraday rotator", "optical diode"],
+    top: 20,
+    minHeight: 26,
+    radius: 38,
+  },
+  periscope: {
+    label: "Periscope",
+    tag: "Peri",
+    aliases: ["beam elevator", "beam riser", "periscope mirror"],
+    top: 20,
+    minHeight: 30,
+    radius: 34,
+  },
+  "periscope-top": {
+    label: "Periscope top mirror",
+    tag: "Peri top",
+    partOf: "periscope",
+    top: 20,
+    minHeight: 30,
+    radius: 30,
+  },
 };
 
 export type ComponentGroup = { name: string; types: ComponentType[] };
@@ -374,9 +410,9 @@ export type ComponentGroup = { name: string; types: ComponentType[] };
 /** Palette grouping — reads as a bench walk-through: make it, steer it, shape it, read it. */
 export const COMPONENT_GROUPS: ComponentGroup[] = [
   { name: "Source", types: ["laser-source", "fiber-collimator"] },
-  { name: "Steering", types: ["mirror-mount", "beam-splitter"] },
+  { name: "Steering", types: ["mirror-mount", "beam-splitter", "periscope", "periscope-top"] },
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
-  { name: "Modulation", types: ["aom", "eom"] },
+  { name: "Modulation", types: ["aom", "eom", "faraday-isolator"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
   { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "time-tagger", "beam-block"] },
   { name: "Other", types: ["block"] },
@@ -435,6 +471,8 @@ export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [30, 130];
 export const DEFAULT_PHOTODIODE_COLOR = "#b3261e";
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
+/** How far above its lower mirror a new periscope's top mirror stands, mm. */
+export const PERISCOPE_RISE_MM = 100;
 /** A particle dropped within this distance of a host's centre snaps into it, mm. */
 export const HOST_CAPTURE_MM = 20;
 
@@ -664,6 +702,59 @@ export function settleHosts(scene: BuilderSceneData): BuilderSceneData {
   return changed ? { ...scene, components } : scene;
 }
 
+/**
+ * The other mirror of a periscope: the top mirror of a periscope's lower one,
+ * and the lower one of a top mirror. Undefined for any other part, or when the
+ * other is gone.
+ */
+export function periscopePartner(
+  components: BuilderComponent[],
+  component: BuilderComponent,
+): BuilderComponent | undefined {
+  if (component.type === "periscope-top") {
+    const base = component.periscope ? componentById(components, component.periscope) : undefined;
+    return base?.type === "periscope" ? base : undefined;
+  }
+  if (component.type !== "periscope") return undefined;
+  return components.find((entry) => entry.type === "periscope-top" && entry.periscope === component.id);
+}
+
+/** The ids, with the other mirror of every periscope among them added: the two move, copy and go as one. */
+export function withPeriscopePartners(components: BuilderComponent[], ids: string[]): string[] {
+  const all = new Set(ids);
+  for (const id of ids) {
+    const component = componentById(components, id);
+    const partner = component && periscopePartner(components, component);
+    if (partner) all.add(partner.id);
+  }
+  return [...all];
+}
+
+/**
+ * Keep every periscope top mirror straight above (or below) its lower mirror,
+ * at its own height, and let go of a lower mirror that no longer exists. Run
+ * after every edit, like settleHosts, so moving either mirror's periscope
+ * carries the other.
+ */
+export function settlePeriscopes(scene: BuilderSceneData): BuilderSceneData {
+  let changed = false;
+  const components = scene.components.map((component) => {
+    if (component.type !== "periscope-top" || component.periscope === undefined) return component;
+    const base = periscopePartner(scene.components, component);
+    if (!base) {
+      changed = true;
+      const loose = { ...component };
+      delete loose.periscope;
+      return loose;
+    }
+    const [x, y, z] = component.position;
+    if (x === base.position[0] && z === base.position[2]) return component;
+    changed = true;
+    return { ...component, position: [base.position[0], y, base.position[2]] as Vec3 };
+  });
+  return changed ? { ...scene, components } : scene;
+}
+
 // ---------------------------------------------------------------------------
 // Beam path edits
 // ---------------------------------------------------------------------------
@@ -841,13 +932,16 @@ function mirrorAngleStop(
   beams: Beam[],
   component: BuilderComponent,
 ): { beam: Beam; index: number } | undefined {
-  if (component.type !== "mirror-mount") return undefined;
+  if (component.type !== "mirror-mount" && !PERISCOPE_MIRRORS.has(component.type)) return undefined;
   for (const beam of beams) {
     const index = beam.path.indexOf(component.id, 1);
     if (index > 0 && index < beam.path.length - 1) return { beam, index };
   }
   return undefined;
 }
+
+/** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
+const PERISCOPE_MIRRORS = new Set<ComponentType>(["periscope", "periscope-top"]);
 
 /** Detectors whose face (local −x) turns to the light arriving at them. */
 const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer", "single-photon-detector"]);
@@ -867,7 +961,7 @@ function detectorAngleStop(
 
 /**
  * The beam that sets a part's angle, or undefined when it is turned by hand.
- * A mirror takes its angle from a beam it sits in the middle of, and a
+ * A mirror or a periscope mirror takes its angle from a beam it sits in the middle of, and a
  * photodiode, camera, spectrometer or single-photon detector from a beam that
  * ends at it. Beam cubes are never derived (they transmit and reflect, so
  * need a different rule).
@@ -920,6 +1014,21 @@ export function facingYaw(detector: Vec3, source: Vec3): number | undefined {
   return toward ? yawDegrees(Math.atan2(toward[1], -toward[0])) : undefined;
 }
 
+/**
+ * The yaw, degrees in [0, 360), of a periscope mirror: tilted 45° to send the
+ * light up or down, its face (local +x, tipped up or down) looks toward the
+ * one neighbour that is not straight above or below it. With both
+ * neighbours off to the side it bisects them, as a flat mirror would; with
+ * neither, it keeps its last angle.
+ */
+export function periscopeYaw(mirror: Vec3, previous: Vec3, next: Vec3): number | undefined {
+  const into = unitXZ(mirror, previous);
+  const out = unitXZ(mirror, next);
+  if (into && out) return bisectingYaw(mirror, previous, next);
+  const toward = into ?? out;
+  return toward ? yawDegrees(Math.atan2(-toward[1], toward[0])) : undefined;
+}
+
 /** A part's derived yaw, or undefined when it is turned by hand. */
 function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): number | undefined {
   const at = (stop: { beam: Beam; index: number }, offset: number) =>
@@ -928,7 +1037,10 @@ function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): numbe
   if (mirror) {
     const previous = at(mirror, -1);
     const next = at(mirror, 1);
-    return previous && next ? bisectingYaw(component.position, previous.position, next.position) : undefined;
+    if (!previous || !next) return undefined;
+    return PERISCOPE_MIRRORS.has(component.type)
+      ? periscopeYaw(component.position, previous.position, next.position)
+      : bisectingYaw(component.position, previous.position, next.position);
   }
   const detector = detectorAngleStop(scene.beams, component);
   const source = detector && at(detector, -1);
@@ -1264,6 +1376,7 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     const radius = finiteNumber(raw.particleRadius);
     if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
   }
+  if (type === "periscope-top" && typeof raw.periscope === "string") component.periscope = raw.periscope;
   if (type === "laser-source") {
     const internal = finiteNumber(raw.internalPathMm);
     if (internal !== undefined) component.internalPathMm = clamp(internal, INTERNAL_PATH_RANGE_MM);
@@ -1485,7 +1598,9 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     ? raw.frames.map((frame) => parseFrame(frame, version)).filter((frame): frame is Frame => frame !== null)
     : [];
 
-  const scene = settleAngles(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames }));
+  const scene = settleAngles(
+    settlePeriscopes(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames })),
+  );
   return version < 10 ? settleAngles(movedToPorts(scene)) : scene;
 }
 

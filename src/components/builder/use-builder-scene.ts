@@ -12,6 +12,7 @@ import {
   DEFAULT_FOCAL_LENGTH_MM,
   FRAME_COLORS,
   DEFAULT_MOUNT_COLOR,
+  PERISCOPE_RISE_MM,
   DEFAULT_SCENE,
   EMPTY_SCENE,
   clampToTable,
@@ -27,7 +28,9 @@ import {
   setFrameHidden as setFrameHiddenInList,
   settleAngles,
   settleHosts,
+  settlePeriscopes,
   snapToGrid,
+  clampHeight,
   translateCorners,
   type Beam,
   type BuilderComponent,
@@ -47,13 +50,14 @@ const HISTORY_LIMIT = 60;
 type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 
 /**
- * Every edit ends with hosted particles back at their host's centre, then
- * mirrors in the middle of a beam turned to reflect it.
+ * Every edit ends with hosted particles back at their host's centre and
+ * periscope top mirrors over their lower ones, then mirrors in the middle of
+ * a beam turned to reflect it.
  */
 function settled(mutate: Mutation): Mutation {
   return (scene) => {
     const next = mutate(scene);
-    return next === scene ? scene : settleAngles(settleHosts(next));
+    return next === scene ? scene : settleAngles(settlePeriscopes(settleHosts(next)));
   };
 }
 
@@ -169,9 +173,25 @@ export function useBuilderScene() {
   // ---- component edits -----------------------------------------------------
 
   const addComponent = useCallback(
-    /** `x` and `z` place it; it always starts at its default height. */
+    /**
+     * `x` and `z` place it; it always starts at its default height. A
+     * periscope comes with its top mirror, PERISCOPE_RISE_MM above it.
+     */
     (type: ComponentType, [x, , z]: Vec3, extra?: { label?: string; host?: string }): string => {
       const id = createComponentId(type);
+      const top: BuilderComponent[] =
+        type === "periscope"
+          ? [
+              {
+                id: createComponentId("periscope-top"),
+                type: "periscope-top",
+                position: [x, clampHeight("periscope-top", defaultHeight(type) + PERISCOPE_RISE_MM), z],
+                rotation: 0,
+                color: DEFAULT_MOUNT_COLOR,
+                periscope: id,
+              },
+            ]
+          : [];
       commit((current) => ({
         ...current,
         components: [
@@ -181,7 +201,7 @@ export function useBuilderScene() {
             type,
             position: [x, defaultHeight(type), z],
             rotation: 0,
-            color: type === "mirror-mount" ? DEFAULT_MOUNT_COLOR : undefined,
+            color: type === "mirror-mount" || type === "periscope" ? DEFAULT_MOUNT_COLOR : undefined,
             label: extra?.label,
             ...(type === "lens"
               ? { lensShape: "plano-convex" as const, focalLength: DEFAULT_FOCAL_LENGTH_MM }
@@ -190,6 +210,7 @@ export function useBuilderScene() {
             ...(type === "block" ? { size: [...BLOCK_SIZE_MM] as Vec3, color: DEFAULT_BLOCK_COLOR } : {}),
             ...(extra?.host ? { host: extra.host } : {}),
           },
+          ...top,
         ],
       }));
       return id;

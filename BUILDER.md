@@ -216,6 +216,19 @@ pass through it, the first in the beam list wins, and the inspector names it
 other. A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
+**A periscope is two stops.** Placing a periscope puts down its lower mirror
+and, 100 mm above it, its top mirror: two parts, each a stop a beam can pass,
+so a beam runs `… → Peri → Peri top → …` and the rise between them counts in
+its path length. The top mirror always stands straight above (or below) the
+lower one: dragging, nudging, copying or deleting either takes the whole
+periscope, and either one's inspector sets both mirrors' heights. Each mirror
+is tipped 45° and angles itself like a mirror, turning to face the one
+neighbour that is not straight above or below it; with both neighbours off to
+the side it bisects them as a flat mirror would. Its rod stands to one side,
+away from where the top mirror sends its light. A setup file links the top
+mirror (`periscope-top`) to its lower one (`periscope`) by its `periscope`
+field.
+
 **A detector at a beam's end faces the light.** A photodiode, camera,
 spectrometer or single-photon detector that is a beam's last stop turns its
 face to the stop before it, and re-aims live as either moves. Like a mirror,
@@ -242,9 +255,12 @@ bare crystal, with the transducer or electrodes that drive it. A single-photon
 detector is a black module on a post, with a fiber connector on its face and
 SMA outputs at the back; note SPCM or SNSPD in its label. A time tagger is
 a dark bench-top box on the table with a row of SMA inputs across its front.
+A Faraday isolator is a black housing with a barrel each end along the beam,
+a white arrow on top for the way light is let through (+x), and its
+rejection port on its +z side; draw the rejected light as its own beam from it.
 Anything the
 builder has no model for is a generic block, sized, coloured and labelled by
-hand (a Faraday rotator is a block between two beam cubes). A lens's bulge
+hand. A lens's bulge
 is exaggerated so it can be seen, but still shrinks smoothly with focal
 length, so f = 50 and f = 500 never look alike.
 

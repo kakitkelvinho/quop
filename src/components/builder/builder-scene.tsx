@@ -40,6 +40,8 @@ import {
   bodyCentre,
   clampToTable,
   componentById,
+  periscopePartner,
+  withPeriscopePartners,
   componentDisplayName,
   findHost,
   appendStop,
@@ -332,8 +334,8 @@ export default function BuilderScene() {
         );
         return;
       }
-      const component = componentById(sceneRef.current.components, id);
-      if (!component) return;
+      const pressed = componentById(sceneRef.current.components, id);
+      if (!pressed) return;
 
       if (connectDraft) {
         // an undo may have taken away the part clicked first; then this click starts over
@@ -341,7 +343,7 @@ export default function BuilderScene() {
         if (!from) {
           setConnectDraft({ ...connectDraft, from: id });
         } else if (from.id === id) {
-          announce(`Can't connect ${componentDisplayName(component)} to itself.`);
+          announce(`Can't connect ${componentDisplayName(pressed)} to itself.`);
         } else {
           setSelectedConnectionId(api.addConnection(connectDraft.kind, from.id, id));
           setConnectDraft(null);
@@ -356,7 +358,7 @@ export default function BuilderScene() {
         if (!beam) return;
         const edit = appendStop(beam.path, id);
         if (edit.ok) api.updateBeam(beam.id, { path: edit.path });
-        else announce(`Can't add ${componentDisplayName(component)}: ${edit.reason}.`);
+        else announce(`Can't add ${componentDisplayName(pressed)}: ${edit.reason}.`);
         return;
       }
 
@@ -367,10 +369,13 @@ export default function BuilderScene() {
       // pressed as one of several selected parts, it drags them all
       const group = selectedIds.length > 1 && selectedIds.includes(id) ? selectedIds : null;
       if (!group) setSelection([id]);
+      // a periscope's top mirror is dragged by its lower one, which carries it
+      const base = pressed.type === "periscope-top" ? periscopePartner(sceneRef.current.components, pressed) : undefined;
+      const component = base ?? pressed;
       // the press hits the part up at its height; the drag follows the table
       const [grabX, grabZ] = tablePoint(event.ray) ?? [event.point.x, event.point.z];
       dragRef.current = {
-        id,
+        id: component.id,
         offsetX: component.position[0] - grabX,
         offsetZ: component.position[2] - grabZ,
         started: false,
@@ -474,8 +479,9 @@ export default function BuilderScene() {
 
       // A single part in the middle of a beam locks onto the straight line
       // between its neighbours when it comes close, ahead of the grid.
+      // (a periscope's next stop is its own top mirror, which follows it, so it doesn't lock)
       const lock =
-        drag.group || component.type === "particle"
+        drag.group || component.type === "particle" || component.type === "periscope"
           ? undefined
           : beamLineSnap(
               sceneRef.current.beams,
@@ -501,7 +507,10 @@ export default function BuilderScene() {
         if (!drag.origins) {
           drag.started = true;
           api.commitCheckpoint(sceneRef.current);
-          drag.origins = positionsOf(sceneRef.current.components, drag.group);
+          drag.origins = positionsOf(
+            sceneRef.current.components,
+            withPeriscopePartners(sceneRef.current.components, drag.group),
+          );
         }
         const [originX, , originZ] = drag.origins[drag.id];
         api.translateComponents(drag.origins, nextX - originX, nextZ - originZ);
@@ -1235,6 +1244,7 @@ export default function BuilderScene() {
           setSelectedConnectionId(null);
         }}
         onUpdateSelected={updateSelected}
+        onUpdateComponent={api.updateComponent}
         onRotateSelected={rotateSelected}
         onDuplicateSelected={duplicateSelected}
         onDeleteSelected={deleteSelected}

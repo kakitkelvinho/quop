@@ -32,10 +32,10 @@ export default function PartsPanel({
   const [query, setQuery] = useState("");
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return COMPONENT_GROUPS;
+    // a part that comes with another (a periscope's top mirror) is never placed alone
     return COMPONENT_GROUPS.map((group) => ({
       ...group,
-      types: group.types.filter((type) => matches(type, needle)),
+      types: group.types.filter((type) => !COMPONENT_SPECS[type].partOf && (!needle || matches(type, needle))),
     })).filter((group) => group.types.length);
   }, [query]);
 

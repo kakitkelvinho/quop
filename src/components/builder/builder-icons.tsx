@@ -323,6 +323,30 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M12 3v4" />
     </>
   ),
+  // a housing with a barrel each end, an arrow on top, and the side port
+  "faraday-isolator": (
+    <>
+      <path d="M2.5 13.5h3M18.5 13.5h3" />
+      <rect x="5.5" y="9" width="13" height="9" rx="1.2" />
+      <path d="M8.5 5.5h6.5M13 3.5l2 2-2 2" />
+      <path d="M12 18v3" />
+    </>
+  ),
+  // two mirrors up a rod, the beam in low and out high
+  periscope: (
+    <>
+      <path d="M8 3.5v17" />
+      <path d="M10.5 19.5 15 15M10.5 9 15 4.5" />
+      <path d="M3 17.5h9.5V7H21" strokeDasharray="1.6 1.8" />
+    </>
+  ),
+  "periscope-top": (
+    <>
+      <path d="M8 3.5v17" />
+      <path d="M10.5 9 15 4.5" />
+      <path d="M12.5 21V7H21" strokeDasharray="1.6 1.8" />
+    </>
+  ),
 };
 
 export function PartIcon({ type, size = 20 }: { type: ComponentType; size?: number }) {

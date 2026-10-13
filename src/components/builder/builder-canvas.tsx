@@ -62,6 +62,7 @@ import {
   bodyCentre,
   componentById,
   componentRadius,
+  periscopePartner,
   type Beam,
   type Frame,
   type BuilderComponent,
@@ -1049,6 +1050,7 @@ export default function BuilderCanvas({
           showPosts={showPosts}
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
+          partner={periscopePartner(components, component)}
           onPointerDown={(event) => {
             event.stopPropagation();
             onComponentPointerDown(component.id, event);
