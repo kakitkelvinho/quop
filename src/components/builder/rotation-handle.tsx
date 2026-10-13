@@ -6,7 +6,7 @@
 import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { useMemo, useState } from "react";
-import { BufferAttribute, BufferGeometry, DoubleSide } from "three";
+import { BufferAttribute, BufferGeometry, Color, DoubleSide } from "three";
 
 import {
   componentRadius,
@@ -25,9 +25,8 @@ const BUBBLE_LENGTH_MM = 30;
 const HEAD_HALF_MM = 3;
 /** the skewer: the circle line running through the bubble, mm wide */
 const SKEWER_MM = 1.6;
-/** the bubble under the pointer or being dragged */
-const BUBBLE_HOVER = "#b8325a";
-const ARROW_INK = "#fffaf1";
+/** the arrowheads: the same ink as the order badges, per theme */
+const ARROW_INK = { light: "#fffaf1", dark: "#1a1d26" } as const;
 
 /**
  * A flat band of a circle in the table plane, from angle a0 to a1 (radians,
@@ -76,7 +75,9 @@ function arrowheads(cx: number, r: number, mid: number, half: number) {
 
 export type RotationHandleProps = {
   component: BuilderComponent;
+  /** the selection ring's colour, the theme's accent */
   color: string;
+  dark: boolean;
   /** a beam sets this part's angle: no handle, just a note saying so */
   lockedBy: string | null;
   /** being turned now: shows the angle */
@@ -88,7 +89,7 @@ export type RotationHandleProps = {
  * Drawn in the part's own frame, so it turns with the part. The origin is the
  * part's reference point (its position), which the yaw already turns about.
  */
-export function RotationHandle({ component, color, lockedBy, rotating, onPointerDown }: RotationHandleProps) {
+export function RotationHandle({ component, color, dark, lockedBy, rotating, onPointerDown }: RotationHandleProps) {
   const [hover, setHover] = useState(false);
   const ring = componentRadius(component);
   const offset = componentReferenceX(component);
@@ -125,6 +126,9 @@ export function RotationHandle({ component, color, lockedBy, rotating, onPointer
   const yaw = (component.rotation * Math.PI) / 180;
   const [x, , z] = component.position;
   const active = hover || rotating;
+  const ink = dark ? ARROW_INK.dark : ARROW_INK.light;
+  // under the pointer, the accent lifts a little toward the ink
+  const fill = useMemo(() => (active ? new Color(color).lerp(new Color(ink), 0.18) : new Color(color)), [active, color, ink]);
 
   if (lockedBy) {
     return (
@@ -157,26 +161,28 @@ export function RotationHandle({ component, color, lockedBy, rotating, onPointer
     },
   };
   // drawn over the post bases, so it never hides under the part it turns
-  const over = { depthWrite: false, depthTest: false, side: DoubleSide } as const;
+  // the ring is transparent, so three draws it after every opaque mesh: the
+  // bubble joins the transparent pass, at full opacity, to land on top of it
+  const over = { depthWrite: false, depthTest: false, side: DoubleSide, transparent: true, opacity: 1 } as const;
 
   return (
     <group position={[x, 0, z]} rotation={[0, yaw, 0]}>
       {shapes.skewer ? (
         <mesh geometry={shapes.skewer} renderOrder={2}>
-          <meshBasicMaterial color={color} vertexColors transparent opacity={0.85} {...over} />
+          <meshBasicMaterial color={color} vertexColors {...over} opacity={0.85} />
         </mesh>
       ) : null}
       <mesh geometry={shapes.fill} renderOrder={3} {...press}>
-        <meshBasicMaterial color={active ? BUBBLE_HOVER : color} {...over} />
+        <meshBasicMaterial color={fill} {...over} />
       </mesh>
       {shapes.caps.map((at, index) => (
         <mesh key={index} position={at} rotation={[-Math.PI / 2, 0, 0]} renderOrder={3} {...press}>
           <circleGeometry args={[BUBBLE_HALF_MM, 24]} />
-          <meshBasicMaterial color={active ? BUBBLE_HOVER : color} {...over} />
+          <meshBasicMaterial color={fill} {...over} />
         </mesh>
       ))}
       <mesh geometry={shapes.heads} renderOrder={4}>
-        <meshBasicMaterial color={ARROW_INK} {...over} />
+        <meshBasicMaterial color={ink} {...over} />
       </mesh>
       {rotating ? (
         <Html position={labelAt} center zIndexRange={[0, 0]} className="builderHtmlLayer">

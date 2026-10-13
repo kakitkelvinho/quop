@@ -1084,6 +1084,7 @@ export default function BuilderCanvas({
           <RotationHandle
             component={part}
             color={palette.accent}
+            dark={palette.mode === "dark"}
             lockedBy={locked ? beamDisplayName(locked) : null}
             rotating={rotatingId === part.id}
             onPointerDown={(event) => onRotateHandlePointerDown(part.id, event)}
