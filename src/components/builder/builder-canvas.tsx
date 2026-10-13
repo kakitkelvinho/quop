@@ -1236,7 +1236,12 @@ export default function BuilderCanvas({
               ghost={ghost}
             />
             {selected || (showDistances && !beam.hidden) ? (
-              <BeamDistances points={points} lengths={beamLegLengthsMm(components, beam)} />
+              <BeamDistances
+                points={points}
+                lengths={beamLegLengthsMm(components, beam)}
+                color={beam.color}
+                faded={ghost}
+              />
             ) : null}
           </Fragment>
         );
