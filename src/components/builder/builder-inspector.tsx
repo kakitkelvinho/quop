@@ -45,6 +45,9 @@ import {
   heightRange,
   beamDisplayName,
   beamInternalPathMm,
+  beamDelayMm,
+  delaySetting,
+  DELAY_LIMIT_MM,
   beamLengthMm,
   componentById,
   periscopePartner,
@@ -333,6 +336,61 @@ export function BeamSwatches({
   );
 }
 
+/**
+ * A delay line's shortest and longest arm, and a slider for where the
+ * retroreflector sits between them, with the path it adds out and back.
+ */
+function DelayFields({
+  component,
+  onUpdate,
+  onCheckpoint,
+}: {
+  component: BuilderComponent;
+  onUpdate: (patch: ComponentPatch, record?: boolean) => void;
+  onCheckpoint: () => void;
+}) {
+  const { min, max, arm } = delaySetting(component);
+  // a new range carries the arm with it, so it is never saved outside it
+  const setRange = (nextMin: number, nextMax: number) => {
+    const held = delaySetting({ ...component, delayMinMm: nextMin, delayMaxMm: nextMax });
+    onUpdate({ delayMinMm: held.min, delayMaxMm: held.max, delayMm: held.arm });
+  };
+  return (
+    <>
+      <div className="builderFieldRow">
+        <NumberField
+          label="Shortest arm"
+          unit="mm"
+          step={10}
+          min={DELAY_LIMIT_MM[0]}
+          max={DELAY_LIMIT_MM[1]}
+          value={min}
+          onChange={(next) => setRange(clamp(next, DELAY_LIMIT_MM), Math.max(max, clamp(next, DELAY_LIMIT_MM)))}
+        />
+        <NumberField
+          label="Longest arm"
+          unit="mm"
+          step={10}
+          min={DELAY_LIMIT_MM[0]}
+          max={DELAY_LIMIT_MM[1]}
+          value={max}
+          onChange={(next) => setRange(Math.min(min, clamp(next, DELAY_LIMIT_MM)), clamp(next, DELAY_LIMIT_MM))}
+        />
+      </div>
+      <SliderField
+        label="Retroreflector"
+        value={arm}
+        display={`${Math.round(arm)} mm`}
+        range={[min, max]}
+        step={1}
+        onBegin={onCheckpoint}
+        onChange={(next) => onUpdate({ delayMm: next }, false)}
+      />
+      <p className="builderInspector__hint">Adds {Math.round(2 * arm)} mm of path, out and back.</p>
+    </>
+  );
+}
+
 /** A part's yaw, read-only and naming the beam when a beam turns it. */
 function YawRow({
   label,
@@ -522,6 +580,7 @@ export function ComponentInspector({
           />
         </>
       ) : null}
+      {component.type === "delay-line" ? <DelayFields component={component} onUpdate={onUpdate} onCheckpoint={onCheckpoint} /> : null}
       {component.type === "cavity" ? (
         <NumberField
           label="Length"
@@ -758,6 +817,7 @@ export function BeamInspector({
 }) {
   const length = beamLengthMm(components, beam);
   const insideLaser = beamInternalPathMm(components, beam);
+  const inDelayLines = beamDelayMm(components, beam);
   const width = beam.width ?? BEAM_WIDTH_MM;
   const opacity = beam.opacity ?? 1;
 
@@ -827,6 +887,9 @@ export function BeamInspector({
       </dl>
       {insideLaser > 0 ? (
         <p className="builderInspector__hint">Includes {Math.round(insideLaser)} mm inside the laser.</p>
+      ) : null}
+      {inDelayLines > 0 ? (
+        <p className="builderInspector__hint">Includes {Math.round(inDelayLines)} mm in delay lines, out and back.</p>
       ) : null}
       <EditableStopList components={components} path={beam.path} onChange={(path) => onUpdate({ path })} />
       <button
