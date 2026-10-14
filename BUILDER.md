@@ -226,9 +226,10 @@ inspector sets the shortest path (the path the light gains with the stage at
 the start of its travel, in at the port, round the carriage and out; 50 mm by
 default) and the travel (50 mm by default, up to 2000 mm), and, with a slider,
 how far the stage has travelled; the carriage slides to match. The carriage
-carries a knurled thumbscrew on each side; with the delay line selected, a
-thin ring marks them, and dragging either slides the stage along the rail in
-1 mm steps, its travel shown above it, one undo step per drag. A
+carries a knurled thumbscrew on each side; with the delay line selected, the
+one facing you wears a bubble like the rotation handle's, ◀▶ along the rail,
+and dragging it slides the stage in 1 mm steps, its travel shown above it,
+one undo step per drag. A
 beam through it (a stop in the middle) is drawn to the port and away from it,
 and gains the shortest path plus twice the stage's travel each time it passes,
 which its inspector names ("Includes … mm in delay lines"). A beam that only
@@ -409,7 +410,7 @@ is on screen until it is needed:
 | Raise / lower | Type a height in the inspector |
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
-| Slide a delay line's stage | Select it and drag a thumbscrew on its carriage along the rail, or use the Stage slider in its inspector |
+| Slide a delay line's stage | Select it and drag the bubble on its carriage's thumbscrew along the rail, or use the Stage slider in its inspector |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam, beside the ＋ at the top left; click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |
