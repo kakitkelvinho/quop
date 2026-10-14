@@ -85,6 +85,7 @@ import {
   type Connection,
   type Vec3,
 } from "@/components/builder/types";
+import { TableHoles, type HoleVariant } from "@/components/builder/table-holes.prototype";
 
 export type CameraView = "iso" | "top";
 
@@ -978,6 +979,8 @@ export type BuilderCanvasProps = {
   /** label the legs of every shown beam, not only the selected one's */
   showDistances: boolean;
   showGrid: boolean;
+  /** PROTOTYPE: which look the grid takes */
+  gridVariant: HoleVariant;
   /** draw posts; off, the parts float at their heights over their shadows */
   showPosts: boolean;
   view: CameraView;
@@ -1059,6 +1062,7 @@ export default function BuilderCanvas({
   showLabels,
   showDistances,
   showGrid,
+  gridVariant,
   showPosts,
   view,
   fitToken,
@@ -1180,7 +1184,10 @@ export default function BuilderCanvas({
       {/* with no table drawn, the grid is the one sign of the breadboard: it
           shows while the toolbar's grid toggle is on, follows the view, and
           fades out away from it */}
-      {showGrid ? (
+      {showGrid && gridVariant !== "A" ? (
+        <TableHoles variant={gridVariant} dark={palette.mode === "dark"} />
+      ) : null}
+      {showGrid && gridVariant === "A" ? (
         <Grid
           cellSize={GRID_CELL_MM}
           cellThickness={0.8}

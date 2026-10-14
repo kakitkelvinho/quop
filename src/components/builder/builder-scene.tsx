@@ -9,6 +9,9 @@ import {
   useState,
 } from "react";
 
+import PrototypeSwitcher, { useVariant } from "@/components/prototype-switcher";
+import { HOLE_VARIANTS, type HoleVariant } from "@/components/builder/table-holes.prototype";
+const HOLE_VARIANT_KEYS = Object.keys(HOLE_VARIANTS) as HoleVariant[];
 import BuilderCanvas, {
   CLICK_SLOP_PX,
   type CameraView,
@@ -266,7 +269,8 @@ export default function BuilderScene() {
   const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
   const [showDistances, setShowDistances] = useState(false);
-  const [showGrid, setShowGrid] = useState(false);
+  const [showGrid, setShowGrid] = useState(true); // PROTOTYPE: on, to judge the holes
+  const [gridVariant, setGridVariant] = useVariant(HOLE_VARIANT_KEYS);
   const [showPosts, setShowPosts] = useState(true);
   const [lighting, setLighting] = useState<Lighting>(DEFAULT_LIGHTING);
   const [quality, setQuality] = useState<GraphicsQuality>("full");
@@ -1335,6 +1339,7 @@ export default function BuilderScene() {
 
   return (
     <div className="builderWorkspace">
+      <PrototypeSwitcher names={HOLE_VARIANTS} current={gridVariant} onChange={setGridVariant} />
       <div
         ref={hostRef}
         className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || drawing ? " is-picking" : ""}`}
@@ -1364,6 +1369,7 @@ export default function BuilderScene() {
           showLabels={showLabels}
           showDistances={showDistances}
           showGrid={showGrid}
+          gridVariant={gridVariant}
           showPosts={showPosts}
           view={view}
           fitToken={fitToken}
