@@ -10,10 +10,14 @@ const OFFSET_PX = 11;
 /** px a leg must have to spare beyond its label's width before the label shows */
 const ROOM_PX = 16;
 
+type DistancesProps = { points: Vector3[]; lengths: number[]; color: string; faded?: boolean };
+
 type Leg = { from: Vector3; to: Vector3; middle: Vector3; text: string };
 
 /**
- * The distance along each leg of a beam, like a smart dimension: a label at
+ * The distance along each leg of a beam, like a smart dimension: a number in
+ * the beam's colour, no box, haloed in the background so it reads over parts
+ * and shadows alike. It sits at
  * the leg's middle, turned on screen to run along it (never upside down) and
  * set off to one side so it doesn't sit on the beam. A leg too short on
  * screen to hold its label goes without.
@@ -25,11 +29,17 @@ type Leg = { from: Vector3; to: Vector3; middle: Vector3; text: string };
 export const BeamDistances = memo(function BeamDistances({
   points,
   lengths,
+  color,
+  faded = false,
 }: {
   /** the beam's reference points */
   points: Vector3[];
   /** each leg's length, mm (beamLegLengthsMm), one fewer than the points */
   lengths: number[];
+  /** the beam's colour, which the numbers take */
+  color: string;
+  /** a hidden beam's ghost: the numbers fade with it */
+  faded?: boolean;
 }) {
   const legs = useMemo(() => {
     const result: Leg[] = [];
@@ -91,8 +101,8 @@ export const BeamDistances = memo(function BeamDistances({
             ref={(element) => {
               labels.current[index] = element;
             }}
-            className="builderDistance"
-            style={{ visibility: "hidden" }}
+            className={faded ? "builderDistance is-faded" : "builderDistance"}
+            style={{ visibility: "hidden", color }}
           >
             {leg.text}
           </span>
@@ -103,12 +113,11 @@ export const BeamDistances = memo(function BeamDistances({
 }, sameDistances);
 
 /** The points are rebuilt on every render, so they and the lengths are compared by value. */
-function sameDistances(
-  before: { points: Vector3[]; lengths: number[] },
-  after: { points: Vector3[]; lengths: number[] },
-): boolean {
+function sameDistances(before: DistancesProps, after: DistancesProps): boolean {
   const [a, b] = [before.points, after.points];
   return (
+    before.color === after.color &&
+    before.faded === after.faded &&
     a.length === b.length &&
     a.every((point, index) => point.equals(b[index])) &&
     before.lengths.length === after.lengths.length &&
