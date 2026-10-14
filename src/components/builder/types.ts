@@ -190,7 +190,10 @@ export type Frame = {
   fillOpacity?: number;
 };
 
-export const SCENE_VERSION = 10 as const;
+export const SCENE_VERSION = 11 as const;
+
+/** how large the labels on the table are drawn, as a fraction of their standard size */
+export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
 
 export type BuilderSceneData = {
   version: typeof SCENE_VERSION;
@@ -199,6 +202,11 @@ export type BuilderSceneData = {
   connections: Connection[];
   /** drawn under everything, in list order; missing in setups from before version 5 */
   frames: Frame[];
+  /**
+   * the size of component, connection and frame labels, within LABEL_SCALE_RANGE;
+   * stored only when it isn't 1, missing in setups from before version 11
+   */
+  labelScale?: number;
 };
 
 // ---------------------------------------------------------------------------
@@ -1813,7 +1821,8 @@ function labelText(raw: unknown): string | undefined {
  * open with that rectangle's corners;
  * those from before version 9 open with every frame's fill at the faint default;
  * those from before version 10 saved a part with a port by its body's centre,
- * and open with it moved to its port, exactly where it was.
+ * and open with it moved to its port, exactly where it was;
+ * those from before version 11 open with labels at their standard size.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -1841,10 +1850,29 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     ? raw.frames.map((frame) => parseFrame(frame, version)).filter((frame): frame is Frame => frame !== null)
     : [];
 
+  const labelScale = parseLabelScale(raw.labelScale);
+
   const scene = settleAngles(
-    settlePeriscopes(settleHosts({ version: SCENE_VERSION, components, beams, connections, frames })),
+    settlePeriscopes(
+      settleHosts({
+        version: SCENE_VERSION,
+        components,
+        beams,
+        connections,
+        frames,
+        ...(labelScale !== undefined ? { labelScale } : {}),
+      }),
+    ),
   );
   return version < 10 ? settleAngles(movedToPorts(scene)) : scene;
+}
+
+/** A label scale held to LABEL_SCALE_RANGE; undefined for a missing one or the standard size, 1. */
+export function parseLabelScale(raw: unknown): number | undefined {
+  const value = finiteNumber(raw);
+  if (value === undefined) return undefined;
+  const held = clamp(value, LABEL_SCALE_RANGE);
+  return held === 1 ? undefined : held;
 }
 
 /**

@@ -331,6 +331,17 @@ angle from one. Setups from before version 3 open with no connections.
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
 
+**Label size is the setup's.** The Label size button (a large and a small A) in the tool
+pill, beside the lightbulb, opens a Label size slider, 50–200 % in 5 % steps. It scales every
+component, connection and frame label whole (text, padding, corners, border
+and the lift that keeps a part's label clear of the part) through one CSS
+variable, `--label-scale`, on the canvas host. The beam distance numbers, the
+rotation and stage bubbles and the order badges keep their size. Unlike
+lighting, which is the viewer's, the size is saved with the setup as
+`labelScale` (scene version 11, left out of the file at 100 %), so a PNG made
+from a file shows its labels as its author saw them. A drag is one undo step;
+setups from before version 11 open at 100 %.
+
 **Open JSON… is a text panel.** It opens in the parts panel's place, below the
 top-left islands, with the setup as it stands in an editable box: tweak it,
 **Paste** one over it, **Open file…** to fill the box from a `.json`, or
@@ -361,7 +372,7 @@ is on screen until it is needed:
   and the setup brief open in the same spot, so opening one
   closes the others.
 - **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
-  Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
+  Lighting, Label size, Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
   `.md` button in its own island (it is neither a tool nor a guide). The `.md`
   island hangs off the row's end, so the Guide and tool pills stay centred.
   While placing, drawing or connecting, a mode badge under the pill carries

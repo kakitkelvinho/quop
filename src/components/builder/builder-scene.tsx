@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 
 import BuilderCanvas, {
@@ -1338,6 +1339,7 @@ export default function BuilderScene() {
       <div
         ref={hostRef}
         className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || drawing ? " is-picking" : ""}`}
+        style={{ "--label-scale": scene.labelScale ?? 1 } as CSSProperties}
       >
         <BuilderCanvas
           components={scene.components}
@@ -1418,6 +1420,7 @@ export default function BuilderScene() {
         showGrid={showGrid}
         showPosts={showPosts}
         lighting={lighting}
+        labelScale={scene.labelScale ?? 1}
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
@@ -1487,6 +1490,7 @@ export default function BuilderScene() {
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}
         onLightingChange={(patch) => setLighting((current) => ({ ...current, ...patch }))}
+        onLabelScaleChange={(scale) => api.setLabelScale(scale, false)}
         onViewChange={(next) => {
           // pressing the view you are already on still snaps back from an orbit
           setView(next);

@@ -22,6 +22,8 @@ v9 is the first with a frame's fill opacity: v8's setup plus a solid frame,
 v10 places a part with a port (a laser, a fibre collimator, a detector, an
 objective) by that port rather than its body's centre: v9's setup, opened and
 saved, so the same drawing; v1 to v9 open with each such part moved to its port.
+v11 is the first with a label size: v10's setup plus `"labelScale": 1.5`; v1 to
+v10 open with labels at the standard size.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

@@ -19,6 +19,7 @@ const FIXTURES = [
   "setup-v8.json",
   "setup-v9.json",
   "setup-v10.json",
+  "setup-v11.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -332,5 +333,33 @@ describe("setup-v10.json, the first version to place a part by its port", () => 
       (readSaved(name).components.find(({ type }) => type === "laser-source") as { position?: number[] } | undefined)?.position;
     const [before, after] = [laserAt("setup-v9.json"), laserAt("setup-v10.json")];
     assert.notDeepEqual(after, before);
+  });
+});
+
+describe("setup-v11.json, the first version with labelScale", () => {
+  it("opens with its labels at 150 %, and keeps that through a save", () => {
+    assert.equal(open("setup-v11.json").labelScale, 1.5);
+    assert.equal(parseScene(JSON.parse(serializeScene(open("setup-v11.json"))))?.labelScale, 1.5);
+  });
+
+  it("is v10's setup plus that label size", () => {
+    const { labelScale, ...rest } = open("setup-v11.json");
+    assert.equal(labelScale, 1.5);
+    assert.deepEqual(rest, open("setup-v10.json"));
+  });
+
+  it("opens every older setup at the standard size", () => {
+    for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v11.json"))) {
+      assert.equal(open(name).labelScale, undefined, name);
+    }
+  });
+
+  it("holds a label size to 50–200 %, and saves the standard size as nothing", () => {
+    const at = (labelScale: unknown) => parseScene({ ...readSaved("setup-v11.json"), labelScale })?.labelScale;
+    assert.equal(at(5), 2);
+    assert.equal(at(0.1), 0.5);
+    assert.equal(at("big"), undefined);
+    assert.equal(at(1), undefined);
+    assert.ok(!serializeScene(parseScene({ ...readSaved("setup-v11.json"), labelScale: 1 })!).includes("labelScale"));
   });
 });

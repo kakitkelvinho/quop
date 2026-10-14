@@ -23,6 +23,7 @@ import {
   defaultHeight,
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
+  parseLabelScale,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
@@ -480,6 +481,22 @@ export function useBuilderScene() {
 
   // ---- whole-scene ---------------------------------------------------------
 
+  /** The labels' size; unrecorded while a slider drags, after a checkpoint. */
+  const setLabelScale = useCallback(
+    (value: number, record = true) => {
+      const apply: Mutation = (current) => {
+        const labelScale = parseLabelScale(value);
+        if (labelScale === current.labelScale) return current;
+        const { labelScale: _old, ...rest } = current;
+        void _old;
+        return labelScale === undefined ? rest : { ...rest, labelScale };
+      };
+      if (record) commit(apply);
+      else preview(apply);
+    },
+    [commit, preview],
+  );
+
   const replaceScene = useCallback((next: BuilderSceneData) => commit(() => next), [commit]);
   const clearScene = useCallback(() => commit(() => EMPTY_SCENE), [commit]);
   const resetToExample = useCallback(() => commit(() => DEFAULT_SCENE), [commit]);
@@ -555,6 +572,7 @@ export function useBuilderScene() {
       deleteFrame,
       reorderFrame,
       setFrameHidden,
+      setLabelScale,
       replaceScene,
       clearScene,
       resetToExample,
@@ -592,6 +610,7 @@ export function useBuilderScene() {
       deleteFrame,
       reorderFrame,
       setFrameHidden,
+      setLabelScale,
       replaceScene,
       clearScene,
       resetToExample,

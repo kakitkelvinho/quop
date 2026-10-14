@@ -90,6 +90,13 @@ const ICONS = {
       <path d="M9 17.5v-1.8c0-1.2-.6-2-1.4-2.9A5.5 5.5 0 1 1 16.4 12.8c-.8.9-1.4 1.7-1.4 2.9v1.8" />
     </>
   ),
+  // a large and a small letter: the labels' size
+  labelSize: (
+    <>
+      <path d="M3 19 8.5 5h1L15 19M5.2 14h7.6" />
+      <path d="M15.5 19 18.5 11.5h.6L22 19M16.6 16.4h4.3" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="8" />

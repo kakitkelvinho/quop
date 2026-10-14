@@ -35,6 +35,7 @@ import {
   FRAME_SIZE_RANGE_MM,
   HOST_TYPES,
   INTERNAL_PATH_RANGE_MM,
+  LABEL_SCALE_RANGE,
   LIT_TYPES,
   MOUNTED_TYPES,
   PARTICLE_RADIUS_MM,
@@ -77,6 +78,9 @@ const FILE_FIELDS: FieldDocs<BuilderSceneData> = {
   beams: { text: "the light paths, in order. The first beam through a mirror sets its angle." },
   connections: { text: "fibres and cables between parts; `[]` when there are none." },
   frames: { text: "outlines marking areas such as a breadboard or an enclosure; `[]` when there are none." },
+  labelScale: {
+    text: `how large the labels on parts, connections and frames are drawn, ${range(LABEL_SCALE_RANGE)} times their standard size; leave it out for the standard size, 1.`,
+  },
 };
 
 const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {

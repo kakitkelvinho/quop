@@ -24,6 +24,7 @@ import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
+  LABEL_SCALE_RANGE,
   beamDisplayName,
   beamLengthMm,
   derivedAngleBeam,
@@ -76,6 +77,8 @@ export type BuilderHudProps = {
   showGrid: boolean;
   showPosts: boolean;
   lighting: Lighting;
+  /** the setup's label size, 1 being the standard */
+  labelScale: number;
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
@@ -128,6 +131,8 @@ export type BuilderHudProps = {
   onToggleGrid: () => void;
   onTogglePosts: () => void;
   onLightingChange: (patch: Partial<Lighting>) => void;
+  /** unrecorded: a drag is made one undo step by onCheckpoint at its start */
+  onLabelScaleChange: (scale: number) => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -650,18 +655,16 @@ function FileMenu({
   );
 }
 
-/** The lightbulb: a bubble of lighting settings under the tool pill. */
-function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (patch: Partial<Lighting>) => void }) {
-  const [open, setOpen] = useState(false);
+/** Close a toolbar bubble on a pointer-down outside it, or on Esc. */
+function useBubbleDismiss(open: boolean, close: () => void) {
   const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+      if (!ref.current?.contains(event.target as Node)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") close();
     };
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
@@ -669,7 +672,14 @@ function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (p
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, close]);
+  return ref;
+}
+
+/** The lightbulb: a bubble of lighting settings under the tool pill. */
+function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (patch: Partial<Lighting>) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
 
   return (
     <div className="builderLighting" ref={ref}>
@@ -708,6 +718,71 @@ function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (p
               role="switch"
               checked={lighting.shadows}
               onChange={(event) => onChange({ shadows: event.target.checked })}
+            />
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Label size: a bubble with the labels' size, saved with the setup. A drag
+ * previews as it moves and is one undo step: its first change takes the snapshot.
+ */
+function LabelMenu({
+  scale,
+  onBegin,
+  onChange,
+}: {
+  scale: number;
+  onBegin: () => void;
+  onChange: (scale: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
+  const editing = useRef(false);
+  const end = () => {
+    editing.current = false;
+  };
+
+  return (
+    <div className="builderLighting" ref={ref}>
+      <button
+        type="button"
+        className={`builderIconBtn${open ? " is-active" : ""}`}
+        aria-label="Label size"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        title="Label size"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <Icon name="labelSize" />
+      </button>
+      {open ? (
+        <div className="builderLighting__bubble" role="dialog" aria-label="Label size">
+          <label className="builderField">
+            <span className="builderField__label">
+              Label size
+              <span className="builderReadout">{Math.round(scale * 100)}%</span>
+            </span>
+            <input
+              className="builderSlider"
+              type="range"
+              min={LABEL_SCALE_RANGE[0]}
+              max={LABEL_SCALE_RANGE[1]}
+              step={0.05}
+              value={scale}
+              onChange={(event) => {
+                if (!editing.current) {
+                  editing.current = true;
+                  onBegin();
+                }
+                onChange(Number(event.target.value));
+              }}
+              onPointerUp={end}
+              onKeyUp={end}
+              onBlur={end}
             />
           </label>
         </div>
@@ -938,6 +1013,7 @@ export default function BuilderHud(props: BuilderHudProps) {
               <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
               <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
               <LightingMenu lighting={props.lighting} onChange={props.onLightingChange} />
+              <LabelMenu scale={props.labelScale} onBegin={props.onCheckpoint} onChange={props.onLabelScaleChange} />
               <span className="builderIsland__sep" />
               <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
               <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
