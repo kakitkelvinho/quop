@@ -726,6 +726,8 @@ function FoldPair({ palette, axis, bottom, facing }: Pick<ModelProps, "palette" 
 /** How far below the beam a delay line's rail runs, and the length of the drive knob at its far end, mm. */
 const DELAY_RAIL_DROP_MM = 26;
 const DELAY_DRIVE_MM = 12;
+/** How far the port's fold-mirror plate stands past the rail's front end (FoldPair's plate, at 9 ± 3), mm. */
+const DELAY_PORT_PLATE_MM = 12;
 
 function DelayLine({
   palette,
@@ -771,7 +773,13 @@ function DelayLine({
           <Pillar palette={palette} top={railY - 5} />
         </group>
       ))}
-      <RoundedBox args={[rail, 10, 34]} radius={1} smoothness={2} position={[0, railY, 0]}>
+      {/* the rail runs on past the port, under the fold mirrors' plate, so the plate stands on it */}
+      <RoundedBox
+        args={[rail + DELAY_PORT_PLATE_MM, 10, 34]}
+        radius={1}
+        smoothness={2}
+        position={[DELAY_PORT_PLATE_MM / 2, railY, 0]}
+      >
         <Anodised color={palette.anodise} />
       </RoundedBox>
       {/* the guide on top of the rail */}
@@ -781,7 +789,7 @@ function DelayLine({
       </mesh>
       {/* the fold mirrors on the beam line */}
       <group position={[front, 0, 0]}>
-        <FoldPair palette={palette} axis={axis} bottom={axis - 32} facing={-1} />
+        <FoldPair palette={palette} axis={axis} bottom={railY - 5} facing={-1} />
       </group>
       {/* the carriage, and the V of mirrors on it facing the port */}
       <group position={[carriageX, 0, 0]}>
