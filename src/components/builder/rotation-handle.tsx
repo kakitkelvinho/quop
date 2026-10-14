@@ -34,7 +34,7 @@ const LOCK_SHACKLE_IN_MM = 1.4;
 /** the faint circle a port's bubble is threaded on, mm wide */
 const SKEWER_MM = 1.6;
 /** the arrowheads: the order badges' ink, per theme */
-const ARROW_INK = { light: "#fffaf1", dark: "#1a1d26" } as const;
+export const ARROW_INK = { light: "#fffaf1", dark: "#1a1d26" } as const;
 /** where a centred part's bubble sits on its ring, and a port's on its quarter circle (part's frame) */
 const RING_BUBBLE_ANGLE = -45 * DEG;
 const PORT_BUBBLE_ANGLE = -90 * DEG;
