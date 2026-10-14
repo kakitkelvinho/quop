@@ -307,11 +307,10 @@ export default function BuilderScene() {
     if (selectedComponents.length === 1) {
       const [component] = selectedComponents;
       if (component.host) return null;
-      const locked = derivedAngleBeam(scene.beams, component);
       return {
         kind: "part",
         component,
-        lockedBy: locked ? beamDisplayName(locked) : null,
+        locked: derivedAngleBeam(scene.beams, component) !== undefined,
         rotating: turning !== null,
       };
     }
