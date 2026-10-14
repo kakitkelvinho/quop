@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 import { Icon, PartIcon } from "@/components/builder/builder-icons";
 import {
-  COMPONENT_GROUPS,
+  PART_CATEGORIES,
   COMPONENT_SPECS,
   type ComponentType,
 } from "@/components/builder/types";
@@ -33,7 +33,7 @@ export default function PartsPanel({
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     // a part that comes with another (a periscope's top mirror) is never placed alone
-    return COMPONENT_GROUPS.map((group) => ({
+    return PART_CATEGORIES.map((group) => ({
       ...group,
       types: group.types.filter((type) => !COMPONENT_SPECS[type].partOf && (!needle || matches(type, needle))),
     })).filter((group) => group.types.length);

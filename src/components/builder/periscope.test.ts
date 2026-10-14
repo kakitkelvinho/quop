@@ -28,7 +28,7 @@ const bench = (components: BuilderComponent[] = [laser, peri, top, pd]): Builder
   components,
   beams: [{ id: "b", path: ["laser", "peri", "peri-top", "pd"], color: "#e33" }],
   connections: [],
-  frames: [],
+  frames: [], groups: [],
 });
 
 const byId = (scene: BuilderSceneData, id: string) => scene.components.find((component) => component.id === id);

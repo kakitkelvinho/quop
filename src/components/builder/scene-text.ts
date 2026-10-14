@@ -3,19 +3,20 @@
 // setup's shape and a sane number of things. parseScene then keeps only what
 // it can read, and the check says how much it left out.
 
-import { parseScene, type BuilderSceneData } from "./types.ts";
+import { GROUP_LIMIT, parseScene, type BuilderSceneData } from "./types.ts";
 
 /** The most text a setup may be, bytes: a large lab setup is a few tens of kB. */
 export const SCENE_TEXT_MAX_BYTES = 1_000_000;
 
 /** The most of each a setup may hold, so a hand-made file can't stall the page. */
-export const SCENE_LIMITS = { components: 500, beams: 200, connections: 500, frames: 100 } as const;
+export const SCENE_LIMITS = { components: 500, beams: 200, connections: 500, frames: 100, groups: GROUP_LIMIT } as const;
 
 const NOUNS: Record<keyof typeof SCENE_LIMITS, [string, string]> = {
   components: ["part", "parts"],
   beams: ["beam", "beams"],
   connections: ["connection", "connections"],
   frames: ["frame", "frames"],
+  groups: ["group", "groups"],
 };
 
 const count = (n: number, [one, many]: [string, string]) => `${n} ${n === 1 ? one : many}`;
@@ -105,7 +106,8 @@ export function checkSceneText(text: string): SceneTextCheck {
     given("components") - scene.components.length +
     (given("beams") - scene.beams.length) +
     (given("connections") - scene.connections.length) +
-    (given("frames") - scene.frames.length);
+    (given("frames") - scene.frames.length) +
+    (given("groups") - scene.groups.length);
   const summary = (Object.keys(SCENE_LIMITS) as (keyof typeof SCENE_LIMITS)[])
     .filter((key) => key === "components" || scene[key].length > 0)
     .map((key) => count(scene[key].length, NOUNS[key]))

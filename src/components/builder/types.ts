@@ -190,7 +190,26 @@ export type Frame = {
   fillOpacity?: number;
 };
 
-export const SCENE_VERSION = 11 as const;
+/**
+ * A named set of components (and frames) that hide, select and move together,
+ * such as one experiment's parts when a table holds several. A member may be
+ * in several groups; groups don't nest, and beams and connections are never
+ * members. See groups.ts for what hiding one hides.
+ */
+export type Group = {
+  id: string;
+  name: string;
+  color: string;
+  /** true takes its members out of the drawing, unless another group shows them; stored only when true */
+  hidden?: true;
+  /** component and frame ids, each once */
+  members: string[];
+};
+
+/** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
+export const GROUP_LIMIT = 100;
+
+export const SCENE_VERSION = 12 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -202,6 +221,8 @@ export type BuilderSceneData = {
   connections: Connection[];
   /** drawn under everything, in list order; missing in setups from before version 5 */
   frames: Frame[];
+  /** named sets of components and frames; missing in setups from before version 12 */
+  groups: Group[];
   /**
    * the size of component, connection and frame labels, within LABEL_SCALE_RANGE;
    * stored only when it isn't 1, missing in setups from before version 11
@@ -445,10 +466,10 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
 };
 
-export type ComponentGroup = { name: string; types: ComponentType[] };
+export type PartCategory = { name: string; types: ComponentType[] };
 
 /** Palette grouping — reads as a bench walk-through: make it, steer it, shape it, read it. */
-export const COMPONENT_GROUPS: ComponentGroup[] = [
+export const PART_CATEGORIES: PartCategory[] = [
   { name: "Source", types: ["laser-source", "fiber-collimator"] },
   { name: "Steering", types: ["mirror-mount", "beam-splitter", "periscope", "periscope-top", "delay-line"] },
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
@@ -1804,7 +1825,7 @@ function parseDelay(raw: Record<string, unknown>): Partial<BuilderComponent> {
   };
 }
 
-function labelText(raw: unknown): string | undefined {
+export function labelText(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
   return raw.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, LABEL_MAX_LENGTH);
 }
@@ -1822,7 +1843,8 @@ function labelText(raw: unknown): string | undefined {
  * those from before version 9 open with every frame's fill at the faint default;
  * those from before version 10 saved a part with a port by its body's centre,
  * and open with it moved to its port, exactly where it was;
- * those from before version 11 open with labels at their standard size.
+ * those from before version 11 open with labels at their standard size;
+ * those from before version 12 have no groups and open with none.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -1850,6 +1872,14 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     ? raw.frames.map((frame) => parseFrame(frame, version)).filter((frame): frame is Frame => frame !== null)
     : [];
 
+  const memberIds = new Set([...ids, ...frames.map((frame) => frame.id)]);
+  const groups = Array.isArray(raw.groups)
+    ? raw.groups
+        .map((group) => parseGroup(group, memberIds))
+        .filter((group): group is Group => group !== null)
+        .slice(0, GROUP_LIMIT)
+    : [];
+
   const labelScale = parseLabelScale(raw.labelScale);
 
   const scene = settleAngles(
@@ -1860,11 +1890,32 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         beams,
         connections,
         frames,
+        groups,
         ...(labelScale !== undefined ? { labelScale } : {}),
       }),
     ),
   );
   return version < 10 ? settleAngles(movedToPorts(scene)) : scene;
+}
+
+/**
+ * A group, its members kept to the ids of parts and frames in the setup, each
+ * once; a group left with no members still opens.
+ */
+function parseGroup(value: unknown, memberIds: Set<string>): Group | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.id !== "string") return null;
+  const members = Array.isArray(raw.members)
+    ? [...new Set(raw.members.filter((id): id is string => typeof id === "string" && memberIds.has(id)))]
+    : [];
+  return {
+    id: raw.id,
+    name: labelText(raw.name)?.trim() || "Group",
+    color: cssColor(raw.color, BEAM_COLORS[0]),
+    ...(raw.hidden === true ? { hidden: true } : {}),
+    members,
+  };
 }
 
 /** A label scale held to LABEL_SCALE_RANGE; undefined for a missing one or the standard size, 1. */
@@ -1902,6 +1953,7 @@ export const EMPTY_SCENE: BuilderSceneData = {
   beams: [],
   connections: [],
   frames: [],
+  groups: [],
 };
 
 // A two-beam layout so the table isn't blank on first load. It demonstrates
@@ -1944,4 +1996,5 @@ export const DEFAULT_SCENE: BuilderSceneData = {
   ],
   connections: [],
   frames: [],
+  groups: [],
 };

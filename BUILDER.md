@@ -342,6 +342,28 @@ lighting, which is the viewer's, the size is saved with the setup as
 from a file shows its labels as its author saw them. A drag is one undo step;
 setups from before version 11 open at 100 %.
 
+**Groups are saved with the setup.** A group (CONTEXT.md, *Group*) is a
+named set of components and frames, such as one experiment's parts when a
+table holds several, kept in the setup's top-level `groups` (scene version
+12; older setups open with none): an id unique across the whole setup, a
+name, a colour, `hidden` only when hidden, and its `members` as part and
+frame ids. A part may be in several groups, as a mirror two experiments share
+is; groups don't nest, and beams and connections are never members. What is
+drawn follows from them (`groups.ts`): a component is shown when it is in no
+group or any of its groups is shown; a frame when it isn't hidden itself and,
+by the same rule, by its groups; a beam, whole and untrimmed, when it isn't
+hidden itself and any of its stops is shown; a connection when either end is.
+Like a hidden beam, hiding changes only the drawing: hidden parts still count
+in path lengths and still angle mirrors and detectors, and they can't be
+clicked, box-selected or picked by `⌘A`. A PNG leaves them out. Deleting a
+group ungroups its members, which stay on the table; deleting a part or frame
+takes it out of every group, and a group it empties stays until it is deleted.
+A copy joins its source's groups, and a periscope's two mirrors join and
+leave together. Parsing drops member ids that name nothing, and duplicates,
+and keeps at most 100 groups. In code the multi-selection editor
+(`group-edits.ts`, `GroupInspector`) is not a Group, and the parts panel's
+headings are `PART_CATEGORIES`.
+
 **Open JSON… is a text panel.** It opens in the parts panel's place, below the
 top-left islands, with the setup as it stands in an editable box: tweak it,
 **Paste** one over it, **Open file…** to fill the box from a `.json`, or
@@ -349,7 +371,7 @@ top-left islands, with the setup as it stands in an editable box: tweak it,
 as one undo step. The text is checked as it changes (`scene-text.ts`), and
 Apply only takes text that passes: at most 1 MB, valid JSON (an error names
 its line and column), one object with a `components` list, at most 500 parts,
-200 beams, 500 connections and 100 frames. `parseScene` then keeps only what it
+200 beams, 500 connections, 100 frames and 100 groups. `parseScene` then keeps only what it
 can read, and the panel says how many entries it will leave out. Text in a
 setup is only ever data: colours must be a hex, `rgb()`/`hsl()` or a colour
 name (anything else, such as a `url(…)`, falls back to the default, so a file

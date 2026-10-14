@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
+import { visibility } from "./groups.ts";
 import { beamLengthMm, DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene } from "./types.ts";
 
 // ADR 0001: a setup file saved by a release keeps opening, with nothing
@@ -20,6 +21,7 @@ const FIXTURES = [
   "setup-v9.json",
   "setup-v10.json",
   "setup-v11.json",
+  "setup-v12.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -361,5 +363,40 @@ describe("setup-v11.json, the first version with labelScale", () => {
     assert.equal(at("big"), undefined);
     assert.equal(at(1), undefined);
     assert.ok(!serializeScene(parseScene({ ...readSaved("setup-v11.json"), labelScale: 1 })!).includes("labelScale"));
+  });
+});
+
+describe("setup-v12.json, the first version with groups", () => {
+  it("is saved exactly as it opens", () => {
+    const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
+    assert.equal(`${serializeScene(open("setup-v12.json"))}\n`, text);
+  });
+
+  it("is v11's setup plus two groups sharing a mirror and a hidden one", () => {
+    const { groups, ...rest } = open("setup-v12.json");
+    assert.deepEqual({ ...rest, groups: [] }, open("setup-v11.json"));
+    assert.deepEqual(groups.map(({ id, hidden }) => ({ id, hidden })), [
+      { id: "probe-exp", hidden: undefined },
+      { id: "imaging-exp", hidden: undefined },
+      { id: "lock-exp", hidden: true },
+    ]);
+    assert.ok(groups[0].members.includes("m1") && groups[1].members.includes("m1"));
+  });
+
+  it("hides the hidden group's members and keeps every path length", () => {
+    const setup = open("setup-v12.json");
+    const shown = visibility(setup).components;
+    assert.ok(!shown.has("cavity") && !shown.has("spec"));
+    assert.ok(shown.has("m1") && shown.has("laser"));
+    const all = open("setup-v11.json");
+    for (const [index, beam] of setup.beams.entries()) {
+      assert.equal(beamLengthMm(setup.components, beam), beamLengthMm(all.components, all.beams[index]));
+    }
+  });
+
+  it("opens every older setup with no groups", () => {
+    for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v12.json"))) {
+      assert.deepEqual(open(name).groups, [], name);
+    }
   });
 });

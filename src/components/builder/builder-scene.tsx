@@ -29,6 +29,7 @@ import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/b
 import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/components/builder/graphics-quality";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
+import { visibility } from "@/components/builder/groups";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
@@ -542,8 +543,10 @@ export default function BuilderScene() {
   const selectInBox = useCallback((box: ScreenBox, adding: boolean) => {
     const project = projectRef.current;
     if (!project) return;
+    const shown = visibility(sceneRef.current).components;
     const inside = sceneRef.current.components
       .filter((component) => {
+        if (!shown.has(component.id)) return false;
         const [x, y] = project(bodyCentre(component));
         return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
       })
@@ -1185,7 +1188,8 @@ export default function BuilderScene() {
 
       if (meta && event.key.toLowerCase() === "a" && !beamMode && !drawing) {
         event.preventDefault();
-        setSelection(sceneRef.current.components.map((component) => component.id));
+        const shown = visibility(sceneRef.current).components;
+        setSelection(sceneRef.current.components.filter(({ id }) => shown.has(id)).map((component) => component.id));
         setSelectedBeamId(null);
         setSelectedFrameId(null);
         return;
@@ -1346,6 +1350,7 @@ export default function BuilderScene() {
           beams={scene.beams}
           connections={scene.connections}
           frames={scene.frames}
+          groups={scene.groups}
           palette={palette}
           lighting={lighting}
           quality={exporting ? "full" : quality}

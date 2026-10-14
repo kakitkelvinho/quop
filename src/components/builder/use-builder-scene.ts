@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import * as groupEdits from "@/components/builder/group-edits";
+import * as groups from "@/components/builder/groups";
 import {
   BEAM_COLORS,
   BLOCK_SIZE_MM,
@@ -454,7 +455,9 @@ export function useBuilderScene() {
 
   const deleteFrame = useCallback(
     (id: string) =>
-      commit((current) => ({ ...current, frames: current.frames.filter((frame) => frame.id !== id) })),
+      commit((current) =>
+        groups.pruneMembers({ ...current, frames: current.frames.filter((frame) => frame.id !== id) }),
+      ),
     [commit],
   );
 

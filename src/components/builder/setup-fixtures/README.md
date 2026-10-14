@@ -24,6 +24,8 @@ objective) by that port rather than its body's centre: v9's setup, opened and
 saved, so the same drawing; v1 to v9 open with each such part moved to its port.
 v11 is the first with a label size: v10's setup plus `"labelScale": 1.5`; v1 to
 v10 open with labels at the standard size.
+v12 is the first with groups: v11's setup plus two groups that share the mirror
+`m1` and a hidden third; v1 to v11 open with no groups.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

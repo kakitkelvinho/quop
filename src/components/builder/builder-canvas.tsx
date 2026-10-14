@@ -59,6 +59,7 @@ import { StageHandle } from "@/components/builder/stage-handle";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import HoleGrid from "@/components/builder/hole-grid";
+import { isBeamDrawn, isConnectionDrawn, isFrameDrawn, visibility } from "@/components/builder/groups";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
 import {
   FRESH_WATCH,
@@ -81,6 +82,7 @@ import {
   periscopePartner,
   type Beam,
   type Frame,
+  type Group,
   type BuilderComponent,
   type Connection,
   type Vec3,
@@ -950,6 +952,8 @@ export type BuilderCanvasProps = {
   beams: Beam[];
   connections: Connection[];
   frames: Frame[];
+  /** a member of hidden groups only is left out of the drawing, and can't be picked */
+  groups: Group[];
   palette: ScenePalette;
   lighting: Lighting;
   quality: GraphicsQuality;
@@ -1038,6 +1042,7 @@ export default function BuilderCanvas({
   beams,
   connections,
   frames,
+  groups,
   palette,
   lighting,
   quality,
@@ -1138,6 +1143,14 @@ export default function BuilderCanvas({
     }
     return ends;
   }, [components, connections]);
+  // what hidden groups and frames leave in the drawing; hidden parts still
+  // count in path lengths and angle mirrors, so only drawing reads this
+  const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
+  const shownComponents = useMemo(
+    () => components.filter((component) => shown.components.has(component.id)),
+    [components, shown],
+  );
+  const shownFrames = useMemo(() => frames.filter((frame) => isFrameDrawn(frame, shown)), [frames, shown]);
   const settings = QUALITY_SETTINGS[quality];
   return (
     <Canvas
@@ -1162,7 +1175,7 @@ export default function BuilderCanvas({
       <Lights
         palette={palette}
         lighting={lighting}
-        components={components}
+        components={shownComponents}
         dragging={dragging}
         shadowMapSize={settings.shadowMapSize}
       />
@@ -1179,8 +1192,9 @@ export default function BuilderCanvas({
       {showGrid ? <HoleGrid palette={palette} /> : null}
 
       {frames.map((frame) => {
-        const ghost = Boolean(frame.hidden) && frame.id === ghostFrameId;
-        if (frame.hidden && !ghost) return null;
+        const drawn = isFrameDrawn(frame, shown);
+        const ghost = !drawn && frame.id === ghostFrameId;
+        if (!drawn && !ghost) return null;
         return (
           <FrameMesh
             key={frame.id}
@@ -1194,7 +1208,7 @@ export default function BuilderCanvas({
         );
       })}
 
-      {components.map((component) => {
+      {shownComponents.map((component) => {
         const partner = periscopePartner(components, component);
         return (
         <ComponentMesh
@@ -1247,8 +1261,9 @@ export default function BuilderCanvas({
       ) : null}
 
       {beams.map((beam) => {
-        const ghost = beam.hidden && beam.id === ghostBeamId;
-        if (beam.hidden && !ghost) return null;
+        const drawn = isBeamDrawn(beam, shown);
+        const ghost = !drawn && beam.id === ghostBeamId;
+        if (!drawn && !ghost) return null;
         const points = beamVectors(components, beam.path);
         if (points.length < 2) return null;
         const selected = beam.id === selectedBeamId;
@@ -1263,7 +1278,7 @@ export default function BuilderCanvas({
               core={beam.arrows !== false}
               ghost={ghost}
             />
-            {selected || (showDistances && !beam.hidden) ? (
+            {selected || (showDistances && drawn) ? (
               <BeamDistances
                 points={points}
                 lengths={beamLegLengthsMm(components, beam)}
@@ -1301,7 +1316,7 @@ export default function BuilderCanvas({
         />
       ) : null}
 
-      {connections.map((connection) => (
+      {connections.filter((connection) => isConnectionDrawn(connection, shown)).map((connection) => (
         <ConnectionPath
           key={connection.id}
           connection={connection}
@@ -1339,8 +1354,8 @@ export default function BuilderCanvas({
       <CameraRig
         view={view}
         fitToken={fitToken}
-        components={components}
-        frames={frames}
+        components={shownComponents}
+        frames={shownFrames}
         pivotRef={pivotRef}
       />
 
