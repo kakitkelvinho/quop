@@ -5,7 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { memo, useMemo } from "react";
 import { CatmullRomCurve3, Vector3 } from "three";
 
-import { FIBER_STUBS, leavesFromStub } from "@/components/builder/component-models";
+import { FIBER_STUBS, connectionJack, leavesFromStub } from "@/components/builder/component-models";
 import {
   CONNECTION_KINDS,
   bodyCentre,
@@ -24,27 +24,52 @@ const HIT_RADIUS_MM = 5;
  * lands on the table, world mm. At a part with its own stub (a collimator's
  * fibre, a photodiode's jack on the back of its head) it follows that stub,
  * curling to whichever side the other end is on, so it never leaves at a
- * sharp angle or doubles back. Anything else comes out of the part's side
- * facing the other end, droops and drops to the table, the way a stub does;
- * between two close parts the drop is squeezed so the landings never pass
- * each other.
+ * sharp angle or doubles back. At a part with a connector for it (see
+ * connectionJack: a camera's back, a modulator's SMA) it leaves straight out
+ * of the connector, then droops to the table, so it plugs in. Anything else
+ * comes out of the part's side facing the other end, droops and drops to the
+ * table, the way a stub does; between two close parts the drop is squeezed so
+ * the landings never pass each other.
  */
 function endPoints(part: BuilderComponent, other: BuilderComponent, kind: ConnectionKind, rest: number): Vector3[] {
   // stubs and cables leave the body, which a part with a port is drawn behind
   const [x, height, z] = bodyCentre(part);
+  const yaw = (part.rotation * Math.PI) / 180;
+  const [ox, , oz] = bodyCentre(other);
+  // the other end, in the part's frame
+  const toward = new Vector3(ox - x, 0, oz - z).applyAxisAngle(UP, -yaw);
+  const placed = (point: Vector3) => point.applyAxisAngle(UP, yaw).add(new Vector3(x, 0, z));
+
   const stub = leavesFromStub(part.type, kind) ? FIBER_STUBS[part.type] : undefined;
   if (stub) {
-    const yaw = (part.rotation * Math.PI) / 180;
     // the stub curls to the part's +z; mirror it when the other end is on its -z side
-    const [ox, , oz] = bodyCentre(other);
-    const toward = new Vector3(ox - x, 0, oz - z).applyAxisAngle(UP, -yaw);
     const side = toward.z < 0 ? -1 : 1;
-    return stub(height).points.map((point) =>
-      new Vector3(point.x, point.y, point.z * side).applyAxisAngle(UP, yaw).add(new Vector3(x, 0, z)),
-    );
+    return stub(height).points.map((point) => placed(new Vector3(point.x, point.y, point.z * side)));
   }
 
-  const [ox, , oz] = bodyCentre(other);
+  const jack = connectionJack(part, kind, toward);
+  if (jack) {
+    const { at, out } = jack;
+    const h = at.y;
+    // a connector pointing up lifts the cable clear, then it bends over toward the other end
+    const rising = out.y > 0.5;
+    const ahead = rising ? toward.clone().setY(0) : out.clone();
+    if (ahead.lengthSq() < 1e-9) ahead.set(1, 0, 0);
+    ahead.normalize();
+    const lead = rising ? [at.clone(), at.clone().addScaledVector(out, 6), at.clone().addScaledVector(out, 9).addScaledVector(ahead, 10)] : [at.clone()];
+    const start = rising ? at.clone().addScaledVector(out, 6).addScaledVector(ahead, 20) : at.clone();
+    const beyond = (distance: number, y: number) => start.clone().addScaledVector(ahead, distance).setY(y);
+    const drop = rising ? [beyond(0, h + 4)] : [beyond(8, h - 2)];
+    return [
+      ...lead,
+      ...drop,
+      beyond(20, h * 0.6),
+      beyond(30, h * 0.3),
+      beyond(38, Math.min(h, rest + 3)),
+      beyond(60, rest),
+    ].map(placed);
+  }
+
   const out = new Vector3(ox - x, 0, oz - z);
   const apart = out.length();
   if (apart < 1e-6) out.set(1, 0, 0);

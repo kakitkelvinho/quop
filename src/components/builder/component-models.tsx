@@ -49,8 +49,8 @@ import {
   componentRadius,
   componentReferenceX,
   componentTop,
+  delayArmMm,
   delayRailMm,
-  delaySetting,
   type BuilderComponent,
   type ComponentType,
   type ConnectionKind,
@@ -673,13 +673,60 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
 const DELAY_FOLD_MM = 10;
 
 /**
+ * The thumbscrews on either side of a delay line's carriage, the grips its
+ * stage is dragged by: each one's middle, mm, behind the carriage's mirrors
+ * (x), below the beam (y) and out to either side of the rail's middle (±z), its knurled knob's radius and
+ * length, and the length of its shank into the carriage.
+ */
+export const DELAY_KNOB = { x: -5, y: -15, z: 29, radius: 5, length: 7, shank: 2.5 } as const;
+
+/**
+ * Two half-inch mirrors at 45°, DELAY_FOLD_MM either side of the middle and
+ * backed by an upright plate from `bottom` to just over the beam: a delay
+ * line's fold mirrors at its port (facing −x, down the rail), or the V on its
+ * carriage (facing +x, back up it), which sends the light across to the other.
+ */
+function FoldPair({ palette, axis, bottom, facing }: Pick<ModelProps, "palette" | "axis"> & { bottom: number; facing: 1 | -1 }) {
+  const top = axis + 20;
+  return (
+    <group>
+      <mesh position={[-facing * 9, (top + bottom) / 2, 0]}>
+        <boxGeometry args={[6, top - bottom, 2 * DELAY_FOLD_MM + 26]} />
+        <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+      </mesh>
+      {[-1, 1].map((side) => (
+        // each mirror's face looks along its own +x: half way between down the rail and across it
+        <group
+          key={side}
+          position={[0, axis, side * DELAY_FOLD_MM]}
+          rotation={[0, facing === -1 ? (-side * 3 * Math.PI) / 4 : (side * Math.PI) / 4, 0]}
+        >
+          <mesh rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[6.35, 6.35, 3, 28]} />
+            <meshStandardMaterial color="#e8eef5" roughness={0.05} metalness={0.95} />
+          </mesh>
+          <mesh position={[-3, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[8, 8, 3, 28]} />
+            <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/**
  * A delay line, standing across the beam line: two fold mirrors at its port
  * (+x end), on the line, turn the light down the rail and back up it, so it
- * leaves along the line it came in on. A carriage on the rail holds a hollow
- * corner-cube retroreflector facing the port, `arm` mm behind it; setting the
- * arm slides the carriage. The rail is as long as the longest arm, and a drive
- * knob stands at its far end.
+ * leaves along the line it came in on. A carriage on the rail holds a V of two
+ * mirrors facing the port, `arm` mm behind it, that sends the light across
+ * and back; setting the stage slides the carriage. The rail runs to the
+ * carriage's farthest setting, and a drive knob stands at its far end.
  */
+/** How far below the beam a delay line's rail runs, and the length of the drive knob at its far end, mm. */
+const DELAY_RAIL_DROP_MM = 26;
+const DELAY_DRIVE_MM = 12;
+
 function DelayLine({
   palette,
   axis,
@@ -688,11 +735,13 @@ function DelayLine({
   light,
 }: ModelProps & { rail: number; arm: number; light: string | null }) {
   const front = rail / 2;
-  const railY = axis - 26;
-  const retroX = front - arm;
+  const railY = axis - DELAY_RAIL_DROP_MM;
+  const carriageX = front - arm;
+  // a short rail stands on one post
+  const posts = front > 35 ? [front - 18, -front + 18] : [0];
   return (
     <group>
-      {/* the light down the rail, across the retroreflector and back, a glow like a cavity's mode */}
+      {/* the light down the rail, across the carriage's mirrors and back, a glow like a cavity's mode */}
       {light
         ? [
             { radius: 2.4, opacity: 0.28 },
@@ -702,7 +751,7 @@ function DelayLine({
               {[-DELAY_FOLD_MM, DELAY_FOLD_MM].map((z) => (
                 <mesh
                   key={z}
-                  position={[(front + retroX) / 2, axis, z]}
+                  position={[(front + carriageX) / 2, axis, z]}
                   rotation={[0, 0, Math.PI / 2]}
                   raycast={NO_RAYCAST}
                 >
@@ -710,14 +759,14 @@ function DelayLine({
                   <meshBasicMaterial color={light} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
                 </mesh>
               ))}
-              <mesh position={[retroX, axis, 0]} rotation={[Math.PI / 2, 0, 0]} raycast={NO_RAYCAST}>
+              <mesh position={[carriageX, axis, 0]} rotation={[Math.PI / 2, 0, 0]} raycast={NO_RAYCAST}>
                 <cylinderGeometry args={[radius, radius, 2 * DELAY_FOLD_MM, 16]} />
                 <meshBasicMaterial color={light} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
               </mesh>
             </group>
           ))
         : null}
-      {[front - 18, -front + 18].map((x) => (
+      {posts.map((x) => (
         <group key={x} position={[x, 0, 0]}>
           <Pillar palette={palette} top={railY - 5} />
         </group>
@@ -730,41 +779,37 @@ function DelayLine({
         <boxGeometry args={[rail - 8, 2, 12]} />
         <Hardware palette={palette} />
       </mesh>
-      {/* the fold mirrors on the beam line, each at 45°, backed by an upright plate */}
-      <mesh position={[front + 9, axis - 6, 0]}>
-        <boxGeometry args={[6, 52, 2 * DELAY_FOLD_MM + 26]} />
-        <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
-      </mesh>
-      {[-1, 1].map((side) => (
-        <group key={side} position={[front, axis, side * DELAY_FOLD_MM]} rotation={[0, (-side * 3 * Math.PI) / 4, 0]}>
-          <mesh rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[6.35, 6.35, 3, 28]} />
-            <meshStandardMaterial color="#e8eef5" roughness={0.05} metalness={0.95} />
-          </mesh>
-          <mesh position={[-3, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[8, 8, 3, 28]} />
-            <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
-          </mesh>
-        </group>
-      ))}
-      {/* the carriage, and the retroreflector on it facing the port */}
-      <group position={[retroX, 0, 0]}>
-        <RoundedBox args={[34, 8, 46]} radius={1} smoothness={2} position={[-8, railY + 11, 0]}>
+      {/* the fold mirrors on the beam line */}
+      <group position={[front, 0, 0]}>
+        <FoldPair palette={palette} axis={axis} bottom={axis - 32} facing={-1} />
+      </group>
+      {/* the carriage, and the V of mirrors on it facing the port */}
+      <group position={[carriageX, 0, 0]}>
+        <RoundedBox args={[26, 8, 46]} radius={1} smoothness={2} position={[-5, railY + 11, 0]}>
           <Enamel color={palette.body} />
         </RoundedBox>
-        <mesh position={[-8, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[19, 19, 16, 36]} />
-          <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
-        </mesh>
-        {/* the corner cube: three mirror facets meeting at a point behind the face */}
-        <mesh position={[-5, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-          <coneGeometry args={[16.5, 10, 3]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.05} metalness={1} envMapIntensity={3} />
-        </mesh>
+        <FoldPair palette={palette} axis={axis} bottom={railY + 15} facing={1} />
+        {/* a knurled thumbscrew on each side; dragging either slides the carriage */}
+        {[-1, 1].map((side) => (
+          <group
+            key={side}
+            position={[DELAY_KNOB.x, axis + DELAY_KNOB.y, side * DELAY_KNOB.z]}
+            rotation={[(side * Math.PI) / 2, 0, 0]}
+          >
+            <mesh position={[0, -(DELAY_KNOB.length + DELAY_KNOB.shank) / 2, 0]}>
+              <cylinderGeometry args={[1.6, 1.6, DELAY_KNOB.shank, 12]} />
+              <Hardware palette={palette} />
+            </mesh>
+            <mesh>
+              <cylinderGeometry args={[DELAY_KNOB.radius, DELAY_KNOB.radius, DELAY_KNOB.length, 18]} />
+              <meshStandardMaterial color={palette.anodise} roughness={0.6} metalness={0.3} flatShading />
+            </mesh>
+          </group>
+        ))}
       </group>
       {/* the drive knob at the far end */}
-      <mesh position={[-front - 6, railY, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[9, 9, 12, 28]} />
+      <mesh position={[-front - DELAY_DRIVE_MM / 2, railY, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[9, 9, DELAY_DRIVE_MM, 28]} />
         <meshStandardMaterial color={palette.anodise} roughness={0.55} metalness={0.3} flatShading />
       </mesh>
     </group>
@@ -1864,6 +1909,64 @@ function TimeTagger({ palette, axis }: ModelProps) {
   );
 }
 
+/**
+ * Where a connection plugs into a part that has a connector for it, in the
+ * part's frame about its body's centre (height from the table), and the way
+ * it leaves: straight out of the connector, along x or up. A cable goes into
+ * an instrument's back, where its signal or power is: a camera's or a
+ * spectrometer's back face, a single-photon counter's SMA outputs, a laser's
+ * back, a delay line's drive, the SMA on a modulator, or the time tagger's
+ * input facing the other end. A fibre goes into a spectrometer's or a
+ * counter's fibre port. `toward` is the other end, in the same frame.
+ */
+export type ConnectionJack = { at: Vector3; out: Vector3 };
+
+/** how far into an SMA a cable's plug starts, mm up its 8 mm body: the plug sleeves over it */
+const SMA_SLEEVE_MM = 5;
+
+export function connectionJack(part: BuilderComponent, kind: ConnectionKind, toward: Vector3): ConnectionJack | undefined {
+  const axis = part.position[1];
+  const jack = (x: number, y: number, z: number, out: [number, number, number]) => ({
+    at: new Vector3(x, y, z),
+    out: new Vector3(...out),
+  });
+  if (part.type === "delay-line") {
+    return jack(-delayRailMm(part) / 2 - DELAY_DRIVE_MM, axis - DELAY_RAIL_DROP_MM, 0, [-1, 0, 0]);
+  }
+  if (kind === "fiber") {
+    if (part.type === "spectrometer") return jack(-60, axis, 0, [-1, 0, 0]);
+    if (part.type === "single-photon-detector") return jack(SPCM_FACE_X - 9.5, axis, 0, [-1, 0, 0]);
+    return undefined;
+  }
+  switch (part.type) {
+    case "camera":
+      return jack(CAMERA_FRONT_X + CAMERA_DEPTH_MM, axis, 0, [1, 0, 0]);
+    case "spectrometer":
+      return jack(55, axis, 0, [1, 0, 0]);
+    case "laser-source":
+      return jack(-48, axis, 0, [-1, 0, 0]);
+    case "single-photon-detector":
+      return jack(
+        SPCM_FACE_X + SPCM_DEPTH_MM + SMA_SLEEVE_MM,
+        axis - SPCM_JACK_DROP_MM,
+        SPCM_JACK_Z_MM[toward.z < 0 ? 0 : 1],
+        [1, 0, 0],
+      );
+    case "aom":
+      return jack(0, axis + AOM_CRYSTAL[1] / 2 + 3.5 + SMA_SLEEVE_MM, 0, [0, 1, 0]);
+    case "eom":
+      return jack(0, axis + EOM_SIDE / 2 + 5.5 + SMA_SLEEVE_MM, 0, [0, 1, 0]);
+    case "time-tagger": {
+      // the input in the row nearest the other end
+      const index = clamp(Math.round((toward.z - TAGGER_ROW_Z_MM) / TAGGER_PITCH_MM + (TAGGER_INPUTS - 1) / 2), [0, TAGGER_INPUTS - 1]);
+      const z = TAGGER_ROW_Z_MM + (index - (TAGGER_INPUTS - 1) / 2) * TAGGER_PITCH_MM;
+      return jack(-TAGGER_DEPTH_MM / 2 - TAGGER_PANEL_MM - 1.5 - SMA_SLEEVE_MM, axis, z, [-1, 0, 0]);
+    }
+    default:
+      return undefined;
+  }
+}
+
 function SelectionRing({ radius, color }: { radius: number; color: string }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.6, 0]}>
@@ -2076,7 +2179,7 @@ export const ComponentMesh = memo(function ComponentMesh({
           <DelayLine
             {...modelProps}
             rail={delayRailMm(component)}
-            arm={delaySetting(component).arm}
+            arm={delayArmMm(component)}
             light={innerLight(component)}
           />
         ) : null}

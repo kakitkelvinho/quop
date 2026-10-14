@@ -356,7 +356,7 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M3 17.5h9.5V7H21" strokeDasharray="1.6 1.8" />
     </>
   ),
-  // the beam line along the top, folded down the rail to the retroreflector and back
+  // the beam line along the top, folded down the rail to the carriage's V of mirrors and back
   "delay-line": (
     <>
       <path d="M3 5h18" strokeDasharray="1.6 1.6" />

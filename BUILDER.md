@@ -216,24 +216,32 @@ pass through it, the first in the beam list wins, and the inspector names it
 other. A mirror on no beam, or only at a beam's end, turns by
 hand. Beam cubes always turn by hand.
 
-**A delay line adds its round trip.** A delay line is a translation stage
+**A delay line adds its path.** A delay line is a translation stage
 that stands across a beam line, as one does on a real table: two fold mirrors
-at its port, on the line, send the light down the rail to a retroreflector on
-a carriage and back, and it leaves along the line it came in on. It is placed
-by its port, and its rail runs off to one side of the line, as long as its
-longest arm. Its inspector sets the
-shortest and longest arm (port to retroreflector, 50–350 mm by default, up
-to 2000 mm) and, with a slider, where the retroreflector sits between them;
-the carriage slides to match. A beam through it (a stop in the middle) is
-drawn to the port and away from it, and gains twice the arm, out and back,
-each time it passes, which its inspector names ("Includes … mm in delay
-lines"). A beam that only starts or ends at it gains nothing. It turns
-itself, like a mirror: its rail stays perpendicular to the light through its
-port, on whichever side of the line it already faces, so turning it 180° by
-hand puts the rail on the other side.
+at its port, on the line, send the light down the rail to a V of two mirrors
+on a carriage, across and back, and it leaves along the line it came in on.
+It is placed by its port, and its rail runs off to one side of the line, as
+long as the carriage's farthest setting (about 12 cm as it comes). Its
+inspector sets the minimum delay (the path the light gains with the stage at
+0, like a laser's built-in path, and not drawn; 50 mm by default), the travel
+(50 mm by default, up to 2000 mm), and the position, how far the stage has
+travelled, typed or on a slider; the carriage slides to match. Under them it
+says how much the delay line adds to the path, the minimum delay plus twice
+the position. The carriage
+carries a knurled thumbscrew on each side; with the delay line selected, the
+one facing you wears a bubble like the rotation handle's, ◀▶ along the rail,
+and dragging it slides the stage in 1 mm steps, its travel shown above it,
+one undo step per drag. A
+beam through it (a stop in the middle) is drawn to the port and away from it,
+and gains the minimum delay plus twice the position each time it passes,
+which its inspector names ("Includes … mm in delay lines"). A beam that only
+starts or ends at it gains nothing. It turns itself, like a mirror: its rail
+stays perpendicular to the light through its port, on whichever side of the
+line it already faces, so turning it 180° by hand puts the rail on the other
+side.
 
 **Light inside a part.** A cavity's mode and a delay line's internal beam
-(a faint glow from its fold mirrors down to the retroreflector and back,
+(a faint glow from its fold mirrors down to the carriage and back,
 which follows the carriage) are drawn in the same red by default. Each part's inspector can
 hide that light or give it another colour, on screen and in a PNG; both are
 saved with the setup (`lightColor`, `lightHidden`). The light is a drawing
@@ -304,7 +312,14 @@ so it never reads as light in free space. A fibre at a fibre collimator, and
 any connection at a photodiode (fibre or coax: its one jack is on the back of
 the head), takes the place of the yellow stub the part draws: it leaves from
 the same connector along the same curve, curling to whichever side the other
-end is on, so it never leaves the head at a sharp angle. A connection has its own colour and an optional label.
+end is on, so it never leaves the head at a sharp angle. A cable plugs into
+an instrument's back, where its signal or power is: a camera's or a
+spectrometer's back face, a single-photon detector's SMA outputs, a laser's
+back, a delay line's drive knob, the SMA on top of an AOM or EOM (it rises
+out of it and bends over), or the time tagger's front-panel input nearest
+the other end. A fibre plugs into a spectrometer's or a single-photon
+detector's fibre port. It leaves straight out of the connector before it
+droops to the table. A connection has its own colour and an optional label.
 Its length, in metres, is optional too, and it is the only length it has: the
 drawn route is not measured. With a length, the inspector shows the delay:
 L·n/c along a fibre (n defaults to 1.468, a silica fibre) and L/(VF·c) along
@@ -404,6 +419,7 @@ is on screen until it is needed:
 | Raise / lower | Type a height in the inspector |
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
+| Slide a delay line's stage | Select it and drag the bubble on its carriage's thumbscrew along the rail, or set Position in its inspector |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | Draw a beam, beside the ＋ at the top left; click parts in order, `Enter` |
 | Select a beam | Click its row in the beams box, bottom left |

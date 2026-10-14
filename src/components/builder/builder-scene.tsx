@@ -58,6 +58,8 @@ import {
   moveBeamTo,
   moveFrameTo,
   derivedAngleBeam,
+  delayRailOffset,
+  delaySetting,
   serializeScene,
   beamLineSnap,
   snapToGrid,
@@ -79,6 +81,16 @@ type TurnState = {
   startAngle: number;
   /** how far it has turned, snapped */
   turned: number;
+  started: boolean;
+};
+
+/** A delay line's stage being slid by its handle. */
+type SlideState = {
+  id: string;
+  /** how far the stage had travelled at the press, mm */
+  startStage: number;
+  /** how far down the rail the press was, mm (see delayRailOffset) */
+  grab: number;
   started: boolean;
 };
 
@@ -273,6 +285,8 @@ export default function BuilderScene() {
   const turnRef = useRef<TurnState | null>(null);
   // the turn in flight, for drawing: its centre and how far it has gone
   const [turning, setTurning] = useState<{ centre: [number, number]; turned: number } | null>(null);
+  const slideRef = useRef<SlideState | null>(null);
+  const [sliding, setSliding] = useState(false);
   const frameDragRef = useRef<FrameDragState | null>(null);
   const frameReshapeRef = useRef<FrameReshapeState | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -307,11 +321,10 @@ export default function BuilderScene() {
     if (selectedComponents.length === 1) {
       const [component] = selectedComponents;
       if (component.host) return null;
-      const locked = derivedAngleBeam(scene.beams, component);
       return {
         kind: "part",
         component,
-        lockedBy: locked ? beamDisplayName(locked) : null,
+        locked: derivedAngleBeam(scene.beams, component) !== undefined,
         rotating: turning !== null,
       };
     }
@@ -326,6 +339,12 @@ export default function BuilderScene() {
     );
     return { kind: "group", centre, radius: reach + 14, turned: turning?.turned ?? 0, rotating: turning !== null };
   }, [scene, selectedComponents, selectedIds, turning]);
+
+  // a lone delay line's carriage gets a handle to slide it along its rail
+  const stageHandle = useMemo(() => {
+    if (selectedComponents.length !== 1 || selectedComponents[0].type !== "delay-line") return null;
+    return { component: selectedComponents[0], sliding };
+  }, [selectedComponents, sliding]);
 
   const selectedBeam = useMemo(
     () => scene.beams.find((beam) => beam.id === selectedBeamId) ?? null,
@@ -480,6 +499,26 @@ export default function BuilderScene() {
     [selectedIds],
   );
 
+  // ---- the stage handle ----------------------------------------------------
+
+  const handleStageHandlePointerDown = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (event.nativeEvent.button !== 0 || selectedIds.length !== 1) return;
+      const component = componentById(sceneRef.current.components, selectedIds[0]);
+      const grab = tablePoint(event.ray);
+      if (component?.type !== "delay-line" || !grab) return;
+      slideRef.current = {
+        id: component.id,
+        startStage: delaySetting(component).stage,
+        grab: delayRailOffset(component, grab[0], grab[1]),
+        started: false,
+      };
+      setSliding(true);
+      setDragging(true);
+    },
+    [selectedIds],
+  );
+
   const handleComponentHover = useCallback((id: string | null) => {
     hoveredRef.current = id;
     setHoveredId(id);
@@ -524,6 +563,23 @@ export default function BuilderScene() {
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: PointerEvent) => {
+      const slide = slideRef.current;
+      if (slide) {
+        const component = componentById(sceneRef.current.components, slide.id);
+        if (!component) return;
+        const { travel, stage } = delaySetting(component);
+        // in whole millimetres, as the inspector's slider steps
+        const moved = delayRailOffset(component, x, z) - slide.grab;
+        const next = Math.min(travel, Math.max(0, Math.round(slide.startStage + moved)));
+        if (next === stage) return;
+        // like a move, the first real change earns the undo step
+        if (!slide.started) {
+          slide.started = true;
+          api.commitCheckpoint(sceneRef.current);
+        }
+        api.updateComponent(slide.id, { delayStageMm: next }, false);
+        return;
+      }
       const turn = turnRef.current;
       if (turn) {
         const step = event.shiftKey ? FINE_ROTATION_STEP_DEG : ROTATION_STEP_DEG;
@@ -660,6 +716,12 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
+      if (slideRef.current) {
+        slideRef.current = null;
+        setSliding(false);
+        setDragging(false);
+        return;
+      }
       if (turnRef.current) {
         turnRef.current = null;
         setTurning(null);
@@ -1313,6 +1375,8 @@ export default function BuilderScene() {
           onComponentHover={handleComponentHover}
           rotationHandle={rotationHandle}
           onRotationHandlePointerDown={handleRotationHandlePointerDown}
+          stageHandle={stageHandle}
+          onStageHandlePointerDown={handleStageHandlePointerDown}
           onConnectionPointerDown={handleConnectionPointerDown}
           onFramePointerDown={handleFramePointerDown}
           onCanvasReady={handleCanvasReady}
