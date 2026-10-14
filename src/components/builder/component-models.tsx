@@ -1917,7 +1917,7 @@ function TimeTagger({ palette, axis }: ModelProps) {
  * spectrometer's back face, a single-photon counter's SMA outputs, a laser's
  * back, a delay line's drive, the SMA on a modulator, or the time tagger's
  * input facing the other end. A fibre goes into a spectrometer's or a
- * counter's fibre port. `toward` is the other end, in the same frame.
+ * counter's fibre port, and leaves a laser out of its front. `toward` is the other end, in the same frame.
  */
 export type ConnectionJack = { at: Vector3; out: Vector3 };
 
@@ -1934,6 +1934,8 @@ export function connectionJack(part: BuilderComponent, kind: ConnectionKind, tow
     return jack(-delayRailMm(part) / 2 - DELAY_DRIVE_MM, axis - DELAY_RAIL_DROP_MM, 0, [-1, 0, 0]);
   }
   if (kind === "fiber") {
+    // a fibre-coupled laser's fibre leaves from the tip of its +x arrow, the way it fires
+    if (part.type === "laser-source") return jack(70, axis, 0, [1, 0, 0]);
     if (part.type === "spectrometer") return jack(-60, axis, 0, [-1, 0, 0]);
     if (part.type === "single-photon-detector") return jack(SPCM_FACE_X - 9.5, axis, 0, [-1, 0, 0]);
     return undefined;
