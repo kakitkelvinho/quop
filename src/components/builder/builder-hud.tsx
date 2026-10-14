@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
@@ -18,12 +19,14 @@ import {
   ConnectionInspector,
   FrameInspector,
   GroupInspector,
+  GroupsField,
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
+  LABEL_MAX_LENGTH,
   LABEL_SCALE_RANGE,
   beamDisplayName,
   beamLengthMm,
@@ -36,6 +39,7 @@ import {
   type Connection,
   type ConnectionKind,
   type Frame,
+  type Group,
   type BuilderSceneData,
 } from "@/components/builder/types";
 
@@ -126,6 +130,20 @@ export type BuilderHudProps = {
   onDeleteFrame: (id: string) => void;
   onMoveFrame: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetFrameHidden: (id: string, hidden: boolean) => void;
+  groups: Group[];
+  /** the group whose name is being edited in its row, if any */
+  renamingGroupId: string | null;
+  onSelectGroup: (id: string) => void;
+  /** the row under the pointer, whose members the table outlines */
+  onHoverGroup: (id: string | null) => void;
+  onRenameGroupStart: (id: string) => void;
+  /** null ends the edit and keeps the old name */
+  onRenameGroup: (id: string, name: string | null) => void;
+  /** unrecorded: a colour pick is made one undo step by onCheckpoint at its start */
+  onSetGroupColor: (id: string, color: string) => void;
+  onSetGroupHidden: (id: string, hidden: boolean) => void;
+  onDeleteGroup: (id: string) => void;
+  onSetGroupMembership: (groupId: string, id: string, isMember: boolean) => void;
   onToggleLabels: () => void;
   onToggleDistances: () => void;
   onToggleGrid: () => void;
@@ -397,6 +415,197 @@ function FrameList({
 }
 
 /**
+ * A group row's ⋯ menu: rename, ungroup. Closes on a pick, a click outside or Esc.
+ */
+function GroupRowMenu({
+  name,
+  onRename,
+  onDelete,
+}: {
+  name: string;
+  onRename: () => void;
+  onDelete: () => void;
+}) {
+  // the list is fixed to the viewport, opening up from the button: the box it
+  // sits in scrolls, and would clip it
+  const [place, setPlace] = useState<{ left: number; bottom: number } | null>(null);
+  const open = place !== null;
+  const listRef = useRef<HTMLSpanElement>(null);
+  const ref = useBubbleDismiss<HTMLSpanElement>(open, useCallback(() => setPlace(null), []), listRef);
+  const run = (action: () => void) => () => {
+    setPlace(null);
+    action();
+  };
+  return (
+    <span className="builderMenu builderGroupMenu" ref={ref}>
+      <button
+        type="button"
+        className={`builderIconBtn${open ? " is-active" : ""}`}
+        aria-label={`More for ${name}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="More"
+        onClick={(event) => {
+          if (open) return setPlace(null);
+          const box = event.currentTarget.getBoundingClientRect();
+          setPlace({ left: box.left, bottom: window.innerHeight - box.top + 4 });
+        }}
+      >
+        <Icon name="more" />
+      </button>
+      {place
+        ? createPortal(
+            <span ref={listRef} className="builderMenu__list builderGroupMenu__list" role="menu" style={place}>
+              <button type="button" role="menuitem" onClick={run(onRename)}>
+                Rename
+              </button>
+              <button type="button" role="menuitem" onClick={run(onDelete)}>
+                Delete group
+              </button>
+            </span>,
+            document.body,
+          )
+        : null}
+    </span>
+  );
+}
+
+/** A group's name, edited in place: Enter or leaving the field keeps it, Esc puts the old one back. */
+function GroupNameInput({
+  name,
+  onDone,
+}: {
+  name: string;
+  onDone: (name: string | null) => void;
+}) {
+  const [draft, setDraft] = useState(name);
+  const done = useRef(false);
+  const finish = (value: string | null) => {
+    if (done.current) return;
+    done.current = true;
+    onDone(value);
+  };
+  return (
+    <input
+      className="builderGroupRow__nameInput"
+      aria-label="Group name"
+      value={draft}
+      maxLength={LABEL_MAX_LENGTH}
+      autoFocus
+      onFocus={(event) => event.currentTarget.select()}
+      onChange={(event) => setDraft(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") finish(draft);
+        else if (event.key === "Escape") {
+          event.stopPropagation();
+          finish(null);
+        }
+      }}
+      onBlur={() => finish(draft)}
+    />
+  );
+}
+
+/**
+ * The Groups box, under the frames: one row per group, with its colour (click
+ * to change), its name (double-click or ⋯ → Rename to edit it in place), how
+ * many members it has, an eye to hide or show it, and a ⋯ menu. Press a row to
+ * select its parts; hover it to outline its members on the table.
+ */
+function GroupList({
+  groups,
+  renamingId,
+  onSelect,
+  onHover,
+  onRename,
+  onRenameStart,
+  onSetColor,
+  onCheckpoint,
+  onSetHidden,
+  onDelete,
+}: {
+  groups: Group[];
+  /** the group whose name is being edited, if any */
+  renamingId: string | null;
+  onSelect: (id: string) => void;
+  onHover: (id: string | null) => void;
+  /** null leaves the name as it was */
+  onRename: (id: string, name: string | null) => void;
+  onRenameStart: (id: string) => void;
+  /** unrecorded: a picker's drag is one undo step by onCheckpoint at its start */
+  onSetColor: (id: string, color: string) => void;
+  onCheckpoint: () => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  const picking = useRef<string | null>(null);
+  return (
+    <section className="builderIsland builderHud__frames" aria-labelledby="builderGroupsTitle" data-guide="groups">
+      <h2 id="builderGroupsTitle" className="builderHud__listTitle">
+        Groups
+      </h2>
+      <ul role="list" className="builderHud__frameRows" onPointerLeave={() => onHover(null)}>
+        {groups.map((group) => (
+          <li
+            key={group.id}
+            className={`builderBeamRow builderGroupRow${group.hidden ? " is-hidden" : ""}`}
+            onPointerEnter={() => onHover(group.id)}
+            onFocus={() => onHover(group.id)}
+            onBlur={() => onHover(null)}
+          >
+            <label className="builderGroupRow__swatch" title="Colour" style={{ background: group.color }}>
+              <input
+                type="color"
+                aria-label={`${group.name} colour`}
+                value={group.color}
+                onChange={(event) => {
+                  if (picking.current !== group.id) {
+                    picking.current = group.id;
+                    onCheckpoint();
+                  }
+                  onSetColor(group.id, event.target.value);
+                }}
+                onBlur={() => {
+                  picking.current = null;
+                }}
+              />
+            </label>
+            {renamingId === group.id ? (
+              <GroupNameInput name={group.name} onDone={(name) => onRename(group.id, name)} />
+            ) : (
+              <button
+                type="button"
+                className="builderBeamRow__select"
+                title="Select its parts · double-click to rename"
+                onClick={() => onSelect(group.id)}
+                onDoubleClick={() => onRenameStart(group.id)}
+              >
+                <span className="builderBeamRow__name">{group.name}</span>
+                <span className="builderReadout">{group.members.length}</span>
+              </button>
+            )}
+            <span className="builderBeamRow__actions">
+              <IconButton
+                icon={group.hidden ? "eyeOff" : "eye"}
+                // a toggle: the label stays put and aria-pressed carries the state
+                label={`Hide ${group.name}`}
+                active={Boolean(group.hidden)}
+                onClick={() => onSetHidden(group.id, !group.hidden)}
+              />
+              <GroupRowMenu
+                name={group.name}
+                onRename={() => onRenameStart(group.id)}
+                onDelete={() => onDelete(group.id)}
+              />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
  * Esc closes the panel. Capture, and stop, so this Esc closes only the panel:
  * the scene's Esc chain peels one layer per press and would otherwise also deselect.
  */
@@ -655,13 +864,21 @@ function FileMenu({
   );
 }
 
-/** Close a toolbar bubble on a pointer-down outside it, or on Esc. */
-function useBubbleDismiss(open: boolean, close: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
+/**
+ * Close a toolbar bubble on a pointer-down outside it, or on Esc. A part of it
+ * drawn elsewhere (in a portal) counts as inside when its element is in `also`.
+ */
+function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
+  open: boolean,
+  close: () => void,
+  also?: RefObject<HTMLElement | null>,
+) {
+  const ref = useRef<T>(null);
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) close();
+      const target = event.target as Node;
+      if (!ref.current?.contains(target) && !also?.current?.contains(target)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
@@ -672,7 +889,7 @@ function useBubbleDismiss(open: boolean, close: () => void) {
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, close]);
+  }, [open, close, also]);
   return ref;
 }
 
@@ -876,6 +1093,13 @@ export default function BuilderHud(props: BuilderHudProps) {
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
+        groupsField={
+          <GroupsField
+            groups={props.groups}
+            memberId={selected[0].id}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, selected[0].id, isMember)}
+          />
+        }
       />
     );
   } else if (selectedBeam) {
@@ -900,6 +1124,13 @@ export default function BuilderHud(props: BuilderHudProps) {
         onDelete={() => props.onDeleteFrame(frame.id)}
         focusLabel={props.focusFrameLabel}
         onLabelFocused={props.onFrameLabelFocused}
+        groupsField={
+          <GroupsField
+            groups={props.groups}
+            memberId={frame.id}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, frame.id, isMember)}
+          />
+        }
       />
     );
   } else if (props.selectedConnection) {
@@ -1097,7 +1328,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         </aside>
       ) : null}
 
-      {beams.length || props.frames.length ? (
+      {beams.length || props.frames.length || props.groups.length ? (
         <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
       {beams.length ? (
         <BeamList
@@ -1119,6 +1350,20 @@ export default function BuilderHud(props: BuilderHudProps) {
           onMove={props.onMoveFrame}
           onSetHidden={props.onSetFrameHidden}
           onDelete={props.onDeleteFrame}
+        />
+      ) : null}
+      {props.groups.length ? (
+        <GroupList
+          groups={props.groups}
+          renamingId={props.renamingGroupId}
+          onSelect={props.onSelectGroup}
+          onHover={props.onHoverGroup}
+          onRename={props.onRenameGroup}
+          onRenameStart={props.onRenameGroupStart}
+          onSetColor={props.onSetGroupColor}
+          onCheckpoint={props.onCheckpoint}
+          onSetHidden={props.onSetGroupHidden}
+          onDelete={props.onDeleteGroup}
         />
       ) : null}
         </div>

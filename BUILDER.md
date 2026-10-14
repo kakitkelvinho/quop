@@ -422,6 +422,20 @@ is on screen until it is needed:
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
   Its rows drag to reorder, like the beams box's.
+  The Groups box, when the setup has groups, sits under that: one row per
+  group with its colour (click it to pick another), its name (double-click,
+  or ⋯ → Rename, to edit it in place: Enter keeps it, Esc puts it back), its
+  member count, an eye to hide or show it, and a ⋯ menu with Rename and
+  Delete group (which ungroups: the parts stay). Pressing a row selects the
+  group's parts, hidden ones too, so the usual move, turn, copy and Delete act
+  on them all (Delete then deletes the parts, unlike Delete group); a group
+  of frames alone selects its first frame. Hovering a row rings its members
+  on the table in the group's colour, a passing outline rather than a tint, as
+  the parts' own colours belong to their beam lines. A part's inspector, and
+  a frame's, end with a Groups field: a checkbox per group, which is how a
+  mirror gets shared by two. Every one of these is one undo step and is
+  announced. Members of a hidden group draw no ghost when their row selects
+  them; the selection and the inspector still show them.
 - **Bottom right**: the view controls.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
@@ -463,6 +477,9 @@ is on screen until it is needed:
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
+| Group parts | Select them and press `⌘G` (`Ctrl G`), or with no parts selected, a selected frame: a "Group n" row appears in the Groups box with its name ready to type. One undo step |
+| Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group to ungroup. Hover the row to see its members ringed on the table |
+| Share a part between groups | Tick each group in the Groups field of its inspector |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |

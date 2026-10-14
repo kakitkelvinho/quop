@@ -97,6 +97,14 @@ const ICONS = {
       <path d="M15.5 19 18.5 11.5h.6L22 19M16.6 16.4h4.3" />
     </>
   ),
+  // three dots: more for this row
+  more: (
+    <>
+      <circle cx="6" cy="12" r="1.3" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" />
+      <circle cx="18" cy="12" r="1.3" fill="currentColor" />
+    </>
+  ),
   info: (
     <>
       <circle cx="12" cy="12" r="8" />

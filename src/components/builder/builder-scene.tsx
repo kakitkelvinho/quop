@@ -229,6 +229,10 @@ function exportViewPng(canvas: HTMLCanvasElement): string {
   return out.toDataURL("image/png");
 }
 
+function groupName(scene: BuilderSceneData, id: string): string {
+  return scene.groups.find((group) => group.id === id)?.name ?? "the group";
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -252,6 +256,9 @@ export default function BuilderScene() {
   // component ids in the order they were picked; the last is the primary
   const [selection, setSelection] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // the Groups box: the row under the pointer, outlined on the table, and the one being renamed
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
+  const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
   const [selectedBeamId, setSelectedBeamId] = useState<string | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   // a frame is selected on its own, never along with parts
@@ -1174,6 +1181,82 @@ export default function BuilderScene() {
     setSelection([]);
   }, [api, selectedIds]);
 
+  /** ⌘G: the selected parts, or else the selected frame, as a new group, its name ready to edit. */
+  const groupSelected = useCallback(() => {
+    const members = selectedIds.length ? selectedIds : selectedFrame ? [selectedFrame.id] : [];
+    if (members.length === 0) return;
+    const id = api.createGroup(members);
+    // the name is only known once the edit has run
+    window.setTimeout(() => {
+      const count = sceneRef.current.groups.find((group) => group.id === id)?.members.length ?? members.length;
+      announce(`Grouped ${count} ${count === 1 ? "item" : "items"} as ${groupName(sceneRef.current, id)}.`);
+    });
+    setRenamingGroupId(id);
+  }, [announce, api, selectedFrame, selectedIds]);
+
+  /** A group's row: select its parts, hidden ones too, so they move, turn, copy or delete together. */
+  const handleSelectGroup = useCallback(
+    (id: string) => {
+      const group = sceneRef.current.groups.find((entry) => entry.id === id);
+      if (!group) return;
+      const parts = new Set(sceneRef.current.components.map((component) => component.id));
+      const members = group.members.filter((member) => parts.has(member));
+      setSelection(members);
+      setSelectedBeamId(null);
+      setSelectedConnectionId(null);
+      setSelectedFrameId(
+        members.length === 0 ? (group.members.find((member) => !parts.has(member)) ?? null) : null,
+      );
+      announce(
+        members.length
+          ? `Selected ${group.name}: ${members.length} ${members.length === 1 ? "part" : "parts"}.`
+          : `${group.name} has no parts.`,
+      );
+    },
+    [announce],
+  );
+
+  const handleRenameGroup = useCallback(
+    (id: string, name: string | null) => {
+      setRenamingGroupId(null);
+      const before = groupName(sceneRef.current, id);
+      const next = name?.trim();
+      if (!next || next === before) return;
+      api.renameGroup(id, next);
+      announce(`Renamed ${before} to ${next}.`);
+    },
+    [announce, api],
+  );
+
+  const handleSetGroupHidden = useCallback(
+    (id: string, hidden: boolean) => {
+      api.setGroupHidden(id, hidden);
+      announce(`${hidden ? "Hid" : "Showed"} ${groupName(sceneRef.current, id)}.`);
+    },
+    [announce, api],
+  );
+
+  const handleDeleteGroup = useCallback(
+    (id: string) => {
+      const name = groupName(sceneRef.current, id);
+      api.deleteGroup(id);
+      setHoveredGroupId(null);
+      announce(`Deleted ${name}; its parts stay on the table.`);
+    },
+    [announce, api],
+  );
+
+  const handleSetGroupMembership = useCallback(
+    (groupId: string, id: string, isMember: boolean) => {
+      const part = componentById(sceneRef.current.components, id);
+      const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+      const name = part ? componentDisplayName(part) : frame ? frameDisplayName(frame) : "it";
+      api.setGroupMembership(groupId, id, isMember);
+      announce(isMember ? `Added ${name} to ${groupName(sceneRef.current, groupId)}.` : `Took ${name} out of ${groupName(sceneRef.current, groupId)}.`);
+    },
+    [announce, api],
+  );
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
@@ -1183,6 +1266,13 @@ export default function BuilderScene() {
         event.preventDefault();
         if (event.shiftKey) api.redo();
         else api.undo();
+        return;
+      }
+
+      if (meta && event.key.toLowerCase() === "g" && !event.shiftKey && !event.altKey) {
+        // the browser's find-next would otherwise take it
+        event.preventDefault();
+        if (!beamMode && !drawing && !connectDraft && !placingType) groupSelected();
         return;
       }
 
@@ -1314,6 +1404,7 @@ export default function BuilderScene() {
     drawing,
     duplicateSelected,
     finishBeam,
+    groupSelected,
     handleDeleteFrame,
     placingType,
     rotateSelected,
@@ -1351,6 +1442,7 @@ export default function BuilderScene() {
           connections={scene.connections}
           frames={scene.frames}
           groups={scene.groups}
+          outlinedGroup={scene.groups.find((group) => group.id === hoveredGroupId) ?? null}
           palette={palette}
           lighting={lighting}
           quality={exporting ? "full" : quality}
@@ -1490,6 +1582,16 @@ export default function BuilderScene() {
         onDeleteFrame={handleDeleteFrame}
         onMoveFrame={handleMoveFrame}
         onSetFrameHidden={handleSetFrameHidden}
+        groups={scene.groups}
+        renamingGroupId={renamingGroupId}
+        onSelectGroup={handleSelectGroup}
+        onHoverGroup={setHoveredGroupId}
+        onRenameGroupStart={setRenamingGroupId}
+        onRenameGroup={handleRenameGroup}
+        onSetGroupColor={(id, color) => api.setGroupColor(id, color, false)}
+        onSetGroupHidden={handleSetGroupHidden}
+        onDeleteGroup={handleDeleteGroup}
+        onSetGroupMembership={handleSetGroupMembership}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleDistances={() => setShowDistances((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}

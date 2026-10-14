@@ -943,6 +943,59 @@ function beamVectors(components: BuilderComponent[], path: string[]): Vector3[] 
   return beamPoints(components, path).map((point) => new Vector3(...point));
 }
 
+/** Points round a circle on the table, closed, for a ground outline. */
+function groundCircle([x, , z]: Vec3, radius: number): Vec3[] {
+  const steps = 40;
+  return Array.from({ length: steps + 1 }, (_, index) => {
+    const angle = (index / steps) * Math.PI * 2;
+    return [x + Math.cos(angle) * radius, GROUP_OUTLINE_Y_MM, z + Math.sin(angle) * radius];
+  });
+}
+
+/** just above the table and its frames, so it reads over a frame's tint */
+const GROUP_OUTLINE_Y_MM = 1.5;
+
+/**
+ * A hovered group's members, ringed on the table in the group's colour: a
+ * circle round each part, and each frame's own outline. Light and passing: the
+ * parts keep their own colours, which belong to their beam lines.
+ */
+function GroupOutline({ group, components, frames }: { group: Group; components: BuilderComponent[]; frames: Frame[] }) {
+  const members = new Set(group.members);
+  return (
+    <>
+      {components
+        .filter((component) => members.has(component.id))
+        .map((component) => (
+          <Line
+            key={component.id}
+            points={groundCircle(bodyCentre(component), componentRadius(component) + 10)}
+            color={group.color}
+            lineWidth={2}
+            transparent
+            opacity={0.9}
+            depthTest={false}
+            renderOrder={3}
+          />
+        ))}
+      {frames
+        .filter((frame) => members.has(frame.id))
+        .map((frame) => (
+          <Line
+            key={frame.id}
+            points={[...frame.corners, frame.corners[0]].map(([x, z]): Vec3 => [x, GROUP_OUTLINE_Y_MM, z])}
+            color={group.color}
+            lineWidth={2.5}
+            transparent
+            opacity={0.9}
+            depthTest={false}
+            renderOrder={3}
+          />
+        ))}
+    </>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Canvas
 // ---------------------------------------------------------------------------
@@ -954,6 +1007,8 @@ export type BuilderCanvasProps = {
   frames: Frame[];
   /** a member of hidden groups only is left out of the drawing, and can't be picked */
   groups: Group[];
+  /** the group whose row is hovered in the Groups box: its members are ringed in its colour */
+  outlinedGroup: Group | null;
   palette: ScenePalette;
   lighting: Lighting;
   quality: GraphicsQuality;
@@ -1043,6 +1098,7 @@ export default function BuilderCanvas({
   connections,
   frames,
   groups,
+  outlinedGroup,
   palette,
   lighting,
   quality,
@@ -1298,6 +1354,8 @@ export default function BuilderCanvas({
       ) : null}
 
       {frameDraft ? <FrameDraft {...frameDraft} /> : null}
+
+      {outlinedGroup ? <GroupOutline group={outlinedGroup} components={components} frames={frames} /> : null}
 
       {snapGuide ? (
         // Laid on the table under the beam, not along it, where the beam's own
