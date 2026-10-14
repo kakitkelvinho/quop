@@ -18,8 +18,12 @@ export type ScenePalette = {
   /** the invisible table only catches shadows; this is their ink */
   shadow: string;
   shadowOpacity: number;
-  gridCell: string;
-  gridSection: string;
+  /**
+   * the grid's steel plate, its M6 holes, the bright countersink round each
+   * and the rows through them; the plate is part see-through, so the sweep
+   * still shades it
+   */
+  holeGrid: { plate: string; plateOpacity: number; hole: string; rim: string; row: string };
   /** the ink accent — selection rings, the beam being drawn */
   accent: string;
   hover: string;
@@ -67,8 +71,7 @@ export const LIGHT_PALETTE: ScenePalette = {
   // warm ink on a warm sweep; in light mode the shadow carries the edges
   shadow: "#3a352c",
   shadowOpacity: 0.3,
-  gridCell: "#c7cbd2",
-  gridSection: "#a9aeb8",
+  holeGrid: { plate: "#c9ccd1", plateOpacity: 0.85, hole: "#2a2c31", rim: "#f4f5f7", row: "#b2b6bd" },
   accent: "#8b1e3f",
   hover: "#b4506c",
   ambient: 0.2,
@@ -89,8 +92,7 @@ export const DARK_PALETTE: ScenePalette = {
   backdrop: ["#2a2c33", "#101114", "#020203"],
   shadow: "#000000",
   shadowOpacity: 0.5,
-  gridCell: "#2c2c2c",
-  gridSection: "#4a4a4a",
+  holeGrid: { plate: "#1d1f23", plateOpacity: 0.92, hole: "#050506", rim: "#4b4f57", row: "#30333a" },
   accent: "#f4b942",
   hover: "#ffd67c",
   ambient: 0.1,
