@@ -410,7 +410,7 @@ function LightFields({
   component: BuilderComponent;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
 }) {
-  const name = component.type === "cavity" ? "Mode" : "Internal beam";
+  const name = component.type === "cavity" ? "Mode" : "Beam";
   const color = component.lightColor ?? DEFAULT_LIGHT_COLOR;
   return (
     <>
