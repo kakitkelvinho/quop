@@ -92,16 +92,16 @@ export type BuilderComponent = {
    */
   periscope?: string;
   /**
-   * delay line only, mm: the path a beam through it gains with its stage at
-   * the start of its travel, in at the port, round the carriage's mirrors and
-   * out again; missing means DELAY_MIN_PATH_MM
+   * delay line only, mm: its minimum delay, the path a beam through it gains
+   * with the stage at 0, like a laser's built-in path: it counts toward the
+   * path but moves nothing drawn; missing means DELAY_MIN_PATH_MM
    */
   delayMinPathMm?: number;
   /** delay line only, mm: how far its stage can travel; missing means DELAY_TRAVEL_MM */
   delayTravelMm?: number;
   /**
    * delay line only, mm: how far the stage has travelled, held within its
-   * travel; missing means 0. A beam through it gains the shortest path and
+   * travel; missing means 0. A beam through it gains the minimum delay and
    * twice this, out and back.
    */
   delayStageMm?: number;
@@ -527,9 +527,11 @@ export const DEFAULT_HOUSING_COLORS: Partial<Record<ComponentType, string>> = {
 };
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
-/** A delay line's shortest path, mm: a new one's, and the range any can have (the carriage's mirrors stay clear of the port's). */
+/** A delay line's minimum delay, mm: a new one's, and the range any can have, as a laser's built-in path. */
 export const DELAY_MIN_PATH_MM = 50;
-export const DELAY_MIN_PATH_RANGE_MM: [number, number] = [20, 4000];
+export const DELAY_MIN_PATH_RANGE_MM: [number, number] = INTERNAL_PATH_RANGE_MM;
+/** How far behind the port's mirrors the carriage's stand with the stage at 0, mm, whatever the minimum delay. */
+export const DELAY_ARM_BASE_MM = 25;
 /** A delay line's travel, mm: a new one's, and the range any can have. */
 export const DELAY_TRAVEL_MM = 50;
 export const DELAY_TRAVEL_RANGE_MM: [number, number] = [0, 2000];
@@ -620,9 +622,9 @@ export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): 
 }
 
 /**
- * A delay line's setting, mm: its shortest path, its travel, how far its
- * stage has travelled, and so the path a beam through it gains, the shortest
- * plus twice the stage's travel, out and back.
+ * A delay line's setting, mm: its minimum delay, its travel, how far its
+ * stage has travelled, and so the path a beam through it gains, the minimum
+ * delay plus twice the stage's travel, out and back.
  */
 export function delaySetting(component: BuilderComponent): {
   minPath: number;
@@ -637,11 +639,11 @@ export function delaySetting(component: BuilderComponent): {
 }
 
 /**
- * How far a delay line's carriage mirrors stand behind its port's, mm: half
- * the path it adds, as the light runs down to them and back up beside it.
+ * How far a delay line's carriage mirrors stand behind its port's, mm: a
+ * fixed base and the stage's travel. The minimum delay is not drawn.
  */
 export function delayArmMm(component: BuilderComponent): number {
-  return delaySetting(component).path / 2;
+  return DELAY_ARM_BASE_MM + delaySetting(component).stage;
 }
 
 /**
@@ -680,8 +682,7 @@ export function componentReferenceX(component: BuilderComponent): number {
 
 /** A delay line's rail, front to back, mm: its farthest carriage, and room for the carriage behind its mirrors. */
 export function delayRailMm(component: BuilderComponent): number {
-  const { minPath, travel } = delaySetting(component);
-  return minPath / 2 + travel + DELAY_CARRIAGE_BACK_MM;
+  return DELAY_ARM_BASE_MM + delaySetting(component).travel + DELAY_CARRIAGE_BACK_MM;
 }
 
 /** How far a delay line's carriage reaches behind its mirrors, mm, and so the rail beyond its farthest setting. */
@@ -743,7 +744,7 @@ export function beamLengthMm(components: BuilderComponent[], beam: Beam): number
  * The length of each leg of a beam, mm, for the distance labels along it: the
  * straight 3D run between consecutive reference points (skipping stops whose
  * part is gone, as beamPoints does). A leg into a delay line the beam passes
- * through adds that delay line's shortest path, not its current setting; one the beam ends at adds nothing, as in
+ * through adds that delay line's minimum delay, not its current setting; one the beam ends at adds nothing, as in
  * beamDelayMm. A laser's built-in path is in no leg: it counts toward the
  * beam's total only.
  */
@@ -1773,7 +1774,7 @@ const LEGACY_DELAY_ARM_MM: [number, number] = [50, 350];
  * and held as the builder would hold it. Delay lines first set the arm, port
  * to retroreflector: its shortest, its longest and where it was (delayMinMm,
  * delayMaxMm, delayMm). Such a file opens with the same path through it:
- * twice the shortest arm is the shortest path, and the arm's range its travel.
+ * twice the shortest arm is the minimum delay, and the arm's range its travel.
  */
 function parseDelay(raw: Record<string, unknown>): Partial<BuilderComponent> {
   let minPath = finiteNumber(raw.delayMinPathMm);

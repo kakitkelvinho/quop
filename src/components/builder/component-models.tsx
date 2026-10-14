@@ -723,6 +723,18 @@ function FoldPair({ palette, axis, bottom, facing }: Pick<ModelProps, "palette" 
  * and back; setting the stage slides the carriage. The rail runs to the
  * carriage's farthest setting, and a drive knob stands at its far end.
  */
+/** How far below the beam a delay line's rail runs, and the length of the drive knob at its far end, mm. */
+const DELAY_RAIL_DROP_MM = 26;
+const DELAY_DRIVE_MM = 12;
+
+/**
+ * The end face of a delay line's drive knob, where a cable to it leaves:
+ * along its local x from the rail's middle, and its height, mm.
+ */
+export function delayDriveEnd(rail: number, axis: number): [number, number] {
+  return [-rail / 2 - DELAY_DRIVE_MM, axis - DELAY_RAIL_DROP_MM];
+}
+
 function DelayLine({
   palette,
   axis,
@@ -731,7 +743,7 @@ function DelayLine({
   light,
 }: ModelProps & { rail: number; arm: number; light: string | null }) {
   const front = rail / 2;
-  const railY = axis - 26;
+  const railY = axis - DELAY_RAIL_DROP_MM;
   const carriageX = front - arm;
   // a short rail stands on one post
   const posts = front > 35 ? [front - 18, -front + 18] : [0];
@@ -804,8 +816,8 @@ function DelayLine({
         ))}
       </group>
       {/* the drive knob at the far end */}
-      <mesh position={[-front - 6, railY, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[9, 9, 12, 28]} />
+      <mesh position={[-front - DELAY_DRIVE_MM / 2, railY, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[9, 9, DELAY_DRIVE_MM, 28]} />
         <meshStandardMaterial color={palette.anodise} roughness={0.55} metalness={0.3} flatShading />
       </mesh>
     </group>

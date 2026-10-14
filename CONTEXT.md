@@ -66,7 +66,7 @@ A cube that divides a beam in two, at the reflective plane across its diagonal. 
 _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 
 **Delay line**:
-A translation stage with a V of two mirrors on its carriage, standing across a beam line: two fold mirrors at its port send the light down the rail to the carriage's mirrors, across and back, and it leaves along the line it came in on. The beam is drawn through its port; its shortest path (with the stage at the start of its travel) plus twice how far the stage has travelled is added to the beam's path length.
+A translation stage with a V of two mirrors on its carriage, standing across a beam line: two fold mirrors at its port send the light down the rail to the carriage's mirrors, across and back, and it leaves along the line it came in on. The beam is drawn through its port; its minimum delay (the path with the stage at 0, not drawn, like a laser's built-in path) plus twice its position (how far the stage has travelled) is added to the beam's path length.
 _Avoid_: delay stage, translation stage, retro
 
 **Periscope**:

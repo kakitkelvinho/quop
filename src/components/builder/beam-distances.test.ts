@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { type Beam, type BuilderComponent, DELAY_MIN_PATH_MM, beamLegLengthsMm } from "./types.ts";
 
 // The distance labels along a beam: one per leg, the straight run between
-// reference points, plus a passed delay line's shortest path.
+// reference points, plus a passed delay line's minimum delay.
 
 const laser: BuilderComponent = { id: "laser", type: "laser-source", position: [0, 100, 0], rotation: 0 };
 const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [300, 100, 0], rotation: 0 };
@@ -18,7 +18,7 @@ describe("beamLegLengthsMm", () => {
     assert.deepEqual(beamLegLengthsMm([laser, m1, raised], beam(["laser", "m1", "m2"])), [300, 500]);
   });
 
-  it("adds a passed delay line's shortest path to the leg into it, wherever its stage is", () => {
+  it("adds a passed delay line's minimum delay to the leg into it, wherever its stage is", () => {
     const parts = [m1, delay, m2];
     const [into, out] = beamLegLengthsMm(parts, beam(["m1", "delay", "m2"]));
     assert.equal(into, 300 + DELAY_MIN_PATH_MM);

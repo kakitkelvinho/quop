@@ -4,12 +4,14 @@ import { describe, it } from "node:test";
 import {
   type Beam,
   type BuilderComponent,
+  DELAY_ARM_BASE_MM,
   DELAY_MIN_PATH_MM,
   DELAY_TRAVEL_MM,
   SCENE_VERSION,
   beamDelayMm,
   beamLengthMm,
   bodyCentre,
+  delayArmMm,
   delayLineYaw,
   delayRailMm,
   delayRailOffset,
@@ -21,7 +23,7 @@ import {
 
 // A delay line stands across a beam line: fold mirrors at its port send the
 // light down its rail to a V of mirrors on its carriage and back, and it
-// leaves along the line it came in on. It adds its shortest path and twice
+// leaves along the line it came in on. It adds its minimum delay and twice
 // how far its stage has travelled.
 
 const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [0, 100, 100], rotation: 0 };
@@ -31,7 +33,7 @@ const beam: Beam = { id: "b", path: ["m1", "delay", "m2"], color: "#e33" };
 const components = [m1, delay, m2];
 
 describe("a delay line", () => {
-  it("adds its shortest path and twice its stage's travel to a beam through it", () => {
+  it("adds its minimum delay and twice its stage's travel to a beam through it", () => {
     assert.equal(beamDelayMm(components, beam), 100 + 2 * 40);
     const toPort = Math.hypot(200, 50);
     assert.ok(Math.abs(beamLengthMm(components, beam) - (2 * toPort + 180)) < 1e-9);
@@ -54,8 +56,17 @@ describe("a delay line", () => {
 
   it("is about 12 cm long as it comes, its rail reaching the carriage's farthest setting", () => {
     const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0 };
-    assert.equal(delayRailMm(fresh), DELAY_MIN_PATH_MM / 2 + DELAY_TRAVEL_MM + 30);
+    assert.equal(delayRailMm(fresh), DELAY_ARM_BASE_MM + DELAY_TRAVEL_MM + 30);
     assert.equal(delayRailMm({ ...fresh, delayTravelMm: 300 }) - delayRailMm(fresh), 250);
+  });
+
+  it("draws nothing of its minimum delay: the rail and carriage stay put", () => {
+    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0, delayStageMm: 20 };
+    const longer = { ...fresh, delayMinPathMm: 3000 };
+    assert.equal(delayRailMm(longer), delayRailMm(fresh));
+    assert.equal(delayArmMm(longer), delayArmMm(fresh));
+    assert.equal(delayArmMm(fresh), DELAY_ARM_BASE_MM + 20);
+    assert.equal(delaySetting(longer).path, 3000 + 2 * 20);
   });
 
   it("measures a drag along its rail, whichever way it is turned", () => {
@@ -93,8 +104,8 @@ describe("a delay line", () => {
   it("keeps its port where it is when its rail grows; the rail runs back from it", () => {
     const short = bodyCentre({ ...delay, delayTravelMm: 50 });
     const long = bodyCentre({ ...delay, delayTravelMm: 250 });
-    assert.equal(short[0], 200 - (50 + 50 + 30) / 2);
-    assert.equal(long[0], 200 - (50 + 250 + 30) / 2);
+    assert.equal(short[0], 200 - (DELAY_ARM_BASE_MM + 50 + 30) / 2);
+    assert.equal(long[0], 200 - (DELAY_ARM_BASE_MM + 250 + 30) / 2);
   });
 
   it("opens from a setup file as it was saved, a stage past its travel held at the end", () => {

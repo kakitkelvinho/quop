@@ -163,55 +163,55 @@ function HeightField({
   );
 }
 
-/**
- * A slider that previews as it moves and records one undo step per gesture:
- * the first change of a drag (or a run of arrow keys) takes the snapshot.
- */
-function SliderField({
-  label,
-  value,
-  display,
-  range,
-  step,
-  onBegin,
-  onChange,
-}: {
-  label: string;
+type SliderProps = {
   value: number;
-  display: string;
   range: [number, number];
   step: number;
   onBegin: () => void;
   onChange: (value: number) => void;
-}) {
+};
+
+/**
+ * A slider that previews as it moves and records one undo step per gesture:
+ * the first change of a drag (or a run of arrow keys) takes the snapshot.
+ */
+function Slider({ value, range, step, onBegin, onChange, label }: SliderProps & { label?: string }) {
   const editing = useRef(false);
   const end = () => {
     editing.current = false;
   };
+  return (
+    <input
+      className="builderSlider"
+      type="range"
+      aria-label={label}
+      min={range[0]}
+      max={range[1]}
+      step={step}
+      value={value}
+      onChange={(event) => {
+        if (!editing.current) {
+          editing.current = true;
+          onBegin();
+        }
+        onChange(Number(event.target.value));
+      }}
+      onPointerUp={end}
+      onKeyUp={end}
+      onBlur={end}
+    />
+  );
+}
+
+/** A Slider under its label, its value read out beside the label. */
+function SliderField({ label, display, ...slider }: SliderProps & { label: string; display: string }) {
   return (
     <label className="builderField">
       <span className="builderField__label">
         {label}
         <span className="builderReadout">{display}</span>
       </span>
-      <input
-        className="builderSlider"
-        type="range"
-        min={range[0]}
-        max={range[1]}
-        step={step}
-        value={value}
-        onChange={(event) => {
-          if (!editing.current) {
-            editing.current = true;
-            onBegin();
-          }
-          onChange(Number(event.target.value));
-        }}
-        onPointerUp={end}
-        onKeyUp={end}
-        onBlur={end}
-      />
+      <Slider {...slider} />
     </label>
   );
 }
@@ -347,8 +347,9 @@ export function BeamSwatches({
 }
 
 /**
- * A delay line's shortest path and its travel, and a slider for how far its
- * stage has travelled, with the path a beam through it gains.
+ * A delay line's minimum delay, its travel, and how far its stage has
+ * travelled, typed or on a slider, with the path a beam through it gains:
+ * the minimum delay and twice the position.
  */
 function DelayFields({
   component,
@@ -362,16 +363,16 @@ function DelayFields({
   const { minPath, travel, stage, path } = delaySetting(component);
   return (
     <>
+      <NumberField
+        label="Minimum delay"
+        unit="mm"
+        step={10}
+        min={DELAY_MIN_PATH_RANGE_MM[0]}
+        max={DELAY_MIN_PATH_RANGE_MM[1]}
+        value={minPath}
+        onChange={(next) => onUpdate({ delayMinPathMm: clamp(next, DELAY_MIN_PATH_RANGE_MM) })}
+      />
       <div className="builderFieldRow">
-        <NumberField
-          label="Shortest path"
-          unit="mm"
-          step={10}
-          min={DELAY_MIN_PATH_RANGE_MM[0]}
-          max={DELAY_MIN_PATH_RANGE_MM[1]}
-          value={minPath}
-          onChange={(next) => onUpdate({ delayMinPathMm: clamp(next, DELAY_MIN_PATH_RANGE_MM) })}
-        />
         <NumberField
           label="Travel"
           unit="mm"
@@ -385,19 +386,25 @@ function DelayFields({
             onUpdate({ delayTravelMm: held, delayStageMm: Math.min(stage, held) });
           }}
         />
+        <NumberField
+          label="Position"
+          unit="mm"
+          step={1}
+          min={0}
+          max={travel}
+          value={stage}
+          onChange={(next) => onUpdate({ delayStageMm: clamp(next, [0, travel]) })}
+        />
       </div>
-      <SliderField
-        label="Stage"
+      <Slider
+        label="Position"
         value={stage}
-        display={`${Math.round(stage)} mm`}
         range={[0, travel]}
         step={1}
         onBegin={onCheckpoint}
         onChange={(next) => onUpdate({ delayStageMm: next }, false)}
       />
-      <p className="builderInspector__hint">
-        Adds {Math.round(path)} mm of path: {Math.round(minPath)} + 2 × {Math.round(stage)}.
-      </p>
+      <p className="builderInspector__hint">Adds {Math.round(path)} mm to path.</p>
     </>
   );
 }

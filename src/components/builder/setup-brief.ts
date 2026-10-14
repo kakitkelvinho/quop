@@ -113,7 +113,7 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
     only: "periscope-top",
   },
   delayMinPathMm: {
-    text: `mm, the path a beam through it gains with its stage at the start of its travel: in at the port, down to the carriage's mirrors, across and back out; ${range(DELAY_MIN_PATH_RANGE_MM)}; default ${DELAY_MIN_PATH_MM}.`,
+    text: `mm, its minimum delay: the path a beam through it gains with its stage at 0, like a laser's \`internalPathMm\`. It is not drawn. ${range(DELAY_MIN_PATH_RANGE_MM)}; default ${DELAY_MIN_PATH_MM}.`,
     only: "delay-line",
   },
   delayTravelMm: {
