@@ -673,6 +673,14 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
 const DELAY_FOLD_MM = 10;
 
 /**
+ * The thumbscrews on either side of a delay line's carriage, the grips its
+ * stage is dragged by: each one's middle, mm, behind the carriage's mirrors
+ * (x), below the beam (y) and out to either side of the rail's middle (±z), its knurled knob's radius and
+ * length, and the length of its shank into the carriage.
+ */
+export const DELAY_KNOB = { x: -5, y: -15, z: 29, radius: 5, length: 7, shank: 2.5 } as const;
+
+/**
  * Two half-inch mirrors at 45°, DELAY_FOLD_MM either side of the middle and
  * backed by an upright plate from `bottom` to just over the beam: a delay
  * line's fold mirrors at its port (facing −x, down the rail), or the V on its
@@ -777,6 +785,23 @@ function DelayLine({
           <Enamel color={palette.body} />
         </RoundedBox>
         <FoldPair palette={palette} axis={axis} bottom={railY + 15} facing={1} />
+        {/* a knurled thumbscrew on each side; dragging either slides the carriage */}
+        {[-1, 1].map((side) => (
+          <group
+            key={side}
+            position={[DELAY_KNOB.x, axis + DELAY_KNOB.y, side * DELAY_KNOB.z]}
+            rotation={[(side * Math.PI) / 2, 0, 0]}
+          >
+            <mesh position={[0, -(DELAY_KNOB.length + DELAY_KNOB.shank) / 2, 0]}>
+              <cylinderGeometry args={[1.6, 1.6, DELAY_KNOB.shank, 12]} />
+              <Hardware palette={palette} />
+            </mesh>
+            <mesh>
+              <cylinderGeometry args={[DELAY_KNOB.radius, DELAY_KNOB.radius, DELAY_KNOB.length, 18]} />
+              <meshStandardMaterial color={palette.anodise} roughness={0.6} metalness={0.3} flatShading />
+            </mesh>
+          </group>
+        ))}
       </group>
       {/* the drive knob at the far end */}
       <mesh position={[-front - 6, railY, 0]} rotation={[0, 0, Math.PI / 2]}>

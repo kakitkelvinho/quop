@@ -109,7 +109,7 @@ function useGeometries<T extends Record<string, BufferGeometry>>(build: () => T,
 // beneath is transparent, and three draws the transparent pass after every
 // opaque mesh whatever its renderOrder: so the handle joins that pass, at
 // full opacity, to land on top of the ring rather than under it.
-export const OVER = { depthWrite: false, depthTest: false, side: DoubleSide, transparent: true } as const;
+const OVER = { depthWrite: false, depthTest: false, side: DoubleSide, transparent: true } as const;
 
 type BubbleProps = {
   /** the circle the bubble is threaded on, mm */

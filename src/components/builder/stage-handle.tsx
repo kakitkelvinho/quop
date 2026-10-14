@@ -3,40 +3,26 @@
 import { Html } from "@react-three/drei";
 import { useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
-import { BufferAttribute, BufferGeometry, Color } from "three";
+import { Color } from "three";
 
-import { ARROW_INK, OVER } from "@/components/builder/rotation-handle";
+import { DELAY_KNOB } from "@/components/builder/component-models";
+import { ARROW_INK } from "@/components/builder/rotation-handle";
 import { delayArmMm, delaySetting, type BuilderComponent } from "@/components/builder/types";
 
-// The stage handle: a small pill lying just over a delay line's carriage, an
-// arrowhead at each end pointing along the rail. Dragging it slides the
-// carriage, as the inspector's slider does. Drawn in the delay line's frame,
-// about its port, so it turns with it.
+// The stage handle: the thumbscrews on either side of a delay line's
+// carriage, which the model draws, are the grips. While the delay line is
+// selected a thin ring in the accent marks each, and dragging either slides
+// the carriage along the rail, as the inspector's slider does. The rings are
+// drawn like the part, so the one behind the carriage stays hidden, and the
+// carriage takes a press over it. Drawn in the delay line's frame, about its
+// port, so it turns with it.
 
 const DEG = Math.PI / 180;
-/** how far over the beam the pill lies, mm: just clear of the carriage's mirror plate */
-const LIFT_MM = 23;
-/** where along the rail, mm behind the carriage's mirrors: over the carriage's middle */
-const BEHIND_MM = 5;
-/** the pill's length along the rail and half its width, mm */
-const PILL_LENGTH_MM = 30;
-const PILL_HALF_MM = 5.5;
-/** an arrowhead's length and half its width, mm */
-const HEAD_LENGTH_MM = 4.5;
-const HEAD_HALF_MM = 3;
-
-/** Two arrowheads flat on the pill, pointing out along it each way. */
-function arrowheads(): BufferGeometry {
-  const reach = PILL_LENGTH_MM / 2 - 2;
-  const base = reach - HEAD_LENGTH_MM;
-  const positions = [
-    base, 0, -HEAD_HALF_MM, base, 0, HEAD_HALF_MM, reach, 0, 0,
-    -base, 0, HEAD_HALF_MM, -base, 0, -HEAD_HALF_MM, -reach, 0, 0,
-  ];
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
-  return geometry;
-}
+/** the ring round the knob: its radius past the knob's, and its thickness, mm */
+const RING_GAP_MM = 2;
+const RING_TUBE_MM = 0.7;
+/** the grab target, a little larger than the knob so it is easy to catch, mm */
+const GRAB_RADIUS_MM = DELAY_KNOB.radius + 4;
 
 export type StageHandleProps = {
   component: BuilderComponent;
@@ -61,12 +47,10 @@ export function StageHandle({ component, color, dark, sliding, onPointerDown }: 
     };
   }, [active, get, sliding]);
 
-  const heads = useMemo(() => arrowheads(), []);
-  useEffect(() => () => heads.dispose(), [heads]);
-  const ink = dark ? ARROW_INK.dark : ARROW_INK.light;
   // under the pointer, the accent lifts a little toward the ink
-  const fill = useMemo(
-    () => (active ? new Color(color).lerp(new Color(ink), 0.1) : new Color(color)),
+  const ink = dark ? ARROW_INK.dark : ARROW_INK.light;
+  const ring = useMemo(
+    () => (active ? new Color(color).lerp(new Color(ink), 0.25) : new Color(color)),
     [active, color, ink],
   );
 
@@ -83,30 +67,31 @@ export function StageHandle({ component, color, dark, sliding, onPointerDown }: 
   };
 
   const [x, y, z] = component.position;
-  const flat = [-Math.PI / 2, 0, 0] as const;
-  const straight = PILL_LENGTH_MM - 2 * PILL_HALF_MM;
   return (
     <group position={[x, y, z]} rotation={[0, component.rotation * DEG, 0]}>
-      <group position={[-delayArmMm(component) - BEHIND_MM, LIFT_MM, 0]}>
-        <mesh rotation={flat} renderOrder={3} {...press}>
-          <planeGeometry args={[straight, 2 * PILL_HALF_MM]} />
-          <meshBasicMaterial color={fill} {...OVER} />
-        </mesh>
-        {[-1, 1].map((end) => (
-          <mesh key={end} position={[(end * straight) / 2, 0, 0]} rotation={flat} renderOrder={3} {...press}>
-            <circleGeometry args={[PILL_HALF_MM, 24]} />
-            <meshBasicMaterial color={fill} {...OVER} />
+      {[-1, 1].map((side) => (
+        <group key={side} position={[-delayArmMm(component) + DELAY_KNOB.x, DELAY_KNOB.y, side * DELAY_KNOB.z]}>
+          {/* the ring stands round the knob's outer face, in the plane across its axis, hidden like the knob behind the carriage */}
+          <mesh position={[0, 0, (side * DELAY_KNOB.length) / 2]}>
+            <torusGeometry args={[DELAY_KNOB.radius + RING_GAP_MM, active ? RING_TUBE_MM * 1.6 : RING_TUBE_MM, 8, 40]} />
+            <meshBasicMaterial color={ring} toneMapped={false} />
           </mesh>
-        ))}
-        <mesh geometry={heads} position={[0, 0.2, 0]} renderOrder={4}>
-          <meshBasicMaterial color={ink} {...OVER} />
-        </mesh>
-        {sliding ? (
-          <Html position={[0, 6, -PILL_HALF_MM - 14]} center zIndexRange={[0, 0]} className="builderHtmlLayer">
-            <span className="builderAngleBadge">{Math.round(delaySetting(component).stage)} mm</span>
-          </Html>
-        ) : null}
-      </group>
+          <mesh {...press}>
+            <sphereGeometry args={[GRAB_RADIUS_MM, 16, 12]} />
+            <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+      {sliding ? (
+        <Html
+          position={[-delayArmMm(component) + DELAY_KNOB.x, DELAY_KNOB.y + 26, 0]}
+          center
+          zIndexRange={[0, 0]}
+          className="builderHtmlLayer"
+        >
+          <span className="builderAngleBadge">{Math.round(delaySetting(component).stage)} mm</span>
+        </Html>
+      ) : null}
     </group>
   );
 }
