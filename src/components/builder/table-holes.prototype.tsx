@@ -15,6 +15,7 @@ export const HOLE_VARIANTS = {
   B: "M6 holes",
   C: "Holes + beam rows",
   D: "Steel plate",
+  E: "Steel plate + rows",
 } as const;
 export type HoleVariant = keyof typeof HOLE_VARIANTS;
 
@@ -107,6 +108,10 @@ function looks(variant: Exclude<HoleVariant, "A">, dark: boolean): Look {
     return dark
       ? { hole: "#5a5d63", rim: "#000", plate: "#000", line: "#2c2c2c", plateAlpha: 0, rimAlpha: 0, lineAlpha: 0.9 }
       : { hole: "#8f939b", rim: "#000", plate: "#000", line: "#d3d6dc", plateAlpha: 0, rimAlpha: 0, lineAlpha: 0.9 };
+  if (variant === "E")
+    return dark
+      ? { hole: "#050506", rim: "#4b4f57", plate: "#1d1f23", line: "#30333a", plateAlpha: 0.92, rimAlpha: 0.9, lineAlpha: 0.9 }
+      : { hole: "#2a2c31", rim: "#f4f5f7", plate: "#c9ccd1", line: "#b2b6bd", plateAlpha: 0.85, rimAlpha: 0.9, lineAlpha: 0.9 };
   // D: a satin steel top with dark tapped holes and a bright countersink
   return dark
     ? { hole: "#050506", rim: "#4b4f57", plate: "#1d1f23", line: "#000", plateAlpha: 0.92, rimAlpha: 0.9, lineAlpha: 0 }
