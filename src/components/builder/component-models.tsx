@@ -727,14 +727,6 @@ function FoldPair({ palette, axis, bottom, facing }: Pick<ModelProps, "palette" 
 const DELAY_RAIL_DROP_MM = 26;
 const DELAY_DRIVE_MM = 12;
 
-/**
- * The end face of a delay line's drive knob, where a cable to it leaves:
- * along its local x from the rail's middle, and its height, mm.
- */
-export function delayDriveEnd(rail: number, axis: number): [number, number] {
-  return [-rail / 2 - DELAY_DRIVE_MM, axis - DELAY_RAIL_DROP_MM];
-}
-
 function DelayLine({
   palette,
   axis,
@@ -1915,6 +1907,64 @@ function TimeTagger({ palette, axis }: ModelProps) {
       ))}
     </group>
   );
+}
+
+/**
+ * Where a connection plugs into a part that has a connector for it, in the
+ * part's frame about its body's centre (height from the table), and the way
+ * it leaves: straight out of the connector, along x or up. A cable goes into
+ * an instrument's back, where its signal or power is: a camera's or a
+ * spectrometer's back face, a single-photon counter's SMA outputs, a laser's
+ * back, a delay line's drive, the SMA on a modulator, or the time tagger's
+ * input facing the other end. A fibre goes into a spectrometer's or a
+ * counter's fibre port. `toward` is the other end, in the same frame.
+ */
+export type ConnectionJack = { at: Vector3; out: Vector3 };
+
+/** how far into an SMA a cable's plug starts, mm up its 8 mm body: the plug sleeves over it */
+const SMA_SLEEVE_MM = 5;
+
+export function connectionJack(part: BuilderComponent, kind: ConnectionKind, toward: Vector3): ConnectionJack | undefined {
+  const axis = part.position[1];
+  const jack = (x: number, y: number, z: number, out: [number, number, number]) => ({
+    at: new Vector3(x, y, z),
+    out: new Vector3(...out),
+  });
+  if (part.type === "delay-line") {
+    return jack(-delayRailMm(part) / 2 - DELAY_DRIVE_MM, axis - DELAY_RAIL_DROP_MM, 0, [-1, 0, 0]);
+  }
+  if (kind === "fiber") {
+    if (part.type === "spectrometer") return jack(-60, axis, 0, [-1, 0, 0]);
+    if (part.type === "single-photon-detector") return jack(SPCM_FACE_X - 9.5, axis, 0, [-1, 0, 0]);
+    return undefined;
+  }
+  switch (part.type) {
+    case "camera":
+      return jack(CAMERA_FRONT_X + CAMERA_DEPTH_MM, axis, 0, [1, 0, 0]);
+    case "spectrometer":
+      return jack(55, axis, 0, [1, 0, 0]);
+    case "laser-source":
+      return jack(-48, axis, 0, [-1, 0, 0]);
+    case "single-photon-detector":
+      return jack(
+        SPCM_FACE_X + SPCM_DEPTH_MM + SMA_SLEEVE_MM,
+        axis - SPCM_JACK_DROP_MM,
+        SPCM_JACK_Z_MM[toward.z < 0 ? 0 : 1],
+        [1, 0, 0],
+      );
+    case "aom":
+      return jack(0, axis + AOM_CRYSTAL[1] / 2 + 3.5 + SMA_SLEEVE_MM, 0, [0, 1, 0]);
+    case "eom":
+      return jack(0, axis + EOM_SIDE / 2 + 5.5 + SMA_SLEEVE_MM, 0, [0, 1, 0]);
+    case "time-tagger": {
+      // the input in the row nearest the other end
+      const index = clamp(Math.round((toward.z - TAGGER_ROW_Z_MM) / TAGGER_PITCH_MM + (TAGGER_INPUTS - 1) / 2), [0, TAGGER_INPUTS - 1]);
+      const z = TAGGER_ROW_Z_MM + (index - (TAGGER_INPUTS - 1) / 2) * TAGGER_PITCH_MM;
+      return jack(-TAGGER_DEPTH_MM / 2 - TAGGER_PANEL_MM - 1.5 - SMA_SLEEVE_MM, axis, z, [-1, 0, 0]);
+    }
+    default:
+      return undefined;
+  }
 }
 
 function SelectionRing({ radius, color }: { radius: number; color: string }) {
