@@ -8,9 +8,14 @@
 
 import {
   BEAM_COLORS,
+  CONNECTION_KINDS,
+  beamDisplayName,
+  componentById,
+  componentDisplayName,
   labelText,
   withPeriscopePartners,
   type Beam,
+  type BuilderComponent,
   type BuilderSceneData,
   type Connection,
   type Frame,
@@ -226,4 +231,116 @@ export function joinSourcesGroups(scene: BuilderSceneData, copyOf: Map<string, s
     return { ...group, members: [...group.members, ...copies] };
   });
   return changed ? { ...scene, groups } : scene;
+}
+
+// ---------------------------------------------------------------------------
+// Export group
+// ---------------------------------------------------------------------------
+
+/** A beam or connection left out of a group's file, and the stops outside the group that kept it out. */
+export type LeftOut = { kind: "beam"; item: Beam; outside: string[] } | { kind: "connection"; item: Connection; outside: string[] };
+
+/** A part saved without the part it hangs on (a particle's host, a periscope top's lower mirror), which isn't in the group. */
+export type Loosened = { id: string; from: string };
+
+/**
+ * A group on its own, as a setup: its member parts and frames, every beam
+ * whose every stop is a member and every connection with both ends members,
+ * and the group itself, shown, with the setup's own settings (`labelScale`).
+ * Positions and ids are kept as they are on the table, so the file lines up
+ * again when it is brought back in. What a beam or connection through a part
+ * outside the group kept out is listed; so is a particle or periscope top
+ * whose host or lower mirror is outside, saved where it stands but loose, as
+ * the parser would open it. Null when there is no such group.
+ */
+export function groupSubset(
+  scene: BuilderSceneData,
+  groupId: string,
+): { scene: BuilderSceneData; leftOut: LeftOut[]; loosened: Loosened[] } | null {
+  const group = scene.groups.find((entry) => entry.id === groupId);
+  if (!group) return null;
+  const members = new Set(group.members);
+  const loosened: Loosened[] = [];
+  const components = scene.components
+    .filter((component) => members.has(component.id))
+    .map((component): BuilderComponent => {
+      const anchor = component.host ?? component.periscope;
+      if (anchor === undefined || members.has(anchor)) return component;
+      loosened.push({ id: component.id, from: anchor });
+      const loose = { ...component };
+      delete loose.host;
+      delete loose.periscope;
+      return loose;
+    });
+  const leftOut: LeftOut[] = [];
+  const beams = scene.beams.filter((beam) => {
+    const outside = [...new Set(beam.path.filter((id) => !members.has(id)))];
+    if (outside.length) leftOut.push({ kind: "beam", item: beam, outside });
+    return outside.length === 0;
+  });
+  const connections = scene.connections.filter((connection) => {
+    const outside = [connection.from, connection.to].filter((id) => !members.has(id));
+    if (outside.length) {
+      // a connection with neither end in the group was never the group's
+      if (outside.length < 2) leftOut.push({ kind: "connection", item: connection, outside });
+      return false;
+    }
+    return true;
+  });
+  // a beam with no stop in the group was never the group's either
+  const passing = leftOut.filter((entry) => entry.kind === "connection" || entry.outside.length < entry.item.path.length);
+  const shown = { ...group };
+  delete shown.hidden;
+  return {
+    scene: {
+      ...scene,
+      components,
+      beams,
+      connections,
+      frames: scene.frames.filter((frame) => members.has(frame.id)),
+      groups: [shown],
+    },
+    leftOut: passing,
+    loosened,
+  };
+}
+
+/** "A, B and C" */
+function listed(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
+}
+
+/**
+ * What a group's file left out, as a sentence for the status line:
+ * "1 beam left out: Probe passes Laser 1, which isn't in Group 1." Null when
+ * nothing was.
+ */
+export function leftOutNotice(
+  scene: BuilderSceneData,
+  groupName: string,
+  leftOut: LeftOut[],
+  loosened: Loosened[] = [],
+): string | null {
+  const name = (id: string) => {
+    const component = componentById(scene.components, id);
+    return component ? componentDisplayName(component) : id;
+  };
+  const outsideOf = (ids: string[]) =>
+    `${listed(ids.map(name))}, which ${ids.length === 1 ? "isn't" : "aren't"} in ${groupName}`;
+  const sentences: string[] = [];
+  for (const kind of ["beam", "connection"] as const) {
+    const entries = leftOut.filter((entry) => entry.kind === kind);
+    if (!entries.length) continue;
+    const count = `${entries.length} ${kind}${entries.length === 1 ? "" : "s"} left out`;
+    const each = entries.map((entry) =>
+      entry.kind === "beam"
+        ? `${beamDisplayName(entry.item)} passes ${outsideOf(entry.outside)}`
+        : `${entry.item.label?.trim() || CONNECTION_KINDS[entry.item.kind].label} goes to ${outsideOf(entry.outside)}`,
+    );
+    sentences.push(`${count}: ${each.join("; ")}.`);
+  }
+  for (const { id, from } of loosened) {
+    sentences.push(`${name(id)} is saved without ${name(from)}, which isn't in ${groupName}.`);
+  }
+  return sentences.length ? sentences.join(" ") : null;
 }

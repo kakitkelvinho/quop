@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { deleteComponents, duplicateComponents, type IdMaker } from "./group-edits.ts";
 import {
   createGroup,
   deleteGroup,
+  groupSubset,
   isBeamDrawn,
+  leftOutNotice,
   isConnectionDrawn,
   isFrameDrawn,
   nextGroupName,
@@ -22,6 +25,7 @@ import {
   SCENE_VERSION,
   beamLengthMm,
   parseScene,
+  serializeScene,
   type Beam,
   type BuilderComponent,
   type BuilderSceneData,
@@ -262,5 +266,87 @@ describe("parsing groups", () => {
     assert.equal(SCENE_LIMITS.groups, 100);
     const check = checkSceneText(JSON.stringify(saved(many)));
     assert.ok(!check.ok && /at most 100/.test(check.error));
+  });
+});
+
+describe("a group on its own, for Export group (#215)", () => {
+  const scene = (): BuilderSceneData => ({
+    ...table([left({ hidden: true }), right(), group("board-only", ["board"])], [frame("board"), frame("other")]),
+    groups: [
+      { ...left({ hidden: true }), members: ["a", "m", "b", "board"] },
+      right(),
+      group("ends", ["a", "b"]),
+    ],
+    beams: [beam("ab", ["a", "m", "b"]), beam("cd", ["c", "m", "d"]), beam("am", ["a", "m"]), beam("cf", ["c", "f"])],
+    connections: [fiber("inner", "a", "b"), fiber("link", "b", "d"), fiber("far", "c", "d")],
+    labelScale: 1.5,
+  });
+
+  it("keeps the members, inner beams and connections, at the same positions and ids", () => {
+    const subset = groupSubset(scene(), "left")!;
+    assert.deepEqual(subset.scene.components, scene().components.filter(({ id }) => ["a", "m", "b"].includes(id)));
+    assert.deepEqual(subset.scene.beams.map(({ id }) => id), ["ab", "am"]);
+    assert.deepEqual(subset.scene.connections.map(({ id }) => id), ["inner"]);
+    assert.deepEqual(subset.scene.frames.map(({ id }) => id), ["board"]);
+  });
+
+  it("drops a beam or connection that leaves the group, and names it and the parts outside", () => {
+    const subset = groupSubset(scene(), "left")!;
+    assert.deepEqual(
+      subset.leftOut.map(({ kind, item, outside }) => ({ kind, id: item.id, outside })),
+      [
+        { kind: "beam", id: "cd", outside: ["c", "d"] },
+        { kind: "connection", id: "link", outside: ["d"] },
+      ],
+      "cf and far never touched the group",
+    );
+    assert.equal(
+      leftOutNotice(scene(), "left", subset.leftOut),
+      "1 beam left out: 3-stop beam passes Laser and PD, which aren't in left. 1 connection left out: Fibre goes to PD, which isn't in left.",
+    );
+  });
+
+  it("says nothing when nothing was left out", () => {
+    assert.equal(leftOutNotice(scene(), "ends", []), null);
+  });
+
+  it("puts a shared mirror in each group's file", () => {
+    assert.ok(groupSubset(scene(), "left")!.scene.components.some(({ id }) => id === "m"));
+    assert.ok(groupSubset(scene(), "right")!.scene.components.some(({ id }) => id === "m"));
+  });
+
+  it("saves the group alone and shown, even when hidden on the table, with the setup's settings", () => {
+    const { scene: file } = groupSubset(scene(), "left")!;
+    assert.deepEqual(file.groups, [{ id: "left", name: "left", color: "#7c3aed", members: ["a", "m", "b", "board"] }]);
+    assert.equal(file.labelScale, 1.5);
+  });
+
+  it("opens as it was saved, from a real setup", () => {
+    const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
+    const setup = parseScene(JSON.parse(text))!;
+    for (const { id } of setup.groups) {
+      const { scene: file } = groupSubset(setup, id)!;
+      assert.deepEqual(parseScene(JSON.parse(serializeScene(file))), file, id);
+    }
+  });
+
+  it("saves a particle whose host is outside the group loose, where it stands, and says so", () => {
+    const hosted: BuilderSceneData = {
+      ...table([group("g", ["ion"])]),
+      components: [
+        { id: "trap", type: "paul-trap", position: [0, 100, 0], rotation: 0 },
+        { id: "ion", type: "particle", position: [0, 100, 0], rotation: 0, host: "trap" },
+      ],
+      beams: [],
+      connections: [],
+    };
+    const subset = groupSubset(hosted, "g")!;
+    assert.deepEqual(subset.scene.components, [{ id: "ion", type: "particle", position: [0, 100, 0], rotation: 0 }]);
+    assert.deepEqual(subset.loosened, [{ id: "ion", from: "trap" }]);
+    assert.match(leftOutNotice(hosted, "g", [], subset.loosened)!, /is saved without .*, which isn't in g\./);
+  });
+
+  it("is null for a group that isn't there", () => {
+    assert.equal(groupSubset(scene(), "nope"), null);
   });
 });

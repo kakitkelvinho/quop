@@ -29,7 +29,7 @@ import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/b
 import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/components/builder/graphics-quality";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
-import { visibility } from "@/components/builder/groups";
+import { groupSubset, leftOutNotice, visibility } from "@/components/builder/groups";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
@@ -227,6 +227,22 @@ function exportViewPng(canvas: HTMLCanvasElement): string {
   }
 
   return out.toDataURL("image/png");
+}
+
+/** Download a setup as a `.json` file. */
+function downloadSetup(scene: BuilderSceneData, fileName: string) {
+  const blob = new Blob([serializeScene(scene)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** A group's name as a file name: the characters a file system refuses become dashes. */
+function groupFileName(name: string): string {
+  return name.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "-").trim() || "group";
 }
 
 function groupName(scene: BuilderSceneData, id: string): string {
@@ -1064,17 +1080,24 @@ export default function BuilderScene() {
   // ---- file & image --------------------------------------------------------
 
   const handleSave = useCallback(() => {
-    const blob = new Blob([serializeScene(sceneRef.current)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = setupFileName("json");
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadSetup(sceneRef.current, setupFileName("json"));
     announce("Saved.");
   }, [announce]);
+
+  /** A group as its own setup file, named after it; what it had to leave out is announced. */
+  const handleExportGroup = useCallback(
+    (id: string) => {
+      const scene = sceneRef.current;
+      const group = scene.groups.find((entry) => entry.id === id);
+      const subset = groupSubset(scene, id);
+      if (!group || !subset) return;
+      downloadSetup(subset.scene, `${groupFileName(group.name)}.json`);
+      announce(
+        leftOutNotice(scene, group.name, subset.leftOut, subset.loosened) ?? `Exported ${group.name}.`,
+      );
+    },
+    [announce],
+  );
 
   const handleCopyBrief = useCallback(async () => {
     try {
@@ -1591,6 +1614,7 @@ export default function BuilderScene() {
         onSetGroupColor={(id, color) => api.setGroupColor(id, color, false)}
         onSetGroupHidden={handleSetGroupHidden}
         onDeleteGroup={handleDeleteGroup}
+        onExportGroup={handleExportGroup}
         onSetGroupMembership={handleSetGroupMembership}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleDistances={() => setShowDistances((current) => !current)}

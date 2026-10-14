@@ -359,7 +359,9 @@ clicked, box-selected or picked by `⌘A`. A PNG leaves them out. Deleting a
 group ungroups its members, which stay on the table; deleting a part or frame
 takes it out of every group, and a group it empties stays until it is deleted.
 A copy joins its source's groups, and a periscope's two mirrors join and
-leave together. Parsing drops member ids that name nothing, and duplicates,
+leave together. Export group (`groupSubset`) writes a group as a setup of its
+own without re-centring or re-IDing anything, so bringing it back in can line
+it up with what is on the table. Parsing drops member ids that name nothing, and duplicates,
 and keeps at most 100 groups. In code the multi-selection editor
 (`group-edits.ts`, `GroupInspector`) is not a Group, and the parts panel's
 headings are `PART_CATEGORIES`.
@@ -425,8 +427,8 @@ is on screen until it is needed:
   The Groups box, when the setup has groups, sits under that: one row per
   group with its colour (click it to pick another), its name (double-click,
   or ⋯ → Rename, to edit it in place: Enter keeps it, Esc puts it back), its
-  member count, an eye to hide or show it, and a ⋯ menu with Rename and
-  Delete group (which ungroups: the parts stay). Pressing a row selects the
+  member count, an eye to hide or show it, and a ⋯ menu with Rename, Export
+  group… and Delete group (which ungroups: the parts stay). Pressing a row selects the
   group's parts, hidden ones too, so the usual move, turn, copy and Delete act
   on them all (Delete then deletes the parts, unlike Delete group); a group
   of frames alone selects its first frame. Hovering a row rings its members
@@ -479,6 +481,7 @@ is on screen until it is needed:
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Group parts | Select them and press `⌘G` (`Ctrl G`), or with no parts selected, a selected frame: a "Group n" row appears in the Groups box with its name ready to type. One undo step |
 | Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group to ungroup. Hover the row to see its members ringed on the table |
+| Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
 | Share a part between groups | Tick each group in the Groups field of its inspector |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |

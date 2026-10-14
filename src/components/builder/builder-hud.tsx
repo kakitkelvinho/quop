@@ -143,6 +143,8 @@ export type BuilderHudProps = {
   onSetGroupColor: (id: string, color: string) => void;
   onSetGroupHidden: (id: string, hidden: boolean) => void;
   onDeleteGroup: (id: string) => void;
+  /** download a group as its own setup file, `<name>.json` */
+  onExportGroup: (id: string) => void;
   onSetGroupMembership: (groupId: string, id: string, isMember: boolean) => void;
   onToggleLabels: () => void;
   onToggleDistances: () => void;
@@ -415,15 +417,18 @@ function FrameList({
 }
 
 /**
- * A group row's ⋯ menu: rename, ungroup. Closes on a pick, a click outside or Esc.
+ * A group row's ⋯ menu: rename, save it as its own file, ungroup. Closes on a
+ * pick, a click outside or Esc.
  */
 function GroupRowMenu({
   name,
   onRename,
+  onExport,
   onDelete,
 }: {
   name: string;
   onRename: () => void;
+  onExport: () => void;
   onDelete: () => void;
 }) {
   // the list is fixed to the viewport, opening up from the button: the box it
@@ -458,6 +463,9 @@ function GroupRowMenu({
             <span ref={listRef} className="builderMenu__list builderGroupMenu__list" role="menu" style={place}>
               <button type="button" role="menuitem" onClick={run(onRename)}>
                 Rename
+              </button>
+              <button type="button" role="menuitem" onClick={run(onExport)}>
+                Export group…
               </button>
               <button type="button" role="menuitem" onClick={run(onDelete)}>
                 Delete group
@@ -522,6 +530,7 @@ function GroupList({
   onSetColor,
   onCheckpoint,
   onSetHidden,
+  onExport,
   onDelete,
 }: {
   groups: Group[];
@@ -536,6 +545,8 @@ function GroupList({
   onSetColor: (id: string, color: string) => void;
   onCheckpoint: () => void;
   onSetHidden: (id: string, hidden: boolean) => void;
+  /** download the group as its own setup file */
+  onExport: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const picking = useRef<string | null>(null);
@@ -595,6 +606,7 @@ function GroupList({
               <GroupRowMenu
                 name={group.name}
                 onRename={() => onRenameStart(group.id)}
+                onExport={() => onExport(group.id)}
                 onDelete={() => onDelete(group.id)}
               />
             </span>
@@ -1363,6 +1375,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           onSetColor={props.onSetGroupColor}
           onCheckpoint={props.onCheckpoint}
           onSetHidden={props.onSetGroupHidden}
+          onExport={props.onExportGroup}
           onDelete={props.onDeleteGroup}
         />
       ) : null}
