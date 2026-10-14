@@ -23,8 +23,10 @@ import {
   DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
-  DELAY_LIMIT_MM,
-  DELAY_RANGE_MM,
+  DELAY_MIN_PATH_MM,
+  DELAY_MIN_PATH_RANGE_MM,
+  DELAY_TRAVEL_MM,
+  DELAY_TRAVEL_RANGE_MM,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   FRAME_COLORS,
@@ -110,20 +112,20 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
     text: "the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.",
     only: "periscope-top",
   },
-  delayMinMm: {
-    text: `mm, the shortest its arm (port to retroreflector) can be set to, ${range(DELAY_LIMIT_MM)}; default ${DELAY_RANGE_MM[0]}.`,
+  delayMinPathMm: {
+    text: `mm, the path a beam through it gains with its stage at the start of its travel: in at the port, down to the carriage's mirrors, across and back out; ${range(DELAY_MIN_PATH_RANGE_MM)}; default ${DELAY_MIN_PATH_MM}.`,
     only: "delay-line",
   },
-  delayMaxMm: {
-    text: `mm, the longest its arm can be set to, from \`delayMinMm\` to ${DELAY_LIMIT_MM[1]}; default ${DELAY_RANGE_MM[1]}. Its rail is drawn this long.`,
+  delayTravelMm: {
+    text: `mm, how far its stage can travel, ${range(DELAY_TRAVEL_RANGE_MM)}; default ${DELAY_TRAVEL_MM}. Its rail is drawn long enough for it.`,
     only: "delay-line",
   },
-  delayMm: {
-    text: "mm from its port to the retroreflector, between `delayMinMm` and `delayMaxMm`; default `delayMinMm`. A beam through it travels this twice, out and back, and counts both in its path length.",
+  delayStageMm: {
+    text: "mm the stage has travelled, from 0 to `delayTravelMm`; default 0. A beam through it gains `delayMinPathMm` plus twice this, out and back, and counts both in its path length.",
     only: "delay-line",
   },
   lightColor: {
-    text: `a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam down to its retroreflector and back); default ${code(DEFAULT_LIGHT_COLOR)}.`,
+    text: `a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam down to its carriage and back); default ${code(DEFAULT_LIGHT_COLOR)}.`,
     only: [...LIT_TYPES],
   },
   lightHidden: {
@@ -297,7 +299,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 - **Beams are not traced.** A beam is drawn as straight lines between the parts in its \`path\`, whatever way they face. A rotation only makes the drawing look right, so to turn a beam, put a mirror at the corner in its path.
 - A **laser** or **fibre collimator** emits along its own +x: rotation 0 fires toward +x, 90 toward −z, 180 toward −x, 270 toward +z.
 - A part the beam passes through (a lens, waveplate, filter, iris, sample, objective, AOM, EOM, Faraday isolator or cavity) has its optical axis along its own x: rotation 0 for a beam along x, 90 for a beam along z. A **Faraday isolator** lets light through travelling along its +x, and its rejection port is on its +z side: draw light leaving that port as its own beam, starting at the isolator.
-- A **delay line** stands across a beam line: its port, at its position, holds two fold mirrors on the line that send the light down the rail to the retroreflector and back, so it leaves along the line it came in on. Put it in the middle of a straight beam, \`[..., "m1", "delay", "m2", ...]\` with m1, delay and m2 in a line, and the builder turns it so its rail (along its −x) is perpendicular to the beam, on the side its rotation already faces: rotation 90 puts the rail toward +z, 270 toward −z, for a beam along x. The beam is drawn through the port; the round trip to the retroreflector, twice \`delayMm\`, is added to its path length.
+- A **delay line** stands across a beam line: its port, at its position, holds two fold mirrors on the line that send the light down the rail to a V of two mirrors on the carriage, across and back, so it leaves along the line it came in on. Put it in the middle of a straight beam, \`[..., "m1", "delay", "m2", ...]\` with m1, delay and m2 in a line, and the builder turns it so its rail (along its −x) is perpendicular to the beam, on the side its rotation already faces: rotation 90 puts the rail toward +z, 270 toward −z, for a beam along x. The beam is drawn through the port; \`delayMinPathMm\` plus twice \`delayStageMm\` is added to its path length.
 - A **periscope** is two parts: a \`periscope\` (its lower mirror, on the rod) and a \`periscope-top\` (its upper mirror) whose \`periscope\` field names it. Give both the same x and z and their own heights, and put both in the beam's path, one after the other: \`[..., "peri", "peri-top", ...]\`. The beam runs straight up (or down) between them, and that rise counts in its path length. Each mirror is turned by the builder to face its neighbour off to the side, like a mirror in the middle of a beam. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the rotation of the beam's direction of travel.
 - A **mirror** in the middle of a beam, and a **photodiode**, **camera**, **spectrometer** or **single-photon detector** at the end of one, are turned by the builder: the mirror to reflect the beam from the stop before it to the stop after, the detector to face the stop before it. Any rotation you write for them is replaced, so 0 will do. A mirror at either end of a path keeps the rotation you give it; its reflecting face looks along its +x.
 - A **beam cube**'s reflecting diagonal runs from its −x−z corner to its +x+z corner: at rotation 0, light travelling +x carries on along +x and is reflected toward +z; at rotation 90, light travelling +x is reflected toward −z. Draw the reflected arm as its own beam, starting at the cube.

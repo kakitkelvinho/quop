@@ -56,6 +56,7 @@ import {
   PartRotationHandle,
   type RotationHandleSpec,
 } from "@/components/builder/rotation-handle";
+import { StageHandle } from "@/components/builder/stage-handle";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
@@ -992,6 +993,9 @@ export type BuilderCanvasProps = {
   /** the selection's rotation handle, if it gets one */
   rotationHandle: RotationHandleSpec | null;
   onRotationHandlePointerDown: (event: ThreeEvent<PointerEvent>) => void;
+  /** a lone selected delay line, whose carriage gets a handle to slide it, and whether it is sliding now */
+  stageHandle: { component: BuilderComponent; sliding: boolean } | null;
+  onStageHandlePointerDown: (event: ThreeEvent<PointerEvent>) => void;
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
   onCanvasReady: (handle: CanvasApi) => void;
@@ -1066,6 +1070,8 @@ export default function BuilderCanvas({
   onComponentHover,
   rotationHandle,
   onRotationHandlePointerDown,
+  stageHandle,
+  onStageHandlePointerDown,
   onConnectionPointerDown,
   onFramePointerDown,
   onCanvasReady,
@@ -1246,6 +1252,15 @@ export default function BuilderCanvas({
           dark={palette.mode === "dark"}
           rotating={rotationHandle.rotating}
           onPointerDown={onRotationHandlePointerDown}
+        />
+      ) : null}
+      {stageHandle ? (
+        <StageHandle
+          component={stageHandle.component}
+          color={palette.accent}
+          dark={palette.mode === "dark"}
+          sliding={stageHandle.sliding}
+          onPointerDown={onStageHandlePointerDown}
         />
       ) : null}
 

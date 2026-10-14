@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { type Beam, type BuilderComponent, DELAY_RANGE_MM, beamLegLengthsMm } from "./types.ts";
+import { type Beam, type BuilderComponent, DELAY_MIN_PATH_MM, beamLegLengthsMm } from "./types.ts";
 
 // The distance labels along a beam: one per leg, the straight run between
-// reference points, plus a passed delay line's shortest round trip.
+// reference points, plus a passed delay line's shortest path.
 
 const laser: BuilderComponent = { id: "laser", type: "laser-source", position: [0, 100, 0], rotation: 0 };
 const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [300, 100, 0], rotation: 0 };
 const m2: BuilderComponent = { id: "m2", type: "mirror-mount", position: [300, 100, 400], rotation: 0 };
-const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [600, 100, 0], rotation: 0, delayMm: 200 };
+const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [600, 100, 0], rotation: 0, delayStageMm: 20 };
 const beam = (path: string[]): Beam => ({ id: "b", path, color: "#e33" });
 
 describe("beamLegLengthsMm", () => {
@@ -18,13 +18,13 @@ describe("beamLegLengthsMm", () => {
     assert.deepEqual(beamLegLengthsMm([laser, m1, raised], beam(["laser", "m1", "m2"])), [300, 500]);
   });
 
-  it("adds a passed delay line's shortest round trip to the leg into it, whatever its arm", () => {
+  it("adds a passed delay line's shortest path to the leg into it, wherever its stage is", () => {
     const parts = [m1, delay, m2];
     const [into, out] = beamLegLengthsMm(parts, beam(["m1", "delay", "m2"]));
-    assert.equal(into, 300 + 2 * DELAY_RANGE_MM[0]);
+    assert.equal(into, 300 + DELAY_MIN_PATH_MM);
     assert.equal(out, Math.hypot(300, 400));
 
-    const custom = { ...delay, delayMinMm: 80, delayMm: 900 };
+    const custom = { ...delay, delayMinPathMm: 160, delayStageMm: 40 };
     assert.equal(beamLegLengthsMm([m1, custom, m2], beam(["m1", "delay", "m2"]))[0], 300 + 160);
   });
 

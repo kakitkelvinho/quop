@@ -50,7 +50,8 @@ import {
   beamInternalPathMm,
   beamDelayMm,
   delaySetting,
-  DELAY_LIMIT_MM,
+  DELAY_MIN_PATH_RANGE_MM,
+  DELAY_TRAVEL_RANGE_MM,
   beamLengthMm,
   componentById,
   periscopePartner,
@@ -346,8 +347,8 @@ export function BeamSwatches({
 }
 
 /**
- * A delay line's shortest and longest arm, and a slider for where the
- * retroreflector sits between them, with the path it adds out and back.
+ * A delay line's shortest path and its travel, and a slider for how far its
+ * stage has travelled, with the path a beam through it gains.
  */
 function DelayFields({
   component,
@@ -358,44 +359,45 @@ function DelayFields({
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
   onCheckpoint: () => void;
 }) {
-  const { min, max, arm } = delaySetting(component);
-  // a new range carries the arm with it, so it is never saved outside it
-  const setRange = (nextMin: number, nextMax: number) => {
-    const held = delaySetting({ ...component, delayMinMm: nextMin, delayMaxMm: nextMax });
-    onUpdate({ delayMinMm: held.min, delayMaxMm: held.max, delayMm: held.arm });
-  };
+  const { minPath, travel, stage, path } = delaySetting(component);
   return (
     <>
       <div className="builderFieldRow">
         <NumberField
-          label="Shortest arm"
+          label="Shortest path"
           unit="mm"
           step={10}
-          min={DELAY_LIMIT_MM[0]}
-          max={DELAY_LIMIT_MM[1]}
-          value={min}
-          onChange={(next) => setRange(clamp(next, DELAY_LIMIT_MM), Math.max(max, clamp(next, DELAY_LIMIT_MM)))}
+          min={DELAY_MIN_PATH_RANGE_MM[0]}
+          max={DELAY_MIN_PATH_RANGE_MM[1]}
+          value={minPath}
+          onChange={(next) => onUpdate({ delayMinPathMm: clamp(next, DELAY_MIN_PATH_RANGE_MM) })}
         />
         <NumberField
-          label="Longest arm"
+          label="Travel"
           unit="mm"
           step={10}
-          min={DELAY_LIMIT_MM[0]}
-          max={DELAY_LIMIT_MM[1]}
-          value={max}
-          onChange={(next) => setRange(Math.min(min, clamp(next, DELAY_LIMIT_MM)), clamp(next, DELAY_LIMIT_MM))}
+          min={DELAY_TRAVEL_RANGE_MM[0]}
+          max={DELAY_TRAVEL_RANGE_MM[1]}
+          value={travel}
+          // a shorter travel carries the stage with it, so it is never saved outside it
+          onChange={(next) => {
+            const held = clamp(next, DELAY_TRAVEL_RANGE_MM);
+            onUpdate({ delayTravelMm: held, delayStageMm: Math.min(stage, held) });
+          }}
         />
       </div>
       <SliderField
-        label="Retroreflector"
-        value={arm}
-        display={`${Math.round(arm)} mm`}
-        range={[min, max]}
+        label="Stage"
+        value={stage}
+        display={`${Math.round(stage)} mm`}
+        range={[0, travel]}
         step={1}
         onBegin={onCheckpoint}
-        onChange={(next) => onUpdate({ delayMm: next }, false)}
+        onChange={(next) => onUpdate({ delayStageMm: next }, false)}
       />
-      <p className="builderInspector__hint">Adds {Math.round(2 * arm)} mm of path, out and back.</p>
+      <p className="builderInspector__hint">
+        Adds {Math.round(path)} mm of path: {Math.round(minPath)} + 2 × {Math.round(stage)}.
+      </p>
     </>
   );
 }
@@ -943,7 +945,7 @@ export function BeamInspector({
         <p className="builderInspector__hint">Includes {Math.round(insideLaser)} mm inside the laser.</p>
       ) : null}
       {inDelayLines > 0 ? (
-        <p className="builderInspector__hint">Includes {Math.round(inDelayLines)} mm in delay lines, out and back.</p>
+        <p className="builderInspector__hint">Includes {Math.round(inDelayLines)} mm in delay lines.</p>
       ) : null}
       <EditableStopList components={components} path={beam.path} onChange={(path) => onUpdate({ path })} />
       <button

@@ -91,15 +91,20 @@ export type BuilderComponent = {
    * it stands straight above or below it, at its own height
    */
   periscope?: string;
-  /** delay line only, mm: the shortest and longest the arm can be set to; missing means DELAY_RANGE_MM */
-  delayMinMm?: number;
-  delayMaxMm?: number;
   /**
-   * delay line only, mm from its port to the retroreflector, held between its
-   * shortest and longest; missing means its shortest. A beam through it
-   * travels this twice, out and back.
+   * delay line only, mm: the path a beam through it gains with its stage at
+   * the start of its travel, in at the port, round the carriage's mirrors and
+   * out again; missing means DELAY_MIN_PATH_MM
    */
-  delayMm?: number;
+  delayMinPathMm?: number;
+  /** delay line only, mm: how far its stage can travel; missing means DELAY_TRAVEL_MM */
+  delayTravelMm?: number;
+  /**
+   * delay line only, mm: how far the stage has travelled, held within its
+   * travel; missing means 0. A beam through it gains the shortest path and
+   * twice this, out and back.
+   */
+  delayStageMm?: number;
   /** cavity and delay line only: the colour of the light drawn inside (a cavity's mode, a delay line's beam); missing means DEFAULT_LIGHT_COLOR */
   lightColor?: string;
   /** cavity and delay line only: true leaves the light inside out of the drawing; stored only when true */
@@ -522,9 +527,12 @@ export const DEFAULT_HOUSING_COLORS: Partial<Record<ComponentType, string>> = {
 };
 export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
-/** A delay line's arm, port to retroreflector, mm: the range a new one has, and the most any can have. */
-export const DELAY_RANGE_MM: [number, number] = [50, 350];
-export const DELAY_LIMIT_MM: [number, number] = [0, 2000];
+/** A delay line's shortest path, mm: a new one's, and the range any can have (the carriage's mirrors stay clear of the port's). */
+export const DELAY_MIN_PATH_MM = 50;
+export const DELAY_MIN_PATH_RANGE_MM: [number, number] = [20, 4000];
+/** A delay line's travel, mm: a new one's, and the range any can have. */
+export const DELAY_TRAVEL_MM = 50;
+export const DELAY_TRAVEL_RANGE_MM: [number, number] = [0, 2000];
 /** How far above its lower mirror a new periscope's top mirror stands, mm. */
 export const PERISCOPE_RISE_MM = 100;
 /** A particle dropped within this distance of a host's centre snaps into it, mm. */
@@ -611,23 +619,52 @@ export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): 
   return first?.type === "laser-source" ? (first.internalPathMm ?? 0) : 0;
 }
 
-/** A delay line's arm, mm: its shortest, its longest, and where its retroreflector is set between them. */
-export function delaySetting(component: BuilderComponent): { min: number; max: number; arm: number } {
-  const min = clamp(component.delayMinMm ?? DELAY_RANGE_MM[0], DELAY_LIMIT_MM);
-  const max = clamp(component.delayMaxMm ?? DELAY_RANGE_MM[1], [min, DELAY_LIMIT_MM[1]]);
-  return { min, max, arm: clamp(component.delayMm ?? min, [min, max]) };
+/**
+ * A delay line's setting, mm: its shortest path, its travel, how far its
+ * stage has travelled, and so the path a beam through it gains, the shortest
+ * plus twice the stage's travel, out and back.
+ */
+export function delaySetting(component: BuilderComponent): {
+  minPath: number;
+  travel: number;
+  stage: number;
+  path: number;
+} {
+  const minPath = clamp(component.delayMinPathMm ?? DELAY_MIN_PATH_MM, DELAY_MIN_PATH_RANGE_MM);
+  const travel = clamp(component.delayTravelMm ?? DELAY_TRAVEL_MM, DELAY_TRAVEL_RANGE_MM);
+  const stage = clamp(component.delayStageMm ?? 0, [0, travel]);
+  return { minPath, travel, stage, path: minPath + 2 * stage };
 }
 
 /**
- * The path a beam picks up inside delay lines, mm: out to the retroreflector
- * and back, each time it passes through one (a stop in the middle of it).
+ * How far a delay line's carriage mirrors stand behind its port's, mm: half
+ * the path it adds, as the light runs down to them and back up beside it.
+ */
+export function delayArmMm(component: BuilderComponent): number {
+  return delaySetting(component).path / 2;
+}
+
+/**
+ * How far down a delay line's rail a table point lies, mm from its port: the
+ * point projected onto the rail (its local −x), so a drag along the rail moves
+ * the stage by as much as the pointer moves along it.
+ */
+export function delayRailOffset(component: BuilderComponent, x: number, z: number): number {
+  const yaw = (component.rotation * Math.PI) / 180;
+  // local +x points along (cos, −sin) in (x, z); the rail runs the other way
+  return -(x - component.position[0]) * Math.cos(yaw) + (z - component.position[2]) * Math.sin(yaw);
+}
+
+/**
+ * The path a beam picks up inside delay lines, mm: down to the carriage and
+ * back, each time it passes through one (a stop in the middle of it).
  */
 export function beamDelayMm(components: BuilderComponent[], beam: Beam): number {
   let total = 0;
   beam.path.forEach((id, index) => {
     if (index === 0 || index === beam.path.length - 1) return;
     const component = componentById(components, id);
-    if (component?.type === "delay-line") total += 2 * delaySetting(component).arm;
+    if (component?.type === "delay-line") total += delaySetting(component).path;
   });
   return total;
 }
@@ -641,10 +678,14 @@ export function componentReferenceX(component: BuilderComponent): number {
   return COMPONENT_SPECS[component.type].referenceX ?? 0;
 }
 
-/** A delay line's rail, front to back, mm: its longest arm and room for the carriage behind it. */
+/** A delay line's rail, front to back, mm: its farthest carriage, and room for the carriage behind its mirrors. */
 export function delayRailMm(component: BuilderComponent): number {
-  return delaySetting(component).max + 40;
+  const { minPath, travel } = delaySetting(component);
+  return minPath / 2 + travel + DELAY_CARRIAGE_BACK_MM;
 }
+
+/** How far a delay line's carriage reaches behind its mirrors, mm, and so the rail beyond its farthest setting. */
+const DELAY_CARRIAGE_BACK_MM = 30;
 
 /** How far, in world x and z, a part's port sits from its body's centre: its referenceX turned with it. */
 function portShift(component: BuilderComponent, rotation = component.rotation): [number, number] {
@@ -702,8 +743,7 @@ export function beamLengthMm(components: BuilderComponent[], beam: Beam): number
  * The length of each leg of a beam, mm, for the distance labels along it: the
  * straight 3D run between consecutive reference points (skipping stops whose
  * part is gone, as beamPoints does). A leg into a delay line the beam passes
- * through adds that delay line's shortest round trip, twice its shortest arm,
- * not its current setting; one the beam ends at adds nothing, as in
+ * through adds that delay line's shortest path, not its current setting; one the beam ends at adds nothing, as in
  * beamDelayMm. A laser's built-in path is in no leg: it counts toward the
  * beam's total only.
  */
@@ -717,7 +757,7 @@ export function beamLegLengthsMm(components: BuilderComponent[], beam: Beam): nu
     const end = stops[index];
     const [bx, by, bz] = referencePoint(end);
     const passed = index < stops.length - 1;
-    const delay = passed && end.type === "delay-line" ? 2 * delaySetting(end).min : 0;
+    const delay = passed && end.type === "delay-line" ? delaySetting(end).minPath : 0;
     legs.push(Math.hypot(bx - ax, by - ay, bz - az) + delay);
   }
   return legs;
@@ -1172,7 +1212,7 @@ export function periscopeYaw(mirror: Vec3, previous: Vec3, next: Vec3): number |
  * The yaw, degrees in [0, 360), of a delay line: it stands across the beam
  * line, its rail perpendicular to the way the light travels through its port.
  * Its two fold mirrors sit on the line and send the light down the rail to the
- * retroreflector and back, so the light leaves along the line it came in on.
+ * mirrors on its carriage and back, so the light leaves along the line it came in on.
  * Its face (local +x) is turned to whichever side of the line is nearer its
  * current yaw, so turning it round by hand puts the rail on the other side.
  * At a bend it is perpendicular to the mean of the two directions, so its face
@@ -1548,19 +1588,7 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     if (light !== undefined) component.lightColor = light;
     if (raw.lightHidden === true) component.lightHidden = true;
   }
-  if (type === "delay-line") {
-    const min = finiteNumber(raw.delayMinMm);
-    const max = finiteNumber(raw.delayMaxMm);
-    const arm = finiteNumber(raw.delayMm);
-    if (min !== undefined) component.delayMinMm = clamp(min, DELAY_LIMIT_MM);
-    if (max !== undefined) component.delayMaxMm = clamp(max, DELAY_LIMIT_MM);
-    if (arm !== undefined) component.delayMm = clamp(arm, DELAY_LIMIT_MM);
-    // a range given backwards, or an arm outside it, is read as the builder would hold it
-    const held = delaySetting(component);
-    if (min !== undefined) component.delayMinMm = held.min;
-    if (max !== undefined) component.delayMaxMm = held.max;
-    if (arm !== undefined) component.delayMm = held.arm;
-  }
+  if (type === "delay-line") Object.assign(component, parseDelay(raw));
   if (type === "laser-source") {
     const internal = finiteNumber(raw.internalPathMm);
     if (internal !== undefined) component.internalPathMm = clamp(internal, INTERNAL_PATH_RANGE_MM);
@@ -1737,6 +1765,36 @@ function cssColor<T extends string | undefined>(raw: unknown, fallback: T): stri
 export const LABEL_MAX_LENGTH = 120;
 
 /** A file's label, without control characters and cut to LABEL_MAX_LENGTH. */
+/** The arm, port to retroreflector, that a delay line had before its travel was set (see parseDelay), mm. */
+const LEGACY_DELAY_ARM_MM: [number, number] = [50, 350];
+
+/**
+ * A delay line's saved setting, each field kept only when the file gives it,
+ * and held as the builder would hold it. Delay lines first set the arm, port
+ * to retroreflector: its shortest, its longest and where it was (delayMinMm,
+ * delayMaxMm, delayMm). Such a file opens with the same path through it:
+ * twice the shortest arm is the shortest path, and the arm's range its travel.
+ */
+function parseDelay(raw: Record<string, unknown>): Partial<BuilderComponent> {
+  let minPath = finiteNumber(raw.delayMinPathMm);
+  let travel = finiteNumber(raw.delayTravelMm);
+  let stage = finiteNumber(raw.delayStageMm);
+  const [oldMin, oldMax, oldArm] = [raw.delayMinMm, raw.delayMaxMm, raw.delayMm].map(finiteNumber);
+  if (minPath === undefined && travel === undefined && stage === undefined && [oldMin, oldMax, oldArm].some((n) => n !== undefined)) {
+    const min = Math.max(0, oldMin ?? LEGACY_DELAY_ARM_MM[0]);
+    const max = Math.max(min, oldMax ?? LEGACY_DELAY_ARM_MM[1]);
+    minPath = 2 * min;
+    travel = max - min;
+    stage = clamp(oldArm ?? min, [min, max]) - min;
+  }
+  const held = delaySetting({ id: "", type: "delay-line", position: [0, 0, 0], rotation: 0, delayMinPathMm: minPath, delayTravelMm: travel, delayStageMm: stage });
+  return {
+    ...(minPath !== undefined ? { delayMinPathMm: held.minPath } : {}),
+    ...(travel !== undefined ? { delayTravelMm: held.travel } : {}),
+    ...(stage !== undefined ? { delayStageMm: held.stage } : {}),
+  };
+}
+
 function labelText(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
   return raw.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, LABEL_MAX_LENGTH);

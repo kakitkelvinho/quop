@@ -29,7 +29,7 @@ const HEAD_HALF_MM = 3;
 /** the faint circle a port's bubble is threaded on, mm wide */
 const SKEWER_MM = 1.6;
 /** the arrowheads: the order badges' ink, per theme */
-const ARROW_INK = { light: "#fffaf1", dark: "#1a1d26" } as const;
+export const ARROW_INK = { light: "#fffaf1", dark: "#1a1d26" } as const;
 /** where a centred part's bubble sits on its ring, and a port's on its quarter circle (part's frame) */
 const RING_BUBBLE_ANGLE = -45 * DEG;
 const PORT_BUBBLE_ANGLE = -90 * DEG;
@@ -109,7 +109,7 @@ function useGeometries<T extends Record<string, BufferGeometry>>(build: () => T,
 // beneath is transparent, and three draws the transparent pass after every
 // opaque mesh whatever its renderOrder: so the handle joins that pass, at
 // full opacity, to land on top of the ring rather than under it.
-const OVER = { depthWrite: false, depthTest: false, side: DoubleSide, transparent: true } as const;
+export const OVER = { depthWrite: false, depthTest: false, side: DoubleSide, transparent: true } as const;
 
 type BubbleProps = {
   /** the circle the bubble is threaded on, mm */
