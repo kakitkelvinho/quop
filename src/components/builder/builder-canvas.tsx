@@ -2,7 +2,6 @@
 
 import {
   Environment,
-  Grid,
   Lightformer,
   Line,
   OrbitControls,
@@ -59,6 +58,7 @@ import {
 import { StageHandle } from "@/components/builder/stage-handle";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
+import HoleGrid from "@/components/builder/hole-grid";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
 import {
   FRESH_WATCH,
@@ -88,10 +88,6 @@ import {
 
 export type CameraView = "iso" | "top";
 
-const GRID_CELL_MM = 25;
-const GRID_SECTION_MM = 100;
-/** how far from under the camera the grid fades out, mm: past the edge of the widest zoom */
-const GRID_FADE_MM = 9000;
 /** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
 const SNAP_GUIDE_Y_MM = 0.8;
 /** a press that travels further than this, in screen pixels, is a drag, not a click */
@@ -1177,24 +1173,10 @@ export default function BuilderCanvas({
       <TableSurface palette={palette} lighting={lighting} onSurfaceClick={onSurfaceClick} />
       <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
 
-      {/* with no table drawn, the grid is the one sign of the breadboard: it
-          shows while the toolbar's grid toggle is on, follows the view, and
+      {/* with no table drawn, the hole grid is the one sign of the breadboard:
+          it shows while the toolbar's grid toggle is on, follows the view, and
           fades out away from it */}
-      {showGrid ? (
-        <Grid
-          cellSize={GRID_CELL_MM}
-          cellThickness={0.8}
-          cellColor={palette.gridCell}
-          sectionSize={GRID_SECTION_MM}
-          sectionThickness={1}
-          sectionColor={palette.gridSection}
-          fadeDistance={GRID_FADE_MM}
-          fadeStrength={1}
-          infiniteGrid
-          followCamera
-          position={[0, 0.4, 0]}
-        />
-      ) : null}
+      {showGrid ? <HoleGrid palette={palette} /> : null}
 
       {frames.map((frame) => {
         const ghost = Boolean(frame.hidden) && frame.id === ghostFrameId;

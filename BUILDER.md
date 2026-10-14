@@ -471,8 +471,11 @@ print — posters, slides and paper figures are mostly white pages.
   and drag on, and it catches the key light's shadow — but it is never drawn.
   Parts are grounded by that shadow and by ambient occlusion instead.
 - **Grid on demand.** With no table, the grid is a working aid, not scenery:
-  it appears only while a part is being placed or dragged (and the grid toggle
-  is on), follows the view and fades with distance.
+  it shows while the grid toggle is on, follows the view and fades with
+  distance. It is the optical table's hole pattern — a steel plate with M6
+  holes on the 25 mm pitch, where parts snap, a bright countersink round each
+  and faint rows through them — so a beam lines up on a row of holes as it
+  does on the bench. Zoomed far out, the holes give way to the plate.
 - **Fit frames the parts.** Fit, a change of view and loading a scene frame the
   parts themselves, tall ones and their tags included, and the corners of every
   shown frame; an empty table frames an 800 × 600 mm board. The key light's shadows follow the layout too.
