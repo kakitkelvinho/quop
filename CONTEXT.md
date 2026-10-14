@@ -50,6 +50,10 @@ _Avoid_: aperture, anchor
 A labelled outline drawn on the table to mark an area, such as one breadboard or an enclosure. Its sides all run along the table's x or z axes, so it is a rectangle or a right-angled floor-plan shape such as an L or a U; it is never rotated. It is drawn either filled with a faint tint of its colour or as the coloured outline alone. A drawing aid only: it constrains nothing and adds nothing to any path. A setup can have any number; each can be hidden from its eye button.
 _Avoid_: table, border, region, zone, polygon
 
+**Group**:
+A named set of components on the table that hide, select and move together, such as the parts of one experiment when a table holds several. A component may be in several groups, as a mirror shared by two experiments is, and groups do not nest; a frame can belong to a group too, but a beam or connection never does. Hiding a group takes its members out of the drawing, but a component, beam or connection stays drawn while any group it belongs to, or any of its stops, is shown; hidden components still count in path lengths. Deleting a group ungroups its members, which stay on the table; an emptied group stays until it is deleted.
+_Avoid_: assembly, experiment, sub-setup, selection (a selection is whatever is picked right now; a group is saved with the setup)
+
 **Setup brief**:
 Instructions, in Markdown, for an AI assistant to write a setup file from a description of an experiment: the file's shape, every kind of component, and the table's conventions. The author copies it from the builder and pastes it as a prompt; the file the assistant writes opens like any other setup.
 _Avoid_: prompt, skill, AI instructions
