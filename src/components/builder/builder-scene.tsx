@@ -29,6 +29,8 @@ import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/compone
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
+import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
+import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
 import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
 import { useFrameDrawing } from "@/components/builder/use-frame-drawing";
 import { getTheme, setTheme } from "@/components/theme-toggle";
@@ -36,6 +38,10 @@ import {
   BEAM_COLORS,
   CONNECTION_KINDS,
   FINE_GRID_MM,
+  FINE_ROTATION_STEP_DEG,
+  ROTATION_STEP_DEG,
+  componentRadius,
+  handleSweep,
   FRAME_COLORS,
   GRID_SIZE_MM,
   bodyCentre,
@@ -62,6 +68,24 @@ import {
   type Corner,
   type Vec3,
 } from "@/components/builder/types";
+
+/** A turn by the rotation handle in flight. */
+type TurnState = {
+  /** each part the turn carries, as it stood at the press */
+  origins: Record<string, Pose>;
+  /** the point it turns about, [x, z] mm: one part's reference point, or a group's centre */
+  centre: [number, number];
+  /** the pointer's angle about the centre at the press, degrees */
+  startAngle: number;
+  /** how far it has turned, snapped */
+  turned: number;
+  started: boolean;
+};
+
+/** The angle of (x, z) about `centre`, degrees, counter-clockwise from above as yaw is. */
+function angleAbout([centreX, centreZ]: [number, number], x: number, z: number): number {
+  return (Math.atan2(-(z - centreZ), x - centreX) * 180) / Math.PI;
+}
 
 type DragState = {
   id: string;
@@ -246,6 +270,9 @@ export default function BuilderScene() {
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
+  const turnRef = useRef<TurnState | null>(null);
+  // the turn in flight, for drawing: its centre and how far it has gone
+  const [turning, setTurning] = useState<{ centre: [number, number]; turned: number } | null>(null);
   const frameDragRef = useRef<FrameDragState | null>(null);
   const frameReshapeRef = useRef<FrameReshapeState | null>(null);
   const hostRef = useRef<HTMLDivElement>(null);
@@ -274,6 +301,32 @@ export default function BuilderScene() {
     () => selectedComponents.map((component) => component.id),
     [selectedComponents],
   );
+  // One part gets a handle about its reference point, unless a beam sets its
+  // angle; several get one round them all. A particle in a trap turns with it.
+  const rotationHandle = useMemo((): RotationHandleSpec | null => {
+    if (selectedComponents.length === 1) {
+      const [component] = selectedComponents;
+      if (component.host) return null;
+      const locked = derivedAngleBeam(scene.beams, component);
+      return {
+        kind: "part",
+        component,
+        lockedBy: locked ? beamDisplayName(locked) : null,
+        rotating: turning !== null,
+      };
+    }
+    const centre = turning?.centre ?? turnCentre(scene, selectedIds);
+    if (!centre) return null;
+    // clear of every part: the farthest edge of a selection ring, and a little more
+    const reach = Math.max(
+      ...selectedComponents.map((component) => {
+        const [x, , z] = bodyCentre(component);
+        return Math.hypot(x - centre[0], z - centre[1]) + componentRadius(component);
+      }),
+    );
+    return { kind: "group", centre, radius: reach + 14, turned: turning?.turned ?? 0, rotating: turning !== null };
+  }, [scene, selectedComponents, selectedIds, turning]);
+
   const selectedBeam = useMemo(
     () => scene.beams.find((beam) => beam.id === selectedBeamId) ?? null,
     [scene.beams, selectedBeamId],
@@ -405,6 +458,28 @@ export default function BuilderScene() {
     [addingStops, announce, api, beamMode, connectDraft, drawing, selectedBeamId, selectedIds],
   );
 
+  // ---- the rotation handle --------------------------------------------------
+
+  const handleRotationHandlePointerDown = useCallback(
+    (event: ThreeEvent<PointerEvent>) => {
+      if (event.nativeEvent.button !== 0) return;
+      const current = sceneRef.current;
+      const centre = turnCentre(current, selectedIds);
+      const grab = tablePoint(event.ray);
+      if (!centre || !grab) return;
+      turnRef.current = {
+        origins: posesOf(current, selectedIds),
+        centre,
+        startAngle: angleAbout(centre, grab[0], grab[1]),
+        turned: 0,
+        started: false,
+      };
+      setTurning({ centre, turned: 0 });
+      setDragging(true);
+    },
+    [selectedIds],
+  );
+
   const handleComponentHover = useCallback((id: string | null) => {
     hoveredRef.current = id;
     setHoveredId(id);
@@ -449,6 +524,21 @@ export default function BuilderScene() {
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: PointerEvent) => {
+      const turn = turnRef.current;
+      if (turn) {
+        const step = event.shiftKey ? FINE_ROTATION_STEP_DEG : ROTATION_STEP_DEG;
+        const turned = handleSweep(turn.startAngle, angleAbout(turn.centre, x, z), step);
+        if (turned === turn.turned) return;
+        // like a move, the first real change earns the undo step
+        if (!turn.started) {
+          turn.started = true;
+          api.commitCheckpoint(sceneRef.current);
+        }
+        turn.turned = turned;
+        api.turnComponents(turn.origins, turn.centre, turned);
+        setTurning({ centre: turn.centre, turned });
+        return;
+      }
       const reshape = frameReshapeRef.current;
       if (reshape) {
         const frame = sceneRef.current.frames.find((entry) => entry.id === reshape.id);
@@ -570,6 +660,12 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
+      if (turnRef.current) {
+        turnRef.current = null;
+        setTurning(null);
+        setDragging(false);
+        return;
+      }
       if (frameDragRef.current || frameReshapeRef.current) {
         frameDragRef.current = null;
         frameReshapeRef.current = null;
@@ -1215,6 +1311,8 @@ export default function BuilderScene() {
           onSurfaceDrag={handleSurfaceDrag}
           onComponentPointerDown={handleComponentPointerDown}
           onComponentHover={handleComponentHover}
+          rotationHandle={rotationHandle}
+          onRotationHandlePointerDown={handleRotationHandlePointerDown}
           onConnectionPointerDown={handleConnectionPointerDown}
           onFramePointerDown={handleFramePointerDown}
           onCanvasReady={handleCanvasReady}

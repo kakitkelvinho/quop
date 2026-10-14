@@ -293,6 +293,13 @@ export function useBuilderScene() {
     [commit],
   );
 
+  /** A handle turn in flight: each part `degrees` round `centre` from its origin pose, with no undo step. */
+  const turnComponents = useCallback(
+    (origins: Record<string, groupEdits.Pose>, centre: [number, number], degrees: number) =>
+      preview((current) => groupEdits.turnComponents(current, origins, centre, degrees)),
+    [preview],
+  );
+
   const rotateComponents = useCallback(
     (ids: string[], direction: 1 | -1 = 1) =>
       commit((current) => groupEdits.rotateComponents(current, ids, direction)),
@@ -532,6 +539,7 @@ export function useBuilderScene() {
       translateComponents,
       nudgeComponents,
       rotateComponents,
+      turnComponents,
       deleteComponents,
       duplicateComponents,
       setComponentsHeight,
@@ -568,6 +576,7 @@ export function useBuilderScene() {
       translateComponents,
       nudgeComponents,
       rotateComponents,
+      turnComponents,
       deleteComponents,
       duplicateComponents,
       setComponentsHeight,
