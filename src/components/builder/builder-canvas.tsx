@@ -1239,7 +1239,7 @@ export default function BuilderCanvas({
           component={rotationHandle.component}
           color={palette.accent}
           dark={palette.mode === "dark"}
-          lockedBy={rotationHandle.lockedBy}
+          locked={rotationHandle.locked}
           rotating={rotationHandle.rotating}
           onPointerDown={onRotationHandlePointerDown}
         />

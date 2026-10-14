@@ -3942,9 +3942,8 @@ html[data-theme="dark"] .builderOrderBadge {
   color: #1a1d26;
 }
 
-/* the rotation handle's live angle, and the note on a part a beam angles */
-.builderAngleBadge,
-.builderLockChip {
+/* the rotation handle's live angle */
+.builderAngleBadge {
   display: inline-flex;
   align-items: center;
   height: 1.15rem;
@@ -3959,8 +3958,7 @@ html[data-theme="dark"] .builderOrderBadge {
   pointer-events: none;
 }
 
-html[data-theme="dark"] .builderAngleBadge,
-html[data-theme="dark"] .builderLockChip {
+html[data-theme="dark"] .builderAngleBadge {
   color: #1a1d26;
 }
 
