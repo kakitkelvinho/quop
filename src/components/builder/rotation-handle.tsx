@@ -12,7 +12,7 @@ import {
 } from "@/components/builder/types";
 
 // The rotation handle (#186, #199): a small bubble threaded on a circle about
-// the pivot, two arrowheads inside it. Drawn flat on the table, in the frame
+// the pivot, two arrowheads inside it, or a padlock when a beam sets the angle. Drawn flat on the table, in the frame
 // of the circle's centre: angles run counter-clockwise seen from above, 0
 // along local +x, as yaw does.
 
@@ -26,6 +26,11 @@ const BUBBLE_LENGTH_MM = 30;
 /** an arrowhead's length along the circle and half its width across it, mm */
 const HEAD_LENGTH_MM = 5;
 const HEAD_HALF_MM = 3;
+/** the padlock: its body's width along the circle and depth across it, and its shackle's radii, mm */
+const LOCK_BODY_WIDE_MM = 6.4;
+const LOCK_BODY_DEEP_MM = 4.4;
+const LOCK_SHACKLE_OUT_MM = 2.4;
+const LOCK_SHACKLE_IN_MM = 1.4;
 /** the faint circle a port's bubble is threaded on, mm wide */
 const SKEWER_MM = 1.6;
 /** the arrowheads: the order badges' ink, per theme */
@@ -97,6 +102,43 @@ function arrowheads(r: number): BufferGeometry {
   return geometry;
 }
 
+/**
+ * A padlock at angle 0 on the circle of radius r, its shackle pointing out
+ * from the centre: a block for the body and a half ring standing on it.
+ */
+function padlock(r: number): BufferGeometry {
+  const lift = LIFT_MM + 0.2;
+  // u out from the centre, v along the circle; the glyph is centred on the bubble
+  const top = (LOCK_BODY_DEEP_MM + LOCK_SHACKLE_OUT_MM + 1) / 2;
+  const base = top - LOCK_SHACKLE_OUT_MM - 1 - LOCK_BODY_DEEP_MM;
+  const rise = base + LOCK_BODY_DEEP_MM + 1; // the shackle's centre, its legs a millimetre clear of the body
+  const at = (u: number, v: number) => [r + u, lift, -v];
+  const positions: number[] = [];
+  const index: number[] = [];
+  const quad = (a: number[], b: number[], c: number[], d: number[]) => {
+    const k = positions.length / 3;
+    positions.push(...a, ...b, ...c, ...d);
+    index.push(k, k + 1, k + 2, k, k + 2, k + 3);
+  };
+  const w = LOCK_BODY_WIDE_MM / 2;
+  quad(at(base, -w), at(base, w), at(rise - 1, w), at(rise - 1, -w));
+  const [inner, outer] = [LOCK_SHACKLE_IN_MM, LOCK_SHACKLE_OUT_MM];
+  // the legs, then the arch over them
+  for (const side of [-1, 1]) {
+    quad(at(rise - 1, side * inner), at(rise - 1, side * outer), at(rise, side * outer), at(rise, side * inner));
+  }
+  const segments = 16;
+  for (let i = 0; i < segments; i += 1) {
+    const [t0, t1] = [(i / segments) * Math.PI, ((i + 1) / segments) * Math.PI];
+    const p = (radius: number, t: number) => at(rise + radius * Math.sin(t), radius * Math.cos(t));
+    quad(p(inner, t0), p(outer, t0), p(outer, t1), p(inner, t1));
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute("position", new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setIndex(index);
+  return geometry;
+}
+
 /** Geometry built once per input and disposed when it's replaced or unmounted. */
 function useGeometries<T extends Record<string, BufferGeometry>>(build: () => T, deps: unknown[]): T {
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,23 +163,25 @@ type BubbleProps = {
   color: string;
   dark: boolean;
   rotating: boolean;
+  /** a beam sets the angle: a padlock in place of the arrows, and the bubble won't drag */
+  locked?: boolean;
   /** shown beside the bubble while it is dragged */
   badge: string | null;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
 };
 
-function Bubble({ radius, angle, skewer, color, dark, rotating, badge, onPointerDown }: BubbleProps) {
+function Bubble({ radius, angle, skewer, color, dark, rotating, locked = false, badge, onPointerDown }: BubbleProps) {
   const [hover, setHover] = useState(false);
   const get = useThree((state) => state.get);
-  const active = hover || rotating;
+  const active = !locked && (hover || rotating);
   useEffect(() => {
-    if (!active) return;
+    if (!hover && !rotating) return;
     const { style } = get().gl.domElement;
-    style.cursor = rotating ? "grabbing" : "grab";
+    style.cursor = locked ? "not-allowed" : rotating ? "grabbing" : "grab";
     return () => {
       style.cursor = "";
     };
-  }, [active, get, rotating]);
+  }, [hover, get, locked, rotating]);
 
   const half = (BUBBLE_LENGTH_MM / 2 - BUBBLE_HALF_MM) / radius;
   const shapes = useGeometries(
@@ -145,10 +189,10 @@ function Bubble({ radius, angle, skewer, color, dark, rotating, badge, onPointer
       fill: arcBand(radius - BUBBLE_HALF_MM, radius + BUBBLE_HALF_MM, -half, half),
       start: cap(radius, -half, BUBBLE_HALF_MM),
       end: cap(radius, half, BUBBLE_HALF_MM),
-      heads: arrowheads(radius),
+      glyph: locked ? padlock(radius) : arrowheads(radius),
       ...(skewer ? { skewer: arcBand(radius - SKEWER_MM / 2, radius + SKEWER_MM / 2, -skewer, skewer, 0.3) } : {}),
     }),
-    [radius, half, skewer],
+    [radius, half, skewer, locked],
   );
   const ink = dark ? ARROW_INK.dark : ARROW_INK.light;
   // under the pointer, the accent lifts a little toward the ink
@@ -159,8 +203,9 @@ function Bubble({ radius, angle, skewer, color, dark, rotating, badge, onPointer
 
   const press = {
     onPointerDown: (event: ThreeEvent<PointerEvent>) => {
+      // a press on a locked bubble still lands on it, so it doesn't fall through and deselect
       event.stopPropagation();
-      onPointerDown(event);
+      if (!locked) onPointerDown(event);
     },
     onPointerOver: (event: ThreeEvent<PointerEvent>) => {
       event.stopPropagation();
@@ -181,7 +226,7 @@ function Bubble({ radius, angle, skewer, color, dark, rotating, badge, onPointer
           <meshBasicMaterial color={fill} {...OVER} />
         </mesh>
       ))}
-      <mesh geometry={shapes.heads} renderOrder={4}>
+      <mesh geometry={shapes.glyph} renderOrder={4}>
         <meshBasicMaterial color={ink} {...OVER} />
       </mesh>
       {badge !== null ? (
@@ -200,7 +245,7 @@ function Bubble({ radius, angle, skewer, color, dark, rotating, badge, onPointer
 
 /** Which handle the selection gets, worked out by the scene and drawn by the canvas. */
 export type RotationHandleSpec =
-  | { kind: "part"; component: BuilderComponent; lockedBy: string | null; rotating: boolean }
+  | { kind: "part"; component: BuilderComponent; locked: boolean; rotating: boolean }
   | { kind: "group"; centre: [number, number]; radius: number; turned: number; rotating: boolean };
 
 export type PartRotationHandleProps = {
@@ -208,8 +253,8 @@ export type PartRotationHandleProps = {
   /** the selection ring's colour, the theme's accent */
   color: string;
   dark: boolean;
-  /** the beam that sets this part's angle, if one does: no handle then, only a note saying so */
-  lockedBy: string | null;
+  /** a beam sets this part's angle: the bubble shows a padlock and won't turn it */
+  locked: boolean;
   /** being turned now */
   rotating: boolean;
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
@@ -222,20 +267,10 @@ export type PartRotationHandleProps = {
  * detector's window, a laser's opening) gets a faint quarter circle about
  * the port, off to its side, with the bubble on that.
  */
-export function PartRotationHandle({ component, color, dark, lockedBy, rotating, onPointerDown }: PartRotationHandleProps) {
+export function PartRotationHandle({ component, color, dark, locked, rotating, onPointerDown }: PartRotationHandleProps) {
   const ring = componentRadius(component);
   const centred = componentReferenceX(component) === 0;
   const [x, , z] = component.position;
-
-  if (lockedBy) {
-    return (
-      <Html position={[x, 0, z]} center zIndexRange={[0, 0]} className="builderHtmlLayer">
-        <span className="builderLockChip" style={{ transform: `translateY(${ring * 0.6 + 18}px)` }}>
-          Angle set by {lockedBy}
-        </span>
-      </Html>
-    );
-  }
 
   return (
     <group position={[x, 0, z]} rotation={[0, component.rotation * DEG, 0]}>
@@ -247,6 +282,7 @@ export function PartRotationHandle({ component, color, dark, lockedBy, rotating,
         color={color}
         dark={dark}
         rotating={rotating}
+        locked={locked}
         badge={rotating ? `${Math.round(component.rotation)}°` : null}
         onPointerDown={onPointerDown}
       />
