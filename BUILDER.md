@@ -331,6 +331,31 @@ angle from one. Setups from before version 3 open with no connections.
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
 
+**Import into this table merges; Open JSON… → Apply replaces.** The two stay
+apart so Apply keeps meaning one thing. Import into this table…, in the file
+menu, picks a `.json` setup, checks it as Open does (`checkSceneText`: the
+same limits and migrations), and merges it into what is on the table as one
+undo step (`mergeSetup` in `merge-setup.ts`), announcing what came in
+("Imported 12 parts, 3 beams into Group 2"). It completes the assembly
+workflow: build each experiment in its own file, Export group, then compose
+them on one table. Parts land at the file's own coordinates, never
+re-centred. A file's groups come in as they are; a file with none (any setup
+from before groups) comes in as one group named after the file, and a part in
+none of a file's groups stays ungrouped. A file's part with the id, type and
+place (within 0.5 mm on each axis) of a table part *is* that part: it isn't
+added again, and the table's part joins the file's groups, which is how a
+mirror shared by two exported groups comes back as one mirror. Any other
+clash of ids, for a part, frame, beam, connection or group, gets a fresh id,
+and every reference in the file follows it (beam stops, connection ends,
+group members, hosts). A beam whose stops are all such same parts, with the
+same id and path as a table beam, is that beam, and so for a connection. A
+file group with the id or name of a table group asks first: **Replace**
+takes the table's group off (its members, except those still in another
+group, and its inner beams and connections) and brings the file's in;
+**Add as a copy** brings it under a new id as "<name> 2"; **Cancel** leaves
+the table alone. A merge that would go over the setup limits is refused with
+a notice, and the table is left as it was.
+
 **Label size is the setup's.** The Label size button (a large and a small A) in the tool
 pill, beside the lightbulb, opens a Label size slider, 50–200 % in 5 % steps. It scales every
 component, connection and frame label whole (text, padding, corners, border
@@ -387,8 +412,8 @@ fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
 - **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
-  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, export PNG, load the example, clear the
-  table).
+  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, import a setup into this table, export PNG,
+  load the example, clear the table).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and name, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without

@@ -30,6 +30,8 @@ import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/compone
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
 import { groupSubset, leftOutNotice, visibility } from "@/components/builder/groups";
+import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
+import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
@@ -1084,6 +1086,59 @@ export default function BuilderScene() {
     announce("Saved.");
   }, [announce]);
 
+  /** an import waiting on what to do with a group the table already has */
+  const [pendingImport, setPendingImport] = useState<{
+    file: BuilderSceneData;
+    fileName: string;
+    names: string[];
+  } | null>(null);
+
+  const finishImport = useCallback(
+    (file: BuilderSceneData, fileName: string, onExisting?: OnExisting) => {
+      const result = mergeSetup(sceneRef.current, file, { fileName, onExisting });
+      if (!result.ok) {
+        announce(`Couldn't import ${fileName}: ${result.reason}`);
+        return;
+      }
+      api.replaceScene(result.scene);
+      announce(`${result.summary} ⌘Z undoes it.`);
+    },
+    [announce, api],
+  );
+
+  /** Import into this table: merge a setup file into what is here, as one undo step. */
+  const handleImport = useCallback(
+    (text: string | null, fileName: string) => {
+      if (text === null) {
+        announce(`Couldn't import ${fileName}: it's over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
+        return;
+      }
+      const check = checkSceneText(text);
+      if (!check.ok) {
+        announce(`Couldn't import ${fileName}: ${check.error}`);
+        return;
+      }
+      const existing = existingGroups(sceneRef.current, check.scene, fileName);
+      if (existing.length) {
+        setPendingImport({ file: check.scene, fileName, names: existing.map(({ table }) => table.name) });
+        return;
+      }
+      finishImport(check.scene, fileName);
+    },
+    [announce, finishImport],
+  );
+
+  const handleImportChoice = useCallback(
+    (choice: OnExisting | null) => {
+      const pending = pendingImport;
+      setPendingImport(null);
+      if (!pending) return;
+      if (choice === null) announce(`Didn't import ${pending.fileName}.`);
+      else finishImport(pending.file, pending.fileName, choice);
+    },
+    [announce, finishImport, pendingImport],
+  );
+
   /** A group as its own setup file, named after it; what it had to leave out is announced. */
   const handleExportGroup = useCallback(
     (id: string) => {
@@ -1615,6 +1670,9 @@ export default function BuilderScene() {
         onSetGroupHidden={handleSetGroupHidden}
         onDeleteGroup={handleDeleteGroup}
         onExportGroup={handleExportGroup}
+        onImport={handleImport}
+        importChoice={pendingImport && { names: pendingImport.names }}
+        onImportChoice={handleImportChoice}
         onSetGroupMembership={handleSetGroupMembership}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleDistances={() => setShowDistances((current) => !current)}

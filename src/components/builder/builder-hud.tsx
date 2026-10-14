@@ -145,6 +145,11 @@ export type BuilderHudProps = {
   onDeleteGroup: (id: string) => void;
   /** download a group as its own setup file, `<name>.json` */
   onExportGroup: (id: string) => void;
+  /** a setup file's text to merge into the table; null when the file was too big to read */
+  onImport: (text: string | null, fileName: string) => void;
+  /** set while an import waits on what to do with a group the table already has */
+  importChoice: { names: string[] } | null;
+  onImportChoice: (choice: "replace" | "copy" | null) => void;
   onSetGroupMembership: (groupId: string, id: string, isMember: boolean) => void;
   onToggleLabels: () => void;
   onToggleDistances: () => void;
@@ -618,6 +623,52 @@ function GroupList({
 }
 
 /**
+ * Asked when an imported file brings a group the table already has: replace
+ * it with the file's, add the file's as a copy, or cancel. Esc cancels.
+ */
+function ImportChoiceDialog({
+  names,
+  onChoose,
+}: {
+  names: string[];
+  onChoose: (choice: "replace" | "copy" | null) => void;
+}) {
+  useEscapeCloses(useCallback(() => onChoose(null), [onChoose]));
+  const which = names.length === 1 ? names[0] : `${names.length} groups`;
+  return (
+    <div className="builderImportChoice__backdrop">
+      <section
+        className="builderIsland builderImportChoice"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="builderImportChoiceTitle"
+        aria-describedby="builderImportChoiceText"
+      >
+        <h2 id="builderImportChoiceTitle" className="builderAbout__title">
+          {names.length === 1 ? `${names[0]} is already on the table` : "These groups are already on the table"}
+        </h2>
+        <p id="builderImportChoiceText" className="builderAbout__description">
+          {names.length === 1
+            ? "Replace it with the file's, or add the file's beside it as a copy."
+            : `${names.join(", ")}. Replace them with the file's, or add the file's beside them as copies.`}
+        </p>
+        <div className="builderBrief__actions">
+          <button type="button" className="builderButton builderButton--primary" autoFocus onClick={() => onChoose("replace")}>
+            Replace {which}
+          </button>
+          <button type="button" className="builderButton" onClick={() => onChoose("copy")}>
+            Add as a copy
+          </button>
+          <button type="button" className="builderButton" onClick={() => onChoose(null)}>
+            Cancel
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
  * Esc closes the panel. Capture, and stop, so this Esc closes only the panel:
  * the scene's Esc chain peels one layer per press and would otherwise also deselect.
  */
@@ -808,12 +859,24 @@ function JsonPanel({
 function FileMenu({
   onSave,
   onShowJson,
+  onImport,
   onExportPng,
   onResetExample,
   onClear,
-}: Pick<BuilderHudProps, "onSave" | "onExportPng" | "onResetExample" | "onClear"> & {
+}: Pick<BuilderHudProps, "onSave" | "onImport" | "onExportPng" | "onResetExample" | "onClear"> & {
   onShowJson: () => void;
 }) {
+  const importRef = useRef<HTMLInputElement>(null);
+  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > SCENE_TEXT_MAX_BYTES) {
+      onImport(null, file.name);
+      return;
+    }
+    onImport(await file.text(), file.name);
+  };
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -860,6 +923,16 @@ function FileMenu({
           <button type="button" role="menuitem" onClick={run(onShowJson)}>
             Open JSON…
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              importRef.current?.click();
+            }}
+          >
+            Import into this table…
+          </button>
           <button type="button" role="menuitem" onClick={run(onExportPng)}>
             Export view as PNG
           </button>
@@ -872,6 +945,9 @@ function FileMenu({
           </button>
         </div>
       ) : null}
+      {/* kept out of the list, which unmounts as the picker opens; no accept
+          filter, as in the JSON panel: the check turns away anything else */}
+      <input ref={importRef} type="file" hidden onChange={(event) => void importFile(event)} />
     </div>
   );
 }
@@ -1183,6 +1259,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <FileMenu
           onSave={props.onSave}
           onShowJson={showJson}
+          onImport={props.onImport}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
@@ -1380,6 +1457,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         />
       ) : null}
         </div>
+      ) : null}
+
+      {props.importChoice ? (
+        <ImportChoiceDialog names={props.importChoice.names} onChoose={props.onImportChoice} />
       ) : null}
 
       <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">

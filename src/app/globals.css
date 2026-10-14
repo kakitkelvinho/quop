@@ -3555,6 +3555,30 @@ html[data-theme="dark"] .builderButton--primary {
   list-style: none;
 }
 
+/* asked when an imported file brings a group the table already has */
+.builderImportChoice__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(0 0 0 / 0.18);
+}
+
+.builderImportChoice {
+  position: static;
+  display: grid;
+  gap: 0.6rem;
+  width: min(26rem, 100%);
+  padding: 1rem 1.1rem;
+}
+
+.builderImportChoice .builderAbout__title,
+.builderImportChoice .builderAbout__description {
+  margin: 0;
+}
+
 /* a group's row: its colour is a picker, its name edits in place, its ⋯ opens a menu */
 .builderGroupRow__swatch {
   position: relative;

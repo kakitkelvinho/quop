@@ -111,7 +111,7 @@ export function nextGroupName(groups: Group[], base = "Group"): string {
 }
 
 /** The first beam colour no group wears yet, or the next round the palette. */
-function nextGroupColor(groups: Group[]): string {
+export function nextGroupColor(groups: Group[]): string {
   const worn = new Set(groups.map((group) => group.color));
   return BEAM_COLORS.find((color) => !worn.has(color)) ?? BEAM_COLORS[groups.length % BEAM_COLORS.length];
 }
