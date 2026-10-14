@@ -312,7 +312,14 @@ so it never reads as light in free space. A fibre at a fibre collimator, and
 any connection at a photodiode (fibre or coax: its one jack is on the back of
 the head), takes the place of the yellow stub the part draws: it leaves from
 the same connector along the same curve, curling to whichever side the other
-end is on, so it never leaves the head at a sharp angle. A connection has its own colour and an optional label.
+end is on, so it never leaves the head at a sharp angle. A cable plugs into
+an instrument's back, where its signal or power is: a camera's or a
+spectrometer's back face, a single-photon detector's SMA outputs, a laser's
+back, a delay line's drive knob, the SMA on top of an AOM or EOM (it rises
+out of it and bends over), or the time tagger's front-panel input nearest
+the other end. A fibre plugs into a spectrometer's or a single-photon
+detector's fibre port. It leaves straight out of the connector before it
+droops to the table. A connection has its own colour and an optional label.
 Its length, in metres, is optional too, and it is the only length it has: the
 drawn route is not measured. With a length, the inspector shows the delay:
 L·n/c along a fibre (n defaults to 1.468, a silica fibre) and L/(VF·c) along
