@@ -1707,6 +1707,7 @@ export default function BuilderScene() {
         onSetGroupColor={(id, color) => api.setGroupColor(id, color, false)}
         onSetGroupHidden={handleSetGroupHidden}
         onDeleteGroup={handleDeleteGroup}
+        onGroupSelected={groupSelected}
         onExportGroup={handleExportGroup}
         onImport={handleImport}
         importChoice={pendingImport && { names: pendingImport.names }}

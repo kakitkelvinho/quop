@@ -785,6 +785,10 @@ export function GroupInspector({
   onDelete,
   onSetHeight,
   onSetMountColor,
+  group,
+  canGroup,
+  onGroup,
+  onUngroup,
 }: {
   selected: BuilderComponent[];
   onRotate: (direction: 1 | -1) => void;
@@ -792,6 +796,13 @@ export function GroupInspector({
   onDelete: () => void;
   onSetHeight: (height: number) => void;
   onSetMountColor: (color: string) => void;
+  /** the group these parts are, exactly, if any: Ungroup in place of Group */
+  group: Group | null;
+  /** false while a tool (a beam, a frame, a part to place) holds the table, as for ⌘G */
+  canGroup: boolean;
+  /** ⌘G's own action */
+  onGroup: () => void;
+  onUngroup: (id: string) => void;
 }) {
   const height = selected[0].position[1];
   const sharedHeight = selected.every((component) => component.position[1] === height && !component.host);
@@ -814,6 +825,39 @@ export function GroupInspector({
           <IconButton icon="rotateLeft" label="Rotate −15° (Shift R)" onClick={() => onRotate(-1)} />
           <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
         </span>
+      </div>
+      <div className="builderInspector__turn">
+        {group ? (
+          <>
+            <span className="builderInspector__group">
+              <span className="builderBeamRow__dot" style={{ background: group.color }} />
+              <strong>{group.name}</strong>
+            </span>
+            <button
+              type="button"
+              className="builderButton"
+              title={`Ungroup ${group.name}; its parts stay on the table`}
+              disabled={!canGroup}
+              onClick={() => onUngroup(group.id)}
+            >
+              Ungroup
+            </button>
+          </>
+        ) : (
+          <>
+            <span>Keep them together</span>
+            <button
+              type="button"
+              className="builderButton"
+              title="Group the selection (⌘G)"
+              aria-keyshortcuts="Meta+G Control+G"
+              disabled={!canGroup}
+              onClick={onGroup}
+            >
+              Group
+            </button>
+          </>
+        )}
       </div>
       {sharedHeight ? (
         <NumberField
