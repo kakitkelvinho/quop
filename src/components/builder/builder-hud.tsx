@@ -12,7 +12,7 @@ import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
-import { PANEL_LAYER_CLASS, usePanel, usePanelsMove } from "@/components/builder/use-panel-drag";
+import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import {
   BeamDraftInspector,
@@ -1238,6 +1238,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   const { onCloseTray } = props;
   const panelsMove = usePanelsMove();
   const inspectorPanel = usePanel("inspector");
+  useRememberedPanels();
   // when the workspace shrinks, moved panels slide back in so their bars can be grabbed
   const panelLayerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
