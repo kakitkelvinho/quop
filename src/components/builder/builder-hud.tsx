@@ -1042,8 +1042,18 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
   return ref;
 }
 
-/** The lightbulb: a bubble of lighting settings under the tool pill. */
-function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (patch: Partial<Lighting>) => void }) {
+/** The lightbulb: a bubble of how the table is rendered, under the tool pill. */
+function LightingMenu({
+  lighting,
+  onChange,
+  lightGraphics,
+  onToggleQuality,
+}: {
+  lighting: Lighting;
+  onChange: (patch: Partial<Lighting>) => void;
+  lightGraphics: boolean;
+  onToggleQuality: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
 
@@ -1086,6 +1096,10 @@ function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (p
               onChange={(event) => onChange({ shadows: event.target.checked })}
             />
           </label>
+          <label className="builderLighting__toggle" title="Simpler drawing, for a slow computer">
+            Light graphics
+            <input type="checkbox" role="switch" checked={lightGraphics} onChange={onToggleQuality} />
+          </label>
         </div>
       ) : null}
     </div>
@@ -1093,14 +1107,32 @@ function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (p
 }
 
 /**
- * Label size: a bubble with the labels' size, saved with the setup. A drag
- * previews as it moves and is one undo step: its first change takes the snapshot.
+ * Show: a bubble of what is drawn on the table besides the setup, one switch
+ * each: posts, grid, labels (with their size, which is saved with the setup)
+ * and beam distances. A size drag previews as it moves and is one undo step:
+ * its first change takes the snapshot.
  */
-function LabelMenu({
+function ShowMenu({
+  posts,
+  grid,
+  labels,
+  distances,
+  onTogglePosts,
+  onToggleGrid,
+  onToggleLabels,
+  onToggleDistances,
   scale,
   onBegin,
   onChange,
 }: {
+  posts: boolean;
+  grid: boolean;
+  labels: boolean;
+  distances: boolean;
+  onTogglePosts: () => void;
+  onToggleGrid: () => void;
+  onToggleLabels: () => void;
+  onToggleDistances: () => void;
   scale: number;
   onBegin: () => void;
   onChange: (scale: number) => void;
@@ -1117,16 +1149,28 @@ function LabelMenu({
       <button
         type="button"
         className={`builderIconBtn${open ? " is-active" : ""}`}
-        aria-label="Label size"
+        aria-label="Show"
         aria-expanded={open}
         aria-haspopup="dialog"
-        title="Label size"
+        title="Show"
         onClick={() => setOpen((current) => !current)}
       >
-        <Icon name="labelSize" />
+        <Icon name="eye" />
       </button>
       {open ? (
-        <div className="builderLighting__bubble" role="dialog" aria-label="Label size">
+        <div className="builderLighting__bubble" role="dialog" aria-label="Show">
+          <label className="builderLighting__toggle">
+            Posts
+            <input type="checkbox" role="switch" checked={posts} onChange={onTogglePosts} />
+          </label>
+          <label className="builderLighting__toggle">
+            Grid
+            <input type="checkbox" role="switch" checked={grid} onChange={onToggleGrid} />
+          </label>
+          <label className="builderLighting__toggle">
+            Labels
+            <input type="checkbox" role="switch" checked={labels} onChange={onToggleLabels} />
+          </label>
           <label className="builderField">
             <span className="builderField__label">
               Label size
@@ -1150,6 +1194,10 @@ function LabelMenu({
               onKeyUp={end}
               onBlur={end}
             />
+          </label>
+          <label className="builderLighting__toggle">
+            Beam distances
+            <input type="checkbox" role="switch" checked={distances} onChange={onToggleDistances} />
           </label>
         </div>
       ) : null}
@@ -1410,10 +1458,25 @@ export default function BuilderHud(props: BuilderHudProps) {
           <div className="builderHud__tools" data-guide="tools">
             <div className="builderIsland" role="toolbar" aria-label="Tools">
               <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
-              <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
-              <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
-              <LightingMenu lighting={props.lighting} onChange={props.onLightingChange} />
-              <LabelMenu scale={props.labelScale} onBegin={props.onCheckpoint} onChange={props.onLabelScaleChange} />
+              <ShowMenu
+                posts={props.showPosts}
+                grid={props.showGrid}
+                labels={props.showLabels}
+                distances={props.showDistances}
+                onTogglePosts={props.onTogglePosts}
+                onToggleGrid={props.onToggleGrid}
+                onToggleLabels={props.onToggleLabels}
+                onToggleDistances={props.onToggleDistances}
+                scale={props.labelScale}
+                onBegin={props.onCheckpoint}
+                onChange={props.onLabelScaleChange}
+              />
+              <LightingMenu
+                lighting={props.lighting}
+                onChange={props.onLightingChange}
+                lightGraphics={props.quality === "light"}
+                onToggleQuality={props.onToggleQuality}
+              />
               <span className="builderIsland__sep" />
               <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
               <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
@@ -1558,20 +1621,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         </span>
         <IconButton icon="fit" label="Fit" onClick={props.onFit} />
         <span className="builderIsland__sep" />
-        <IconButton icon="labels" label="Labels" active={props.showLabels} onClick={props.onToggleLabels} />
-        <IconButton
-          icon="ruler"
-          label="Beam distances"
-          active={props.showDistances}
-          onClick={props.onToggleDistances}
-        />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        <IconButton
-          icon="bolt"
-          label="Light graphics (faster)"
-          active={props.quality === "light"}
-          onClick={props.onToggleQuality}
-        />
         {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
