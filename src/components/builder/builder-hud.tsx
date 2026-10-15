@@ -11,7 +11,7 @@ import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
-import { PanelBar } from "@/components/builder/panel-frame";
+import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import {
@@ -352,6 +352,7 @@ function BeamList({
     >
       <PanelBar title="Beams" titleId="builderBeamsTitle" {...panel.bar} />
       {list}
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
 }
@@ -447,6 +448,7 @@ function FrameList({
           );
         })}
       </ul>
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
 }
@@ -658,6 +660,7 @@ function GroupList({
           </li>
         ))}
       </ul>
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
 }
@@ -776,6 +779,7 @@ function BriefPanel({
           <Icon name="close" size={16} />
         </button>
       )}
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </aside>
   );
 }
@@ -914,6 +918,7 @@ function JsonPanel({
           <Icon name="close" size={16} />
         </button>
       )}
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </aside>
   );
 }
@@ -1578,6 +1583,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           >
             <Icon name="close" size={16} />
           </button>
+          {inspectorPanel.resize ? <PanelResize {...inspectorPanel.resize} /> : null}
         </aside>
       ) : null}
 

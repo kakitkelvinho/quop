@@ -8,6 +8,7 @@ import {
   panelState,
   panelsVersion,
   resetPanels,
+  resizePanelTo,
   setPanelView,
   subscribePanels,
   workspaceBounds,
@@ -103,5 +104,14 @@ describe("the panels", () => {
     keepPanelsInside({ width: 1000, height: 733 });
     stop();
     assert.deepEqual([heard, workspaceBounds()], [1, { width: 1000, height: 733 }]);
+  });
+
+  it("keep a resized panel's size, and forget it on reset", () => {
+    resizePanelTo("frames", rect);
+    assert.deepEqual(panelState("frames"), { rect, sized: true });
+    movePanelTo("frames", { ...rect, x: 40 });
+    assert.equal(panelState("frames").sized, true);
+    resetPanels();
+    assert.deepEqual(panelState("frames"), {});
   });
 });

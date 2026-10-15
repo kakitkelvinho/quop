@@ -9,9 +9,12 @@ import {
   PANEL_SNAP_PX,
   PANEL_MAX_BOTTOM_PX,
   PANEL_MAX_TOP_PX,
+  PANEL_MIN_H,
+  PANEL_MIN_W,
   clampPanel,
   maximisedRect,
   movePanel,
+  resizePanel,
   snapPanel,
   wholeRect,
 } from "./panel-geometry.ts";
@@ -158,5 +161,39 @@ describe("a maximised panel", () => {
   it("keeps its bar in a tiny workspace", () => {
     const { w, h } = maximisedRect({ width: 50, height: 100 });
     assert.deepEqual([w, h], [PANEL_KEEP_PX, PANEL_BAR_PX]);
+  });
+});
+
+describe("resizing a panel", () => {
+  it("moves only the edge it is dragged by, and keeps its top-left corner", () => {
+    assert.deepEqual(resizePanel(panel, "e", 40, 70, workspace), { ...panel, w: 304 });
+    assert.deepEqual(resizePanel(panel, "s", 40, 70, workspace), { ...panel, h: 470 });
+    assert.deepEqual(resizePanel(panel, "se", 40, 70, workspace), { ...panel, w: 304, h: 470 });
+  });
+
+  it("never goes below the minimum size", () => {
+    assert.deepEqual(resizePanel(panel, "se", -1000, -1000, workspace), { ...panel, w: PANEL_MIN_W, h: PANEL_MIN_H });
+  });
+
+  it("stops at the workspace's right and bottom edges", () => {
+    const { w, h } = resizePanel(panel, "se", 5000, 5000, workspace);
+    assert.deepEqual([w, h], [workspace.width - panel.x, workspace.height - panel.y]);
+  });
+
+  it("keeps the minimum where the workspace leaves less room", () => {
+    const near = { ...panel, x: 1200, y: 700 };
+    const { w, h } = resizePanel(near, "se", 0, 0, workspace);
+    assert.deepEqual([w, h], [PANEL_MIN_W, PANEL_MIN_H]);
+  });
+
+  it("is whole pixels", () => {
+    assert.deepEqual(resizePanel(panel, "se", 10.4, 10.6, workspace), { ...panel, w: 274, h: 411 });
+  });
+
+  it("still keeps the bar in reach", () => {
+    // a panel hanging off the left edge, made narrower: it slides in to keep 90 px of its bar
+    const hanging = { ...panel, x: PANEL_KEEP_PX - panel.w };
+    const resized = resizePanel(hanging, "e", -60, 0, workspace);
+    assert.deepEqual([resized.w, resized.x], [204, PANEL_KEEP_PX - 204]);
   });
 });

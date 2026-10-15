@@ -498,7 +498,13 @@ the workspace below the toolbars, and a maximised panel can't be dragged.
 Each undoes the other, and the same button restores. A minimised Inspector
 stays minimised as the selection changes, and its bar says what it holds:
 "Inspector: Mirror 3", a beam's, frame's or connection's name, or
-"Inspector: 4 parts". The bar replaces the panel's own heading, and the panel is still
+"Inspector: 4 parts". A panel's right edge, bottom edge and bottom-right
+corner resize it, down to 180 × 90 px and no further than the workspace's
+right and bottom edges (not while minimised or maximised). Until it is
+resized, a moved panel's height follows its content, up to its own cap and
+the workspace's bottom; once resized it keeps its size. Whatever its size,
+the panel's box clips and its contents scroll inside it, so its border stays
+whole. The bar replaces the panel's own heading, and the panel is still
 labelled by it. Dragging the bar with the left button moves the panel
 anywhere in the workspace; until then it sits where it always has. The panel
 last pressed comes to the front, and every panel sits in one layer under the
