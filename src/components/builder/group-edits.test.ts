@@ -287,7 +287,7 @@ describe("setting a group's height", () => {
     const scene = bench([part("m", "mirror-mount", 0, 0), part("s", "spectrometer", 100, 0), part("l", "lens", 0, 100)]);
     const after = setComponentsHeight(scene, ["m", "s", "l"], 20);
     assert.deepEqual(where(after, "m"), [0, 27, 0]);
-    assert.deepEqual(where(after, "s"), [100, 100, 0]);
+    assert.deepEqual(where(after, "s"), [100, 50, 0]);
     assert.deepEqual(where(after, "l"), [0, 20, 100]);
   });
 });

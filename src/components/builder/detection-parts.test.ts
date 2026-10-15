@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { parseScene, serializeScene } from "./types.ts";
+import { clampHeight, heightRange, parseScene, serializeScene } from "./types.ts";
 
 // #107: the single-photon detector and the time tagger are new types, not a
 // new schema, so a version-2 file holding them opens and saves unchanged.
@@ -47,5 +47,21 @@ describe("a setup with a single-photon detector and a time tagger", () => {
   it("gives the same setup when saved and opened again", () => {
     const setup = open();
     assert.deepEqual(parseScene(JSON.parse(serializeScene(setup))), setup);
+  });
+});
+
+describe("a spectrometer's height", () => {
+  it("can be raised to its input slit's, as a camera's can", () => {
+    assert.deepEqual(heightRange("spectrometer"), [50, 300]);
+    assert.equal(clampHeight("spectrometer", 150), 150);
+  });
+
+  it("is kept when a setup is opened", () => {
+    const setup = parseScene({
+      version: 12,
+      components: [{ id: "spec", type: "spectrometer", position: [0, 150, 0], rotation: 0 }],
+      beams: [],
+    });
+    assert.equal(setup?.components[0].position[1], 150);
   });
 });
