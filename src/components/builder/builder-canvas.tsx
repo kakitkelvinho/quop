@@ -150,21 +150,24 @@ const FIT_INSET_Y_PX = 64;
 /** the name tags stand above the parts in screen pixels, not millimetres */
 const FIT_LABEL_PX = 28;
 
-/** The least and most labels are scaled by the zoom, so they stay readable zoomed out and don't swamp the view zoomed in. */
-const LABEL_ZOOM_MIN = 0.6;
-const LABEL_ZOOM_MAX = 2.5;
+/** The least and most labels are scaled by the zoom: zoomed out they keep their set size, so they stay readable; zoomed in they grow up to 9×. */
+const LABEL_ZOOM_MIN = 1;
+const LABEL_ZOOM_MAX = 9;
 
 /**
- * Labels grow and shrink with the zoom, as a label stuck on the table would:
- * at the fitted view they are their set size, twice the zoom twice the size,
- * held within LABEL_ZOOM_MIN and LABEL_ZOOM_MAX. It sets --zoom-scale on the
- * element drei's Html labels sit in, which the CSS multiplies in.
+ * Labels grow with the zoom, as a label stuck on the table would: at the
+ * fitted view they are their set size, twice the zoom twice the size, up to
+ * LABEL_ZOOM_MAX; zoomed out past the fit they keep their set size. It sets --zoom-scale on the
+ * element drei's Html labels sit in (Html's own target: `events.connected`,
+ * else the canvas's parent), which the CSS multiplies in.
  */
 function LabelZoom() {
   const gl = useThree((state) => state.gl);
+  // where drei's Html puts the labels: the canvas's outer container, not its parent
+  const connected = useThree((state) => state.events.connected) as HTMLElement | undefined;
   const last = useRef(0);
   useFrame(({ camera }) => {
-    const host = gl.domElement.parentElement;
+    const host = connected ?? gl.domElement.parentElement;
     const fit = camera.userData.fitZoom;
     if (!host || !(camera instanceof OrthographicCamera) || typeof fit !== "number") return;
     const scale = Math.min(LABEL_ZOOM_MAX, Math.max(LABEL_ZOOM_MIN, camera.zoom / fit));
