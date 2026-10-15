@@ -22,6 +22,7 @@ const FIXTURES = [
   "setup-v10.json",
   "setup-v11.json",
   "setup-v12.json",
+  "setup-v13.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -367,9 +368,10 @@ describe("setup-v11.json, the first version with labelScale", () => {
 });
 
 describe("setup-v12.json, the first version with groups", () => {
-  it("is saved exactly as it opens", () => {
+  it("is saved exactly as it opens, but for the version", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
-    assert.equal(`${serializeScene(open("setup-v12.json"))}\n`, text);
+    const saved = serializeScene(open("setup-v12.json")).replace('"version": 13,', '"version": 12,');
+    assert.equal(`${saved}\n`, text);
   });
 
   it("is v11's setup plus two groups sharing a mirror and a hidden one", () => {
@@ -398,5 +400,31 @@ describe("setup-v12.json, the first version with groups", () => {
     for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v12.json"))) {
       assert.deepEqual(open(name).groups, [], name);
     }
+  });
+});
+
+describe("setup-v13.json, the first version with a sample off its stage", () => {
+  it("is saved exactly as it opens", () => {
+    const text = readFileSync(new URL("./setup-fixtures/setup-v13.json", import.meta.url), "utf8");
+    assert.equal(`${serializeScene(open("setup-v13.json"))}\n`, text);
+  });
+
+  it("is v12's setup with the sample drawn floating", () => {
+    const setup = open("setup-v13.json");
+    assert.equal(setup.components.find(({ id }) => id === "sample")?.stageHidden, true);
+    const components = setup.components.map((component) => {
+      const rest = { ...component };
+      delete rest.stageHidden;
+      return rest;
+    });
+    assert.deepEqual({ ...setup, components }, open("setup-v12.json"));
+  });
+
+  it("opens every older setup with every sample on its stage, even one saved with the flag", () => {
+    for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v13.json"))) {
+      assert.ok(open(name).components.every(({ stageHidden }) => stageHidden === undefined), name);
+    }
+    const early = parseScene({ ...readSaved("setup-v13.json"), version: 12 });
+    assert.equal(early?.components.find(({ id }) => id === "sample")?.stageHidden, undefined);
   });
 });

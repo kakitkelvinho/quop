@@ -77,6 +77,12 @@ export type BuilderComponent = {
   color?: string;
   /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
   opacity?: number;
+  /**
+   * sample only: true draws it floating, without its XYZ stage and post,
+   * whatever the view's Posts toggle says; stored only when true, missing in
+   * setups from before version 13
+   */
+  stageHidden?: true;
   label?: string;
   /** lens only */
   lensShape?: LensShape;
@@ -209,7 +215,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 12 as const;
+export const SCENE_VERSION = 13 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -330,7 +336,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     tag: "Sample",
     top: 18,
     minHeight: 13,
-    radius: 24,
+    radius: 32, // wide enough to take in the XYZ stage it stands on
   },
   "paul-trap": {
     label: "Paul trap",
@@ -1607,6 +1613,7 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   if (type === "sample") {
     const opacity = finiteNumber(raw.opacity);
     if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
+    if (version >= 13 && raw.stageHidden === true) component.stageHidden = true;
   }
   if (type === "particle") {
     if (typeof raw.host === "string") component.host = raw.host;
@@ -1845,7 +1852,8 @@ export function labelText(raw: unknown): string | undefined {
  * those from before version 10 saved a part with a port by its body's centre,
  * and open with it moved to its port, exactly where it was;
  * those from before version 11 open with labels at their standard size;
- * those from before version 12 have no groups and open with none.
+ * those from before version 12 have no groups and open with none;
+ * those from before version 13 open with every sample on its stage.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;

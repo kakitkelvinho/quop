@@ -687,6 +687,25 @@ export function ComponentInspector({
             onBegin={onCheckpoint}
             onChange={(next) => onUpdate({ opacity: next }, false)}
           />
+          {/* its own switch, apart from the view's Posts toggle */}
+          <div className="builderChoice" role="group" aria-label="Stage">
+            <button
+              type="button"
+              className="builderButton"
+              aria-pressed={!component.stageHidden}
+              onClick={() => onUpdate({ stageHidden: undefined })}
+            >
+              On stage
+            </button>
+            <button
+              type="button"
+              className="builderButton"
+              aria-pressed={Boolean(component.stageHidden)}
+              onClick={() => onUpdate({ stageHidden: true })}
+            >
+              Floating
+            </button>
+          </div>
         </>
       ) : null}
       {component.type === "particle" ? (
