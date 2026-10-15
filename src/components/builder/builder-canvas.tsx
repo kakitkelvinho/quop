@@ -151,6 +151,34 @@ const FIT_INSET_Y_PX = 64;
 /** the name tags stand above the parts in screen pixels, not millimetres */
 const FIT_LABEL_PX = 28;
 
+/** The least and most labels are scaled by the zoom: zoomed out they keep their set size, so they stay readable; zoomed in they grow up to 9×. */
+const LABEL_ZOOM_MIN = 1;
+const LABEL_ZOOM_MAX = 9;
+
+/**
+ * Labels grow with the zoom, as a label stuck on the table would: at the
+ * fitted view they are their set size, twice the zoom twice the size, up to
+ * LABEL_ZOOM_MAX; zoomed out past the fit they keep their set size. It sets --zoom-scale on the
+ * element drei's Html labels sit in (Html's own target: `events.connected`,
+ * else the canvas's parent), which the CSS multiplies in.
+ */
+function LabelZoom() {
+  const gl = useThree((state) => state.gl);
+  // where drei's Html puts the labels: the canvas's outer container, not its parent
+  const connected = useThree((state) => state.events.connected) as HTMLElement | undefined;
+  const last = useRef(0);
+  useFrame(({ camera }) => {
+    const host = connected ?? gl.domElement.parentElement;
+    const fit = camera.userData.fitZoom;
+    if (!host || !(camera instanceof OrthographicCamera) || typeof fit !== "number") return;
+    const scale = Math.min(LABEL_ZOOM_MAX, Math.max(LABEL_ZOOM_MIN, camera.zoom / fit));
+    if (Math.abs(scale - last.current) < 0.005) return;
+    last.current = scale;
+    host.style.setProperty("--zoom-scale", scale.toFixed(3));
+  });
+  return null;
+}
+
 function CameraRig({
   view,
   fitToken,
@@ -217,6 +245,7 @@ function CameraRig({
     const usableWidth = Math.max(size.width - 2 * FIT_INSET_X_PX, 1);
     const usableHeight = Math.max(size.height - 2 * FIT_INSET_Y_PX - FIT_LABEL_PX, 1);
     cam.zoom = Math.min(usableWidth / spanX, usableHeight / spanY) * 0.96;
+    cam.userData.fitZoom = cam.zoom;
     cam.updateProjectionMatrix();
 
     // Slide the view so the box sits mid-screen (a little low, leaving the
@@ -1312,6 +1341,8 @@ export default function BuilderCanvas({
       dpr={settings.dpr}
     >
       <CanvasHandle onReady={onCanvasReady} />
+      {/* before the labels, so a zoom sizes them before they are placed */}
+      <LabelZoom />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
       <Lights
@@ -1428,6 +1459,7 @@ export default function BuilderCanvas({
                 points={points}
                 lengths={beamLegLengthsMm(components, beam)}
                 color={beam.color}
+                width={beam.width ?? BEAM_WIDTH_MM}
                 faded={ghost}
               />
             ) : null}
