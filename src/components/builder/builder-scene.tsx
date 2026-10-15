@@ -38,6 +38,7 @@ import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
 import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
 import { useFrameDrawing } from "@/components/builder/use-frame-drawing";
 import { getTheme, setTheme } from "@/components/theme-toggle";
+import { type BeamPick, pickBeam } from "@/components/builder/beam-pick";
 import {
   BEAM_COLORS,
   CONNECTION_KINDS,
@@ -1500,6 +1501,27 @@ export default function BuilderScene() {
     [api, selectedIds],
   );
 
+  // A click on the table's beams picks the nearest; clicking the same spot
+  // again moves on to the next beam there, for beams that overlap.
+  const beamPickRef = useRef<BeamPick | null>(null);
+  const handleBeamClick = useCallback(
+    (ids: string[], clientX: number, clientY: number) => {
+      if (ids.length === 0) return;
+      const pick = pickBeam(beamPickRef.current, ids, clientX, clientY);
+      beamPickRef.current = pick;
+      const id = pick.ids[pick.index];
+      setSelectedBeamId(id);
+      setSelection([]);
+      setSelectedConnectionId(null);
+      setSelectedFrameId(null);
+      const beam = sceneRef.current.beams.find((entry) => entry.id === id);
+      if (beam && ids.length > 1) {
+        announce(`${beamDisplayName(beam)}: beam ${pick.index + 1} of ${ids.length} here. Click again for the next.`);
+      }
+    },
+    [announce],
+  );
+
   const handleSelectBeam = useCallback((id: string) => {
     setSelectedBeamId((current) => (current === id ? null : id));
     setSelection([]);
@@ -1532,6 +1554,8 @@ export default function BuilderScene() {
           selectedFrameId={selectedFrame?.id ?? null}
           ghostFrameId={ghostFrameId}
           framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops && !drawing}
+          beamsInteractive={!placingType && !beamMode && !connectDraft && !addingStops && !drawing}
+          onBeamClick={handleBeamClick}
           frameDraft={
             drawingView && { ...drawingView, color: FRAME_COLORS[scene.frames.length % FRAME_COLORS.length] }
           }
