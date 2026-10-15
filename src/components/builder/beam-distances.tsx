@@ -18,9 +18,7 @@ type Leg = { from: Vector3; to: Vector3; middle: Vector3; text: string };
 
 /**
  * The distance along each leg of a beam, like a smart dimension: a number in
- * the beam's colour, no box, haloed in the background so it reads over parts
- * and shadows alike. It sits at
- * the leg's middle, turned on screen to run along it (never upside down) and
+ * the beam's colour, no box and no halo. It sits at the leg's middle, turned on screen to run along it (never upside down) and
  * set off to one side, clear of the beam's glow at any zoom, so it doesn't
  * read as part of the beam. A leg too short on
  * screen to hold its label goes without.
