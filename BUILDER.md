@@ -496,7 +496,11 @@ button. The bar replaces the panel's own heading, and the panel is still
 labelled by it. Dragging the bar with the left button moves the panel
 anywhere in the workspace; until then it sits where it always has. The panel
 last pressed comes to the front, and every panel sits in one layer under the
-toolbars (File, Add, Tools, View), so it never covers one. A moved panel
+toolbars (File, Add, Tools, View), so it never covers one. While dragged, its
+edges snap, gently and with no guide lines, to the workspace's edges 12 px in
+and to the other panels' edges: lined up with one, or 8 px beside, above or
+below it. An edge snaps within 10 px, to the nearest target, each axis on its
+own. A moved panel
 keeps at least 90 px of its bar inside the workspace sideways, and all of it
 top to bottom, and slides back in when the window shrinks. Positions and
 sizes are whole pixels, so borders stay crisp at odd window sizes. Reset

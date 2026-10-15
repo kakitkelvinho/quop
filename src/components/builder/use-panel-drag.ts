@@ -72,11 +72,18 @@ export function usePanel(
       // the bar's own buttons keep their press
       if ((event.target as Element).closest("button")) return;
       event.preventDefault();
-      const box = element.getBoundingClientRect();
       const origin = layer.getBoundingClientRect();
-      const start =
-        panelState(id).rect ??
-        wholeRect({ x: box.left - origin.left, y: box.top - origin.top, w: box.width, h: box.height });
+      const measure = (panel: Element) => {
+        const box = panel.getBoundingClientRect();
+        return wholeRect({ x: box.left - origin.left, y: box.top - origin.top, w: box.width, h: box.height });
+      };
+      // its height as drawn, which a content-sized panel's stored rect doesn't follow
+      const drawn = measure(element);
+      const start = { ...(panelState(id).rect ?? drawn), h: drawn.h };
+      // the others, measured once: none of them moves while this one does
+      const others = Array.from(layer.querySelectorAll(".builderPanel"))
+        .filter((panel) => panel !== element)
+        .map(measure);
       const startX = event.clientX;
       const startY = event.clientY;
       const pointerId = event.pointerId;
@@ -85,7 +92,7 @@ export function usePanel(
       const onMove = (moveEvent: PointerEvent) => {
         if (moveEvent.pointerId !== pointerId) return;
         const bounds = { width: layer.clientWidth, height: layer.clientHeight };
-        movePanelTo(id, movePanel(start, moveEvent.clientX - startX, moveEvent.clientY - startY, bounds));
+        movePanelTo(id, movePanel(start, moveEvent.clientX - startX, moveEvent.clientY - startY, bounds, others));
       };
       const onEnd = (endEvent: PointerEvent) => {
         if (endEvent.pointerId === pointerId) teardown.current();
