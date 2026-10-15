@@ -22,6 +22,8 @@ import {
 
 type Variant = "A" | "B" | "C";
 const VARIANTS: Variant[] = ["A", "B", "C"];
+/** what the switcher cycles: A against C, as asked; ?panels=B still works */
+const CYCLE: Variant[] = ["A", "C"];
 const NAMES: Record<Variant, string> = { A: "Title bar", B: "Edge grip", C: "Folder tab" };
 const SNAP_PX: Record<Variant, number> = { A: 10, B: 24, C: 16 };
 const GAP_PX = 8;
@@ -58,9 +60,20 @@ function subscribe(listener: () => void) {
 }
 const useStore = () => useSyncExternalStore(subscribe, () => store.version, () => 0);
 
+/** Whole pixels: a panel at x = 14.4 smears or loses its 1 px border at some window sizes. */
+function whole(rect: Rect): Rect {
+  return {
+    x: Math.round(rect.x),
+    y: Math.round(rect.y),
+    w: Math.round(rect.w),
+    h: rect.h === null ? null : Math.round(rect.h),
+  };
+}
+
 function setPanel(id: string, patch: Partial<PanelState>) {
   const current = store.panels.get(id);
   if (!current && !patch.rect) return;
+  if (patch.rect) patch = { ...patch, rect: whole(patch.rect) };
   store.panels.set(id, { min: false, max: false, z: ++store.top, ...current, ...patch } as PanelState);
   emit();
 }
@@ -248,7 +261,7 @@ export function ProtoPanel({
 
   const b = bounds();
   const rect = state.max
-    ? { x: b.left, y: b.top + TOOLBAR_ROW_PX - INSET_PX, w: b.right - b.left, h: b.bottom - b.top - TOOLBAR_ROW_PX + INSET_PX }
+    ? whole({ x: b.left, y: b.top + TOOLBAR_ROW_PX - INSET_PX, w: b.right - b.left, h: b.bottom - b.top - TOOLBAR_ROW_PX + INSET_PX })
     : state.rect;
   const toggleMin = () => setPanel(id, { min: !state.min, max: false });
   const toggleMax = () => setPanel(id, { max: !state.max, min: false });
@@ -279,7 +292,7 @@ export function ProtoPanel({
         top: rect.y,
         width: variant === "B" && state.min ? undefined : rect.w,
         height: state.min ? undefined : (rect.h ?? undefined),
-        maxHeight: state.min ? undefined : b.bottom - rect.y,
+        maxHeight: state.min ? undefined : Math.floor(b.bottom - rect.y),
         zIndex: state.z,
       }}
       onPointerDownCapture={() => bringToFront(id)}
@@ -339,8 +352,8 @@ export function PanelsPrototypeBar() {
         event.preventDefault();
         resetPanels();
       } else if (event.altKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
-        const index = VARIANTS.indexOf(variant) + (event.key === "ArrowRight" ? 1 : -1);
-        setVariant(VARIANTS[(index + VARIANTS.length) % VARIANTS.length]);
+        const index = Math.max(0, CYCLE.indexOf(variant)) + (event.key === "ArrowRight" ? 1 : -1);
+        setVariant(CYCLE[(index + CYCLE.length) % CYCLE.length]);
       }
     };
     window.addEventListener("resize", onResize);
@@ -353,8 +366,8 @@ export function PanelsPrototypeBar() {
 
   if (process.env.NODE_ENV === "production" || !variant) return null;
   const step = (by: number) => {
-    const index = VARIANTS.indexOf(variant) + by;
-    setVariant(VARIANTS[(index + VARIANTS.length) % VARIANTS.length]);
+    const index = Math.max(0, CYCLE.indexOf(variant)) + by;
+    setVariant(CYCLE[(index + CYCLE.length) % CYCLE.length]);
   };
   const ghost = store.ghost;
   const ghostH = ghost ? heightOf(ghost.id, ghost.rect) : 0;
@@ -397,7 +410,8 @@ const PROTOTYPE_CSS = `
   flex-direction: column;
   min-width: ${MIN_W}px;
 }
-.protoPanel__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+/* the panel scrolls inside its own border, so a short window never cuts its edge off */
+.protoPanel__body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .protoPanel__body[hidden] { display: none; }
 .protoPanel__body > .builderIsland {
   position: relative !important;
@@ -405,13 +419,16 @@ const PROTOTYPE_CSS = `
   width: 100% !important;
   max-width: none !important;
   min-width: 0 !important;
-  max-height: none !important;
+  max-height: 100% !important;
+  min-height: 0;
+  overflow: auto !important;
   margin: 0 !important;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   animation: none !important;
 }
 .protoPanel.is-max .protoPanel__body > .builderIsland,
-.protoPanel[style*="height"] .protoPanel__body > .builderIsland { height: 100%; }
+.protoPanel[style*=" height"] .protoPanel__body > .builderIsland,
+.protoPanel[style^="height"] .protoPanel__body > .builderIsland { flex: 1 1 auto; }
 .protoPanel__title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .protoPanel__buttons { display: inline-flex; gap: 2px; margin-left: auto; }
 .protoPanel__buttons button {
