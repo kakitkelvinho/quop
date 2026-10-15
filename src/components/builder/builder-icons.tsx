@@ -115,6 +115,15 @@ const ICONS = {
   frame: <rect x="4" y="6" width="16" height="12" rx="1.5" strokeDasharray="3 2.5" />,
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
+  // a panel's title-bar buttons: collapse to the bar, fill the workspace, and back
+  minimise: <path d="M6 16h12" />,
+  maximise: <rect x="5" y="5" width="14" height="14" rx="1.5" />,
+  restore: (
+    <>
+      <rect x="4.5" y="8.5" width="11" height="11" rx="1.5" />
+      <path d="M8.5 8.5V6A1.5 1.5 0 0 1 10 4.5h8A1.5 1.5 0 0 1 19.5 6v8a1.5 1.5 0 0 1-1.5 1.5h-2.5" />
+    </>
+  ),
   // two panels, and the arrow that sends them home
   resetPanels: (
     <>

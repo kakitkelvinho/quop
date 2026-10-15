@@ -10,6 +10,10 @@ export type PanelState = {
   rect?: PanelRect;
   /** its place in the stack: the panel last pressed is highest */
   z?: number;
+  /** collapsed to its title bar, in place */
+  minimised?: boolean;
+  /** filling the workspace below the toolbars; `rect` is where it goes back to */
+  maximised?: boolean;
 };
 
 /** Above every panel's own CSS z-index (5 and 6), so a pressed panel clears the ones never pressed. */
@@ -17,6 +21,7 @@ const FIRST_Z = 10;
 
 let panels = new Map<string, PanelState>();
 let top = FIRST_Z;
+let workspace: PanelBounds | null = null;
 let version = 0;
 const listeners = new Set<() => void>();
 
@@ -55,9 +60,28 @@ export function movePanelTo(id: string, rect: PanelRect) {
   changed();
 }
 
-/** The workspace changed size: every moved panel slides back in reach. */
+/** Minimise or maximise a panel, or restore it: the one undoes the other. */
+export function setPanelView(id: string, view: "minimised" | "maximised" | "restored") {
+  const { minimised, maximised, ...rest } = panelState(id);
+  const current = minimised ? "minimised" : maximised ? "maximised" : "restored";
+  if (view === current) return;
+  panels.set(id, view === "restored" ? rest : { ...rest, [view]: true });
+  changed();
+}
+
+/** The workspace's size, once the layer has been measured: a maximised panel fills it. */
+export function workspaceBounds(): PanelBounds | null {
+  return workspace;
+}
+
+/**
+ * The workspace changed size: every moved panel slides back in reach, and a
+ * maximised one fills the new size.
+ */
 export function keepPanelsInside(bounds: PanelBounds) {
-  let moved = false;
+  // a new size is news to a maximised panel, even if no panel slid
+  let moved = workspace?.width !== bounds.width || workspace?.height !== bounds.height;
+  workspace = bounds;
   for (const [id, state] of panels) {
     if (!state.rect) continue;
     const rect = clampPanel(state.rect, bounds);
@@ -68,7 +92,7 @@ export function keepPanelsInside(bounds: PanelBounds) {
   if (moved) changed();
 }
 
-/** Every panel back where it starts, in its own CSS order. */
+/** Every panel back where it starts, open and in its own CSS order. */
 export function resetPanels() {
   panels = new Map();
   top = FIRST_Z;

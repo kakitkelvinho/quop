@@ -103,3 +103,21 @@ export function movePanel(
 ): PanelRect {
   return clampPanel(snapPanel({ ...start, x: start.x + dx, y: start.y + dy }, others, bounds), bounds);
 }
+
+/**
+ * Where a maximised panel goes, px: between the Parts panel's own top and
+ * bottom (7.3rem and 3.8rem), so its bar clears the + toolbar and its foot the
+ * View toolbar, and the workspace's inset at the sides.
+ */
+export const PANEL_MAX_TOP_PX = 117;
+export const PANEL_MAX_BOTTOM_PX = 61;
+
+/** A maximised panel's rect: the workspace below the toolbars, whole pixels, never below the minimum. */
+export function maximisedRect(bounds: PanelBounds): PanelRect {
+  return wholeRect({
+    x: PANEL_INSET_PX,
+    y: PANEL_MAX_TOP_PX,
+    w: Math.max(PANEL_KEEP_PX, bounds.width - 2 * PANEL_INSET_PX),
+    h: Math.max(PANEL_BAR_PX, bounds.height - PANEL_MAX_TOP_PX - PANEL_MAX_BOTTOM_PX),
+  });
+}
