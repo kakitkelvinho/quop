@@ -31,12 +31,12 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "beam", text: "Beam", sides: ["below"] },
   { key: "add", text: "Part", sides: ["below"] },
   { key: "brief", text: "AI brief", sides: ["right", "below"] },
-  { key: "tools", text: "Select · posts · grid · undo", sides: ["right", "below"] },
+  { key: "tools", text: "Select · show · lighting · undo", sides: ["right", "below"] },
   { key: "inspector", text: "Inspector", sides: ["left", "above"] },
   { key: "beams", text: "Beams", sides: ["above", "right"] },
   { key: "frames", text: "Frames", sides: ["right", "above"] },
   { key: "groups", text: "Groups: click to select, eye to hide", sides: ["right", "above"] },
-  { key: "view", text: "Iso / top · fit · labels · distances · day / night", sides: ["above", "left"] },
+  { key: "view", text: "Iso / top · fit · day / night · reset panels", sides: ["above", "left"] },
 ];
 
 const GAP = 10;
