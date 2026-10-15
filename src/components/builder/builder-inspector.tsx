@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { IconButton } from "@/components/builder/builder-icons";
 import { useRowDrag } from "@/components/builder/use-row-drag";
@@ -71,6 +71,7 @@ import {
   type Connection,
   type ConnectionKind,
   type Frame,
+  type Group,
   type LensShape,
 } from "@/components/builder/types";
 
@@ -500,7 +501,10 @@ export function ComponentInspector({
   onRotate,
   onDuplicate,
   onDelete,
+  groupsField,
 }: {
+  /** the part's Groups checkboxes, last in the inspector */
+  groupsField?: ReactNode;
   component: BuilderComponent;
   components: BuilderComponent[];
   /** set when a beam turns this part; its yaw is then read-only */
@@ -763,6 +767,7 @@ export function ComponentInspector({
           onChange={(color) => onUpdate({ color })}
         />
       ) : null}
+      {groupsField}
     </div>
   );
 }
@@ -1171,7 +1176,10 @@ export function FrameInspector({
   onDelete,
   focusLabel,
   onLabelFocused,
+  groupsField,
 }: {
+  /** the frame's Groups checkboxes, last in the inspector */
+  groupsField?: ReactNode;
   frame: Frame;
   onUpdate: (patch: Partial<Omit<Frame, "id">>, record?: boolean) => void;
   onCheckpoint: () => void;
@@ -1285,6 +1293,39 @@ export function FrameInspector({
           onChange={(next) => onUpdate({ fillOpacity: next }, false)}
         />
       )}
+      {groupsField}
     </div>
+  );
+}
+
+/**
+ * A part's or frame's groups: a checkbox per group in the setup, so a part
+ * shared by two experiments can be ticked into both. Nothing when there are none.
+ */
+export function GroupsField({
+  groups,
+  memberId,
+  onChange,
+}: {
+  groups: Group[];
+  memberId: string;
+  onChange: (groupId: string, isMember: boolean) => void;
+}) {
+  if (groups.length === 0) return null;
+  return (
+    <fieldset className="builderField builderGroupsField">
+      <legend className="builderField__label">Groups</legend>
+      {groups.map((group) => (
+        <label key={group.id} className="builderGroupsField__option">
+          <input
+            type="checkbox"
+            checked={group.members.includes(memberId)}
+            onChange={(event) => onChange(group.id, event.target.checked)}
+          />
+          <span className="builderBeamRow__dot" style={{ background: group.color }} />
+          {group.name}
+        </label>
+      ))}
+    </fieldset>
   );
 }

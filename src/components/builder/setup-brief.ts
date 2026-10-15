@@ -14,7 +14,7 @@ import {
   BLOCK_SIZE_MM,
   BLOCK_SIZE_RANGE_MM,
   CAVITY_LENGTH_RANGE_MM,
-  COMPONENT_GROUPS,
+  PART_CATEGORIES,
   COMPONENT_SPECS,
   CONNECTION_KINDS,
   CONNECTION_LENGTH_RANGE_M,
@@ -35,6 +35,7 @@ import {
   FRAME_SIZE_RANGE_MM,
   HOST_TYPES,
   INTERNAL_PATH_RANGE_MM,
+  LABEL_SCALE_RANGE,
   LIT_TYPES,
   MOUNTED_TYPES,
   PARTICLE_RADIUS_MM,
@@ -52,6 +53,7 @@ import {
   type ComponentType,
   type Connection,
   type Frame,
+  type Group,
 } from "./types.ts";
 
 /** One line per field. `only` names the type a component field belongs to. */
@@ -77,6 +79,12 @@ const FILE_FIELDS: FieldDocs<BuilderSceneData> = {
   beams: { text: "the light paths, in order. The first beam through a mirror sets its angle." },
   connections: { text: "fibres and cables between parts; `[]` when there are none." },
   frames: { text: "outlines marking areas such as a breadboard or an enclosure; `[]` when there are none." },
+  groups: {
+    text: "named sets of parts (and frames) that hide, select and move together, such as each experiment's parts when a table holds several; `[]` when there are none.",
+  },
+  labelScale: {
+    text: `how large the labels on parts, connections and frames are drawn, ${range(LABEL_SCALE_RANGE)} times their standard size; leave it out for the standard size, 1.`,
+  },
 };
 
 const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
@@ -193,6 +201,16 @@ const FRAME_FIELDS: FieldDocs<Frame> = {
   },
 };
 
+const GROUP_FIELDS: FieldDocs<Group> = {
+  id: { text: "text, unique in the file." },
+  name: { text: "text shown in the Groups box, such as `HOM interferometer`." },
+  color: { text: `a hex colour for its row and the outline round its members; such as ${code(BEAM_COLORS[0])}.` },
+  hidden: { text: "`true` takes its members out of the drawing; leave it out otherwise." },
+  members: {
+    text: "the ids of the parts and frames in it. A part may be in several groups, such as a mirror two experiments share; never list a beam or a connection.",
+  },
+};
+
 function fieldList<T>(fields: FieldDocs<T>, keep: (doc: { only?: ComponentType | ComponentType[] }) => boolean = () => true): string {
   return (Object.entries(fields) as [string, { text: string; only?: ComponentType | ComponentType[] }][])
     .filter(([, doc]) => keep(doc))
@@ -207,7 +225,7 @@ function heightLine(type: ComponentType): string {
 
 /** One entry per type, in the parts panel's groups: what it is, its heights, and the fields only it reads. */
 function componentTypes(): string {
-  return COMPONENT_GROUPS.map(({ name, types }) => {
+  return PART_CATEGORIES.map(({ name, types }) => {
     const entries = types.map((type) => {
       const spec = COMPONENT_SPECS[type];
       const own = (Object.entries(COMPONENT_FIELDS) as [string, { only?: ComponentType | ComponentType[] }][])
@@ -250,6 +268,7 @@ export const EXAMPLE_SETUP: BuilderSceneData = {
       label: "Breadboard",
     },
   ],
+  groups: [{ id: "probe-arm", name: "Probe arm", color: "#dc2626", members: ["laser", "m1", "lens", "pd", "board"] }],
 };
 
 /** JSON on one line, spaced as the setup fixtures are: `{ "id": "m1", "position": [0, 100, 0] }`. */
@@ -264,7 +283,7 @@ function inlineJson(value: unknown): string {
 
 /** The example with one line per component, beam and frame. */
 function exampleJson(): string {
-  const lists = (["components", "beams", "connections", "frames"] as const).map((key) => {
+  const lists = (["components", "beams", "connections", "frames", "groups"] as const).map((key) => {
     const items = EXAMPLE_SETUP[key];
     if (!items.length) return `  "${key}": []`;
     return `  "${key}": [\n${items.map((item) => `    ${inlineJson(item)}`).join(",\n")}\n  ]`;
@@ -289,7 +308,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 - **Units.** Millimetres for every position and size; degrees for every angle; metres only for a connection's \`lengthM\`.
 - **Axes.** The table is the x–z plane at height 0, and +y is up. In the builder's top-down view +x points right and +z points down the screen. The table has no edge, but keep x and z within ±${TABLE_GUARD_MM}.
 - **Height.** A part's y is the height of its optical centre above the table. The beam height, ${BEAM_HEIGHT_MM} mm, is the default; give every part on one straight beam the same height unless the author says otherwise. A beam between parts at different heights slopes.
-- **Ids.** Every id must be unique in the file, across components, beams, connections and frames. Use short readable ones: \`laser\`, \`m1\`, \`pbs\`, \`pd-ref\`.
+- **Ids.** Every id must be unique in the file, across components, beams, connections, frames and groups. Use short readable ones: \`laser\`, \`m1\`, \`pbs\`, \`pd-ref\`.
 - **Spacing.** When the author gives no distances, 100–300 mm between neighbouring parts looks like a real bench. Multiples of 25 mm line up with the builder's grid.
 
 ## Angles
@@ -341,6 +360,12 @@ A labelled outline drawn flat on the table to mark an area, such as one breadboa
 
 ${fieldList(FRAME_FIELDS)}
 
+### A group
+
+A named set of parts, and of frames, such as the parts of one experiment when the table holds several, so they can be hidden, selected and moved together. Groups don't nest. A part shared by two experiments, such as a mirror, is listed in both. Hiding a group leaves its members out of the drawing, but a part stays drawn while any group it is in is shown, and a beam stays drawn, whole, while any of its stops is shown. Use groups only when the author describes more than one experiment, or asks for them.
+
+${fieldList(GROUP_FIELDS)}
+
 Older files give a frame as \`position\` (its centre, \`[x, z]\`), \`width\` and \`depth\` instead of \`corners\`. The builder still reads that form, but don't write it: always write \`corners\`.
 
 ## Component types
@@ -351,7 +376,7 @@ ${componentTypes()}
 
 ## Example
 
-A laser fires along +x into a mirror, which turns the beam toward −z, through a lens and onto a photodiode, all at the beam height on one L-shaped breadboard:
+A laser fires along +x into a mirror, which turns the beam toward −z, through a lens and onto a photodiode, all at the beam height on one L-shaped breadboard, kept as one group:
 
 \`\`\`json
 ${exampleJson()}

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { Icon, IconButton } from "@/components/builder/builder-icons";
@@ -18,12 +19,15 @@ import {
   ConnectionInspector,
   FrameInspector,
   GroupInspector,
+  GroupsField,
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
+  LABEL_MAX_LENGTH,
+  LABEL_SCALE_RANGE,
   beamDisplayName,
   beamLengthMm,
   derivedAngleBeam,
@@ -35,6 +39,7 @@ import {
   type Connection,
   type ConnectionKind,
   type Frame,
+  type Group,
   type BuilderSceneData,
 } from "@/components/builder/types";
 
@@ -76,6 +81,8 @@ export type BuilderHudProps = {
   showGrid: boolean;
   showPosts: boolean;
   lighting: Lighting;
+  /** the setup's label size, 1 being the standard */
+  labelScale: number;
   view: CameraView;
   canUndo: boolean;
   canRedo: boolean;
@@ -123,11 +130,34 @@ export type BuilderHudProps = {
   onDeleteFrame: (id: string) => void;
   onMoveFrame: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetFrameHidden: (id: string, hidden: boolean) => void;
+  groups: Group[];
+  /** the group whose name is being edited in its row, if any */
+  renamingGroupId: string | null;
+  onSelectGroup: (id: string) => void;
+  /** the row under the pointer, whose members the table outlines */
+  onHoverGroup: (id: string | null) => void;
+  onRenameGroupStart: (id: string) => void;
+  /** null ends the edit and keeps the old name */
+  onRenameGroup: (id: string, name: string | null) => void;
+  /** unrecorded: a colour pick is made one undo step by onCheckpoint at its start */
+  onSetGroupColor: (id: string, color: string) => void;
+  onSetGroupHidden: (id: string, hidden: boolean) => void;
+  onDeleteGroup: (id: string) => void;
+  /** download a group as its own setup file, `<name>.json` */
+  onExportGroup: (id: string) => void;
+  /** a setup file's text to merge into the table; null when the file was too big to read */
+  onImport: (text: string | null, fileName: string) => void;
+  /** set while an import waits on what to do with a group the table already has */
+  importChoice: { names: string[] } | null;
+  onImportChoice: (choice: "replace" | "copy" | null) => void;
+  onSetGroupMembership: (groupId: string, id: string, isMember: boolean) => void;
   onToggleLabels: () => void;
   onToggleDistances: () => void;
   onToggleGrid: () => void;
   onTogglePosts: () => void;
   onLightingChange: (patch: Partial<Lighting>) => void;
+  /** unrecorded: a drag is made one undo step by onCheckpoint at its start */
+  onLabelScaleChange: (scale: number) => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
   onToggleTheme: () => void;
@@ -392,6 +422,253 @@ function FrameList({
 }
 
 /**
+ * A group row's ⋯ menu: rename, save it as its own file, ungroup. Closes on a
+ * pick, a click outside or Esc.
+ */
+function GroupRowMenu({
+  name,
+  onRename,
+  onExport,
+  onDelete,
+}: {
+  name: string;
+  onRename: () => void;
+  onExport: () => void;
+  onDelete: () => void;
+}) {
+  // the list is fixed to the viewport, opening up from the button: the box it
+  // sits in scrolls, and would clip it
+  const [place, setPlace] = useState<{ left: number; bottom: number } | null>(null);
+  const open = place !== null;
+  const listRef = useRef<HTMLSpanElement>(null);
+  const ref = useBubbleDismiss<HTMLSpanElement>(open, useCallback(() => setPlace(null), []), listRef);
+  const run = (action: () => void) => () => {
+    setPlace(null);
+    action();
+  };
+  return (
+    <span className="builderMenu builderGroupMenu" ref={ref}>
+      <button
+        type="button"
+        className={`builderIconBtn${open ? " is-active" : ""}`}
+        aria-label={`More for ${name}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="More"
+        onClick={(event) => {
+          if (open) return setPlace(null);
+          const box = event.currentTarget.getBoundingClientRect();
+          setPlace({ left: box.left, bottom: window.innerHeight - box.top + 4 });
+        }}
+      >
+        <Icon name="more" />
+      </button>
+      {place
+        ? createPortal(
+            <span ref={listRef} className="builderMenu__list builderGroupMenu__list" role="menu" style={place}>
+              <button type="button" role="menuitem" onClick={run(onRename)}>
+                Rename
+              </button>
+              <button type="button" role="menuitem" onClick={run(onExport)}>
+                Export group…
+              </button>
+              <button type="button" role="menuitem" onClick={run(onDelete)}>
+                Delete group
+              </button>
+            </span>,
+            document.body,
+          )
+        : null}
+    </span>
+  );
+}
+
+/** A group's name, edited in place: Enter or leaving the field keeps it, Esc puts the old one back. */
+function GroupNameInput({
+  name,
+  onDone,
+}: {
+  name: string;
+  onDone: (name: string | null) => void;
+}) {
+  const [draft, setDraft] = useState(name);
+  const done = useRef(false);
+  const finish = (value: string | null) => {
+    if (done.current) return;
+    done.current = true;
+    onDone(value);
+  };
+  return (
+    <input
+      className="builderGroupRow__nameInput"
+      aria-label="Group name"
+      value={draft}
+      maxLength={LABEL_MAX_LENGTH}
+      autoFocus
+      onFocus={(event) => event.currentTarget.select()}
+      onChange={(event) => setDraft(event.target.value)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") finish(draft);
+        else if (event.key === "Escape") {
+          event.stopPropagation();
+          finish(null);
+        }
+      }}
+      onBlur={() => finish(draft)}
+    />
+  );
+}
+
+/**
+ * The Groups box, under the frames: one row per group, with its colour (click
+ * to change), its name (double-click or ⋯ → Rename to edit it in place), how
+ * many members it has, an eye to hide or show it, and a ⋯ menu. Press a row to
+ * select its parts; hover it to outline its members on the table.
+ */
+function GroupList({
+  groups,
+  renamingId,
+  onSelect,
+  onHover,
+  onRename,
+  onRenameStart,
+  onSetColor,
+  onCheckpoint,
+  onSetHidden,
+  onExport,
+  onDelete,
+}: {
+  groups: Group[];
+  /** the group whose name is being edited, if any */
+  renamingId: string | null;
+  onSelect: (id: string) => void;
+  onHover: (id: string | null) => void;
+  /** null leaves the name as it was */
+  onRename: (id: string, name: string | null) => void;
+  onRenameStart: (id: string) => void;
+  /** unrecorded: a picker's drag is one undo step by onCheckpoint at its start */
+  onSetColor: (id: string, color: string) => void;
+  onCheckpoint: () => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
+  /** download the group as its own setup file */
+  onExport: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const picking = useRef<string | null>(null);
+  return (
+    <section className="builderIsland builderHud__frames" aria-labelledby="builderGroupsTitle" data-guide="groups">
+      <h2 id="builderGroupsTitle" className="builderHud__listTitle">
+        Groups
+      </h2>
+      <ul role="list" className="builderHud__frameRows" onPointerLeave={() => onHover(null)}>
+        {groups.map((group) => (
+          <li
+            key={group.id}
+            className={`builderBeamRow builderGroupRow${group.hidden ? " is-hidden" : ""}`}
+            onPointerEnter={() => onHover(group.id)}
+            onFocus={() => onHover(group.id)}
+            onBlur={() => onHover(null)}
+          >
+            <label className="builderGroupRow__swatch" title="Colour" style={{ background: group.color }}>
+              <input
+                type="color"
+                aria-label={`${group.name} colour`}
+                value={group.color}
+                onChange={(event) => {
+                  if (picking.current !== group.id) {
+                    picking.current = group.id;
+                    onCheckpoint();
+                  }
+                  onSetColor(group.id, event.target.value);
+                }}
+                onBlur={() => {
+                  picking.current = null;
+                }}
+              />
+            </label>
+            {renamingId === group.id ? (
+              <GroupNameInput name={group.name} onDone={(name) => onRename(group.id, name)} />
+            ) : (
+              <button
+                type="button"
+                className="builderBeamRow__select"
+                title="Select its parts · double-click to rename"
+                onClick={() => onSelect(group.id)}
+                onDoubleClick={() => onRenameStart(group.id)}
+              >
+                <span className="builderBeamRow__name">{group.name}</span>
+                <span className="builderReadout">{group.members.length}</span>
+              </button>
+            )}
+            <span className="builderBeamRow__actions">
+              <IconButton
+                icon={group.hidden ? "eyeOff" : "eye"}
+                // a toggle: the label stays put and aria-pressed carries the state
+                label={`Hide ${group.name}`}
+                active={Boolean(group.hidden)}
+                onClick={() => onSetHidden(group.id, !group.hidden)}
+              />
+              <GroupRowMenu
+                name={group.name}
+                onRename={() => onRenameStart(group.id)}
+                onExport={() => onExport(group.id)}
+                onDelete={() => onDelete(group.id)}
+              />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * Asked when an imported file brings a group the table already has: replace
+ * it with the file's, add the file's as a copy, or cancel. Esc cancels.
+ */
+function ImportChoiceDialog({
+  names,
+  onChoose,
+}: {
+  names: string[];
+  onChoose: (choice: "replace" | "copy" | null) => void;
+}) {
+  useEscapeCloses(useCallback(() => onChoose(null), [onChoose]));
+  const which = names.length === 1 ? names[0] : `${names.length} groups`;
+  return (
+    <div className="builderImportChoice__backdrop">
+      <section
+        className="builderIsland builderImportChoice"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="builderImportChoiceTitle"
+        aria-describedby="builderImportChoiceText"
+      >
+        <h2 id="builderImportChoiceTitle" className="builderAbout__title">
+          {names.length === 1 ? `${names[0]} is already on the table` : "These groups are already on the table"}
+        </h2>
+        <p id="builderImportChoiceText" className="builderAbout__description">
+          {names.length === 1
+            ? "Replace it with the file's, or add the file's beside it as a copy."
+            : `${names.join(", ")}. Replace them with the file's, or add the file's beside them as copies.`}
+        </p>
+        <div className="builderBrief__actions">
+          <button type="button" className="builderButton builderButton--primary" autoFocus onClick={() => onChoose("replace")}>
+            Replace {which}
+          </button>
+          <button type="button" className="builderButton" onClick={() => onChoose("copy")}>
+            Add as a copy
+          </button>
+          <button type="button" className="builderButton" onClick={() => onChoose(null)}>
+            Cancel
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
  * Esc closes the panel. Capture, and stop, so this Esc closes only the panel:
  * the scene's Esc chain peels one layer per press and would otherwise also deselect.
  */
@@ -582,12 +859,24 @@ function JsonPanel({
 function FileMenu({
   onSave,
   onShowJson,
+  onImport,
   onExportPng,
   onResetExample,
   onClear,
-}: Pick<BuilderHudProps, "onSave" | "onExportPng" | "onResetExample" | "onClear"> & {
+}: Pick<BuilderHudProps, "onSave" | "onImport" | "onExportPng" | "onResetExample" | "onClear"> & {
   onShowJson: () => void;
 }) {
+  const importRef = useRef<HTMLInputElement>(null);
+  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > SCENE_TEXT_MAX_BYTES) {
+      onImport(null, file.name);
+      return;
+    }
+    onImport(await file.text(), file.name);
+  };
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -634,6 +923,16 @@ function FileMenu({
           <button type="button" role="menuitem" onClick={run(onShowJson)}>
             Open JSON…
           </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              importRef.current?.click();
+            }}
+          >
+            Import into this table…
+          </button>
           <button type="button" role="menuitem" onClick={run(onExportPng)}>
             Export view as PNG
           </button>
@@ -646,22 +945,31 @@ function FileMenu({
           </button>
         </div>
       ) : null}
+      {/* kept out of the list, which unmounts as the picker opens; no accept
+          filter, as in the JSON panel: the check turns away anything else */}
+      <input ref={importRef} type="file" hidden onChange={(event) => void importFile(event)} />
     </div>
   );
 }
 
-/** The lightbulb: a bubble of lighting settings under the tool pill. */
-function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (patch: Partial<Lighting>) => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
+/**
+ * Close a toolbar bubble on a pointer-down outside it, or on Esc. A part of it
+ * drawn elsewhere (in a portal) counts as inside when its element is in `also`.
+ */
+function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
+  open: boolean,
+  close: () => void,
+  also?: RefObject<HTMLElement | null>,
+) {
+  const ref = useRef<T>(null);
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (!ref.current?.contains(target) && !also?.current?.contains(target)) close();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") close();
     };
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
@@ -669,7 +977,14 @@ function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (p
       window.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, close, also]);
+  return ref;
+}
+
+/** The lightbulb: a bubble of lighting settings under the tool pill. */
+function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (patch: Partial<Lighting>) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
 
   return (
     <div className="builderLighting" ref={ref}>
@@ -708,6 +1023,71 @@ function LightingMenu({ lighting, onChange }: { lighting: Lighting; onChange: (p
               role="switch"
               checked={lighting.shadows}
               onChange={(event) => onChange({ shadows: event.target.checked })}
+            />
+          </label>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Label size: a bubble with the labels' size, saved with the setup. A drag
+ * previews as it moves and is one undo step: its first change takes the snapshot.
+ */
+function LabelMenu({
+  scale,
+  onBegin,
+  onChange,
+}: {
+  scale: number;
+  onBegin: () => void;
+  onChange: (scale: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
+  const editing = useRef(false);
+  const end = () => {
+    editing.current = false;
+  };
+
+  return (
+    <div className="builderLighting" ref={ref}>
+      <button
+        type="button"
+        className={`builderIconBtn${open ? " is-active" : ""}`}
+        aria-label="Label size"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        title="Label size"
+        onClick={() => setOpen((current) => !current)}
+      >
+        <Icon name="labelSize" />
+      </button>
+      {open ? (
+        <div className="builderLighting__bubble" role="dialog" aria-label="Label size">
+          <label className="builderField">
+            <span className="builderField__label">
+              Label size
+              <span className="builderReadout">{Math.round(scale * 100)}%</span>
+            </span>
+            <input
+              className="builderSlider"
+              type="range"
+              min={LABEL_SCALE_RANGE[0]}
+              max={LABEL_SCALE_RANGE[1]}
+              step={0.05}
+              value={scale}
+              onChange={(event) => {
+                if (!editing.current) {
+                  editing.current = true;
+                  onBegin();
+                }
+                onChange(Number(event.target.value));
+              }}
+              onPointerUp={end}
+              onKeyUp={end}
+              onBlur={end}
             />
           </label>
         </div>
@@ -801,6 +1181,13 @@ export default function BuilderHud(props: BuilderHudProps) {
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
+        groupsField={
+          <GroupsField
+            groups={props.groups}
+            memberId={selected[0].id}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, selected[0].id, isMember)}
+          />
+        }
       />
     );
   } else if (selectedBeam) {
@@ -825,6 +1212,13 @@ export default function BuilderHud(props: BuilderHudProps) {
         onDelete={() => props.onDeleteFrame(frame.id)}
         focusLabel={props.focusFrameLabel}
         onLabelFocused={props.onFrameLabelFocused}
+        groupsField={
+          <GroupsField
+            groups={props.groups}
+            memberId={frame.id}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, frame.id, isMember)}
+          />
+        }
       />
     );
   } else if (props.selectedConnection) {
@@ -865,6 +1259,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <FileMenu
           onSave={props.onSave}
           onShowJson={showJson}
+          onImport={props.onImport}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
@@ -938,6 +1333,7 @@ export default function BuilderHud(props: BuilderHudProps) {
               <IconButton icon="posts" label="Posts" active={props.showPosts} onClick={props.onTogglePosts} />
               <IconButton icon="grid" label="Grid" active={props.showGrid} onClick={props.onToggleGrid} />
               <LightingMenu lighting={props.lighting} onChange={props.onLightingChange} />
+              <LabelMenu scale={props.labelScale} onBegin={props.onCheckpoint} onChange={props.onLabelScaleChange} />
               <span className="builderIsland__sep" />
               <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
               <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
@@ -1021,7 +1417,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         </aside>
       ) : null}
 
-      {beams.length || props.frames.length ? (
+      {beams.length || props.frames.length || props.groups.length ? (
         <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
       {beams.length ? (
         <BeamList
@@ -1045,7 +1441,26 @@ export default function BuilderHud(props: BuilderHudProps) {
           onDelete={props.onDeleteFrame}
         />
       ) : null}
+      {props.groups.length ? (
+        <GroupList
+          groups={props.groups}
+          renamingId={props.renamingGroupId}
+          onSelect={props.onSelectGroup}
+          onHover={props.onHoverGroup}
+          onRename={props.onRenameGroup}
+          onRenameStart={props.onRenameGroupStart}
+          onSetColor={props.onSetGroupColor}
+          onCheckpoint={props.onCheckpoint}
+          onSetHidden={props.onSetGroupHidden}
+          onExport={props.onExportGroup}
+          onDelete={props.onDeleteGroup}
+        />
+      ) : null}
         </div>
+      ) : null}
+
+      {props.importChoice ? (
+        <ImportChoiceDialog names={props.importChoice.names} onChoose={props.onImportChoice} />
       ) : null}
 
       <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">

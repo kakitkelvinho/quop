@@ -331,6 +331,66 @@ angle from one. Setups from before version 3 open with no connections.
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
 
+**Import into this table merges; Open JSON… → Apply replaces.** The two stay
+apart so Apply keeps meaning one thing. Import into this table…, in the file
+menu, picks a `.json` setup, checks it as Open does (`checkSceneText`: the
+same limits and migrations), and merges it into what is on the table as one
+undo step (`mergeSetup` in `merge-setup.ts`), announcing what came in
+("Imported 12 parts, 3 beams into Group 2"). It completes the assembly
+workflow: build each experiment in its own file, Export group, then compose
+them on one table. Parts land at the file's own coordinates, never
+re-centred. A file's groups come in as they are; a file with none (any setup
+from before groups) comes in as one group named after the file, and a part in
+none of a file's groups stays ungrouped. A file's part with the id, type and
+place (within 0.5 mm on each axis) of a table part *is* that part: it isn't
+added again, and the table's part joins the file's groups, which is how a
+mirror shared by two exported groups comes back as one mirror. Any other
+clash of ids, for a part, frame, beam, connection or group, gets a fresh id,
+and every reference in the file follows it (beam stops, connection ends,
+group members, hosts). A beam whose stops are all such same parts, with the
+same id and path as a table beam, is that beam, and so for a connection. A
+file group with the id or name of a table group asks first: **Replace**
+takes the table's group off (its members, except those still in another
+group, and its inner beams and connections) and brings the file's in;
+**Add as a copy** brings it under a new id as "<name> 2"; **Cancel** leaves
+the table alone. A merge that would go over the setup limits is refused with
+a notice, and the table is left as it was.
+
+**Label size is the setup's.** The Label size button (a large and a small A) in the tool
+pill, beside the lightbulb, opens a Label size slider, 50–200 % in 5 % steps. It scales every
+component, connection and frame label whole (text, padding, corners, border
+and the lift that keeps a part's label clear of the part) through one CSS
+variable, `--label-scale`, on the canvas host. The beam distance numbers, the
+rotation and stage bubbles and the order badges keep their size. Unlike
+lighting, which is the viewer's, the size is saved with the setup as
+`labelScale` (scene version 11, left out of the file at 100 %), so a PNG made
+from a file shows its labels as its author saw them. A drag is one undo step;
+setups from before version 11 open at 100 %.
+
+**Groups are saved with the setup.** A group (CONTEXT.md, *Group*) is a
+named set of components and frames, such as one experiment's parts when a
+table holds several, kept in the setup's top-level `groups` (scene version
+12; older setups open with none): an id unique across the whole setup, a
+name, a colour, `hidden` only when hidden, and its `members` as part and
+frame ids. A part may be in several groups, as a mirror two experiments share
+is; groups don't nest, and beams and connections are never members. What is
+drawn follows from them (`groups.ts`): a component is shown when it is in no
+group or any of its groups is shown; a frame when it isn't hidden itself and,
+by the same rule, by its groups; a beam, whole and untrimmed, when it isn't
+hidden itself and any of its stops is shown; a connection when either end is.
+Like a hidden beam, hiding changes only the drawing: hidden parts still count
+in path lengths and still angle mirrors and detectors, and they can't be
+clicked, box-selected or picked by `⌘A`. A PNG leaves them out. Deleting a
+group ungroups its members, which stay on the table; deleting a part or frame
+takes it out of every group, and a group it empties stays until it is deleted.
+A copy joins its source's groups, and a periscope's two mirrors join and
+leave together. Export group (`groupSubset`) writes a group as a setup of its
+own without re-centring or re-IDing anything, so bringing it back in can line
+it up with what is on the table. Parsing drops member ids that name nothing, and duplicates,
+and keeps at most 100 groups. In code the multi-selection editor
+(`group-edits.ts`, `GroupInspector`) is not a Group, and the parts panel's
+headings are `PART_CATEGORIES`.
+
 **Open JSON… is a text panel.** It opens in the parts panel's place, below the
 top-left islands, with the setup as it stands in an editable box: tweak it,
 **Paste** one over it, **Open file…** to fill the box from a `.json`, or
@@ -338,7 +398,7 @@ top-left islands, with the setup as it stands in an editable box: tweak it,
 as one undo step. The text is checked as it changes (`scene-text.ts`), and
 Apply only takes text that passes: at most 1 MB, valid JSON (an error names
 its line and column), one object with a `components` list, at most 500 parts,
-200 beams, 500 connections and 100 frames. `parseScene` then keeps only what it
+200 beams, 500 connections, 100 frames and 100 groups. `parseScene` then keeps only what it
 can read, and the panel says how many entries it will leave out. Text in a
 setup is only ever data: colours must be a hex, `rgb()`/`hsl()` or a colour
 name (anything else, such as a `url(…)`, falls back to the default, so a file
@@ -352,8 +412,8 @@ fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
 - **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
-  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, export PNG, load the example, clear the
-  table).
+  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, import a setup into this table, export PNG,
+  load the example, clear the table).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and name, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
@@ -361,7 +421,7 @@ is on screen until it is needed:
   and the setup brief open in the same spot, so opening one
   closes the others.
 - **Top centre**: the Guide pill, then the tool pill (Select, Posts, Grid,
-  Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
+  Lighting, Label size, Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
   `.md` button in its own island (it is neither a tool nor a guide). The `.md`
   island hangs off the row's end, so the Guide and tool pills stay centred.
   While placing, drawing or connecting, a mode badge under the pill carries
@@ -389,6 +449,20 @@ is on screen until it is needed:
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
   Its rows drag to reorder, like the beams box's.
+  The Groups box, when the setup has groups, sits under that: one row per
+  group with its colour (click it to pick another), its name (double-click,
+  or ⋯ → Rename, to edit it in place: Enter keeps it, Esc puts it back), its
+  member count, an eye to hide or show it, and a ⋯ menu with Rename, Export
+  group… and Delete group (which ungroups: the parts stay). Pressing a row selects the
+  group's parts, hidden ones too, so the usual move, turn, copy and Delete act
+  on them all (Delete then deletes the parts, unlike Delete group); a group
+  of frames alone selects its first frame. Hovering a row rings its members
+  on the table in the group's colour, a passing outline rather than a tint, as
+  the parts' own colours belong to their beam lines. A part's inspector, and
+  a frame's, end with a Groups field: a checkbox per group, which is how a
+  mirror gets shared by two. Every one of these is one undo step and is
+  announced. Members of a hidden group draw no ghost when their row selects
+  them; the selection and the inspector still show them.
 - **Bottom right**: the view controls.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
@@ -430,6 +504,10 @@ is on screen until it is needed:
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
+| Group parts | Select them and press `⌘G` (`Ctrl G`), or with no parts selected, a selected frame: a "Group n" row appears in the Groups box with its name ready to type. One undo step |
+| Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group to ungroup. Hover the row to see its members ringed on the table |
+| Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
+| Share a part between groups | Tick each group in the Groups field of its inspector |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |

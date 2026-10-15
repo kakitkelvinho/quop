@@ -25,6 +25,7 @@ import {
   type BuilderSceneData,
   type Vec3,
 } from "./types.ts";
+import { joinSourcesGroups, pruneMembers } from "./groups.ts";
 
 /** A particle whose host moves with the group: settleHosts carries it. */
 function ridesWithHost(component: BuilderComponent, group: ReadonlySet<string>): boolean {
@@ -182,12 +183,12 @@ export function deleteComponents(scene: BuilderSceneData, ids: string[]): Builde
   const gone = new Set(ids);
   const components = scene.components.filter((component) => !gone.has(component.id));
   if (components.length === scene.components.length) return scene;
-  return {
+  return pruneMembers({
     ...scene,
     components,
     beams: ids.reduce((beams, id) => dropComponentFromBeams(beams, id), scene.beams),
     connections: scene.connections.filter(({ from, to }) => !gone.has(from) && !gone.has(to)),
-  };
+  });
 }
 
 export type IdMaker = {
@@ -207,6 +208,7 @@ const FRESH_IDS: IdMaker = {
  * and cable that runs only between them. The copies' ids come back in the order asked for. A
  * copied particle stays in its host only when the host is copied too. A
  * periscope is copied whole, with both mirrors, whichever of them is asked for.
+ * Each copy joins the groups its source is in.
  */
 export function duplicateComponents(
   scene: BuilderSceneData,
@@ -242,12 +244,15 @@ export function duplicateComponents(
     }));
 
   return {
-    scene: {
-      ...scene,
-      components: [...scene.components, ...copies],
-      beams: [...scene.beams, ...beams],
-      connections: [...scene.connections, ...connections],
-    },
+    scene: joinSourcesGroups(
+      {
+        ...scene,
+        components: [...scene.components, ...copies],
+        beams: [...scene.beams, ...beams],
+        connections: [...scene.connections, ...connections],
+      },
+      copyOf,
+    ),
     ids: [...copyOf.values()],
   };
 }
