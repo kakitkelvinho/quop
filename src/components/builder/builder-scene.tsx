@@ -1197,8 +1197,6 @@ export default function BuilderScene() {
     [announce, api, cancelBeam, cancelConnect, cancelFrame],
   );
 
-  const sceneJson = useCallback(() => serializeScene(sceneRef.current), []);
-
   const handleExportPng = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1731,7 +1729,7 @@ export default function BuilderScene() {
         onUndo={api.undo}
         onRedo={api.redo}
         onSave={handleSave}
-        sceneJson={sceneJson}
+        scene={scene}
         onApplyScene={handleApplyScene}
         onExportPng={handleExportPng}
         onCopyBrief={handleCopyBrief}

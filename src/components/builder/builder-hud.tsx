@@ -44,7 +44,9 @@ import {
   type Frame,
   type Group,
   type BuilderSceneData,
+  serializeScene,
 } from "@/components/builder/types";
+import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
 
 /** The beam that turns a periscope's top mirror, when the lower one is the part shown. */
 function partnerAngleBeam(components: BuilderComponent[], beams: Beam[], component: BuilderComponent): Beam | undefined {
@@ -171,8 +173,8 @@ export type BuilderHudProps = {
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
-  /** the setup as it stands, for the JSON panel to open on */
-  sceneJson: () => string;
+  /** the setup as it stands, for the JSON panel to follow */
+  scene: BuilderSceneData;
   /** replace the table with a setup the JSON panel checked: one undo step */
   onApplyScene: (scene: BuilderSceneData, summary: string) => void;
   onExportPng: () => void;
@@ -779,34 +781,48 @@ function BriefPanel({
   );
 }
 
+/** How long the table must be still before the JSON panel writes it out again, ms. */
+const JSON_SETTLE_MS = 120;
+
 /**
  * The setup as JSON, to read, tweak, copy, paste over or fill from a file,
- * in the parts panel's place. Nothing reaches the table until Apply, and
- * Apply only takes text checkSceneText passed: within its size, valid JSON,
- * a setup's shape and counts, colours and labels made safe by parseScene.
+ * in the parts panel's place. The box follows the table until the author
+ * edits it; then it holds their draft (see json-panel-text). Nothing reaches
+ * the table until Apply, and Apply only takes text checkSceneText passed:
+ * within its size, valid JSON, a setup's shape and counts, colours and labels
+ * made safe by parseScene.
  */
 function JsonPanel({
-  initial,
+  scene,
   onApply,
   onClose,
 }: {
-  initial: () => string;
+  scene: BuilderSceneData;
   onApply: (scene: BuilderSceneData, summary: string) => void;
   onClose: () => void;
 }) {
-  const [opened] = useState(initial);
-  const [text, setText] = useState(opened);
+  // A drag previews a new scene on every pointer move, so the box writes the
+  // table out once it has been still for a moment, not on every frame.
+  const [live, setLive] = useState(() => serializeScene(scene));
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLive(serializeScene(scene)), JSON_SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [scene]);
+  const [draft, setDraft] = useState<JsonDraft | null>(null);
+  const view = jsonPanelView(live, draft);
+  const { text, edited } = view;
   const [note, setNote] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   // a large paste is checked once typing settles, not on every keystroke
   const settled = useDeferredValue(text);
   const check = useMemo(() => checkSceneText(settled), [settled]);
-  const changed = text !== opened;
+  const edit = (next: string) => setDraft(editJson(live, draft, next));
   useEscapeCloses(onClose);
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      // the table as it is this moment, even mid-settle, unless there's a draft
+      await navigator.clipboard.writeText(draft ? draft.text : serializeScene(scene));
       setNote("Copied.");
     } catch {
       setNote("Copy blocked: use ⌘C.");
@@ -817,7 +833,7 @@ function JsonPanel({
       const pasted = await navigator.clipboard.readText();
       if (pasted.length > SCENE_TEXT_MAX_BYTES) setNote("Too long.");
       else {
-        setText(pasted);
+        edit(pasted);
         setNote("Pasted.");
       }
     } catch {
@@ -832,7 +848,7 @@ function JsonPanel({
       setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
       return;
     }
-    setText(await file.text());
+    edit(await file.text());
     setNote(`Read ${file.name}.`);
   };
   const panel = usePanel("json", { keepHeight: true });
@@ -851,15 +867,20 @@ function JsonPanel({
         </h2>
       )}
       <p className="builderAbout__description">
-        Apply replaces the table. ⌘Z undoes it.
+        Follows the table as you work. Edit it and Apply to replace the table; ⌘Z undoes it.
       </p>
       <div className="builderBrief__actions">
         <button
           type="button"
           className="builderButton builderButton--primary"
-          disabled={!check.ok || !changed || settled !== text}
+          disabled={!check.ok || !edited || settled !== text}
           onClick={() => {
-            if (check.ok) onApply(check.scene, check.summary);
+            if (!check.ok) return;
+            onApply(check.scene, check.summary);
+            // follow the table again, from the setup just applied rather than
+            // the one it replaced
+            setLive(serializeScene(check.scene));
+            setDraft(null);
           }}
         >
           Apply
@@ -887,18 +908,21 @@ function JsonPanel({
         aria-describedby="builder-json-check"
         aria-invalid={!check.ok}
         onChange={(event) => {
-          setText(event.target.value);
+          edit(event.target.value);
           setNote(null);
         }}
       />
       <p id="builder-json-check" className={`builderJson__check${check.ok ? "" : " is-error"}`} role="status">
         {check.ok
-          ? `${changed ? "Ready" : "Current"}: ${check.summary}.${check.skipped ? ` ${check.skipped} skipped.` : ""}`
+          ? `${edited ? "Edited, not on the table yet" : "Live"}: ${check.summary}.${check.skipped ? ` ${check.skipped} skipped.` : ""}`
           : check.error}
       </p>
+      {view.behind ? (
+        <p className="builderJson__note">The table has changed since you began editing; Revert shows it as it is now.</p>
+      ) : null}
       {note ? <p className="builderJson__note">{note}</p> : null}
-      {changed ? (
-        <button type="button" className="builderJson__revert" onClick={() => setText(opened)}>
+      {edited ? (
+        <button type="button" className="builderJson__revert" onClick={() => setDraft(null)}>
           Revert
         </button>
       ) : null}
@@ -1376,7 +1400,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
+        <JsonPanel scene={props.scene} onApply={props.onApplyScene} onClose={closeJson} />
       ) : null}
     </>
   );
