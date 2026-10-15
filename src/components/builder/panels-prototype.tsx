@@ -19,6 +19,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { createPortal } from "react-dom";
 
 type Variant = "A" | "B" | "C";
 const VARIANTS: Variant[] = ["A", "B", "C"];
@@ -283,7 +284,8 @@ export function ProtoPanel({
     </span>
   );
 
-  return (
+  const layer = panelLayer();
+  const panel = (
     <div
       data-proto-panel={id}
       className={`protoPanel protoPanel--${variant}${state.min ? " is-min" : ""}${state.max ? " is-max" : ""}`}
@@ -329,6 +331,20 @@ export function ProtoPanel({
       ) : null}
     </div>
   );
+  return layer ? createPortal(panel, layer) : panel;
+}
+
+/** The one layer all panels sit in, made on first use inside the workspace. */
+function panelLayer(): HTMLElement | null {
+  const workspace = document.querySelector(".builderWorkspace");
+  if (!workspace) return null;
+  let layer = workspace.querySelector<HTMLElement>(":scope > .protoLayer");
+  if (!layer) {
+    layer = document.createElement("div");
+    layer.className = "protoLayer";
+    workspace.appendChild(layer);
+  }
+  return layer;
 }
 
 // ---- overlays and the switcher -----------------------------------------------
@@ -401,8 +417,9 @@ export function PanelsPrototypeBar() {
 }
 
 const PROTOTYPE_CSS = `
-/* toolbars always stay above the panels */
-.builderWorkspace .builderIsland:not(.protoPanel__body > .builderIsland) { z-index: 9000 !important; }
+/* every panel lives in one layer under the toolbars (z 5-8), which keep their own order */
+.protoLayer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.protoLayer > * { pointer-events: auto; }
 
 .protoPanel {
   position: fixed;
