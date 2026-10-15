@@ -85,6 +85,14 @@ _Avoid_: cavity beam
 A trap or cavity that a particle has been placed in. A particle with a host sits at the host's centre and moves with it.
 _Avoid_: parent, container
 
+**Panel**:
+A box of content floating over the table (Parts, Inspector, Beams, Frames, Groups, Brief, JSON) that the author can move, minimise and resize. How the panels are arranged belongs to the author's browser, not to the setup.
+_Avoid_: window, island, layout
+
+**Toolbar**:
+A strip of buttons pinned over the table (File, Add, Tools, View). It never moves, so it can always be reached.
+_Avoid_: island, panel
+
 ## Plotters
 
 **Image view**:
