@@ -31,7 +31,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "beam", text: "Beam", sides: ["below"] },
   { key: "add", text: "Part", sides: ["below"] },
   { key: "brief", text: "AI brief", sides: ["right", "below"] },
-  { key: "tools", text: "Select · posts · grid · labels · distances · lighting · undo", sides: ["right", "below"] },
+  { key: "tools", text: "Select · show · lighting · undo", sides: ["right", "below"] },
   { key: "inspector", text: "Inspector", sides: ["left", "above"] },
   { key: "beams", text: "Beams", sides: ["above", "right"] },
   { key: "frames", text: "Frames", sides: ["right", "above"] },

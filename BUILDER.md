@@ -356,9 +356,10 @@ group, and its inner beams and connections) and brings the file's in;
 the table alone. A merge that would go over the setup limits is refused with
 a notice, and the table is left as it was.
 
-**Label size is the setup's.** The Labels button (a tag, struck through
-while labels are hidden) in the tool pill opens a bubble with the Show labels
-switch and a Label size slider, 50–200 % in 5 % steps. It scales every
+**Label size is the setup's.** The Show button (an eye) in the tool pill
+opens a bubble of switches for what is drawn besides the setup: Posts, Grid,
+Labels, with a Label size slider under it (50–200 % in 5 % steps), and Beam
+distances. The slider scales every
 component, connection and frame label whole (text, padding, corners, border
 and the lift that keeps a part's label clear of the part) through one CSS
 variable, `--label-scale`, on the canvas host. The beam distance numbers, the
@@ -421,9 +422,10 @@ is on screen until it is needed:
   reopening it. The JSON panel
   and the setup brief open in the same spot, so opening one
   closes the others.
-- **Top centre**: the Guide pill, then the tool pill (Select; then what is
-  drawn on the table: Posts, Grid, Labels, Beam distances; then how it is
-  rendered: Lighting, Light graphics; then Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
+- **Top centre**: the Guide pill, then the tool pill (Select; Show, a bubble
+  of what is drawn on the table: Posts, Grid, Labels and their size, Beam
+  distances; Lighting, a bubble of how it is rendered: Brightness, Shadows,
+  Light graphics; then Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
   `.md` button in its own island (it is neither a tool nor a guide). The `.md`
   island hangs off the row's end, so the Guide and tool pills stay centred.
   While placing, drawing or connecting, a mode badge under the pill carries
