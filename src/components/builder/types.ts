@@ -373,8 +373,9 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     label: "Spectrometer",
     tag: "Spec",
     top: 22,
-    minHeight: 100,
-    fixedHeight: 100,
+    // the box stands on the table and grows with its input port, as a
+    // spectrometer on a riser would: a port 150 mm up is drawn 170 mm tall
+    minHeight: 50,
     radius: 70,
     referenceX: -62, // the entrance port's outer end
   },

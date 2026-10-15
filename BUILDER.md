@@ -32,10 +32,10 @@ height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or
 lowering a part changes the length of its post (or the plates a laser stands on); the part
 itself never scales. The lowest height is where the post runs out, or where a
-floating part meets the table; the ceiling is 300 mm. The spectrometer and
-the time tagger are the exceptions: the spectrometer's input port is fixed by
-the instrument, and the time tagger sits on the table with its inputs at
-27 mm. A beam between parts at
+floating part meets the table; the ceiling is 300 mm. A spectrometer's
+height is its input port's (50–300 mm); its box stands on the table and is
+drawn as tall as the port needs. The time tagger is the exception: it sits on
+the table with its inputs at 27 mm. A beam between parts at
 different heights slopes, and its path length and time of flight are 3D.
 
 **Beams are drawn, not traced.** A beam is an ordered list of the components it
