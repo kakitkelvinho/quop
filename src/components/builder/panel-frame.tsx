@@ -3,6 +3,7 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 
 import { Icon, type IconName } from "@/components/builder/builder-icons";
+import type { PanelEdge } from "@/components/builder/panel-geometry";
 
 /**
  * A panel's title bar: a grip, the panel's name, and its buttons: minimise,
@@ -80,5 +81,29 @@ function BarButton({
     <button type="button" className="builderPanelBar__button" aria-label={label} title={title} onClick={onClick}>
       <Icon name={icon} size={14} />
     </button>
+  );
+}
+
+/**
+ * A panel's resize handles: its right edge, its bottom edge and the corner
+ * between them, each with its cursor (usePanel's `resize` props). Only a
+ * pointer resizes; they are not in the tab order.
+ */
+export function PanelResize({
+  onPointerDown,
+}: {
+  onPointerDown: (event: ReactPointerEvent<HTMLElement>, edge: PanelEdge) => void;
+}) {
+  return (
+    <>
+      {(["e", "s", "se"] as const).map((edge) => (
+        <span
+          key={edge}
+          className={`builderPanelResize builderPanelResize--${edge}`}
+          aria-hidden="true"
+          onPointerDown={(event) => onPointerDown(event, edge)}
+        />
+      ))}
+    </>
   );
 }

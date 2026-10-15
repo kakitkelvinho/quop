@@ -121,3 +121,27 @@ export function maximisedRect(bounds: PanelBounds): PanelRect {
     h: Math.max(PANEL_BAR_PX, bounds.height - PANEL_MAX_TOP_PX - PANEL_MAX_BOTTOM_PX),
   });
 }
+
+/** The smallest a panel can be resized to, px. */
+export const PANEL_MIN_W = 180;
+export const PANEL_MIN_H = 90;
+
+/** Which edge a panel is resized by: its right edge, its bottom edge, or the corner between them. */
+export type PanelEdge = "e" | "s" | "se";
+
+/**
+ * A panel resized by an edge or its corner: the pointer moves that edge, the
+ * top-left corner stays. Never smaller than PANEL_MIN_W × PANEL_MIN_H, never
+ * past the workspace's right or bottom edge, whole pixels, and kept in reach.
+ */
+export function resizePanel(start: PanelRect, edge: PanelEdge, dx: number, dy: number, bounds: PanelBounds): PanelRect {
+  const between = (value: number, min: number, max: number) => Math.max(min, Math.min(Math.max(min, max), value));
+  return clampPanel(
+    {
+      ...start,
+      w: edge === "s" ? start.w : between(start.w + dx, PANEL_MIN_W, bounds.width - start.x),
+      h: edge === "e" ? start.h : between(start.h + dy, PANEL_MIN_H, bounds.height - start.y),
+    },
+    bounds,
+  );
+}

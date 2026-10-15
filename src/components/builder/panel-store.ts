@@ -14,6 +14,8 @@ export type PanelState = {
   minimised?: boolean;
   /** filling the workspace below the toolbars; `rect` is where it goes back to */
   maximised?: boolean;
+  /** resized by hand: it keeps `rect`'s size instead of following its content */
+  sized?: boolean;
 };
 
 /** Above every panel's own CSS z-index (5 and 6), so a pressed panel clears the ones never pressed. */
@@ -57,6 +59,12 @@ export function bringPanelToFront(id: string) {
 
 export function movePanelTo(id: string, rect: PanelRect) {
   panels.set(id, { ...panelState(id), rect });
+  changed();
+}
+
+/** A panel resized by hand keeps that size from then on. */
+export function resizePanelTo(id: string, rect: PanelRect) {
+  panels.set(id, { ...panelState(id), rect, sized: true });
   changed();
 }
 

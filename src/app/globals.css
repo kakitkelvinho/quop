@@ -3612,9 +3612,25 @@ html[data-theme="dark"] .builderButton--primary {
   user-select: none;
 }
 
-body.is-movingPanel,
-body.is-movingPanel * {
+/* while a panel is dragged or resized, the cursor says so everywhere it passes */
+body[data-panel-gesture="move"],
+body[data-panel-gesture="move"] * {
   cursor: grabbing !important;
+}
+
+body[data-panel-gesture="e"],
+body[data-panel-gesture="e"] * {
+  cursor: ew-resize !important;
+}
+
+body[data-panel-gesture="s"],
+body[data-panel-gesture="s"] * {
+  cursor: ns-resize !important;
+}
+
+body[data-panel-gesture="se"],
+body[data-panel-gesture="se"] * {
+  cursor: nwse-resize !important;
 }
 
 .builderPanelBar__grip {
@@ -3707,7 +3723,8 @@ body.is-movingPanel * {
   max-height: none;
 }
 
-.builderPanel.is-maximised > .builderHud__beams {
+.builderPanel.is-maximised > .builderHud__beams,
+.builderPanel.is-sized > .builderHud__beams {
   flex: 1;
   min-height: 0;
   max-height: none;
@@ -3715,6 +3732,87 @@ body.is-movingPanel * {
 
 .builderPanel.is-maximised .builderPanelBar {
   cursor: default;
+}
+
+/* Scroll inside the border: a panel's island clips, and what is inside it
+   scrolls, so its border stays whole at any size. A list box is positioned in
+   its column so its resize handles have a box to sit on. */
+.builderPanels.is-on .builderHud__lists > .builderIsland {
+  position: relative;
+}
+
+.builderPanels.is-on .builderHud__lists > .builderIsland.is-sized {
+  max-width: none;
+}
+
+.builderHud__inspector.builderPanel {
+  display: flex;
+  flex-direction: column;
+  max-height: min(calc(100% - 9.5rem), var(--panel-room, 100vh));
+  overflow: hidden;
+}
+
+.builderHud__inspector.builderPanel > .builderInspector {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.builderHud__frames.builderPanel {
+  max-height: min(9rem, 28vh, var(--panel-room, 100vh));
+  overflow: hidden;
+}
+
+.builderHud__frames.builderHud__beamsPanel {
+  max-height: var(--panel-room, none);
+}
+
+.builderHud__frames.builderPanel > .builderHud__frameRows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.builderPanel > .builderHud__beams {
+  min-height: 0;
+}
+
+/* resized small, the brief's text gives up its own minimum */
+.builderPanel.is-sized .builderBrief__text {
+  min-height: 0;
+}
+
+/* the handles sit just inside the border, over the right edge, the bottom edge and the corner */
+.builderPanelResize {
+  position: absolute;
+  z-index: 2;
+  touch-action: none;
+}
+
+.builderPanelResize--e {
+  top: 30px;
+  right: 0;
+  bottom: 12px;
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.builderPanelResize--s {
+  right: 12px;
+  bottom: 0;
+  left: 8px;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.builderPanelResize--se {
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  cursor: nwse-resize;
 }
 
 .builderHud__frameRows {

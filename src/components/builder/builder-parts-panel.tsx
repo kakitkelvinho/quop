@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Icon, PartIcon } from "@/components/builder/builder-icons";
-import { PanelBar } from "@/components/builder/panel-frame";
+import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import {
   PART_CATEGORIES,
   COMPONENT_SPECS,
@@ -98,6 +98,7 @@ export default function PartsPanel({
           <p className="builderParts__empty">No match.</p>
         )}
       </div>
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </aside>
   );
 }
