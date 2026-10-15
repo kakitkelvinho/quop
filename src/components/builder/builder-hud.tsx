@@ -11,6 +11,7 @@ import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
+import { PanelsPrototypeBar, ProtoPanel } from "@/components/builder/panels-prototype";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -30,6 +31,7 @@ import {
   LABEL_SCALE_RANGE,
   beamDisplayName,
   beamLengthMm,
+  componentDisplayName,
   derivedAngleBeam,
   frameDisplayName,
   periscopePartner,
@@ -1123,6 +1125,19 @@ export default function BuilderHud(props: BuilderHudProps) {
   const { onCloseTray } = props;
   // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for them
   const besideParts = trayOpen || briefOpen || jsonOpen;
+  // PROTOTYPE (#224): what a minimised Inspector's title shows
+  const inspectorSubtitle =
+    selected.length > 1
+      ? `${selected.length} parts`
+      : selected[0]
+        ? componentDisplayName(selected[0])
+        : selectedBeam
+          ? beamDisplayName(selectedBeam)
+          : props.selectedFrame
+            ? frameDisplayName(props.selectedFrame)
+            : props.selectedConnection
+              ? (props.selectedConnection.label?.trim() || "Connection")
+              : undefined;
   const toggleBrief = useCallback(() => {
     onCloseTray();
     setJsonOpen(false);
@@ -1267,10 +1282,14 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
 
       {briefOpen && !trayOpen ? (
-        <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
+        <ProtoPanel id="brief" title="Brief" onClose={closeBrief}>
+          <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
+        </ProtoPanel>
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
+        <ProtoPanel id="json" title="JSON" onClose={closeJson}>
+          <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
+        </ProtoPanel>
       ) : null}
 
       <div className="builderIsland builderHud__add">
@@ -1390,14 +1409,17 @@ export default function BuilderHud(props: BuilderHudProps) {
       </p>
 
       {trayOpen ? (
-        <PartsPanel
-          placingType={placingType}
-          onPick={props.onPickType}
-          onClose={props.onCloseTray}
-        />
+        <ProtoPanel id="parts" title="Parts">
+          <PartsPanel
+            placingType={placingType}
+            onPick={props.onPickType}
+            onClose={props.onCloseTray}
+          />
+        </ProtoPanel>
       ) : null}
 
       {inspector ? (
+        <ProtoPanel id="inspector" title="Inspector" subtitle={inspectorSubtitle}>
         <aside
           className="builderIsland builderHud__inspector"
           key={inspectorKey}
@@ -1415,11 +1437,13 @@ export default function BuilderHud(props: BuilderHudProps) {
             <Icon name="close" size={16} />
           </button>
         </aside>
+        </ProtoPanel>
       ) : null}
 
       {beams.length || props.frames.length || props.groups.length ? (
         <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
       {beams.length ? (
+        <ProtoPanel id="beams" title="Beams">
         <BeamList
           components={components}
           beams={beams}
@@ -1430,8 +1454,10 @@ export default function BuilderHud(props: BuilderHudProps) {
           onSetHidden={props.onSetBeamHidden}
           onDelete={props.onDeleteBeam}
         />
+        </ProtoPanel>
       ) : null}
       {props.frames.length ? (
+        <ProtoPanel id="frames" title="Frames">
         <FrameList
           frames={props.frames}
           selectedId={props.selectedFrame?.id ?? null}
@@ -1440,8 +1466,10 @@ export default function BuilderHud(props: BuilderHudProps) {
           onSetHidden={props.onSetFrameHidden}
           onDelete={props.onDeleteFrame}
         />
+        </ProtoPanel>
       ) : null}
       {props.groups.length ? (
+        <ProtoPanel id="groups" title="Groups">
         <GroupList
           groups={props.groups}
           renamingId={props.renamingGroupId}
@@ -1455,9 +1483,12 @@ export default function BuilderHud(props: BuilderHudProps) {
           onExport={props.onExportGroup}
           onDelete={props.onDeleteGroup}
         />
+        </ProtoPanel>
       ) : null}
         </div>
       ) : null}
+
+      <PanelsPrototypeBar />
 
       {props.importChoice ? (
         <ImportChoiceDialog names={props.importChoice.names} onChoose={props.onImportChoice} />
