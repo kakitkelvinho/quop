@@ -3996,24 +3996,17 @@ html[data-theme="dark"] .builderLabel.is-selected {
 }
 
 /* a leg's length along a beam: a bare number in the beam's colour (set
-   inline), haloed in the background so a pale beam still reads over parts and
-   shadows, and turned to run along the leg by BeamDistances. Four fifths of a
-   part's label, in the same type, and sized with it */
+   inline), turned to run along the leg by BeamDistances. Four fifths of a
+   part's label and sized with it, in the same type at medium weight, so a
+   measurement reads quieter than a name. No halo: Kelvin preferred it bare */
 .builderDistance {
   display: inline-block;
   font-size: calc(0.6rem * var(--label-size, 1));
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   transform-origin: center;
-  text-shadow:
-    0 0 2px var(--background),
-    0 0 2px var(--background),
-    1px 1px 0 var(--background),
-    -1px -1px 0 var(--background),
-    1px -1px 0 var(--background),
-    -1px 1px 0 var(--background);
 }
 
 .builderDistance.is-faded {
