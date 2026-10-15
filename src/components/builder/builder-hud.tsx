@@ -11,8 +11,8 @@ import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
-import { PanelBar } from "@/components/builder/panel-frame";
-import { PANEL_LAYER_CLASS, usePanel, usePanelsMove } from "@/components/builder/use-panel-drag";
+import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
+import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import {
   BeamDraftInspector,
@@ -33,6 +33,7 @@ import {
   LABEL_SCALE_RANGE,
   beamDisplayName,
   beamLengthMm,
+  componentDisplayName,
   derivedAngleBeam,
   frameDisplayName,
   periscopePartner,
@@ -345,12 +346,13 @@ function BeamList({
   return (
     <section
       {...panel.frame}
-      className="builderIsland builderHud__frames builderHud__beamsPanel builderPanel"
+      className={`builderIsland builderHud__frames builderHud__beamsPanel${panel.className}`}
       aria-labelledby="builderBeamsTitle"
       data-guide="beams"
     >
       <PanelBar title="Beams" titleId="builderBeamsTitle" {...panel.bar} />
       {list}
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
 }
@@ -399,7 +401,7 @@ function FrameList({
   return (
     <section
       {...panel.frame}
-      className={`builderIsland builderHud__frames${panel.moves ? " builderPanel" : ""}`}
+      className={`builderIsland builderHud__frames${panel.className}`}
       aria-labelledby="builderFramesTitle"
       data-guide="frames"
     >
@@ -446,6 +448,7 @@ function FrameList({
           );
         })}
       </ul>
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
 }
@@ -588,7 +591,7 @@ function GroupList({
   return (
     <section
       {...panel.frame}
-      className={`builderIsland builderHud__frames${panel.moves ? " builderPanel" : ""}`}
+      className={`builderIsland builderHud__frames${panel.className}`}
       aria-labelledby="builderGroupsTitle"
       data-guide="groups"
     >
@@ -657,6 +660,7 @@ function GroupList({
           </li>
         ))}
       </ul>
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
 }
@@ -740,7 +744,7 @@ function BriefPanel({
   return (
     <aside
       {...panel.frame}
-      className={`builderIsland builderAbout builderBrief${panel.moves ? " builderPanel" : ""}`}
+      className={`builderIsland builderAbout builderBrief${panel.className}`}
       aria-labelledby="builder-brief-title"
     >
       {panel.moves ? (
@@ -775,6 +779,7 @@ function BriefPanel({
           <Icon name="close" size={16} />
         </button>
       )}
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </aside>
   );
 }
@@ -840,7 +845,7 @@ function JsonPanel({
   return (
     <aside
       {...panel.frame}
-      className={`builderIsland builderAbout builderBrief builderJson${panel.moves ? " builderPanel" : ""}`}
+      className={`builderIsland builderAbout builderBrief builderJson${panel.className}`}
       aria-labelledby="builder-json-title"
     >
       {panel.moves ? (
@@ -913,6 +918,7 @@ function JsonPanel({
           <Icon name="close" size={16} />
         </button>
       )}
+      {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </aside>
   );
 }
@@ -1232,6 +1238,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   const { onCloseTray } = props;
   const panelsMove = usePanelsMove();
   const inspectorPanel = usePanel("inspector");
+  useRememberedPanels();
   // when the workspace shrinks, moved panels slide back in so their bars can be grabbed
   const panelLayerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1363,6 +1370,19 @@ export default function BuilderHud(props: BuilderHudProps) {
       : selected.length > 1
         ? "group"
         : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedFrame?.id ?? props.selectedConnection?.id);
+  // what a minimised inspector's bar says it holds
+  const inspectorSubtitle =
+    selected.length > 1
+      ? `${selected.length} parts`
+      : selected[0]
+        ? componentDisplayName(selected[0])
+        : selectedBeam
+          ? beamDisplayName(selectedBeam)
+          : props.selectedFrame
+            ? frameDisplayName(props.selectedFrame)
+            : props.selectedConnection
+              ? props.selectedConnection.label?.trim() || CONNECTION_KINDS[props.selectedConnection.kind].label
+              : undefined;
   // the inspector's close button cancels a draft, or else deselects
   const cancelDraft = beamMode
     ? { label: "Cancel beam", run: props.onCancelBeam }
@@ -1548,12 +1568,12 @@ export default function BuilderHud(props: BuilderHudProps) {
       {inspector ? (
         <aside
           {...inspectorPanel.frame}
-          className={`builderIsland builderHud__inspector${panelsMove ? " builderPanel" : ""}`}
+          className={`builderIsland builderHud__inspector${inspectorPanel.className}`}
           key={inspectorKey}
           aria-label="Inspector"
           data-guide="inspector"
         >
-          {panelsMove ? <PanelBar title="Inspector" {...inspectorPanel.bar} /> : null}
+          {panelsMove ? <PanelBar title="Inspector" subtitle={inspectorSubtitle} {...inspectorPanel.bar} /> : null}
           {inspector}
           <button
             type="button"
@@ -1564,6 +1584,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           >
             <Icon name="close" size={16} />
           </button>
+          {inspectorPanel.resize ? <PanelResize {...inspectorPanel.resize} /> : null}
         </aside>
       ) : null}
 

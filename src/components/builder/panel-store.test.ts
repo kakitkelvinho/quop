@@ -8,7 +8,10 @@ import {
   panelState,
   panelsVersion,
   resetPanels,
+  resizePanelTo,
+  setPanelView,
   subscribePanels,
+  workspaceBounds,
 } from "./panel-store.ts";
 
 const rect = { x: 1100, y: 100, w: 264, h: 400 };
@@ -66,5 +69,49 @@ describe("the panels", () => {
     stop();
     movePanelTo("json", rect);
     assert.equal(heard, 2);
+  });
+
+  it("minimise and maximise, each undoing the other, and restore", () => {
+    movePanelTo("beams", rect);
+    setPanelView("beams", "minimised");
+    assert.deepEqual(panelState("beams"), { rect, minimised: true });
+    setPanelView("beams", "maximised");
+    assert.deepEqual(panelState("beams"), { rect, maximised: true });
+    setPanelView("beams", "restored");
+    assert.deepEqual(panelState("beams"), { rect });
+  });
+
+  it("don't change when a panel is put in the state it is in", () => {
+    setPanelView("parts", "minimised");
+    const version = panelsVersion();
+    setPanelView("parts", "minimised");
+    setPanelView("groups", "restored");
+    assert.equal(panelsVersion(), version);
+  });
+
+  it("all open again on reset", () => {
+    setPanelView("inspector", "minimised");
+    setPanelView("json", "maximised");
+    resetPanels();
+    assert.deepEqual([panelState("inspector"), panelState("json")], [{}, {}]);
+  });
+
+  it("know the workspace's size, and tell a maximised panel when it changes", () => {
+    keepPanelsInside({ width: 1287, height: 733 });
+    let heard = 0;
+    const stop = subscribePanels(() => (heard += 1));
+    keepPanelsInside({ width: 1287, height: 733 });
+    keepPanelsInside({ width: 1000, height: 733 });
+    stop();
+    assert.deepEqual([heard, workspaceBounds()], [1, { width: 1000, height: 733 }]);
+  });
+
+  it("keep a resized panel's size, and forget it on reset", () => {
+    resizePanelTo("frames", rect);
+    assert.deepEqual(panelState("frames"), { rect, sized: true });
+    movePanelTo("frames", { ...rect, x: 40 });
+    assert.equal(panelState("frames").sized, true);
+    resetPanels();
+    assert.deepEqual(panelState("frames"), {});
   });
 });

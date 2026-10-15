@@ -42,7 +42,106 @@ export function clampPanel(rect: PanelRect, bounds: PanelBounds): PanelRect {
   };
 }
 
-/** A panel dragged by its bar: where it started, moved by the pointer, kept in reach. */
-export function movePanel(start: PanelRect, dx: number, dy: number, bounds: PanelBounds): PanelRect {
-  return clampPanel({ ...start, x: start.x + dx, y: start.y + dy }, bounds);
+/** How far in from the workspace's edges a panel snaps to, px. */
+export const PANEL_INSET_PX = 12;
+/** The gap a panel snaps to beside, above or below another, px. */
+export const PANEL_GAP_PX = 8;
+/** How close an edge must come to snap, px. */
+export const PANEL_SNAP_PX = 10;
+
+/**
+ * Where a panel's left (or top) edge may snap to on one axis, for a panel
+ * `size` long: the workspace's edges, inset; and against each other panel,
+ * lined up with either of its edges or beside it with the gap.
+ */
+function snapTargets(size: number, extent: number, others: [number, number][]): number[] {
+  const targets = [PANEL_INSET_PX, extent - PANEL_INSET_PX - size];
+  for (const [start, length] of others) {
+    const end = start + length;
+    targets.push(start, end - size, end + PANEL_GAP_PX, start - size - PANEL_GAP_PX);
+  }
+  return targets;
+}
+
+/** The target nearest `value` within PANEL_SNAP_PX, or `value` itself; the first of a tie wins. */
+function nearest(value: number, targets: number[]): number {
+  let best = value;
+  let distance = Infinity;
+  for (const target of targets) {
+    const off = Math.abs(target - value);
+    if (off <= PANEL_SNAP_PX && off < distance) {
+      best = target;
+      distance = off;
+    }
+  }
+  return best;
+}
+
+/**
+ * Snap a moving panel, each axis on its own, to the nearest edge within
+ * PANEL_SNAP_PX: the workspace's, PANEL_INSET_PX in, or another panel's,
+ * lined up or PANEL_GAP_PX beside it. Beyond that it stays where it is.
+ */
+export function snapPanel(rect: PanelRect, others: PanelRect[], bounds: PanelBounds): PanelRect {
+  return {
+    ...rect,
+    x: nearest(rect.x, snapTargets(rect.w, bounds.width, others.map(({ x, w }) => [x, w]))),
+    y: nearest(rect.y, snapTargets(rect.h, bounds.height, others.map(({ y, h }) => [y, h]))),
+  };
+}
+
+/**
+ * A panel dragged by its bar: where it started, moved by the pointer, snapped
+ * to the workspace and the other panels, and kept in reach.
+ */
+export function movePanel(
+  start: PanelRect,
+  dx: number,
+  dy: number,
+  bounds: PanelBounds,
+  others: PanelRect[] = [],
+): PanelRect {
+  return clampPanel(snapPanel({ ...start, x: start.x + dx, y: start.y + dy }, others, bounds), bounds);
+}
+
+/**
+ * Where a maximised panel goes, px: between the Parts panel's own top and
+ * bottom (7.3rem and 3.8rem), so its bar clears the + toolbar and its foot the
+ * View toolbar, and the workspace's inset at the sides.
+ */
+export const PANEL_MAX_TOP_PX = 117;
+export const PANEL_MAX_BOTTOM_PX = 61;
+
+/** A maximised panel's rect: the workspace below the toolbars, whole pixels, never below the minimum. */
+export function maximisedRect(bounds: PanelBounds): PanelRect {
+  return wholeRect({
+    x: PANEL_INSET_PX,
+    y: PANEL_MAX_TOP_PX,
+    w: Math.max(PANEL_KEEP_PX, bounds.width - 2 * PANEL_INSET_PX),
+    h: Math.max(PANEL_BAR_PX, bounds.height - PANEL_MAX_TOP_PX - PANEL_MAX_BOTTOM_PX),
+  });
+}
+
+/** The smallest a panel can be resized to, px. */
+export const PANEL_MIN_W = 180;
+export const PANEL_MIN_H = 90;
+
+/** Which edge a panel is resized by: its right edge, its bottom edge, or the corner between them. */
+export type PanelEdge = "e" | "s" | "se";
+
+/**
+ * A panel resized by an edge or its corner: the pointer moves that edge, the
+ * top-left corner stays. Never smaller than PANEL_MIN_W × PANEL_MIN_H, never
+ * past the workspace's right or bottom edge, whole pixels, and kept in reach.
+ */
+export function resizePanel(start: PanelRect, edge: PanelEdge, dx: number, dy: number, bounds: PanelBounds): PanelRect {
+  const between = (value: number, min: number, max: number) => Math.max(min, Math.min(Math.max(min, max), value));
+  return clampPanel(
+    {
+      ...start,
+      w: edge === "s" ? start.w : between(start.w + dx, PANEL_MIN_W, bounds.width - start.x),
+      h: edge === "e" ? start.h : between(start.h + dy, PANEL_MIN_H, bounds.height - start.y),
+    },
+    bounds,
+  );
 }
