@@ -59,6 +59,14 @@ const ICONS = {
       <circle cx="7.5" cy="8.5" r="1.2" />
     </>
   ),
+  // the same tag struck through: labels hidden
+  labelsOff: (
+    <>
+      <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+      <circle cx="7.5" cy="8.5" r="1.2" />
+      <path d="M4 4l16 16" />
+    </>
+  ),
   // a ruler laid at a slant, with its ticks
   ruler: (
     <>
@@ -91,12 +99,6 @@ const ICONS = {
     </>
   ),
   // a large and a small letter: the labels' size
-  labelSize: (
-    <>
-      <path d="M3 19 8.5 5h1L15 19M5.2 14h7.6" />
-      <path d="M15.5 19 18.5 11.5h.6L22 19M16.6 16.4h4.3" />
-    </>
-  ),
   // three dots: more for this row
   more: (
     <>
