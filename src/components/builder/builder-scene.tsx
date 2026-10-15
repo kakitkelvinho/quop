@@ -38,6 +38,7 @@ import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
 import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
 import { useFrameDrawing } from "@/components/builder/use-frame-drawing";
 import { getTheme, setTheme } from "@/components/theme-toggle";
+import { DistanceFontPrototype } from "@/components/builder/distance-font-prototype";
 import {
   BEAM_COLORS,
   CONNECTION_KINDS,
@@ -1509,6 +1510,7 @@ export default function BuilderScene() {
 
   return (
     <div className="builderWorkspace">
+      <DistanceFontPrototype />
       <div
         ref={hostRef}
         className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || drawing ? " is-picking" : ""}`}
