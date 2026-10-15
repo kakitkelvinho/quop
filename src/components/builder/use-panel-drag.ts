@@ -5,17 +5,21 @@ import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useSyncExternalStore,
 } from "react";
 
 import { type PanelEdge, maximisedRect, movePanel, resizePanel, wholeRect } from "./panel-geometry.ts";
+import { readSavedPanels, savePanels } from "./panel-memory.ts";
 import {
+  allPanels,
   bringPanelToFront,
   movePanelTo,
   panelState,
   panelsVersion,
   resizePanelTo,
+  restorePanels,
   setPanelView,
   subscribePanels,
   workspaceBounds,
@@ -41,6 +45,34 @@ export function usePanelsMove(): boolean {
     () => !window.matchMedia(PINNED_QUERY).matches,
     () => false,
   );
+}
+
+/** How long the panels stay still before their arrangement is saved, ms: a drag is saved once, at its end. */
+const SAVE_DELAY_MS = 250;
+
+/**
+ * Bring back the panels' arrangement this browser kept, before the first
+ * paint, and keep it as it changes. The layer's resize watch then pulls any
+ * panel saved in a larger window back in reach.
+ */
+export function useRememberedPanels() {
+  useLayoutEffect(() => {
+    const saved = readSavedPanels();
+    if (saved.size) restorePanels(saved);
+    let timer: number | undefined;
+    const stop = subscribePanels(() => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => savePanels(allPanels()), SAVE_DELAY_MS);
+    });
+    return () => {
+      stop();
+      // leaving mid-wait still saves
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+        savePanels(allPanels());
+      }
+    };
+  }, []);
 }
 
 /** The layer every panel sits in; its box is the workspace's. */

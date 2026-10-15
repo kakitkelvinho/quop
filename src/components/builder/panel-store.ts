@@ -100,6 +100,18 @@ export function keepPanelsInside(bounds: PanelBounds) {
   if (moved) changed();
 }
 
+/** Every panel, for saving. */
+export function allPanels(): ReadonlyMap<string, PanelState> {
+  return panels;
+}
+
+/** Panels as they were kept: placed, minimised or maximised as saved, in their own CSS order. */
+export function restorePanels(saved: ReadonlyMap<string, PanelState>) {
+  panels = new Map(saved);
+  top = FIRST_Z;
+  changed();
+}
+
 /** Every panel back where it starts, open and in its own CSS order. */
 export function resetPanels() {
   panels = new Map();

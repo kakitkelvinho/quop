@@ -504,7 +504,13 @@ right and bottom edges (not while minimised or maximised). Until it is
 resized, a moved panel's height follows its content, up to its own cap and
 the workspace's bottom; once resized it keeps its size. Whatever its size,
 the panel's box clips and its contents scroll inside it, so its border stays
-whole. The bar replaces the panel's own heading, and the panel is still
+whole. This browser remembers the arrangement (each panel's place and size,
+and whether it is minimised, maximised or resized) in `localStorage` under
+`quop-builder-panels:v1`, and brings it back when the Tabletop opens, pulled
+back in reach if the window is now smaller. Missing, unreadable or
+other-version data opens default panels, quietly; Reset panels forgets it.
+Like the graphics quality, it is the viewer's: it never reaches the setup
+file, the JSON panel or the brief (`panel-memory.ts`). The bar replaces the panel's own heading, and the panel is still
 labelled by it. Dragging the bar with the left button moves the panel
 anywhere in the workspace; until then it sits where it always has. The panel
 last pressed comes to the front, and every panel sits in one layer under the
