@@ -52,37 +52,12 @@ const ICONS = {
     </>
   ),
   fit: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,
-  grid: <path d="M4 4h16v16H4zM4 9.33h16M4 14.67h16M9.33 4v16M14.67 4v16" />,
-  labels: (
-    <>
-      <path d="M3 12V4h8l10 10-8 8L3 12Z" />
-      <circle cx="7.5" cy="8.5" r="1.2" />
-    </>
-  ),
-  // a ruler laid at a slant, with its ticks
-  ruler: (
-    <>
-      <path d="m3.5 15.5 12-12 5 5-12 12z" />
-      <path d="m7.5 11.5 2 2M10.5 8.5 12 10M13.5 5.5l2 2M6 13l1.5 1.5" />
-    </>
-  ),
-  // a fluted classical column: abacus and echinus, three flutes, base and plinth
-  posts: (
-    <>
-      <path d="M4 4h16" />
-      <path d="M6 4.5c0 1.4.9 2 2 2h8c1.1 0 2-.6 2-2" />
-      <path d="M7.5 6.5v11M12 6.5v11M16.5 6.5v11" />
-      <path d="M6.5 17.5h11M4.5 20.5h15" />
-    </>
-  ),
   theme: (
     <>
       <circle cx="12" cy="12" r="8" />
       <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
     </>
   ),
-  // a lightning bolt: light graphics, for speed
-  bolt: <path d="M13 3 5 13.5h6L10 21l8-10.5h-6Z" />,
   // a bulb: the lighting settings
   light: (
     <>
@@ -91,12 +66,6 @@ const ICONS = {
     </>
   ),
   // a large and a small letter: the labels' size
-  labelSize: (
-    <>
-      <path d="M3 19 8.5 5h1L15 19M5.2 14h7.6" />
-      <path d="M15.5 19 18.5 11.5h.6L22 19M16.6 16.4h4.3" />
-    </>
-  ),
   // three dots: more for this row
   more: (
     <>
@@ -146,6 +115,14 @@ const ICONS = {
   frame: <rect x="4" y="6" width="16" height="12" rx="1.5" strokeDasharray="3 2.5" />,
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
+  // two panels, and the arrow that sends them home
+  resetPanels: (
+    <>
+      <rect x="3.5" y="4" width="7" height="9" rx="1.2" />
+      <rect x="3.5" y="15.5" width="7" height="4.5" rx="1.2" />
+      <path d="M14 9.5h3.5a3 3 0 0 1 0 6H14M16 7l-2.5 2.5L16 12" />
+    </>
+  ),
   grip: (
     <>
       <circle cx="9" cy="6" r="1" />

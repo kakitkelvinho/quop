@@ -3547,6 +3547,142 @@ html[data-theme="dark"] .builderButton--primary {
   text-transform: uppercase;
 }
 
+/* --- panels: title bars, moved by dragging (wide screens, fine pointers) --- */
+
+/* Every panel sits in one layer under the toolbars (5–8), which keep their own
+   order. Where panels stay put the layer is no box at all. */
+.builderPanels {
+  display: contents;
+}
+
+.builderPanels.is-on {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: block;
+  pointer-events: none;
+}
+
+.builderPanels.is-on .builderIsland {
+  pointer-events: auto;
+}
+
+/* The lists column spans the workspace, so a box moved out of it is placed in
+   the workspace's own pixels; the column still stacks the others bottom left. */
+.builderPanels.is-on .builderHud__lists {
+  inset: 0;
+  z-index: auto;
+  justify-content: flex-end;
+  max-width: none;
+  padding: 0 0 0.9rem 0.9rem;
+}
+
+.builderPanels.is-on .builderHud__lists.is-besideParts {
+  left: 0;
+  padding-left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
+}
+
+.builderPanels.is-on .builderHud__lists > .builderIsland {
+  z-index: 5;
+  max-width: 22rem;
+}
+
+/* the bar takes the top edge; it stays in view when the panel scrolls */
+.builderPanel {
+  padding-top: 0;
+}
+
+.builderPanelBar {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  height: 30px;
+  margin: 0 0 0.25rem;
+  padding: 0 0.3rem 0 0.4rem;
+  border-bottom: 1px solid var(--border);
+  border-radius: calc(0.8rem - 1px) calc(0.8rem - 1px) 0 0;
+  background: var(--surface-strong);
+  color: var(--foreground);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+body.is-movingPanel,
+body.is-movingPanel * {
+  cursor: grabbing !important;
+}
+
+.builderPanelBar__grip {
+  display: inline-grid;
+  color: var(--muted);
+}
+
+.builderPanelBar__title {
+  overflow: hidden;
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builderPanelBar__buttons {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.builderPanelBar__button {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.builderPanelBar__button:hover {
+  background: var(--accent-soft);
+  color: var(--foreground);
+}
+
+/* the bar spans the island, whatever its padding */
+.builderHud__frames.builderPanel .builderPanelBar {
+  margin: 0 -0.25rem 0.15rem;
+}
+
+.builderAbout.builderPanel .builderPanelBar {
+  margin: 0 -0.85rem 0.6rem;
+}
+
+.builderHud__inspector.builderPanel .builderPanelBar {
+  margin-bottom: 0.35rem;
+}
+
+/* the deselect button sits under the bar, where the inspector's head is */
+.builderHud__inspector.builderPanel > .builderHud__close {
+  top: calc(30px + 0.55rem);
+}
+
+/* the beams list scrolls under the bar inside its island, to its own height */
+.builderHud__frames.builderHud__beamsPanel {
+  max-height: none;
+  overflow: hidden;
+}
+
+.builderPanel > .builderHud__beams {
+  padding: 0;
+}
+
 .builderHud__frameRows {
   display: flex;
   flex-direction: column;

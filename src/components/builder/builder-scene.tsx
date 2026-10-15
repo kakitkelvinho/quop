@@ -33,6 +33,7 @@ import { groupSubset, leftOutNotice, visibility } from "@/components/builder/gro
 import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
+import { resetPanels } from "@/components/builder/panel-store";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
 import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
@@ -408,6 +409,11 @@ export default function BuilderScene() {
       4000,
     );
   }, []);
+
+  const resetAllPanels = useCallback(() => {
+    resetPanels();
+    announce("Panels reset.");
+  }, [announce]);
 
   // ---- placing & selection -------------------------------------------------
 
@@ -1364,6 +1370,13 @@ export default function BuilderScene() {
         return;
       }
 
+      // ⌥0: by the key's place, since Option turns the 0 into º on a Mac
+      if (event.altKey && !meta && !event.shiftKey && event.code === "Digit0") {
+        event.preventDefault();
+        resetAllPanels();
+        return;
+      }
+
       if (event.key === "Escape") {
         // stop placing first, so Esc mid-run keeps the panel for the next part
         if (placingType) setPlacingType(null);
@@ -1486,6 +1499,7 @@ export default function BuilderScene() {
     groupSelected,
     handleDeleteFrame,
     placingType,
+    resetAllPanels,
     rotateSelected,
     selectedConnection,
     selectedFrame,
@@ -1713,6 +1727,7 @@ export default function BuilderScene() {
         onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}
         quality={quality}
         onToggleQuality={toggleQuality}
+        onResetPanels={resetAllPanels}
         onUndo={api.undo}
         onRedo={api.redo}
         onSave={handleSave}
