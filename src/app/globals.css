@@ -4781,3 +4781,229 @@ html[data-theme="dark"] .builderAngleBadge {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   PROTOTYPE (show wheel): the eye's dropdown as a semicircular selection
+   wheel, three looks, and the floating variant bar. Throwaway.
+   --------------------------------------------------------------------------- */
+.showWheel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 50%;
+  z-index: 50;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.showWheel__svg {
+  overflow: visible;
+  filter: drop-shadow(0 14px 22px rgb(31 41 51 / 0.16));
+  transform-origin: 50% 0;
+  animation: showWheelOpen 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .showWheel__svg {
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
+}
+
+.showWheel__seg {
+  pointer-events: auto;
+  cursor: pointer;
+  outline: none;
+  color: var(--muted);
+  animation: showWheelSeg 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.showWheel__shape {
+  fill: var(--surface-strong);
+  stroke: var(--border);
+  stroke-width: 1;
+  transition:
+    fill 120ms ease,
+    stroke 120ms ease;
+}
+
+.showWheel__backdrop,
+.showWheel__hub path {
+  fill: var(--surface-strong);
+  stroke: var(--border);
+  pointer-events: auto;
+}
+
+.showWheel__name {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.showWheel__state {
+  fill: currentColor;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.showWheel__seg:hover {
+  color: var(--foreground);
+}
+
+.showWheel__seg:hover .showWheel__shape {
+  fill: var(--background-muted);
+}
+
+.showWheel__seg.is-on {
+  color: var(--accent);
+}
+
+.showWheel__seg.is-on .showWheel__shape {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+  stroke: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.showWheel__seg:focus-visible .showWheel__shape {
+  stroke: var(--focus-ring);
+  stroke-width: 2.5;
+}
+
+/* the ring: wedges of a half doughnut, the eye button in the hole */
+.showWheel--ring .showWheel__shape {
+  stroke: var(--surface-strong);
+  stroke-width: 3;
+}
+
+.showWheel--ring .showWheel__seg.is-on .showWheel__shape {
+  stroke: var(--surface-strong);
+}
+
+.showWheel--ring .showWheel__seg:focus-visible .showWheel__shape {
+  stroke: var(--focus-ring);
+}
+
+/* the orbs: round keys on a pale half disc, a lit pip when on */
+.showWheel__pip {
+  fill: var(--border);
+  stroke: var(--surface-strong);
+  stroke-width: 2;
+}
+
+.showWheel__seg.is-on .showWheel__pip {
+  fill: var(--accent);
+}
+
+.showWheel--orbs .showWheel__seg.is-on .showWheel__shape {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.showWheel--orbs .showWheel__seg.is-on > g {
+  color: var(--surface-strong);
+}
+
+.showWheel--orbs .showWheel__name,
+.showWheel--dial .showWheel__name {
+  font-size: 10px;
+}
+
+/* the dial: pie slices, the hub reads out the slice under the pointer */
+.showWheel--dial .showWheel__shape {
+  stroke: var(--surface-strong);
+  stroke-width: 2;
+}
+
+.showWheel__hub {
+  pointer-events: none;
+}
+
+.showWheel__hubName {
+  fill: var(--foreground);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.showWheel__hubState {
+  fill: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.showWheel__hubText {
+  margin: 0;
+  color: var(--muted);
+  font-size: 8.5px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.showWheel__footer {
+  width: 12rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  animation: showWheelSeg 260ms 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.showWheel__footer input:disabled {
+  opacity: 0.4;
+}
+
+@keyframes showWheelOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+}
+
+@keyframes showWheelSeg {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showWheel__svg,
+  .showWheel__seg,
+  .showWheel__footer {
+    animation: none;
+  }
+}
+
+.protoSwitcher {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font: 600 0.75rem/1 var(--font-mono);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  translate: -50% 0;
+}
+
+.protoSwitcher button {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+}
+
+.protoSwitcher b {
+  color: #f4b942;
+}

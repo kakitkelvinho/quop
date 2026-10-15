@@ -12,6 +12,8 @@ import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar } from "@/components/builder/panel-frame";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/components/builder/prototype-switcher";
+import { ShowWheel, WHEEL_VARIANTS, type WheelItem } from "@/components/builder/show-wheel.prototype";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import {
@@ -1143,21 +1145,74 @@ function ShowMenu({
   const end = () => {
     editing.current = false;
   };
+  // PROTOTYPE (show wheel): ?wheel=ring|orbs|dial|bubble picks the dropdown
+  const variant = usePrototypeVariant(
+    "wheel",
+    WHEEL_VARIANTS.map((entry) => entry.key),
+  );
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const items: WheelItem[] = [
+    { id: "posts", label: "Posts", description: "Posts and holders under parts", icon: "posts", on: posts, onToggle: onTogglePosts },
+    { id: "grid", label: "Grid", description: "The table's hole grid", icon: "grid", on: grid, onToggle: onToggleGrid },
+    { id: "labels", label: "Labels", description: "Part names on the table", icon: "labels", iconOff: "labelsOff", on: labels, onToggle: onToggleLabels },
+    { id: "distances", label: "Beam distances", description: "Lengths along each beam", icon: "ruler", on: distances, onToggle: onToggleDistances },
+  ];
+  const sizeSlider = (
+    <label className="builderField">
+      <span className="builderField__label">
+        Label size
+        <span className="builderReadout">{Math.round(scale * 100)}%</span>
+      </span>
+      <input
+        className="builderSlider"
+        type="range"
+        min={LABEL_SCALE_RANGE[0]}
+        max={LABEL_SCALE_RANGE[1]}
+        step={0.05}
+        value={scale}
+        disabled={!labels}
+        onChange={(event) => {
+          if (!editing.current) {
+            editing.current = true;
+            onBegin();
+          }
+          onChange(Number(event.target.value));
+        }}
+        onPointerUp={end}
+        onKeyUp={end}
+        onBlur={end}
+      />
+    </label>
+  );
 
   return (
     <div className="builderLighting" ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
         className={`builderIconBtn${open ? " is-active" : ""}`}
         aria-label="Show"
         aria-expanded={open}
-        aria-haspopup="dialog"
+        aria-haspopup={variant === "bubble" ? "dialog" : "menu"}
         title="Show"
         onClick={() => setOpen((current) => !current)}
       >
         <Icon name="eye" />
       </button>
-      {open ? (
+      <PrototypeSwitcher param="wheel" variants={WHEEL_VARIANTS} />
+      {open && variant !== "bubble" ? (
+        <ShowWheel
+          key={variant}
+          variant={variant}
+          items={items}
+          onClose={() => {
+            setOpen(false);
+            buttonRef.current?.focus();
+          }}
+          footer={sizeSlider}
+        />
+      ) : null}
+      {open && variant === "bubble" ? (
         <div className="builderLighting__bubble" role="dialog" aria-label="Show">
           <label className="builderLighting__toggle">
             Posts
