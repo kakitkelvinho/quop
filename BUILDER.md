@@ -463,7 +463,7 @@ is on screen until it is needed:
   mirror gets shared by two. Every one of these is one undo step and is
   announced. Members of a hidden group draw no ghost when their row selects
   them; the selection and the inspector still show them.
-- **Bottom right**: the view controls.
+- **Bottom right**: the view controls, and Reset panels (below).
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
 - **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
@@ -483,6 +483,22 @@ is on screen until it is needed:
   tag carries `data-guide` with its key in `TAGS` (`builder-guide.tsx`); the
   cheat sheet's lines are `SHEET` there. A control that moves or changes is
   updated in both.
+
+**Panels move; toolbars stay.** The seven panels (Parts, Inspector, Beams,
+Frames, Groups, the setup brief and Setup JSON) each have a title bar: a
+grip, the panel's name and, for the brief and the JSON panel, their close
+button. The bar replaces the panel's own heading, and the panel is still
+labelled by it. Dragging the bar with the left button moves the panel
+anywhere in the workspace; until then it sits where it always has. The panel
+last pressed comes to the front, and every panel sits in one layer under the
+toolbars (File, Add, Tools, View), so it never covers one. A moved panel
+keeps at least 90 px of its bar inside the workspace sideways, and all of it
+top to bottom, and slides back in when the window shrinks. Positions and
+sizes are whole pixels, so borders stay crisp at odd window sizes. Reset
+panels, in the View toolbar, or `⌥0` (`Alt+0`) puts every panel back where it
+starts. Under 900 px wide, or with a coarse pointer, panels have no title bar
+and stay put. The geometry is `panel-geometry.ts`, the arrangement
+`panel-store.ts`, the drag `use-panel-drag.ts` and the bar `panel-frame.tsx`.
 
 | Action | How |
 | --- | --- |
@@ -509,6 +525,7 @@ is on screen until it is needed:
 | Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
 | Share a part between groups | Tick each group in the Groups field of its inspector |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
+| Move a panel | Drag its title bar. Reset panels (View toolbar) or `⌥0` puts them all back |
 | Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 

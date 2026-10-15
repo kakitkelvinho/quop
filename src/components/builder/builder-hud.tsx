@@ -11,6 +11,9 @@ import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
+import { PanelBar } from "@/components/builder/panel-frame";
+import { PANEL_LAYER_CLASS, usePanel, usePanelsMove } from "@/components/builder/use-panel-drag";
+import { keepPanelsInside } from "@/components/builder/panel-store";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -163,6 +166,8 @@ export type BuilderHudProps = {
   onToggleTheme: () => void;
   quality: GraphicsQuality;
   onToggleQuality: () => void;
+  /** every panel back where it starts (⌥0) */
+  onResetPanels: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -283,14 +288,15 @@ function BeamList({
       return onMove(beams[from].id, to, how);
     },
   });
+  const panel = usePanel("beams", { fitWidth: true });
 
-  return (
+  const list = (
     <ol
       ref={listRef}
       role="list"
-      aria-label="Beams"
-      data-guide="beams"
-      className={`builderIsland builderHud__beams${besideParts ? " is-besideParts" : ""} ${listClass}`}
+      aria-label={panel.moves ? undefined : "Beams"}
+      data-guide={panel.moves ? undefined : "beams"}
+      className={`${panel.moves ? "" : "builderIsland "}builderHud__beams${besideParts ? " is-besideParts" : ""} ${listClass}`}
     >
       {beams.map((beam, index) => {
         const name = beamDisplayName(beam);
@@ -334,6 +340,19 @@ function BeamList({
       })}
     </ol>
   );
+  // a list holds only rows, so with a title bar the island is a section around it
+  if (!panel.moves) return list;
+  return (
+    <section
+      {...panel.frame}
+      className="builderIsland builderHud__frames builderHud__beamsPanel builderPanel"
+      aria-labelledby="builderBeamsTitle"
+      data-guide="beams"
+    >
+      <PanelBar title="Beams" titleId="builderBeamsTitle" {...panel.bar} />
+      {list}
+    </section>
+  );
 }
 
 /**
@@ -375,12 +394,22 @@ function FrameList({
       return onMove(frames[from].id, to, how);
     },
   });
+  const panel = usePanel("frames", { fitWidth: true });
 
   return (
-    <section className="builderIsland builderHud__frames" aria-labelledby="builderFramesTitle" data-guide="frames">
-      <h2 id="builderFramesTitle" className="builderHud__listTitle">
-        Frames
-      </h2>
+    <section
+      {...panel.frame}
+      className={`builderIsland builderHud__frames${panel.moves ? " builderPanel" : ""}`}
+      aria-labelledby="builderFramesTitle"
+      data-guide="frames"
+    >
+      {panel.moves ? (
+        <PanelBar title="Frames" titleId="builderFramesTitle" {...panel.bar} />
+      ) : (
+        <h2 id="builderFramesTitle" className="builderHud__listTitle">
+          Frames
+        </h2>
+      )}
       <ul ref={listRef} role="list" className={`builderHud__frameRows ${listClass}`}>
         {frames.map((frame, index) => {
           const name = frameDisplayName(frame);
@@ -555,11 +584,21 @@ function GroupList({
   onDelete: (id: string) => void;
 }) {
   const picking = useRef<string | null>(null);
+  const panel = usePanel("groups", { fitWidth: true });
   return (
-    <section className="builderIsland builderHud__frames" aria-labelledby="builderGroupsTitle" data-guide="groups">
-      <h2 id="builderGroupsTitle" className="builderHud__listTitle">
-        Groups
-      </h2>
+    <section
+      {...panel.frame}
+      className={`builderIsland builderHud__frames${panel.moves ? " builderPanel" : ""}`}
+      aria-labelledby="builderGroupsTitle"
+      data-guide="groups"
+    >
+      {panel.moves ? (
+        <PanelBar title="Groups" titleId="builderGroupsTitle" {...panel.bar} />
+      ) : (
+        <h2 id="builderGroupsTitle" className="builderHud__listTitle">
+          Groups
+        </h2>
+      )}
       <ul role="list" className="builderHud__frameRows" onPointerLeave={() => onHover(null)}>
         {groups.map((group) => (
           <li
@@ -696,12 +735,21 @@ function BriefPanel({
 }) {
   const brief = useMemo(() => setupBrief(), []);
   useEscapeCloses(onClose);
+  const panel = usePanel("brief", { keepHeight: true });
 
   return (
-    <aside className="builderIsland builderAbout builderBrief" aria-labelledby="builder-brief-title">
-      <h2 id="builder-brief-title" className="builderAbout__title">
-        Setup brief
-      </h2>
+    <aside
+      {...panel.frame}
+      className={`builderIsland builderAbout builderBrief${panel.moves ? " builderPanel" : ""}`}
+      aria-labelledby="builder-brief-title"
+    >
+      {panel.moves ? (
+        <PanelBar title="Setup brief" titleId="builder-brief-title" onClose={onClose} {...panel.bar} />
+      ) : (
+        <h2 id="builder-brief-title" className="builderAbout__title">
+          Setup brief
+        </h2>
+      )}
       <p className="builderAbout__description">
         For an AI assistant. Open its reply with Open JSON….
       </p>
@@ -716,15 +764,17 @@ function BriefPanel({
       <pre className="builderBrief__text" tabIndex={0} aria-label="The setup brief, in Markdown">
         {brief}
       </pre>
-      <button
-        type="button"
-        className="builderHud__close"
-        aria-label="Close panel"
-        title="Close (Esc)"
-        onClick={onClose}
-      >
-        <Icon name="close" size={16} />
-      </button>
+      {panel.moves ? null : (
+        <button
+          type="button"
+          className="builderHud__close"
+          aria-label="Close panel"
+          title="Close (Esc)"
+          onClick={onClose}
+        >
+          <Icon name="close" size={16} />
+        </button>
+      )}
     </aside>
   );
 }
@@ -785,12 +835,21 @@ function JsonPanel({
     setText(await file.text());
     setNote(`Read ${file.name}.`);
   };
+  const panel = usePanel("json", { keepHeight: true });
 
   return (
-    <aside className="builderIsland builderAbout builderBrief builderJson" aria-labelledby="builder-json-title">
-      <h2 id="builder-json-title" className="builderAbout__title">
-        Setup JSON
-      </h2>
+    <aside
+      {...panel.frame}
+      className={`builderIsland builderAbout builderBrief builderJson${panel.moves ? " builderPanel" : ""}`}
+      aria-labelledby="builder-json-title"
+    >
+      {panel.moves ? (
+        <PanelBar title="Setup JSON" titleId="builder-json-title" onClose={onClose} {...panel.bar} />
+      ) : (
+        <h2 id="builder-json-title" className="builderAbout__title">
+          Setup JSON
+        </h2>
+      )}
       <p className="builderAbout__description">
         Apply replaces the table. ⌘Z undoes it.
       </p>
@@ -843,15 +902,17 @@ function JsonPanel({
           Revert
         </button>
       ) : null}
-      <button
-        type="button"
-        className="builderHud__close"
-        aria-label="Close panel"
-        title="Close (Esc)"
-        onClick={onClose}
-      >
-        <Icon name="close" size={16} />
-      </button>
+      {panel.moves ? null : (
+        <button
+          type="button"
+          className="builderHud__close"
+          aria-label="Close panel"
+          title="Close (Esc)"
+          onClick={onClose}
+        >
+          <Icon name="close" size={16} />
+        </button>
+      )}
     </aside>
   );
 }
@@ -1121,6 +1182,19 @@ export default function BuilderHud(props: BuilderHudProps) {
   const closeBrief = useCallback(() => setBriefOpen(false), []);
   const closeJson = useCallback(() => setJsonOpen(false), []);
   const { onCloseTray } = props;
+  const panelsMove = usePanelsMove();
+  const inspectorPanel = usePanel("inspector");
+  // when the workspace shrinks, moved panels slide back in so their bars can be grabbed
+  const panelLayerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const layer = panelLayerRef.current;
+    if (!panelsMove || !layer) return;
+    const observer = new ResizeObserver(() =>
+      keepPanelsInside({ width: layer.clientWidth, height: layer.clientHeight }),
+    );
+    observer.observe(layer);
+    return () => observer.disconnect();
+  }, [panelsMove]);
   // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for them
   const besideParts = trayOpen || briefOpen || jsonOpen;
   const toggleBrief = useCallback(() => {
@@ -1248,6 +1322,17 @@ export default function BuilderHud(props: BuilderHudProps) {
       ? { label: "Cancel connection", run: props.onCancelConnect }
       : null;
 
+  const aboutPanels = (
+    <>
+      {briefOpen && !trayOpen ? (
+        <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
+      ) : null}
+      {jsonOpen && !trayOpen ? (
+        <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
+      ) : null}
+    </>
+  );
+
   return (
     <>
       <div className="builderIsland builderHud__file">
@@ -1266,12 +1351,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         />
       </div>
 
-      {briefOpen && !trayOpen ? (
-        <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
-      ) : null}
-      {jsonOpen && !trayOpen ? (
-        <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
-      ) : null}
+      {panelsMove ? null : aboutPanels}
 
       <div className="builderIsland builderHud__add">
         <IconButton
@@ -1389,6 +1469,11 @@ export default function BuilderHud(props: BuilderHudProps) {
         </span>
       </p>
 
+      {/* Every panel, in one layer under the toolbars. Where panels stay put
+          the layer is no box at all, and the brief and JSON panels keep their
+          old place in the page, so the stacking is today's. */}
+      <div ref={panelLayerRef} className={`${PANEL_LAYER_CLASS}${panelsMove ? " is-on" : ""}`}>
+      {panelsMove ? aboutPanels : null}
       {trayOpen ? (
         <PartsPanel
           placingType={placingType}
@@ -1399,11 +1484,13 @@ export default function BuilderHud(props: BuilderHudProps) {
 
       {inspector ? (
         <aside
-          className="builderIsland builderHud__inspector"
+          {...inspectorPanel.frame}
+          className={`builderIsland builderHud__inspector${panelsMove ? " builderPanel" : ""}`}
           key={inspectorKey}
           aria-label="Inspector"
           data-guide="inspector"
         >
+          {panelsMove ? <PanelBar title="Inspector" {...inspectorPanel.bar} /> : null}
           {inspector}
           <button
             type="button"
@@ -1458,6 +1545,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
         </div>
       ) : null}
+      </div>
 
       {props.importChoice ? (
         <ImportChoiceDialog names={props.importChoice.names} onChoose={props.onImportChoice} />
@@ -1484,6 +1572,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           active={props.quality === "light"}
           onClick={props.onToggleQuality}
         />
+        {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 

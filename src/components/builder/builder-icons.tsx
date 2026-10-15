@@ -146,6 +146,14 @@ const ICONS = {
   frame: <rect x="4" y="6" width="16" height="12" rx="1.5" strokeDasharray="3 2.5" />,
   up: <path d="m6 15 6-6 6 6" />,
   down: <path d="m6 9 6 6 6-6" />,
+  // two panels, and the arrow that sends them home
+  resetPanels: (
+    <>
+      <rect x="3.5" y="4" width="7" height="9" rx="1.2" />
+      <rect x="3.5" y="15.5" width="7" height="4.5" rx="1.2" />
+      <path d="M14 9.5h3.5a3 3 0 0 1 0 6H14M16 7l-2.5 2.5L16 12" />
+    </>
+  ),
   grip: (
     <>
       <circle cx="9" cy="6" r="1" />

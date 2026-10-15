@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 
 import { Icon, PartIcon } from "@/components/builder/builder-icons";
+import { PanelBar } from "@/components/builder/panel-frame";
 import {
   PART_CATEGORIES,
   COMPONENT_SPECS,
   type ComponentType,
 } from "@/components/builder/types";
+import { usePanel } from "@/components/builder/use-panel-drag";
 
 /** Name, tag and aliases. */
 function matches(type: ComponentType, query: string): boolean {
@@ -30,6 +32,7 @@ export default function PartsPanel({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const panel = usePanel("parts", { keepHeight: true });
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     // a part that comes with another (a periscope's top mirror) is never placed alone
@@ -40,7 +43,12 @@ export default function PartsPanel({
   }, [query]);
 
   return (
-    <aside className="builderIsland builderParts" aria-label="Parts">
+    <aside
+      {...panel.frame}
+      className={`builderIsland builderParts${panel.moves ? " builderPanel" : ""}`}
+      aria-label="Parts"
+    >
+      {panel.moves ? <PanelBar title="Parts" {...panel.bar} /> : null}
       <header className="builderParts__head">
         <input
           className="builderParts__search"
