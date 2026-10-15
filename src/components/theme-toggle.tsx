@@ -2,9 +2,17 @@
 
 type Theme = "light" | "dark";
 
+/** A choice matching the system isn't saved, so the site goes back to following it. */
 export function setTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
-  localStorage.setItem("theme-preference", theme);
+  const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+  if (theme === systemTheme) {
+    localStorage.removeItem("theme-preference");
+  } else {
+    localStorage.setItem("theme-preference", theme);
+  }
 }
 
 export function getTheme(): Theme {

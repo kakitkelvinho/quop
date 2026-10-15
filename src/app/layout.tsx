@@ -54,14 +54,19 @@ export const metadata: Metadata = {
 
 const themeScript = `
   (() => {
-    const savedTheme = localStorage.getItem("theme-preference");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const theme = savedTheme === "dark" || savedTheme === "light"
-      ? savedTheme
-      : prefersDark
-        ? "dark"
-        : "light";
-    document.documentElement.dataset.theme = theme;
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const savedTheme = localStorage.getItem("theme-preference");
+      const theme = savedTheme === "dark" || savedTheme === "light"
+        ? savedTheme
+        : query.matches
+          ? "dark"
+          : "light";
+      document.documentElement.dataset.theme = theme;
+    };
+    apply();
+    // with no saved choice, follow the system as it changes
+    query.addEventListener("change", apply);
   })();
 `;
 
