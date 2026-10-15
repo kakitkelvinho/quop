@@ -1,7 +1,7 @@
 "use client";
 
 // PROTOTYPE, throwaway: which font for a beam's distance labels?
-// Switch with ?distanceFont=sans|garamond|medium|plexmono|condensed (dev only),
+// Switch with ?distanceFont=sans|garamond|medium|medium-bare|plexmono|condensed (dev only),
 // or the bar at the bottom of the Tabletop. Plex Mono and Plex Sans Condensed
 // load from jsDelivr here; the winner, if it's one of those, ships as a local file.
 
@@ -11,6 +11,7 @@ const VARIANTS = [
   ["sans", "Plex Sans bold (now)"],
   ["garamond", "Garamond italic"],
   ["medium", "Plex Sans medium"],
+  ["medium-bare", "Plex Sans medium, no outline"],
   ["plexmono", "Plex Mono"],
   ["condensed", "Plex Sans Condensed"],
 ] as const;
@@ -85,6 +86,7 @@ html[data-distance-font="garamond"] .builderDistance {
   font-variant-numeric: lining-nums tabular-nums;
 }
 html[data-distance-font="medium"] .builderDistance { font-weight: 500; }
+html[data-distance-font="medium-bare"] .builderDistance { font-weight: 500; text-shadow: none; }
 html[data-distance-font="plexmono"] .builderDistance {
   font-family: "Proto Plex Mono", var(--font-mono); font-weight: 600; letter-spacing: 0;
 }
