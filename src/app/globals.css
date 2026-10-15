@@ -3955,18 +3955,24 @@ html[data-theme="dark"] .builderButton--primary {
   pointer-events: none !important;
 }
 
+/* a label's size: the setup's label size (--label-scale, on the canvas host)
+   times the zoom (--zoom-scale, set by LabelZoom on the labels' container) */
+.builderHtmlLayer {
+  --label-size: calc(var(--label-scale, 1) * var(--zoom-scale, 1));
+}
+
 .builderLabel {
   /* lifted clear of its part in screen space, so a top-down view doesn't bury
      the component under its own label; the whole label, lift included, scales
-     with the setup's label size (--label-scale, set on the canvas host) */
+     with the label size and the zoom (--label-size) */
   display: inline-block;
-  transform: translateY(calc(-1.4rem * var(--label-scale, 1)));
-  padding: calc(0.12rem * var(--label-scale, 1)) calc(0.45rem * var(--label-scale, 1));
-  border: calc(1px * var(--label-scale, 1)) solid var(--border);
-  border-radius: calc(0.4rem * var(--label-scale, 1));
+  transform: translateY(calc(-1.4rem * var(--label-size, 1)));
+  padding: calc(0.12rem * var(--label-size, 1)) calc(0.45rem * var(--label-size, 1));
+  border: calc(1px * var(--label-size, 1)) solid var(--border);
+  border-radius: calc(0.4rem * var(--label-size, 1));
   background: var(--surface);
   color: var(--foreground);
-  font-size: calc(0.75rem * var(--label-scale, 1));
+  font-size: calc(0.75rem * var(--label-size, 1));
   font-weight: 700;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -3976,7 +3982,7 @@ html[data-theme="dark"] .builderButton--primary {
 /* a frame's label sits in the frame's corner, in its colour, rather than lifted above a part */
 .builderLabel--frame {
   transform: none;
-  border-width: calc(2px * var(--label-scale, 1));
+  border-width: calc(2px * var(--label-size, 1));
 }
 
 .builderLabel.is-selected {
@@ -3991,12 +3997,13 @@ html[data-theme="dark"] .builderLabel.is-selected {
 
 /* a leg's length along a beam: a bare number in the beam's colour (set
    inline), haloed in the background so a pale beam still reads over parts and
-   shadows, and turned to run along the leg by BeamDistances */
+   shadows, and turned to run along the leg by BeamDistances. Four fifths of a
+   part's label, in the same type, and sized with it */
 .builderDistance {
   display: inline-block;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: calc(0.6rem * var(--label-size, 1));
   font-weight: 700;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   transform-origin: center;

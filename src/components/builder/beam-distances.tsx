@@ -5,12 +5,14 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { memo, useEffect, useMemo, useRef } from "react";
 import { Vector3 } from "three";
 
-/** px between a label and its leg, on screen */
-const OFFSET_PX = 11;
+/** px between a label's edge and its beam's glow, on screen */
+const GAP_PX = 4;
+/** how far a beam's glow reaches from its axis, × its radius (the selected halo's width) */
+const GLOW_REACH = 4;
 /** px a leg must have to spare beyond its label's width before the label shows */
 const ROOM_PX = 16;
 
-type DistancesProps = { points: Vector3[]; lengths: number[]; color: string; faded?: boolean };
+type DistancesProps = { points: Vector3[]; lengths: number[]; color: string; width: number; faded?: boolean };
 
 type Leg = { from: Vector3; to: Vector3; middle: Vector3; text: string };
 
@@ -19,7 +21,8 @@ type Leg = { from: Vector3; to: Vector3; middle: Vector3; text: string };
  * the beam's colour, no box, haloed in the background so it reads over parts
  * and shadows alike. It sits at
  * the leg's middle, turned on screen to run along it (never upside down) and
- * set off to one side so it doesn't sit on the beam. A leg too short on
+ * set off to one side, clear of the beam's glow at any zoom, so it doesn't
+ * read as part of the beam. A leg too short on
  * screen to hold its label goes without.
  *
  * The labels are turned each frame from the camera, through refs, not React
@@ -30,6 +33,7 @@ export const BeamDistances = memo(function BeamDistances({
   points,
   lengths,
   color,
+  width,
   faded = false,
 }: {
   /** the beam's reference points */
@@ -38,6 +42,8 @@ export const BeamDistances = memo(function BeamDistances({
   lengths: number[];
   /** the beam's colour, which the numbers take */
   color: string;
+  /** the beam's width, mm, which sets how far its glow reaches */
+  width: number;
   /** a hidden beam's ghost: the numbers fade with it */
   faded?: boolean;
 }) {
@@ -80,8 +86,10 @@ export const BeamDistances = memo(function BeamDistances({
       if (angle > Math.PI / 2) angle -= Math.PI;
       else if (angle < -Math.PI / 2) angle += Math.PI;
       // the side above the text, which after the flip is always the same side
-      const offX = Math.sin(angle) * OFFSET_PX;
-      const offY = -Math.cos(angle) * OFFSET_PX;
+      // an orthographic camera draws a millimetre as `zoom` pixels
+      const offset = (width / 2) * GLOW_REACH * camera.zoom + label.offsetHeight / 2 + GAP_PX;
+      const offX = Math.sin(angle) * offset;
+      const offY = -Math.cos(angle) * offset;
       label.style.transform = `translate(${offX}px, ${offY}px) rotate(${angle}rad)`;
       label.style.visibility = "visible";
     });
@@ -117,6 +125,7 @@ function sameDistances(before: DistancesProps, after: DistancesProps): boolean {
   const [a, b] = [before.points, after.points];
   return (
     before.color === after.color &&
+    before.width === after.width &&
     before.faded === after.faded &&
     a.length === b.length &&
     a.every((point, index) => point.equals(b[index])) &&
