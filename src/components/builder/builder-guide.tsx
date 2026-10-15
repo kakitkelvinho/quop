@@ -35,6 +35,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "inspector", text: "Inspector", sides: ["left", "above"] },
   { key: "beams", text: "Beams", sides: ["above", "right"] },
   { key: "frames", text: "Frames", sides: ["right", "above"] },
+  { key: "groups", text: "Groups: click to select, eye to hide", sides: ["right", "above"] },
   { key: "view", text: "Iso / top · fit · labels · distances · day / night", sides: ["above", "left"] },
 ];
 
@@ -304,6 +305,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Stops snap to beam" },
       { keys: "⌘ drag", text: "Select several" },
       { keys: "R D ⌫", text: "Turn, copy, delete" },
+      { keys: "⌘G", text: "Group the selection" },
       { keys: "↵ Esc", text: "Apply, undo a number" },
       { icon: "frame", text: "Alt-drag moves" },
     ],

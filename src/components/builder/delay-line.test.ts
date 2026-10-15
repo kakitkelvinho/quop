@@ -86,7 +86,7 @@ describe("a delay line", () => {
         components: [a, { ...delay, position: [200, 100, 0], rotation }, b],
         beams: [{ ...beam, path: ["a", "delay", "b"] }],
         connections: [],
-        frames: [],
+        frames: [], groups: [],
       }).components.find((part) => part.id === "delay")?.rotation;
     // a beam along +x: the rail (local −x) points along +z at 90, −z at 270
     assert.equal(across(300), 270);

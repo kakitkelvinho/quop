@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 
 import BuilderCanvas, {
@@ -28,6 +29,9 @@ import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/b
 import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/components/builder/graphics-quality";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
+import { groupSubset, leftOutNotice, visibility } from "@/components/builder/groups";
+import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
+import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
@@ -227,6 +231,26 @@ function exportViewPng(canvas: HTMLCanvasElement): string {
   return out.toDataURL("image/png");
 }
 
+/** Download a setup as a `.json` file. */
+function downloadSetup(scene: BuilderSceneData, fileName: string) {
+  const blob = new Blob([serializeScene(scene)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/** A group's name as a file name: the characters a file system refuses become dashes. */
+function groupFileName(name: string): string {
+  return name.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "-").trim() || "group";
+}
+
+function groupName(scene: BuilderSceneData, id: string): string {
+  return scene.groups.find((group) => group.id === id)?.name ?? "the group";
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -250,6 +274,9 @@ export default function BuilderScene() {
   // component ids in the order they were picked; the last is the primary
   const [selection, setSelection] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // the Groups box: the row under the pointer, outlined on the table, and the one being renamed
+  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
+  const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
   const [selectedBeamId, setSelectedBeamId] = useState<string | null>(null);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   // a frame is selected on its own, never along with parts
@@ -541,8 +568,10 @@ export default function BuilderScene() {
   const selectInBox = useCallback((box: ScreenBox, adding: boolean) => {
     const project = projectRef.current;
     if (!project) return;
+    const shown = visibility(sceneRef.current).components;
     const inside = sceneRef.current.components
       .filter((component) => {
+        if (!shown.has(component.id)) return false;
         const [x, y] = project(bodyCentre(component));
         return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
       })
@@ -1053,17 +1082,77 @@ export default function BuilderScene() {
   // ---- file & image --------------------------------------------------------
 
   const handleSave = useCallback(() => {
-    const blob = new Blob([serializeScene(sceneRef.current)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = setupFileName("json");
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadSetup(sceneRef.current, setupFileName("json"));
     announce("Saved.");
   }, [announce]);
+
+  /** an import waiting on what to do with a group the table already has */
+  const [pendingImport, setPendingImport] = useState<{
+    file: BuilderSceneData;
+    fileName: string;
+    names: string[];
+  } | null>(null);
+
+  const finishImport = useCallback(
+    (file: BuilderSceneData, fileName: string, onExisting?: OnExisting) => {
+      const result = mergeSetup(sceneRef.current, file, { fileName, onExisting });
+      if (!result.ok) {
+        announce(`Couldn't import ${fileName}: ${result.reason}`);
+        return;
+      }
+      api.replaceScene(result.scene);
+      announce(`${result.summary} ⌘Z undoes it.`);
+    },
+    [announce, api],
+  );
+
+  /** Import into this table: merge a setup file into what is here, as one undo step. */
+  const handleImport = useCallback(
+    (text: string | null, fileName: string) => {
+      if (text === null) {
+        announce(`Couldn't import ${fileName}: it's over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
+        return;
+      }
+      const check = checkSceneText(text);
+      if (!check.ok) {
+        announce(`Couldn't import ${fileName}: ${check.error}`);
+        return;
+      }
+      const existing = existingGroups(sceneRef.current, check.scene, fileName);
+      if (existing.length) {
+        setPendingImport({ file: check.scene, fileName, names: existing.map(({ table }) => table.name) });
+        return;
+      }
+      finishImport(check.scene, fileName);
+    },
+    [announce, finishImport],
+  );
+
+  const handleImportChoice = useCallback(
+    (choice: OnExisting | null) => {
+      const pending = pendingImport;
+      setPendingImport(null);
+      if (!pending) return;
+      if (choice === null) announce(`Didn't import ${pending.fileName}.`);
+      else finishImport(pending.file, pending.fileName, choice);
+    },
+    [announce, finishImport, pendingImport],
+  );
+
+  /** A group as its own setup file, named after it; what it had to leave out is announced. */
+  const handleExportGroup = useCallback(
+    (id: string) => {
+      const scene = sceneRef.current;
+      const group = scene.groups.find((entry) => entry.id === id);
+      const subset = groupSubset(scene, id);
+      if (!group || !subset) return;
+      downloadSetup(subset.scene, `${groupFileName(group.name)}.json`);
+      announce(
+        leftOutNotice(scene, group.name, subset.leftOut, subset.loosened) ?? `Exported ${group.name}.`,
+      );
+    },
+    [announce],
+  );
 
   const handleCopyBrief = useCallback(async () => {
     try {
@@ -1170,6 +1259,82 @@ export default function BuilderScene() {
     setSelection([]);
   }, [api, selectedIds]);
 
+  /** ⌘G: the selected parts, or else the selected frame, as a new group, its name ready to edit. */
+  const groupSelected = useCallback(() => {
+    const members = selectedIds.length ? selectedIds : selectedFrame ? [selectedFrame.id] : [];
+    if (members.length === 0) return;
+    const id = api.createGroup(members);
+    // the name is only known once the edit has run
+    window.setTimeout(() => {
+      const count = sceneRef.current.groups.find((group) => group.id === id)?.members.length ?? members.length;
+      announce(`Grouped ${count} ${count === 1 ? "item" : "items"} as ${groupName(sceneRef.current, id)}.`);
+    });
+    setRenamingGroupId(id);
+  }, [announce, api, selectedFrame, selectedIds]);
+
+  /** A group's row: select its parts, hidden ones too, so they move, turn, copy or delete together. */
+  const handleSelectGroup = useCallback(
+    (id: string) => {
+      const group = sceneRef.current.groups.find((entry) => entry.id === id);
+      if (!group) return;
+      const parts = new Set(sceneRef.current.components.map((component) => component.id));
+      const members = group.members.filter((member) => parts.has(member));
+      setSelection(members);
+      setSelectedBeamId(null);
+      setSelectedConnectionId(null);
+      setSelectedFrameId(
+        members.length === 0 ? (group.members.find((member) => !parts.has(member)) ?? null) : null,
+      );
+      announce(
+        members.length
+          ? `Selected ${group.name}: ${members.length} ${members.length === 1 ? "part" : "parts"}.`
+          : `${group.name} has no parts.`,
+      );
+    },
+    [announce],
+  );
+
+  const handleRenameGroup = useCallback(
+    (id: string, name: string | null) => {
+      setRenamingGroupId(null);
+      const before = groupName(sceneRef.current, id);
+      const next = name?.trim();
+      if (!next || next === before) return;
+      api.renameGroup(id, next);
+      announce(`Renamed ${before} to ${next}.`);
+    },
+    [announce, api],
+  );
+
+  const handleSetGroupHidden = useCallback(
+    (id: string, hidden: boolean) => {
+      api.setGroupHidden(id, hidden);
+      announce(`${hidden ? "Hid" : "Showed"} ${groupName(sceneRef.current, id)}.`);
+    },
+    [announce, api],
+  );
+
+  const handleDeleteGroup = useCallback(
+    (id: string) => {
+      const name = groupName(sceneRef.current, id);
+      api.deleteGroup(id);
+      setHoveredGroupId(null);
+      announce(`Deleted ${name}; its parts stay on the table.`);
+    },
+    [announce, api],
+  );
+
+  const handleSetGroupMembership = useCallback(
+    (groupId: string, id: string, isMember: boolean) => {
+      const part = componentById(sceneRef.current.components, id);
+      const frame = sceneRef.current.frames.find((entry) => entry.id === id);
+      const name = part ? componentDisplayName(part) : frame ? frameDisplayName(frame) : "it";
+      api.setGroupMembership(groupId, id, isMember);
+      announce(isMember ? `Added ${name} to ${groupName(sceneRef.current, groupId)}.` : `Took ${name} out of ${groupName(sceneRef.current, groupId)}.`);
+    },
+    [announce, api],
+  );
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (isTypingTarget(event.target)) return;
@@ -1182,9 +1347,17 @@ export default function BuilderScene() {
         return;
       }
 
+      if (meta && event.key.toLowerCase() === "g" && !event.shiftKey && !event.altKey) {
+        // the browser's find-next would otherwise take it
+        event.preventDefault();
+        if (!beamMode && !drawing && !connectDraft && !placingType) groupSelected();
+        return;
+      }
+
       if (meta && event.key.toLowerCase() === "a" && !beamMode && !drawing) {
         event.preventDefault();
-        setSelection(sceneRef.current.components.map((component) => component.id));
+        const shown = visibility(sceneRef.current).components;
+        setSelection(sceneRef.current.components.filter(({ id }) => shown.has(id)).map((component) => component.id));
         setSelectedBeamId(null);
         setSelectedFrameId(null);
         return;
@@ -1309,6 +1482,7 @@ export default function BuilderScene() {
     drawing,
     duplicateSelected,
     finishBeam,
+    groupSelected,
     handleDeleteFrame,
     placingType,
     rotateSelected,
@@ -1338,12 +1512,15 @@ export default function BuilderScene() {
       <div
         ref={hostRef}
         className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || drawing ? " is-picking" : ""}`}
+        style={{ "--label-scale": scene.labelScale ?? 1 } as CSSProperties}
       >
         <BuilderCanvas
           components={scene.components}
           beams={scene.beams}
           connections={scene.connections}
           frames={scene.frames}
+          groups={scene.groups}
+          outlinedGroup={scene.groups.find((group) => group.id === hoveredGroupId) ?? null}
           palette={palette}
           lighting={lighting}
           quality={exporting ? "full" : quality}
@@ -1418,6 +1595,7 @@ export default function BuilderScene() {
         showGrid={showGrid}
         showPosts={showPosts}
         lighting={lighting}
+        labelScale={scene.labelScale ?? 1}
         view={view}
         canUndo={api.canUndo}
         canRedo={api.canRedo}
@@ -1482,11 +1660,26 @@ export default function BuilderScene() {
         onDeleteFrame={handleDeleteFrame}
         onMoveFrame={handleMoveFrame}
         onSetFrameHidden={handleSetFrameHidden}
+        groups={scene.groups}
+        renamingGroupId={renamingGroupId}
+        onSelectGroup={handleSelectGroup}
+        onHoverGroup={setHoveredGroupId}
+        onRenameGroupStart={setRenamingGroupId}
+        onRenameGroup={handleRenameGroup}
+        onSetGroupColor={(id, color) => api.setGroupColor(id, color, false)}
+        onSetGroupHidden={handleSetGroupHidden}
+        onDeleteGroup={handleDeleteGroup}
+        onExportGroup={handleExportGroup}
+        onImport={handleImport}
+        importChoice={pendingImport && { names: pendingImport.names }}
+        onImportChoice={handleImportChoice}
+        onSetGroupMembership={handleSetGroupMembership}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleDistances={() => setShowDistances((current) => !current)}
         onToggleGrid={() => setShowGrid((current) => !current)}
         onTogglePosts={() => setShowPosts((current) => !current)}
         onLightingChange={(patch) => setLighting((current) => ({ ...current, ...patch }))}
+        onLabelScaleChange={(scale) => api.setLabelScale(scale, false)}
         onViewChange={(next) => {
           // pressing the view you are already on still snaps back from an orbit
           setView(next);

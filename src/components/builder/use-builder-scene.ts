@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import * as groupEdits from "@/components/builder/group-edits";
+import * as groups from "@/components/builder/groups";
 import {
   BEAM_COLORS,
   BLOCK_SIZE_MM,
@@ -23,6 +24,7 @@ import {
   defaultHeight,
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
+  parseLabelScale,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
   setFrameHidden as setFrameHiddenInList,
@@ -453,7 +455,9 @@ export function useBuilderScene() {
 
   const deleteFrame = useCallback(
     (id: string) =>
-      commit((current) => ({ ...current, frames: current.frames.filter((frame) => frame.id !== id) })),
+      commit((current) =>
+        groups.pruneMembers({ ...current, frames: current.frames.filter((frame) => frame.id !== id) }),
+      ),
     [commit],
   );
 
@@ -479,6 +483,67 @@ export function useBuilderScene() {
   );
 
   // ---- whole-scene ---------------------------------------------------------
+
+  /** A new group of these parts and frames, one undo step; its id comes back. */
+  const createGroup = useCallback(
+    (memberIds: string[], name?: string): string => {
+      const id = groups.createGroupId();
+      let first = true;
+      const makeId = () => {
+        if (!first) return groups.createGroupId();
+        first = false;
+        return id;
+      };
+      commit((current) => {
+        first = true;
+        return groups.createGroup(current, memberIds, name, makeId).scene;
+      });
+      return id;
+    },
+    [commit],
+  );
+  const renameGroup = useCallback(
+    (id: string, name: string) => commit((current) => groups.renameGroup(current, id, name)),
+    [commit],
+  );
+  /** A group's colour; unrecorded while a picker drags, after a checkpoint. */
+  const setGroupColor = useCallback(
+    (id: string, color: string, record = true) => {
+      const apply: Mutation = (current) => groups.setGroupColor(current, id, color);
+      if (record) commit(apply);
+      else preview(apply);
+    },
+    [commit, preview],
+  );
+  const setGroupHidden = useCallback(
+    (id: string, hidden: boolean) => commit((current) => groups.setGroupHidden(current, id, hidden)),
+    [commit],
+  );
+  const setGroupMembership = useCallback(
+    (groupId: string, id: string, isMember: boolean) =>
+      commit((current) => groups.setMembership(current, groupId, id, isMember)),
+    [commit],
+  );
+  const deleteGroup = useCallback(
+    (id: string) => commit((current) => groups.deleteGroup(current, id)),
+    [commit],
+  );
+
+  /** The labels' size; unrecorded while a slider drags, after a checkpoint. */
+  const setLabelScale = useCallback(
+    (value: number, record = true) => {
+      const apply: Mutation = (current) => {
+        const labelScale = parseLabelScale(value);
+        if (labelScale === current.labelScale) return current;
+        const { labelScale: _old, ...rest } = current;
+        void _old;
+        return labelScale === undefined ? rest : { ...rest, labelScale };
+      };
+      if (record) commit(apply);
+      else preview(apply);
+    },
+    [commit, preview],
+  );
 
   const replaceScene = useCallback((next: BuilderSceneData) => commit(() => next), [commit]);
   const clearScene = useCallback(() => commit(() => EMPTY_SCENE), [commit]);
@@ -555,6 +620,13 @@ export function useBuilderScene() {
       deleteFrame,
       reorderFrame,
       setFrameHidden,
+      setLabelScale,
+      createGroup,
+      renameGroup,
+      setGroupColor,
+      setGroupHidden,
+      setGroupMembership,
+      deleteGroup,
       replaceScene,
       clearScene,
       resetToExample,
@@ -592,6 +664,13 @@ export function useBuilderScene() {
       deleteFrame,
       reorderFrame,
       setFrameHidden,
+      setLabelScale,
+      createGroup,
+      renameGroup,
+      setGroupColor,
+      setGroupHidden,
+      setGroupMembership,
+      deleteGroup,
       replaceScene,
       clearScene,
       resetToExample,
