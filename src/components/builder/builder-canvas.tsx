@@ -49,6 +49,7 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
+import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh, leavesFromStub } from "@/components/builder/component-models";
 import {
   GroupRotationHandle,
@@ -939,6 +940,85 @@ function sameBeamPath(before: BeamPathProps, after: BeamPathProps): boolean {
   return a.length === b.length && a.every((point, index) => point.equals(b[index]));
 }
 
+/** How far from a beam's axis a click still lands on it, mm: the drawn core is 2 mm. */
+const BEAM_HIT_RADIUS_MM = 5;
+
+/**
+ * A fatter, unseen tube along each leg of a beam that takes the click. A click
+ * is a press that didn't travel, so a left drag starting on a beam still pans.
+ * It hands over every beam under the pointer, nearest first, so the scene can
+ * cycle through beams that overlap.
+ */
+const BeamHit = memo(function BeamHit({
+  beamId,
+  points,
+  width,
+  onClick,
+}: {
+  beamId: string;
+  points: Vector3[];
+  width: number;
+  onClick: (ids: string[], clientX: number, clientY: number) => void;
+}) {
+  const downAt = useRef<{ x: number; y: number } | null>(null);
+  const legs = useMemo(() => {
+    const result: { position: Vector3; quaternion: Quaternion; length: number }[] = [];
+    for (let index = 1; index < points.length; index += 1) {
+      const direction = new Vector3().subVectors(points[index], points[index - 1]);
+      const length = direction.length();
+      if (length < 1e-6) continue;
+      result.push({
+        position: new Vector3().addVectors(points[index - 1], points[index]).multiplyScalar(0.5),
+        quaternion: new Quaternion().setFromUnitVectors(UP, direction.normalize()),
+        length,
+      });
+    }
+    return result;
+  }, [points]);
+  const radius = Math.max(BEAM_HIT_RADIUS_MM, width / 2 + 2);
+  const userData = useMemo(() => ({ beamId }), [beamId]);
+
+  const handleDown = (event: ThreeEvent<PointerEvent>) => {
+    if (event.nativeEvent.button !== 0) return;
+    // the table behind mustn't also take this press as its own click
+    event.stopPropagation();
+    downAt.current = { x: event.nativeEvent.clientX, y: event.nativeEvent.clientY };
+  };
+  const handleUp = (event: ThreeEvent<PointerEvent>) => {
+    const start = downAt.current;
+    downAt.current = null;
+    if (!start) return;
+    event.stopPropagation();
+    const { clientX, clientY } = event.nativeEvent;
+    if (Math.hypot(clientX - start.x, clientY - start.y) > CLICK_SLOP_PX) return;
+    onClick(beamsHit(event.intersections), clientX, clientY);
+  };
+
+  return (
+    <group>
+      {legs.map((leg, index) => (
+        <mesh
+          key={index}
+          position={leg.position}
+          quaternion={leg.quaternion}
+          userData={userData}
+          onPointerDown={handleDown}
+          onPointerUp={handleUp}
+        >
+          <cylinderGeometry args={[radius, radius, leg.length, 6, 1]} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
+}, (before, after) =>
+  before.beamId === after.beamId &&
+  before.width === after.width &&
+  before.onClick === after.onClick &&
+  before.points.length === after.points.length &&
+  before.points.every((point, index) => point.equals(after.points[index])),
+);
+
 function beamVectors(components: BuilderComponent[], path: string[]): Vector3[] {
   return beamPoints(components, path).map((point) => new Vector3(...point));
 }
@@ -1025,6 +1105,10 @@ export type BuilderCanvasProps = {
   ghostFrameId: string | null;
   /** the edges of frames take presses: off while placing a part or drawing a beam, connection or frame */
   framesInteractive: boolean;
+  /** beams take clicks, as frames' edges do */
+  beamsInteractive: boolean;
+  /** a click on beams: every beam under the pointer, nearest first */
+  onBeamClick: (ids: string[], clientX: number, clientY: number) => void;
   /** the frame being drawn and what the pointer would do, laid over everything; null when none is */
   frameDraft: ComponentProps<typeof FrameDraft> | null;
   hoveredId: string | null;
@@ -1110,6 +1194,8 @@ export default function BuilderCanvas({
   selectedFrameId,
   ghostFrameId,
   framesInteractive,
+  beamsInteractive,
+  onBeamClick,
   frameDraft,
   hoveredId,
   beamDraft,
@@ -1334,6 +1420,9 @@ export default function BuilderCanvas({
               core={beam.arrows !== false}
               ghost={ghost}
             />
+            {beamsInteractive ? (
+              <BeamHit beamId={beam.id} points={points} width={beam.width ?? BEAM_WIDTH_MM} onClick={onBeamClick} />
+            ) : null}
             {selected || (showDistances && drawn) ? (
               <BeamDistances
                 points={points}
