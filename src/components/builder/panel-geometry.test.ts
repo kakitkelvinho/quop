@@ -7,7 +7,10 @@ import {
   PANEL_INSET_PX,
   PANEL_KEEP_PX,
   PANEL_SNAP_PX,
+  PANEL_MAX_BOTTOM_PX,
+  PANEL_MAX_TOP_PX,
   clampPanel,
+  maximisedRect,
   movePanel,
   snapPanel,
   wholeRect,
@@ -134,5 +137,26 @@ describe("dragging a panel near others", () => {
     const others = [{ x: -400, y: 100, w: 500, h: 200 }];
     const moved = movePanel(panel, -400 - panel.x + 3, 0, workspace, others);
     assert.equal(moved.x, PANEL_KEEP_PX - panel.w);
+  });
+});
+
+describe("a maximised panel", () => {
+  it("fills the workspace below the toolbars, inset at the sides", () => {
+    assert.deepEqual(maximisedRect(workspace), {
+      x: PANEL_INSET_PX,
+      y: PANEL_MAX_TOP_PX,
+      w: workspace.width - 2 * PANEL_INSET_PX,
+      h: workspace.height - PANEL_MAX_TOP_PX - PANEL_MAX_BOTTOM_PX,
+    });
+  });
+
+  it("is whole pixels in a workspace of fractional size", () => {
+    const { w, h } = maximisedRect({ width: 1000.6, height: 700.4 });
+    assert.deepEqual([w, h], [977, 522]);
+  });
+
+  it("keeps its bar in a tiny workspace", () => {
+    const { w, h } = maximisedRect({ width: 50, height: 100 });
+    assert.deepEqual([w, h], [PANEL_KEEP_PX, PANEL_BAR_PX]);
   });
 });

@@ -3683,6 +3683,40 @@ body.is-movingPanel * {
   padding: 0;
 }
 
+/* minimised: only the bar shows, at the panel's width, in its place */
+.builderPanel.is-minimised {
+  max-height: none;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.builderPanel.is-minimised > :not(.builderPanelBar) {
+  display: none !important;
+}
+
+.builderPanel.is-minimised .builderPanelBar {
+  margin-bottom: 0;
+  border-bottom-color: transparent;
+  border-radius: calc(0.8rem - 1px);
+}
+
+/* maximised: the panel's box is set inline; its lists give up their own caps */
+.builderPanel.is-maximised,
+.builderPanels.is-on .builderHud__lists > .builderIsland.is-maximised {
+  max-width: none;
+  max-height: none;
+}
+
+.builderPanel.is-maximised > .builderHud__beams {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+.builderPanel.is-maximised .builderPanelBar {
+  cursor: default;
+}
+
 .builderHud__frameRows {
   display: flex;
   flex-direction: column;

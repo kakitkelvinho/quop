@@ -45,7 +45,7 @@ export default function PartsPanel({
   return (
     <aside
       {...panel.frame}
-      className={`builderIsland builderParts${panel.moves ? " builderPanel" : ""}`}
+      className={`builderIsland builderParts${panel.className}`}
       aria-label="Parts"
     >
       {panel.moves ? <PanelBar title="Parts" {...panel.bar} /> : null}

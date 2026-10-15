@@ -9,13 +9,15 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { movePanel, wholeRect } from "./panel-geometry.ts";
+import { maximisedRect, movePanel, wholeRect } from "./panel-geometry.ts";
 import {
   bringPanelToFront,
   movePanelTo,
   panelState,
   panelsVersion,
+  setPanelView,
   subscribePanels,
+  workspaceBounds,
 } from "./panel-store.ts";
 
 /** Where panels stay put, as on small and touch screens; the CSS's narrow layout starts here too. */
@@ -50,6 +52,10 @@ export const PANEL_LAYER_CLASS = "builderPanels";
  * put it and kept there in whole pixels, at its own width (or its content's,
  * with `fitWidth`) and, with `keepHeight` for a panel the CSS stretches
  * between the workspace's top and bottom, its height.
+ *
+ * Its bar also minimises it (collapsed to the bar, in place, at its width)
+ * and maximises it (filling the workspace below the toolbars), each undoing
+ * the other; a maximised panel doesn't move.
  */
 export function usePanel(
   id: string,
@@ -69,6 +75,7 @@ export function usePanel(
       const element = ref.current;
       const layer = element?.closest<HTMLElement>(`.${PANEL_LAYER_CLASS}`);
       if (event.button !== 0 || !event.isPrimary || !element || !layer) return;
+      if (panelState(id).maximised) return;
       // the bar's own buttons keep their press
       if ((event.target as Element).closest("button")) return;
       event.preventDefault();
@@ -77,9 +84,11 @@ export function usePanel(
         const box = panel.getBoundingClientRect();
         return wholeRect({ x: box.left - origin.left, y: box.top - origin.top, w: box.width, h: box.height });
       };
-      // its height as drawn, which a content-sized panel's stored rect doesn't follow
+      // it snaps by its height as drawn (a content-sized or minimised panel's
+      // stored height isn't that), but keeps the stored one to restore to
       const drawn = measure(element);
-      const start = { ...(panelState(id).rect ?? drawn), h: drawn.h };
+      const kept = panelState(id).rect ?? drawn;
+      const start = { ...kept, h: drawn.h };
       // the others, measured once: none of them moves while this one does
       const others = Array.from(layer.querySelectorAll(".builderPanel"))
         .filter((panel) => panel !== element)
@@ -92,7 +101,8 @@ export function usePanel(
       const onMove = (moveEvent: PointerEvent) => {
         if (moveEvent.pointerId !== pointerId) return;
         const bounds = { width: layer.clientWidth, height: layer.clientHeight };
-        movePanelTo(id, movePanel(start, moveEvent.clientX - startX, moveEvent.clientY - startY, bounds, others));
+        const moved = movePanel(start, moveEvent.clientX - startX, moveEvent.clientY - startY, bounds, others);
+        movePanelTo(id, { ...moved, h: kept.h });
       };
       const onEnd = (endEvent: PointerEvent) => {
         if (endEvent.pointerId === pointerId) teardown.current();
@@ -111,8 +121,31 @@ export function usePanel(
     [id],
   );
 
+  // minimising pins the panel where it is drawn, so collapsing keeps its place and width
+  const pinHere = useCallback(() => {
+    const element = ref.current;
+    const layer = element?.closest<HTMLElement>(`.${PANEL_LAYER_CLASS}`);
+    if (!element || !layer || panelState(id).rect) return;
+    const box = element.getBoundingClientRect();
+    const origin = layer.getBoundingClientRect();
+    movePanelTo(id, wholeRect({ x: box.left - origin.left, y: box.top - origin.top, w: box.width, h: box.height }));
+  }, [id]);
+  const toggleMinimised = useCallback(() => {
+    const { minimised } = panelState(id);
+    if (!minimised) pinHere();
+    setPanelView(id, minimised ? "restored" : "minimised");
+  }, [id, pinHere]);
+  const toggleMaximised = useCallback(() => {
+    const { maximised } = panelState(id);
+    setPanelView(id, maximised ? "restored" : "maximised");
+    if (!maximised) bringPanelToFront(id);
+  }, [id]);
+
   const state = panelState(id);
-  const rect = moves ? state.rect : undefined;
+  const bounds = workspaceBounds();
+  const maximised = moves && Boolean(state.maximised) && bounds !== null;
+  const minimised = moves && Boolean(state.minimised);
+  const rect = !moves ? undefined : maximised ? maximisedRect(bounds!) : state.rect;
   const style: CSSProperties | undefined = !moves
     ? undefined
     : {
@@ -123,18 +156,29 @@ export function usePanel(
           top: rect.y,
           right: "auto",
           bottom: "auto",
-          width: fitWidth ? undefined : rect.w,
-          height: keepHeight ? rect.h : undefined,
+          // a minimised list keeps the width it had; its rows no longer set it
+          width: fitWidth && !maximised && !minimised ? undefined : rect.w,
+          height: maximised || (keepHeight && !minimised) ? rect.h : undefined,
         }),
       };
 
   return {
     moves,
+    minimised,
+    maximised,
+    /** the panel's own class, for its look while minimised or maximised */
+    className: !moves ? "" : ` builderPanel${minimised ? " is-minimised" : ""}${maximised ? " is-maximised" : ""}`,
     frame: {
       ref: setRef,
       style,
       onPointerDownCapture: moves ? () => bringPanelToFront(id) : undefined,
     },
-    bar: { onPointerDown: onBarPointerDown },
+    bar: {
+      onPointerDown: onBarPointerDown,
+      minimised,
+      maximised,
+      onToggleMinimised: toggleMinimised,
+      onToggleMaximised: toggleMaximised,
+    },
   };
 }
