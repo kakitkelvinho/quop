@@ -2502,6 +2502,118 @@ html[data-theme="dark"] .builderIsland {
   cursor: pointer;
 }
 
+/* the eye's Show wheel: a half ring of wedges dropping out of the button, the
+   label size card under it */
+.showWheel {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 50%;
+  z-index: 50;
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.showWheel__ring {
+  overflow: visible;
+  filter: drop-shadow(0 14px 22px rgb(31 41 51 / 0.16));
+  transform-origin: 50% 0;
+  animation: showWheelOpen 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .showWheel__ring {
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
+}
+
+.showWheel__hole {
+  fill: var(--surface-strong);
+  stroke: var(--border);
+  pointer-events: auto;
+}
+
+.showWheel__segment {
+  color: var(--muted);
+  outline: none;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* the gaps between wedges are their strokes, in the ring's own colour */
+.showWheel__wedge {
+  fill: var(--surface-strong);
+  stroke: var(--surface-strong);
+  stroke-width: 3;
+  transition: fill 120ms ease;
+}
+
+.showWheel__name {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.showWheel__state {
+  fill: currentColor;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.showWheel__segment:hover {
+  color: var(--foreground);
+}
+
+.showWheel__segment:hover .showWheel__wedge {
+  fill: var(--background-muted);
+}
+
+.showWheel__segment.is-on {
+  color: var(--accent);
+}
+
+.showWheel__segment.is-on .showWheel__wedge {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+}
+
+.showWheel__segment:focus-visible .showWheel__wedge {
+  stroke: var(--focus-ring);
+  stroke-width: 2.5;
+}
+
+.showWheel__footer {
+  width: 12rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  animation: showWheelFade 260ms 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.showWheel__footer input:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@keyframes showWheelOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+}
+
+@keyframes showWheelFade {
+  from {
+    opacity: 0;
+  }
+}
+
 /* top centre: tools, the parts tray, and the mode badge */
 .builderHud__center {
   position: absolute;
@@ -3407,6 +3519,20 @@ html[data-theme="dark"] .builderButton--primary {
   font-size: 0.8rem;
 }
 
+/* the group a multi-selection is: its colour dot and name, beside Ungroup */
+.builderInspector__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.builderInspector__group strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .builderButton:disabled {
   opacity: 0.4;
   cursor: default;
@@ -3900,20 +4026,92 @@ body[data-panel-gesture="se"] * {
   min-width: 9rem;
 }
 
-.builderGroupsField {
+/* a part's, frame's or selection's groups, and the Add to group menu under them */
+.builderGroupsMenu {
   display: grid;
-  gap: 0.3rem;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  gap: 0.35rem;
 }
 
-.builderGroupsField__option {
-  display: flex;
+.builderGroupsMenu__summary {
+  display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  min-width: 0;
+}
+
+.builderGroupsMenu__dots {
+  display: inline-flex;
+  flex: none;
+  gap: 0.2rem;
+}
+
+.builderGroupsMenu__text,
+.builderGroupsMenu__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builderGroupsMenu__trigger {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.builderGroupsMenu__trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.builderGroupsMenu__list {
+  display: grid;
+  max-height: 12rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--surface-strong);
+}
+
+.builderGroupsMenu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 1.9rem;
+  padding: 0 0.45rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: none;
+  color: var(--foreground);
+  font: inherit;
   font-size: 0.8rem;
+  text-align: left;
   cursor: pointer;
+}
+
+.builderGroupsMenu__item:hover,
+.builderGroupsMenu__item:focus-visible {
+  background: var(--accent-soft);
+}
+
+.builderGroupsMenu__item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.builderGroupsMenu__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* the tick: the theme's accent, as the selection ring wears it */
+.builderGroupsMenu__mark {
+  display: inline-flex;
+  flex: none;
+  width: 1rem;
+  color: var(--accent);
 }
 
 .builderBeamRow__dot--square {
@@ -4088,6 +4286,9 @@ body[data-panel-gesture="se"] * {
   .builderAbout,
   .builderMenu__list,
   .builderLighting__bubble,
+  .showWheel__ring,
+  .showWheel__segment,
+  .showWheel__footer,
   .builderHud__inspector {
     animation: none;
   }

@@ -369,9 +369,11 @@ the table alone. A merge that would go over the setup limits is refused with
 a notice, and the table is left as it was.
 
 **Label size is the setup's.** The Show button (an eye) in the tool pill
-opens a bubble of switches for what is drawn besides the setup: Posts, Grid,
-Labels, with a Label size slider under it (50–200 % in 5 % steps), and Beam
-distances. The slider scales every
+drops a half ring of wedges for what is drawn besides the setup: Posts, Grid,
+Labels and Beam distances, each with its icon, name and On/Off, and a Label
+size slider (50–200 % in 5 % steps) in a card under the ring. The arrow keys
+walk the ring, Enter or Space toggles a wedge, and Esc or a click outside
+closes it. The slider scales every
 component, connection and frame label whole (text, padding, corners, border
 and the lift that keeps a part's label clear of the part) through one CSS
 variable, `--label-scale`, on the canvas host. The beam distance numbers, the
@@ -434,9 +436,9 @@ is on screen until it is needed:
   reopening it. The JSON panel
   and the setup brief open in the same spot, so opening one
   closes the others.
-- **Top centre**: the Guide pill, then the tool pill (Select; Show, a bubble
-  of what is drawn on the table: Posts, Grid, Labels and their size, Beam
-  distances; Lighting, a bubble of how it is rendered: Brightness, Shadows,
+- **Top centre**: the Guide pill, then the tool pill (Select; Show, a half ring
+  of what is drawn on the table: Posts, Grid, Labels, Beam distances, with
+  the label size under it; Lighting, a bubble of how it is rendered: Brightness, Shadows,
   Light graphics; then Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
   `.md` button in its own island (it is neither a tool nor a guide). The `.md`
   island hangs off the row's end, so the Guide and tool pills stay centred.
@@ -474,9 +476,16 @@ is on screen until it is needed:
   on them all (Delete then deletes the parts, unlike Delete group); a group
   of frames alone selects its first frame. Hovering a row rings its members
   on the table in the group's colour, a passing outline rather than a tint, as
-  the parts' own colours belong to their beam lines. A part's inspector, and
-  a frame's, end with a Groups field: a checkbox per group, which is how a
-  mirror gets shared by two. Every one of these is one undo step and is
+  the parts' own colours belong to their beam lines. A part's inspector, a
+  frame's and several parts', end with the groups they are in (colour dots
+  and a name, or a count) and an Add to group menu: a row per group with its
+  colour and name, ticked in the accent colour when it holds the selection (a
+  dash when it holds some of it). Pressing a row puts the selection in or takes
+  it out, and the menu stays open for the next; Esc, Tab or a press outside
+  closes it, and the arrow keys, Home and End move through it. This is how a
+  mirror gets shared by two. When several selected parts are exactly one
+  group, their inspector also has a Group colour field under Mount colour,
+  one undo step per pick. Every one of these is one undo step and is
   announced. Members of a hidden group draw no ghost when their row selects
   them; the selection and the inspector still show them.
 - **Bottom right**: how you look at the table: Iso / Top, Fit, Day / night
@@ -559,10 +568,10 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
 | Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
-| Group parts | Select them and press `⌘G` (`Ctrl G`), or with no parts selected, a selected frame: a "Group n" row appears in the Groups box with its name ready to type. One undo step |
-| Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group to ungroup. Hover the row to see its members ringed on the table |
+| Group parts | Select them and press **Group** in their inspector or `⌘G` (`Ctrl G`), or with no parts selected, `⌘G` on a selected frame: a "Group n" row appears in the Groups box with its name ready to type. One undo step |
+| Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group, or **Ungroup** in the inspector while its parts are selected, to ungroup. Hover the row to see its members ringed on the table |
 | Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
-| Share a part between groups | Tick each group in the Groups field of its inspector |
+| Share a part between groups | Add to group in its inspector, then press each group's row (several parts at once work too) |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Move a panel | Drag its title bar. Reset panels (View toolbar) or `⌥0` puts them all back |
 | Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |

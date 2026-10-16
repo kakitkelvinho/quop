@@ -9,11 +9,13 @@ import { Icon, IconButton } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
+import { selectedGroup } from "@/components/builder/groups";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
+import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -22,7 +24,7 @@ import {
   ConnectionInspector,
   FrameInspector,
   GroupInspector,
-  GroupsField,
+  GroupsMenu,
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
@@ -45,7 +47,9 @@ import {
   type Frame,
   type Group,
   type BuilderSceneData,
+  serializeScene,
 } from "@/components/builder/types";
+import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
 
 /** The beam that turns a periscope's top mirror, when the lower one is the part shown. */
 function partnerAngleBeam(components: BuilderComponent[], beams: Beam[], component: BuilderComponent): Beam | undefined {
@@ -147,6 +151,8 @@ export type BuilderHudProps = {
   onSetGroupColor: (id: string, color: string) => void;
   onSetGroupHidden: (id: string, hidden: boolean) => void;
   onDeleteGroup: (id: string) => void;
+  /** ⌘G: the selection as a new group */
+  onGroupSelected: () => void;
   /** download a group as its own setup file, `<name>.json` */
   onExportGroup: (id: string) => void;
   /** a setup file's text to merge into the table; null when the file was too big to read */
@@ -154,7 +160,8 @@ export type BuilderHudProps = {
   /** set while an import waits on what to do with a group the table already has */
   importChoice: { names: string[] } | null;
   onImportChoice: (choice: "replace" | "copy" | null) => void;
-  onSetGroupMembership: (groupId: string, id: string, isMember: boolean) => void;
+  /** several ids join or leave as one undo step */
+  onSetGroupMembership: (groupId: string, ids: string[], isMember: boolean) => void;
   onToggleLabels: () => void;
   onToggleDistances: () => void;
   onToggleGrid: () => void;
@@ -172,8 +179,8 @@ export type BuilderHudProps = {
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
-  /** the setup as it stands, for the JSON panel to open on */
-  sceneJson: () => string;
+  /** the setup as it stands, for the JSON panel to follow */
+  scene: BuilderSceneData;
   /** replace the table with a setup the JSON panel checked: one undo step */
   onApplyScene: (scene: BuilderSceneData, summary: string) => void;
   onExportPng: () => void;
@@ -784,34 +791,48 @@ function BriefPanel({
   );
 }
 
+/** How long the table must be still before the JSON panel writes it out again, ms. */
+const JSON_SETTLE_MS = 120;
+
 /**
  * The setup as JSON, to read, tweak, copy, paste over or fill from a file,
- * in the parts panel's place. Nothing reaches the table until Apply, and
- * Apply only takes text checkSceneText passed: within its size, valid JSON,
- * a setup's shape and counts, colours and labels made safe by parseScene.
+ * in the parts panel's place. The box follows the table until the author
+ * edits it; then it holds their draft (see json-panel-text). Nothing reaches
+ * the table until Apply, and Apply only takes text checkSceneText passed:
+ * within its size, valid JSON, a setup's shape and counts, colours and labels
+ * made safe by parseScene.
  */
 function JsonPanel({
-  initial,
+  scene,
   onApply,
   onClose,
 }: {
-  initial: () => string;
+  scene: BuilderSceneData;
   onApply: (scene: BuilderSceneData, summary: string) => void;
   onClose: () => void;
 }) {
-  const [opened] = useState(initial);
-  const [text, setText] = useState(opened);
+  // A drag previews a new scene on every pointer move, so the box writes the
+  // table out once it has been still for a moment, not on every frame.
+  const [live, setLive] = useState(() => serializeScene(scene));
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLive(serializeScene(scene)), JSON_SETTLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [scene]);
+  const [draft, setDraft] = useState<JsonDraft | null>(null);
+  const view = jsonPanelView(live, draft);
+  const { text, edited } = view;
   const [note, setNote] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   // a large paste is checked once typing settles, not on every keystroke
   const settled = useDeferredValue(text);
   const check = useMemo(() => checkSceneText(settled), [settled]);
-  const changed = text !== opened;
+  const edit = (next: string) => setDraft(editJson(live, draft, next));
   useEscapeCloses(onClose);
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      // the table as it is this moment, even mid-settle, unless there's a draft
+      await navigator.clipboard.writeText(draft ? draft.text : serializeScene(scene));
       setNote("Copied.");
     } catch {
       setNote("Copy blocked: use ⌘C.");
@@ -822,7 +843,7 @@ function JsonPanel({
       const pasted = await navigator.clipboard.readText();
       if (pasted.length > SCENE_TEXT_MAX_BYTES) setNote("Too long.");
       else {
-        setText(pasted);
+        edit(pasted);
         setNote("Pasted.");
       }
     } catch {
@@ -837,7 +858,7 @@ function JsonPanel({
       setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
       return;
     }
-    setText(await file.text());
+    edit(await file.text());
     setNote(`Read ${file.name}.`);
   };
   const panel = usePanel("json", { keepHeight: true });
@@ -855,16 +876,18 @@ function JsonPanel({
           Setup JSON
         </h2>
       )}
-      <p className="builderAbout__description">
-        Apply replaces the table. ⌘Z undoes it.
-      </p>
       <div className="builderBrief__actions">
         <button
           type="button"
           className="builderButton builderButton--primary"
-          disabled={!check.ok || !changed || settled !== text}
+          disabled={!check.ok || !edited || settled !== text}
           onClick={() => {
-            if (check.ok) onApply(check.scene, check.summary);
+            if (!check.ok) return;
+            onApply(check.scene, check.summary);
+            // follow the table again, from the setup just applied rather than
+            // the one it replaced
+            setLive(serializeScene(check.scene));
+            setDraft(null);
           }}
         >
           Apply
@@ -892,18 +915,21 @@ function JsonPanel({
         aria-describedby="builder-json-check"
         aria-invalid={!check.ok}
         onChange={(event) => {
-          setText(event.target.value);
+          edit(event.target.value);
           setNote(null);
         }}
       />
       <p id="builder-json-check" className={`builderJson__check${check.ok ? "" : " is-error"}`} role="status">
         {check.ok
-          ? `${changed ? "Ready" : "Current"}: ${check.summary}.${check.skipped ? ` ${check.skipped} skipped.` : ""}`
+          ? `${edited ? "Edited, not on the table yet" : "Live"}: ${check.summary}.${check.skipped ? ` ${check.skipped} skipped.` : ""}`
           : check.error}
       </p>
+      {view.behind ? (
+        <p className="builderJson__note">The table has changed since you began editing; Revert shows it as it is now.</p>
+      ) : null}
       {note ? <p className="builderJson__note">{note}</p> : null}
-      {changed ? (
-        <button type="button" className="builderJson__revert" onClick={() => setText(opened)}>
+      {edited ? (
+        <button type="button" className="builderJson__revert" onClick={() => setDraft(null)}>
           Revert
         </button>
       ) : null}
@@ -1113,10 +1139,11 @@ function LightingMenu({
 }
 
 /**
- * Show: a bubble of what is drawn on the table besides the setup, one switch
- * each: posts, grid, labels (with their size, which is saved with the setup)
- * and beam distances. A size drag previews as it moves and is one undo step:
- * its first change takes the snapshot.
+ * Show: a half ring that drops out of the eye with one wedge for each thing
+ * drawn on the table besides the setup: posts, grid, labels and beam
+ * distances. The label size, which is saved with the setup, sits in a card
+ * under the ring. A size drag previews as it moves and is one undo step: its
+ * first change takes the snapshot.
  */
 function ShowMenu({
   posts,
@@ -1145,67 +1172,89 @@ function ShowMenu({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const editing = useRef(false);
   const end = () => {
     editing.current = false;
   };
+  const items: WheelItem[] = [
+    {
+      id: "posts",
+      label: "Posts",
+      description: "Posts under the parts",
+      icon: "posts",
+      on: posts,
+      onToggle: onTogglePosts,
+    },
+    { id: "grid", label: "Grid", description: "The grid on the table", icon: "grid", on: grid, onToggle: onToggleGrid },
+    {
+      id: "labels",
+      label: "Labels",
+      description: "Part names on the table",
+      icon: "labels",
+      iconOff: "labelsOff",
+      on: labels,
+      onToggle: onToggleLabels,
+    },
+    {
+      id: "distances",
+      label: "Beam distances",
+      description: "Lengths along each beam",
+      icon: "ruler",
+      on: distances,
+      onToggle: onToggleDistances,
+    },
+  ];
 
   return (
     <div className="builderLighting" ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
         className={`builderIconBtn${open ? " is-active" : ""}`}
         aria-label="Show"
         aria-expanded={open}
-        aria-haspopup="dialog"
+        aria-haspopup="menu"
         title="Show"
         onClick={() => setOpen((current) => !current)}
       >
         <Icon name="eye" />
       </button>
       {open ? (
-        <div className="builderLighting__bubble" role="dialog" aria-label="Show">
-          <label className="builderLighting__toggle">
-            Posts
-            <input type="checkbox" role="switch" checked={posts} onChange={onTogglePosts} />
-          </label>
-          <label className="builderLighting__toggle">
-            Grid
-            <input type="checkbox" role="switch" checked={grid} onChange={onToggleGrid} />
-          </label>
-          <label className="builderLighting__toggle">
-            Labels
-            <input type="checkbox" role="switch" checked={labels} onChange={onToggleLabels} />
-          </label>
-          <label className="builderField">
-            <span className="builderField__label">
-              Label size
-              <span className="builderReadout">{Math.round(scale * 100)}%</span>
-            </span>
-            <input
-              className="builderSlider"
-              type="range"
-              min={LABEL_SCALE_RANGE[0]}
-              max={LABEL_SCALE_RANGE[1]}
-              step={0.05}
-              value={scale}
-              onChange={(event) => {
-                if (!editing.current) {
-                  editing.current = true;
-                  onBegin();
-                }
-                onChange(Number(event.target.value));
-              }}
-              onPointerUp={end}
-              onKeyUp={end}
-              onBlur={end}
-            />
-          </label>
-          <label className="builderLighting__toggle">
-            Beam distances
-            <input type="checkbox" role="switch" checked={distances} onChange={onToggleDistances} />
-          </label>
-        </div>
+        <ShowWheel
+          items={items}
+          onClose={() => {
+            setOpen(false);
+            buttonRef.current?.focus();
+          }}
+          footer={
+            <label className="builderField">
+              <span className="builderField__label">
+                Label size
+                <span className="builderReadout">{Math.round(scale * 100)}%</span>
+              </span>
+              <input
+                className="builderSlider"
+                type="range"
+                min={LABEL_SCALE_RANGE[0]}
+                max={LABEL_SCALE_RANGE[1]}
+                step={0.05}
+                value={scale}
+                disabled={!labels}
+                onChange={(event) => {
+                  if (!editing.current) {
+                    editing.current = true;
+                    onBegin();
+                  }
+                  onChange(Number(event.target.value));
+                }}
+                onPointerUp={end}
+                onKeyUp={end}
+                onBlur={end}
+              />
+            </label>
+          }
+        />
       ) : null}
     </div>
   );
@@ -1295,6 +1344,21 @@ export default function BuilderHud(props: BuilderHudProps) {
         onDelete={props.onDeleteSelected}
         onSetHeight={props.onSetSelectedHeight}
         onSetMountColor={props.onSetSelectedMountColor}
+        group={selectedGroup({ components, groups: props.groups }, selected.map((component) => component.id))}
+        canGroup={!drawingFrame && !placingType}
+        onGroup={props.onGroupSelected}
+        onUngroup={props.onDeleteGroup}
+        onSetGroupColor={props.onSetGroupColor}
+        onCheckpoint={props.onCheckpoint}
+        groupsMenu={
+          <GroupsMenu
+            groups={props.groups}
+            memberIds={selected.map((component) => component.id)}
+            onChange={(groupId, isMember) =>
+              props.onSetGroupMembership(groupId, selected.map((component) => component.id), isMember)
+            }
+          />
+        }
       />
     );
   } else if (selected.length === 1) {
@@ -1311,10 +1375,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
         groupsField={
-          <GroupsField
+          <GroupsMenu
             groups={props.groups}
-            memberId={selected[0].id}
-            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, selected[0].id, isMember)}
+            memberIds={[selected[0].id]}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, [selected[0].id], isMember)}
           />
         }
       />
@@ -1342,10 +1406,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         focusLabel={props.focusFrameLabel}
         onLabelFocused={props.onFrameLabelFocused}
         groupsField={
-          <GroupsField
+          <GroupsMenu
             groups={props.groups}
-            memberId={frame.id}
-            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, frame.id, isMember)}
+            memberIds={[frame.id]}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, [frame.id], isMember)}
           />
         }
       />
@@ -1396,7 +1460,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel initial={props.sceneJson} onApply={props.onApplyScene} onClose={closeJson} />
+        <JsonPanel scene={props.scene} onApply={props.onApplyScene} onClose={closeJson} />
       ) : null}
     </>
   );
