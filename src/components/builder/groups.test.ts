@@ -11,6 +11,8 @@ import {
   leftOutNotice,
   isConnectionDrawn,
   isFrameDrawn,
+  joinsOnToggle,
+  membership,
   nextGroupName,
   pruneMembers,
   renameGroup,
@@ -197,6 +199,24 @@ describe("editing groups", () => {
     assert.equal(selectedGroup(framed, ["a", "f"])?.id, "g");
     // two groups of the same parts: the latest
     assert.equal(selectedGroup(table([group("g", ["a", "b"]), group("h", ["b", "a"])]), ["a", "b"])?.id, "h");
+  });
+
+  it("says how much of a selection a group holds, and which way a toggle goes", () => {
+    const probe = left();
+    assert.equal(membership(probe, ["a", "m"]), "all");
+    assert.equal(membership(probe, ["a", "f"]), "some");
+    assert.equal(membership(probe, ["f"]), "none");
+    assert.equal(joinsOnToggle(probe, ["a", "m"]), false, "all in: the toggle takes them out");
+    assert.equal(joinsOnToggle(probe, ["a", "f"]), true, "some in: the toggle puts the rest in");
+    assert.equal(joinsOnToggle(probe, ["f"]), true);
+  });
+
+  it("puts several parts in a group, or takes them out, in one edit", () => {
+    let scene = table([group("g", ["a"])]);
+    scene = setMembership(scene, "g", ["a", "b", "f"], true);
+    assert.deepEqual(scene.groups[0].members, ["a", "b", "f"]);
+    scene = setMembership(scene, "g", ["a", "f"], false);
+    assert.deepEqual(scene.groups[0].members, ["b"]);
   });
 
   it("renames, recolours, hides and shows", () => {

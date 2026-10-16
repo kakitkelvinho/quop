@@ -23,7 +23,7 @@ import {
   ConnectionInspector,
   FrameInspector,
   GroupInspector,
-  GroupsField,
+  GroupsMenu,
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
@@ -157,7 +157,8 @@ export type BuilderHudProps = {
   /** set while an import waits on what to do with a group the table already has */
   importChoice: { names: string[] } | null;
   onImportChoice: (choice: "replace" | "copy" | null) => void;
-  onSetGroupMembership: (groupId: string, id: string, isMember: boolean) => void;
+  /** several ids join or leave as one undo step */
+  onSetGroupMembership: (groupId: string, ids: string[], isMember: boolean) => void;
   onToggleLabels: () => void;
   onToggleDistances: () => void;
   onToggleGrid: () => void;
@@ -1302,6 +1303,17 @@ export default function BuilderHud(props: BuilderHudProps) {
         canGroup={!drawingFrame && !placingType}
         onGroup={props.onGroupSelected}
         onUngroup={props.onDeleteGroup}
+        onSetGroupColor={props.onSetGroupColor}
+        onCheckpoint={props.onCheckpoint}
+        groupsMenu={
+          <GroupsMenu
+            groups={props.groups}
+            memberIds={selected.map((component) => component.id)}
+            onChange={(groupId, isMember) =>
+              props.onSetGroupMembership(groupId, selected.map((component) => component.id), isMember)
+            }
+          />
+        }
       />
     );
   } else if (selected.length === 1) {
@@ -1318,10 +1330,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
         groupsField={
-          <GroupsField
+          <GroupsMenu
             groups={props.groups}
-            memberId={selected[0].id}
-            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, selected[0].id, isMember)}
+            memberIds={[selected[0].id]}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, [selected[0].id], isMember)}
           />
         }
       />
@@ -1349,10 +1361,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         focusLabel={props.focusFrameLabel}
         onLabelFocused={props.onFrameLabelFocused}
         groupsField={
-          <GroupsField
+          <GroupsMenu
             groups={props.groups}
-            memberId={frame.id}
-            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, frame.id, isMember)}
+            memberIds={[frame.id]}
+            onChange={(groupId, isMember) => props.onSetGroupMembership(groupId, [frame.id], isMember)}
           />
         }
       />
