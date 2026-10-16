@@ -866,9 +866,6 @@ function JsonPanel({
           Setup JSON
         </h2>
       )}
-      <p className="builderAbout__description">
-        Follows the table as you work. Edit it and Apply to replace the table; ⌘Z undoes it.
-      </p>
       <div className="builderBrief__actions">
         <button
           type="button"
