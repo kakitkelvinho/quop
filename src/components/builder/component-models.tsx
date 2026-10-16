@@ -1248,13 +1248,134 @@ function Iris({ palette, color, axis }: ModelProps) {
  * drawn at beam-cube size. Its colour and opacity are the user's: plain
  * alpha rather than transmission, so the opacity slider means what it says.
  *
- * It stands in a small clip on a short post on an XYZ stage, as a sample on
- * the bench does. The stage is the sample's own switch (`stageHidden`), not the
- * view's Posts toggle: a sample is often drawn floating on purpose, and a
- * floating slab with every other post hidden reads the same. Too low for the
- * stage to fit under, it floats.
+ * It is held on an XYZ stage, as a sample on the bench is, in one of two
+ * ways: below (a clip on a short post on the stage under it) or side (a
+ * stage standing beside it, across the beam, holding its edge on an arm).
+ * The stage is the sample's own choice (`sampleStage`), not the view's Posts
+ * toggle: a sample is often drawn floating on purpose. Too low for the stage
+ * to fit, it floats.
  */
 const SAMPLE_CLIP_MM = 4;
+
+type SampleStageStyle = "below" | "side" | "none";
+
+function blackPlate(palette: ScenePalette) {
+  return <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />;
+}
+
+/** The below stage: XYZ under the sample, a post up to a clip under its bottom edge. */
+function SampleStageBelow({ palette, axis }: { palette: ScenePalette; axis: number }) {
+  const postTop = axis - OPTIC_D / 2 - SAMPLE_CLIP_MM;
+  if (postTop < stageHeight(3)) return null;
+  return (
+    <group>
+      <StageBase palette={palette} axes={3} top={postTop} fallback={null} />
+      {/* the clip the slab's bottom edge sits in */}
+      <RoundedBox
+        args={[9, SAMPLE_CLIP_MM, 16]}
+        radius={0.6}
+        smoothness={2}
+        position={[0, postTop + SAMPLE_CLIP_MM / 2, 0]}
+      >
+        {blackPlate(palette)}
+      </RoundedBox>
+    </group>
+  );
+}
+
+/**
+ * The side stage, drawn on the sample's right (+z) and turned half round for
+ * the left: an XY block on the table off to the side, an angle bracket
+ * standing on it, a Z slide on the bracket's face that a micrometer on the
+ * bracket's top ledge pushes up and down, and an arm off the slide across to a
+ * clip on the slab's edge. Nothing of it crosses the beam, which runs along x
+ * through the slab. A generic schematic, not any maker's stage.
+ */
+/** the slab's edge, where the clip grips it */
+const SIDE_EDGE_Z = OPTIC_D / 2;
+/** the slide's face toward the sample, and the bracket's */
+const SIDE_SLIDE_Z = 34;
+const SIDE_SLIDE_DEPTH = 8;
+const SIDE_BRACKET_DEPTH = 6;
+/** the Z slide's height; the arm leaves its middle */
+const SIDE_SLIDE_HEIGHT = 34;
+/** the XY block's centre, under the bracket */
+const SIDE_BLOCK_Z = 41;
+const SIDE_FOOT_MM = 6;
+
+function sideStageFits(axis: number): boolean {
+  return axis - SIDE_SLIDE_HEIGHT / 2 >= stageHeight(2) + SIDE_FOOT_MM + 1;
+}
+
+function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis: number; left: boolean }) {
+  if (!sideStageFits(axis)) return null;
+  const base = stageHeight(2);
+  const bracketZ = SIDE_SLIDE_Z + SIDE_SLIDE_DEPTH;
+  const top = axis + SIDE_SLIDE_HEIGHT / 2 + 7;
+  const armFrom = SIDE_EDGE_Z + SAMPLE_CLIP_MM;
+  return (
+    <group rotation={[0, left ? Math.PI : 0, 0]}>
+      <group position={[0, 0, SIDE_BLOCK_Z]}>
+        <TranslationStage palette={palette} axes={2} />
+      </group>
+      {/* the angle bracket: a foot on the block, an upright, a ledge on top */}
+      <RoundedBox
+        args={[36, SIDE_FOOT_MM, 20]}
+        radius={0.8}
+        smoothness={2}
+        position={[0, base + SIDE_FOOT_MM / 2, bracketZ + 10]}
+      >
+        {blackPlate(palette)}
+      </RoundedBox>
+      <RoundedBox
+        args={[36, top - base, SIDE_BRACKET_DEPTH]}
+        radius={0.8}
+        smoothness={2}
+        position={[0, (base + top) / 2, bracketZ + SIDE_BRACKET_DEPTH / 2]}
+      >
+        {blackPlate(palette)}
+      </RoundedBox>
+      <RoundedBox
+        args={[22, 5, SIDE_SLIDE_DEPTH + SIDE_BRACKET_DEPTH]}
+        radius={0.8}
+        smoothness={2}
+        position={[0, top - 2.5, SIDE_SLIDE_Z + (SIDE_SLIDE_DEPTH + SIDE_BRACKET_DEPTH) / 2]}
+      >
+        {blackPlate(palette)}
+      </RoundedBox>
+      {/* the Z slide, and the bright bearing seam behind it */}
+      <RoundedBox
+        args={[30, SIDE_SLIDE_HEIGHT, SIDE_SLIDE_DEPTH - 0.8]}
+        radius={0.8}
+        smoothness={2}
+        position={[0, axis, SIDE_SLIDE_Z + (SIDE_SLIDE_DEPTH - 0.8) / 2]}
+      >
+        {blackPlate(palette)}
+      </RoundedBox>
+      <mesh position={[0, axis, bracketZ - 0.4]}>
+        <boxGeometry args={[27, SIDE_SLIDE_HEIGHT - 3, 0.8]} />
+        <Hardware palette={palette} />
+      </mesh>
+      {/* Z: upright on the ledge, over the slide */}
+      <group position={[0, top, SIDE_SLIDE_Z + SIDE_SLIDE_DEPTH / 2]} rotation={[0, 0, Math.PI / 2]}>
+        <Micrometer palette={palette} />
+      </group>
+      {/* the arm across to the clip on the slab's edge */}
+      <mesh position={[0, axis, (armFrom + SIDE_SLIDE_Z) / 2]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[4, 4, SIDE_SLIDE_Z - armFrom, 20]} />
+        <Enamel color={palette.post} />
+      </mesh>
+      <RoundedBox
+        args={[8, 14, SAMPLE_CLIP_MM]}
+        radius={0.6}
+        smoothness={2}
+        position={[0, axis, SIDE_EDGE_Z + SAMPLE_CLIP_MM / 2]}
+      >
+        {blackPlate(palette)}
+      </RoundedBox>
+    </group>
+  );
+}
 
 function Sample({
   palette,
@@ -1262,32 +1383,22 @@ function Sample({
   color,
   opacity,
   stage,
+  left,
 }: {
   palette: ScenePalette;
   axis: number;
   color: string;
   opacity: number;
-  stage: boolean;
+  stage: SampleStageStyle;
+  left: boolean;
 }) {
-  const clipTop = axis - OPTIC_D / 2;
-  const postTop = clipTop - SAMPLE_CLIP_MM;
-  const mounted = stage && postTop >= stageHeight(3);
   return (
     <group>
-      {mounted ? (
-        <PostsVisible.Provider value>
-          <StageBase palette={palette} axes={3} top={postTop} fallback={null} />
-          {/* the clip the slab's bottom edge sits in */}
-          <RoundedBox
-            args={[9, SAMPLE_CLIP_MM, 16]}
-            radius={0.6}
-            smoothness={2}
-            position={[0, postTop + SAMPLE_CLIP_MM / 2, 0]}
-          >
-            <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
-          </RoundedBox>
-        </PostsVisible.Provider>
-      ) : null}
+      {/* the sample's own choice, drawn whatever the Posts toggle says */}
+      <PostsVisible.Provider value>
+        {stage === "below" ? <SampleStageBelow palette={palette} axis={axis} /> : null}
+        {stage === "side" ? <SampleStageSide palette={palette} axis={axis} left={left} /> : null}
+      </PostsVisible.Provider>
       <mesh position={[0, axis, 0]}>
         <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
         <meshPhysicalMaterial
@@ -2357,7 +2468,8 @@ export const ComponentMesh = memo(function ComponentMesh({
           <Sample
             palette={palette}
             axis={axis}
-            stage={!component.stageHidden}
+            stage={component.sampleStage ?? "below"}
+            left={component.sampleStageLeft === true}
             color={component.color ?? DEFAULT_SAMPLE_COLOR}
             opacity={component.opacity ?? SAMPLE_OPACITY}
           />
