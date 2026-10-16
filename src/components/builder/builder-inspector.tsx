@@ -447,6 +447,73 @@ function LightFields({
   );
 }
 
+const SAMPLE_STAGES: { value: BuilderComponent["sampleStage"]; label: string }[] = [
+  { value: undefined, label: "Below" },
+  { value: "side", label: "Side" },
+  { value: "none", label: "None" },
+];
+
+/**
+ * The XYZ stage a sample is drawn on: under it, beside it (left or right of
+ * the beam) or none. Its own choice, apart from the view's Posts toggle; each
+ * click is one undo step.
+ */
+function SampleStageFields({
+  component,
+  onUpdate,
+}: {
+  component: BuilderComponent;
+  onUpdate: (patch: ComponentPatch, record?: boolean) => void;
+}) {
+  const stage = component.sampleStage;
+  return (
+    <>
+      <div className="builderField">
+        <span className="builderField__label" id={`stage-${component.id}`}>Stage</span>
+        <div className="builderChoice builderChoice--three" role="group" aria-labelledby={`stage-${component.id}`}>
+          {SAMPLE_STAGES.map(({ value, label }) => (
+            <button
+              key={label}
+              type="button"
+              className="builderButton"
+              aria-pressed={stage === value}
+              onClick={() =>
+                onUpdate(
+                  value === "side"
+                    ? { sampleStage: "side" }
+                    : { sampleStage: value, sampleStageLeft: undefined },
+                )
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {stage === "side" ? (
+        <div className="builderChoice" role="group" aria-label="Side of the beam">
+          <button
+            type="button"
+            className="builderButton"
+            aria-pressed={Boolean(component.sampleStageLeft)}
+            onClick={() => onUpdate({ sampleStageLeft: true })}
+          >
+            Left
+          </button>
+          <button
+            type="button"
+            className="builderButton"
+            aria-pressed={!component.sampleStageLeft}
+            onClick={() => onUpdate({ sampleStageLeft: undefined })}
+          >
+            Right
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 /** A part's yaw, read-only and naming the beam when a beam turns it. */
 function YawRow({
   label,
@@ -687,25 +754,7 @@ export function ComponentInspector({
             onBegin={onCheckpoint}
             onChange={(next) => onUpdate({ opacity: next }, false)}
           />
-          {/* its own switch, apart from the view's Posts toggle */}
-          <div className="builderChoice" role="group" aria-label="Stage">
-            <button
-              type="button"
-              className="builderButton"
-              aria-pressed={!component.stageHidden}
-              onClick={() => onUpdate({ stageHidden: undefined })}
-            >
-              On stage
-            </button>
-            <button
-              type="button"
-              className="builderButton"
-              aria-pressed={Boolean(component.stageHidden)}
-              onClick={() => onUpdate({ stageHidden: true })}
-            >
-              Floating
-            </button>
-          </div>
+          <SampleStageFields component={component} onUpdate={onUpdate} />
         </>
       ) : null}
       {component.type === "particle" ? (

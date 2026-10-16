@@ -78,11 +78,17 @@ export type BuilderComponent = {
   /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
   opacity?: number;
   /**
-   * sample only: true draws it floating, without its XYZ stage and post,
-   * whatever the view's Posts toggle says; stored only when true, missing in
-   * setups from before version 13
+   * sample only: the XYZ stage it is drawn on, whatever the view's Posts
+   * toggle says. Missing means "below" (under it, on a post), stored only
+   * otherwise: "side" stands beside it, across the beam, holding it on an arm;
+   * "none" draws it floating. Missing in setups from before version 13.
    */
-  stageHidden?: true;
+  sampleStage?: "side" | "none";
+  /**
+   * sample only, with a "side" stage: true puts the stage on its left (-z,
+   * looking along +x) rather than its right; stored only when true
+   */
+  sampleStageLeft?: true;
   label?: string;
   /** lens only */
   lensShape?: LensShape;
@@ -1573,6 +1579,21 @@ function isVec3(value: unknown): value is Vec3 {
 }
 
 /**
+ * A sample's stage, from version 13 on. The first v13 builds (never released,
+ * only on a pull request) saved a floating sample as `stageHidden: true`; that
+ * still opens floating.
+ */
+function parseSampleStage(raw: Record<string, unknown>): Pick<BuilderComponent, "sampleStage" | "sampleStageLeft"> {
+  if (raw.sampleStage === "none" || (raw.sampleStage === undefined && raw.stageHidden === true)) {
+    return { sampleStage: "none" };
+  }
+  if (raw.sampleStage === "side") {
+    return raw.sampleStageLeft === true ? { sampleStage: "side", sampleStageLeft: true } : { sampleStage: "side" };
+  }
+  return {};
+}
+
+/**
  * A version-1 scene predates per-component height (its Y was always 0), so
  * every component in it loads at the default height.
  */
@@ -1613,7 +1634,7 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   if (type === "sample") {
     const opacity = finiteNumber(raw.opacity);
     if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
-    if (version >= 13 && raw.stageHidden === true) component.stageHidden = true;
+    if (version >= 13) Object.assign(component, parseSampleStage(raw));
   }
   if (type === "particle") {
     if (typeof raw.host === "string") component.host = raw.host;

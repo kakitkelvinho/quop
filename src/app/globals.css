@@ -3394,6 +3394,10 @@ html[data-theme="dark"] .builderButton--primary {
   gap: 0.35rem;
 }
 
+.builderChoice--three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .builderInspector__host,
 .builderInspector__turn {
   display: flex;

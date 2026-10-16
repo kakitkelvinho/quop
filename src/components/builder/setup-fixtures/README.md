@@ -26,8 +26,10 @@ v11 is the first with a label size: v10's setup plus `"labelScale": 1.5`; v1 to
 v10 open with labels at the standard size.
 v12 is the first with groups: v11's setup plus two groups that share the mirror
 `m1` and a hidden third; v1 to v11 open with no groups.
-v13 is the first with a sample off its stage: v12's setup with the sample saved
-`"stageHidden": true`; v1 to v12 open with every sample on its XYZ stage.
+v13 is the first with a sample's stage style: v12's setup with the sample saved
+`"sampleStage": "side", "sampleStageLeft": true`; v1 to v12 open with every
+sample on the stage below it. The first v13 builds (never released) saved a
+floating sample as `"stageHidden": true`, which still opens as `"none"`.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

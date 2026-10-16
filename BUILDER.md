@@ -284,11 +284,15 @@ a lens stands on a slim rod instead, because a holder would hide the glass.
 An objective and a sample stand on translation stages instead, as they do on
 the bench: one generic stage drawing, a black stack of plates with a silver
 micrometer for each axis. An objective's plate is on a post on an XY stage
-(two micrometers, on perpendicular sides), hidden with the posts; a sample's
-clip is on a post on an XYZ stage (a third plate, and a micrometer standing
-upright), switched on and off per sample in the inspector rather than by the
-Posts toggle. Below the height the stage needs, an objective falls back to a
-pillar and a sample floats.
+(two micrometers, on perpendicular sides), hidden with the posts. A sample
+is held on an XYZ stage, picked per sample in the inspector rather than by
+the Posts toggle: **Below** (the default: a clip on a post on the stage, with
+a third plate and a micrometer standing upright), **Side** (an XY block on
+the table beside it, an angle bracket with a Z slide and an upright
+micrometer, and an arm across to a clip on the slab's edge; it stands across
+the beam from the sample, so it never blocks the light, on its left or
+right) or **None** (floating). Below the height a stage needs, an objective
+falls back to a pillar and a sample floats.
 Parts too small to see at true scale (the sample slab, the Paul trap, a
 particle) are drawn larger than life.
 Parts whose hardware hides what they do are drawn the way lab diagrams draw

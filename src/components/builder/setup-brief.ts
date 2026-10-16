@@ -140,8 +140,12 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
     text: "`true` leaves the light inside it out of the drawing; leave it out otherwise.",
     only: [...LIT_TYPES],
   },
-  stageHidden: {
-    text: "`true` draws the sample floating, without the XYZ stage and post it otherwise stands on; leave it out otherwise.",
+  sampleStage: {
+    text: '`"side"` draws its XYZ stage beside it, across the beam, holding it on an arm; `"none"` draws it floating. Leave it out for the default, the stage under it on a post.',
+    only: "sample",
+  },
+  sampleStageLeft: {
+    text: '`true` puts a `"side"` stage on the sample\'s left (−z, looking along +x) instead of its right; leave it out otherwise.',
     only: "sample",
   },
   particleRadius: {

@@ -403,28 +403,63 @@ describe("setup-v12.json, the first version with groups", () => {
   });
 });
 
-describe("setup-v13.json, the first version with a sample off its stage", () => {
+describe("setup-v13.json, the first version with a sample's stage style", () => {
+  const sampleOf = (setup: ReturnType<typeof open> | null) => setup?.components.find(({ id }) => id === "sample");
+  const withSample = (fields: Record<string, unknown>, version = 13) => {
+    const saved = readSaved("setup-v13.json") as unknown as { components: Record<string, unknown>[] };
+    const components = saved.components.map((component) => {
+      if (component.id !== "sample") return component;
+      const rest = { ...component };
+      delete rest.sampleStage;
+      delete rest.sampleStageLeft;
+      return { ...rest, ...fields };
+    });
+    return parseScene({ ...saved, version, components });
+  };
+
   it("is saved exactly as it opens", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v13.json", import.meta.url), "utf8");
     assert.equal(`${serializeScene(open("setup-v13.json"))}\n`, text);
   });
 
-  it("is v12's setup with the sample drawn floating", () => {
+  it("is v12's setup with the sample on a side stage, on its left", () => {
     const setup = open("setup-v13.json");
-    assert.equal(setup.components.find(({ id }) => id === "sample")?.stageHidden, true);
+    const sample = sampleOf(setup);
+    assert.equal(sample?.sampleStage, "side");
+    assert.equal(sample?.sampleStageLeft, true);
     const components = setup.components.map((component) => {
       const rest = { ...component };
-      delete rest.stageHidden;
+      delete rest.sampleStage;
+      delete rest.sampleStageLeft;
       return rest;
     });
     assert.deepEqual({ ...setup, components }, open("setup-v12.json"));
   });
 
-  it("opens every older setup with every sample on its stage, even one saved with the flag", () => {
+  it("opens each stage style, and keeps the side only on a side stage", () => {
+    assert.equal(sampleOf(withSample({}))?.sampleStage, undefined);
+    assert.deepEqual(
+      { ...sampleOf(withSample({ sampleStage: "side" })) },
+      { ...sampleOf(withSample({})), sampleStage: "side" },
+    );
+    assert.equal(sampleOf(withSample({ sampleStage: "none" }))?.sampleStage, "none");
+    assert.equal(sampleOf(withSample({ sampleStage: "none", sampleStageLeft: true }))?.sampleStageLeft, undefined);
+    assert.equal(sampleOf(withSample({ sampleStage: "sideways" }))?.sampleStage, undefined);
+  });
+
+  it("opens a sample saved by the first v13 builds as stageHidden: true floating", () => {
+    const sample = sampleOf(withSample({ stageHidden: true }));
+    assert.equal(sample?.sampleStage, "none");
+    assert.ok(!("stageHidden" in (sample ?? {})));
+    const saved = JSON.parse(serializeScene(withSample({ stageHidden: true })!));
+    assert.equal(saved.components.find(({ id }: { id: string }) => id === "sample").sampleStage, "none");
+  });
+
+  it("opens every older setup with every sample on the stage below it, even one saved with the fields", () => {
     for (const name of FIXTURES.slice(0, FIXTURES.indexOf("setup-v13.json"))) {
-      assert.ok(open(name).components.every(({ stageHidden }) => stageHidden === undefined), name);
+      assert.ok(open(name).components.every(({ sampleStage }) => sampleStage === undefined), name);
     }
-    const early = parseScene({ ...readSaved("setup-v13.json"), version: 12 });
-    assert.equal(early?.components.find(({ id }) => id === "sample")?.stageHidden, undefined);
+    assert.equal(sampleOf(withSample({ sampleStage: "side" }, 12))?.sampleStage, undefined);
+    assert.equal(sampleOf(withSample({ stageHidden: true }, 12))?.sampleStage, undefined);
   });
 });
