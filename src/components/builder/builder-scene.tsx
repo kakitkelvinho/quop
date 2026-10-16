@@ -1330,11 +1330,13 @@ export default function BuilderScene() {
   );
 
   const handleSetGroupMembership = useCallback(
-    (groupId: string, id: string, isMember: boolean) => {
+    (groupId: string, ids: string[], isMember: boolean) => {
+      const [id] = ids;
       const part = componentById(sceneRef.current.components, id);
       const frame = sceneRef.current.frames.find((entry) => entry.id === id);
-      const name = part ? componentDisplayName(part) : frame ? frameDisplayName(frame) : "it";
-      api.setGroupMembership(groupId, id, isMember);
+      const name =
+        ids.length > 1 ? `${ids.length} parts` : part ? componentDisplayName(part) : frame ? frameDisplayName(frame) : "it";
+      api.setGroupMembership(groupId, ids, isMember);
       announce(isMember ? `Added ${name} to ${groupName(sceneRef.current, groupId)}.` : `Took ${name} out of ${groupName(sceneRef.current, groupId)}.`);
     },
     [announce, api],

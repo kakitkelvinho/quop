@@ -179,14 +179,14 @@ export function setGroupHidden(scene: BuilderSceneData, id: string, hidden: bool
   });
 }
 
-/** Put a part or frame in a group, or take it out; a periscope's two mirrors go together. */
+/** Put parts or frames in a group, or take them out; a periscope's two mirrors go together. */
 export function setMembership(
   scene: BuilderSceneData,
   groupId: string,
-  id: string,
+  id: string | string[],
   isMember: boolean,
 ): BuilderSceneData {
-  const ids = memberIdsOf(scene, [id]);
+  const ids = memberIdsOf(scene, typeof id === "string" ? [id] : id);
   if (ids.length === 0) return scene;
   return editGroup(scene, groupId, (group) => {
     const members = isMember
@@ -200,6 +200,22 @@ export function setMembership(
 export function deleteGroup(scene: BuilderSceneData, id: string): BuilderSceneData {
   const groups = scene.groups.filter((group) => group.id !== id);
   return groups.length === scene.groups.length ? scene : { ...scene, groups };
+}
+
+/** How much of a selection a group holds: all of it, some, or none. */
+export type Membership = "all" | "some" | "none";
+
+export function membership(group: Group, ids: string[]): Membership {
+  const held = ids.filter((id) => group.members.includes(id)).length;
+  return held === 0 ? "none" : held === ids.length ? "all" : "some";
+}
+
+/**
+ * A group's row in the Add to group menu: the selection leaves a group that
+ * holds all of it, and joins one that holds some or none of it.
+ */
+export function joinsOnToggle(group: Group, ids: string[]): boolean {
+  return membership(group, ids) !== "all";
 }
 
 /**

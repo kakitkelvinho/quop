@@ -3910,20 +3910,92 @@ body[data-panel-gesture="se"] * {
   min-width: 9rem;
 }
 
-.builderGroupsField {
+/* a part's, frame's or selection's groups, and the Add to group menu under them */
+.builderGroupsMenu {
   display: grid;
-  gap: 0.3rem;
-  margin: 0;
-  padding: 0;
-  border: 0;
+  gap: 0.35rem;
 }
 
-.builderGroupsField__option {
-  display: flex;
+.builderGroupsMenu__summary {
+  display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  min-width: 0;
+}
+
+.builderGroupsMenu__dots {
+  display: inline-flex;
+  flex: none;
+  gap: 0.2rem;
+}
+
+.builderGroupsMenu__text,
+.builderGroupsMenu__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.builderGroupsMenu__trigger {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.builderGroupsMenu__trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.builderGroupsMenu__list {
+  display: grid;
+  max-height: 12rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--surface-strong);
+}
+
+.builderGroupsMenu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-height: 1.9rem;
+  padding: 0 0.45rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: none;
+  color: var(--foreground);
+  font: inherit;
   font-size: 0.8rem;
+  text-align: left;
   cursor: pointer;
+}
+
+.builderGroupsMenu__item:hover,
+.builderGroupsMenu__item:focus-visible {
+  background: var(--accent-soft);
+}
+
+.builderGroupsMenu__item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.builderGroupsMenu__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* the tick: the theme's accent, as the selection ring wears it */
+.builderGroupsMenu__mark {
+  display: inline-flex;
+  flex: none;
+  width: 1rem;
+  color: var(--accent);
 }
 
 .builderBeamRow__dot--square {
