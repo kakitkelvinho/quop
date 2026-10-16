@@ -1197,8 +1197,6 @@ export default function BuilderScene() {
     [announce, api, cancelBeam, cancelConnect, cancelFrame],
   );
 
-  const sceneJson = useCallback(() => serializeScene(sceneRef.current), []);
-
   const handleExportPng = useCallback(async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -1332,11 +1330,13 @@ export default function BuilderScene() {
   );
 
   const handleSetGroupMembership = useCallback(
-    (groupId: string, id: string, isMember: boolean) => {
+    (groupId: string, ids: string[], isMember: boolean) => {
+      const [id] = ids;
       const part = componentById(sceneRef.current.components, id);
       const frame = sceneRef.current.frames.find((entry) => entry.id === id);
-      const name = part ? componentDisplayName(part) : frame ? frameDisplayName(frame) : "it";
-      api.setGroupMembership(groupId, id, isMember);
+      const name =
+        ids.length > 1 ? `${ids.length} parts` : part ? componentDisplayName(part) : frame ? frameDisplayName(frame) : "it";
+      api.setGroupMembership(groupId, ids, isMember);
       announce(isMember ? `Added ${name} to ${groupName(sceneRef.current, groupId)}.` : `Took ${name} out of ${groupName(sceneRef.current, groupId)}.`);
     },
     [announce, api],
@@ -1707,6 +1707,7 @@ export default function BuilderScene() {
         onSetGroupColor={(id, color) => api.setGroupColor(id, color, false)}
         onSetGroupHidden={handleSetGroupHidden}
         onDeleteGroup={handleDeleteGroup}
+        onGroupSelected={groupSelected}
         onExportGroup={handleExportGroup}
         onImport={handleImport}
         importChoice={pendingImport && { names: pendingImport.names }}
@@ -1731,7 +1732,7 @@ export default function BuilderScene() {
         onUndo={api.undo}
         onRedo={api.redo}
         onSave={handleSave}
-        sceneJson={sceneJson}
+        scene={scene}
         onApplyScene={handleApplyScene}
         onExportPng={handleExportPng}
         onCopyBrief={handleCopyBrief}
