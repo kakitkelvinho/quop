@@ -3403,6 +3403,20 @@ html[data-theme="dark"] .builderButton--primary {
   font-size: 0.8rem;
 }
 
+/* the group a multi-selection is: its colour dot and name, beside Ungroup */
+.builderInspector__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.builderInspector__group strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .builderButton:disabled {
   opacity: 0.4;
   cursor: default;

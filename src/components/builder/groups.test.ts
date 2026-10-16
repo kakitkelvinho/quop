@@ -14,6 +14,7 @@ import {
   nextGroupName,
   pruneMembers,
   renameGroup,
+  selectedGroup,
   setGroupColor,
   setGroupHidden,
   setMembership,
@@ -182,6 +183,20 @@ describe("editing groups", () => {
       connections: [],
     };
     assert.deepEqual(createGroup(scene, ["pt"]).scene.groups[0].members.sort(), ["p", "pt"]);
+  });
+
+  it("knows the group a selection is, for the inspector's Ungroup", () => {
+    const scene = table([left(), right()], [frame("fr")]);
+    assert.equal(selectedGroup(scene, ["b", "a", "m"])?.id, "left", "in any order");
+    assert.equal(selectedGroup(scene, ["c", "m", "d"])?.id, "right");
+    assert.equal(selectedGroup(scene, ["a", "m"]), null, "fewer parts than the group");
+    assert.equal(selectedGroup(scene, ["a", "m", "b", "f"]), null, "more parts than the group");
+    assert.equal(selectedGroup(scene, []), null);
+    // a group's frames, and members no longer on the table, don't count
+    const framed = table([group("g", ["a", "f", "fr", "gone"])], [frame("fr")]);
+    assert.equal(selectedGroup(framed, ["a", "f"])?.id, "g");
+    // two groups of the same parts: the latest
+    assert.equal(selectedGroup(table([group("g", ["a", "b"]), group("h", ["b", "a"])]), ["a", "b"])?.id, "h");
   });
 
   it("renames, recolours, hides and shows", () => {

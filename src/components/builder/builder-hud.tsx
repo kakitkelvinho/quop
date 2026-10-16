@@ -9,6 +9,7 @@ import { Icon, IconButton } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
+import { selectedGroup } from "@/components/builder/groups";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
@@ -149,6 +150,8 @@ export type BuilderHudProps = {
   onSetGroupColor: (id: string, color: string) => void;
   onSetGroupHidden: (id: string, hidden: boolean) => void;
   onDeleteGroup: (id: string) => void;
+  /** ⌘G: the selection as a new group */
+  onGroupSelected: () => void;
   /** download a group as its own setup file, `<name>.json` */
   onExportGroup: (id: string) => void;
   /** a setup file's text to merge into the table; null when the file was too big to read */
@@ -1316,6 +1319,10 @@ export default function BuilderHud(props: BuilderHudProps) {
         onDelete={props.onDeleteSelected}
         onSetHeight={props.onSetSelectedHeight}
         onSetMountColor={props.onSetSelectedMountColor}
+        group={selectedGroup({ components, groups: props.groups }, selected.map((component) => component.id))}
+        canGroup={!drawingFrame && !placingType}
+        onGroup={props.onGroupSelected}
+        onUngroup={props.onDeleteGroup}
       />
     );
   } else if (selected.length === 1) {

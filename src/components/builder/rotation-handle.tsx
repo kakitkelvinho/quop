@@ -38,6 +38,10 @@ export const ARROW_INK = { light: "#fffaf1", dark: "#1a1d26" } as const;
 /** where a centred part's bubble sits on its ring, and a port's on its quarter circle (part's frame) */
 const RING_BUBBLE_ANGLE = -45 * DEG;
 const PORT_BUBBLE_ANGLE = -90 * DEG;
+/** the faint arc a port's bubble is threaded on, radians either side of it */
+const PORT_ARC = 50 * DEG;
+/** the most a selection's arc runs either side of its bubble, mm along it */
+const GROUP_ARC_MM = 90;
 /** the badge's distance outside the bubble's circle, mm */
 const BADGE_OUT_MM = 20;
 
@@ -278,7 +282,7 @@ export function PartRotationHandle({ component, color, dark, locked, rotating, o
         // the selection ring is a 3 mm band from `ring` out: thread the bubble on its middle
         radius={centred ? ring + 1.5 : Math.max(38, ring + 10)}
         angle={centred ? RING_BUBBLE_ANGLE : PORT_BUBBLE_ANGLE}
-        skewer={centred ? undefined : 50 * DEG}
+        skewer={centred ? undefined : PORT_ARC}
         color={color}
         dark={dark}
         rotating={rotating}
@@ -303,20 +307,20 @@ export type GroupRotationHandleProps = {
   onPointerDown: (event: ThreeEvent<PointerEvent>) => void;
 };
 
-/** One handle for several selected parts, on a faint circle round them all. */
+/**
+ * One handle for several selected parts, about their centre. Like a port's,
+ * its bubble rides a faint arc rather than a whole circle round them all,
+ * which drew a ring across the table the size of the selection: the arc
+ * spans as a port's does, no longer than GROUP_ARC_MM either side on a wide
+ * selection, and turns with the bubble.
+ */
 export function GroupRotationHandle({ centre, radius, turned, color, dark, rotating, onPointerDown }: GroupRotationHandleProps) {
-  const circle = useGeometries(
-    () => ({ circle: arcBand(radius - SKEWER_MM / 2, radius + SKEWER_MM / 2, 0, 2 * Math.PI) }),
-    [radius],
-  );
   return (
     <group position={[centre[0], 0, centre[1]]}>
-      <mesh geometry={circle.circle} renderOrder={2}>
-        <meshBasicMaterial color={color} vertexColors opacity={0.5} {...OVER} />
-      </mesh>
       <Bubble
         radius={radius}
         angle={RING_BUBBLE_ANGLE + turned * DEG}
+        skewer={Math.min(PORT_ARC, GROUP_ARC_MM / radius)}
         color={color}
         dark={dark}
         rotating={rotating}

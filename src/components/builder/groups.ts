@@ -203,6 +203,27 @@ export function deleteGroup(scene: BuilderSceneData, id: string): BuilderSceneDa
 }
 
 /**
+ * The group the selected parts are, exactly: its parts on the table are the
+ * selection, no more and no fewer, as when its row in the Groups box was
+ * clicked. Its frames don't count, since a selection of parts holds none. The
+ * latest such group when several match; null when none does.
+ */
+export function selectedGroup(
+  scene: Pick<BuilderSceneData, "components" | "groups">,
+  selection: string[],
+): Group | null {
+  if (selection.length === 0) return null;
+  const parts = new Set(scene.components.map(({ id }) => id));
+  const picked = new Set(selection);
+  for (let index = scene.groups.length - 1; index >= 0; index -= 1) {
+    const group = scene.groups[index];
+    const members = new Set(group.members.filter((id) => parts.has(id)));
+    if (members.size === picked.size && [...picked].every((id) => members.has(id))) return group;
+  }
+  return null;
+}
+
+/**
  * Every group's members kept to the parts and frames still on the table, as
  * after a delete. A group left empty stays until it is deleted.
  */
