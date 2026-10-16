@@ -371,11 +371,24 @@ function Micrometer({ palette }: { palette: ScenePalette }) {
   );
 }
 
-function TranslationStage({ palette, axes }: { palette: ScenePalette; axes: StageAxes }) {
+/**
+ * A stage's plates: the part's stage colour, or the theme's (`palette.stage`).
+ * Satin rather than glossy, and only lightly metallic, so a lifted night grey
+ * stays grey instead of mirroring the dark backdrop.
+ */
+function StageFinish({ color }: { color: string }) {
+  return <meshStandardMaterial color={color} roughness={0.5} metalness={0.25} />;
+}
+
+/** The bearing seam between two plates: a light line, proud of the plates' rounded edges. */
+function StageSeam({ palette }: { palette: ScenePalette }) {
+  return <meshStandardMaterial color={palette.stageSeam} roughness={0.35} metalness={0.5} />;
+}
+
+function TranslationStage({ palette, axes, color }: { palette: ScenePalette; axes: StageAxes; color: string }) {
   if (!useContext(PostsVisible)) return null;
   const half = STAGE_SIZE / 2;
   const top = stageHeight(axes);
-  const plate = palette.anodise;
   // carriage n (0 = X, 1 = Y, 2 = Z) sits on the base, one plate above another
   const carriageY = (index: number) => STAGE_BASE_MM + (index + 0.5) * STAGE_PLATE_MM;
   return (
@@ -386,7 +399,7 @@ function TranslationStage({ palette, axes }: { palette: ScenePalette; axes: Stag
         smoothness={2}
         position={[0, STAGE_BASE_MM / 2, 0]}
       >
-        <meshStandardMaterial color={plate} roughness={0.5} metalness={0.35} />
+        <StageFinish color={color} />
       </RoundedBox>
       {Array.from({ length: axes }, (_, index) => (
         <RoundedBox
@@ -396,14 +409,14 @@ function TranslationStage({ palette, axes }: { palette: ScenePalette; axes: Stag
           smoothness={2}
           position={[0, carriageY(index) + 0.4, 0]}
         >
-          <meshStandardMaterial color={plate} roughness={0.5} metalness={0.35} />
+          <StageFinish color={color} />
         </RoundedBox>
       ))}
       {/* the bearing gap under each carriage: a bright seam that splits the stack into plates */}
       {Array.from({ length: axes }, (_, index) => (
         <mesh key={`seam${index}`} position={[0, STAGE_BASE_MM + index * STAGE_PLATE_MM + 0.4, 0]}>
-          <boxGeometry args={[STAGE_SIZE - 3, 0.8, STAGE_SIZE - 3]} />
-          <Hardware palette={palette} />
+          <boxGeometry args={[STAGE_SIZE - 0.6, 0.8, STAGE_SIZE - 0.6]} />
+          <StageSeam palette={palette} />
         </mesh>
       ))}
       {/* the top plate's tapped holes and centre hole */}
@@ -465,11 +478,14 @@ function StagePost({ palette, from, top }: { palette: ScenePalette; from: number
 function StageBase({
   palette,
   axes,
+  color,
   top,
   fallback,
 }: {
   palette: ScenePalette;
   axes: StageAxes;
+  /** the stage's plates */
+  color: string;
   top: number;
   fallback: ReactNode;
 }) {
@@ -477,7 +493,7 @@ function StageBase({
   if (top < from) return <>{fallback}</>;
   return (
     <group>
-      <TranslationStage palette={palette} axes={axes} />
+      <TranslationStage palette={palette} axes={axes} color={color} />
       <StagePost palette={palette} from={from} top={top} />
     </group>
   );
@@ -1259,17 +1275,13 @@ const SAMPLE_CLIP_MM = 4;
 
 type SampleStageStyle = "below" | "side" | "none";
 
-function blackPlate(palette: ScenePalette) {
-  return <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />;
-}
-
 /** The below stage: XYZ under the sample, a post up to a clip under its bottom edge. */
-function SampleStageBelow({ palette, axis }: { palette: ScenePalette; axis: number }) {
+function SampleStageBelow({ palette, axis, color }: { palette: ScenePalette; axis: number; color: string }) {
   const postTop = axis - OPTIC_D / 2 - SAMPLE_CLIP_MM;
   if (postTop < stageHeight(3)) return null;
   return (
     <group>
-      <StageBase palette={palette} axes={3} top={postTop} fallback={null} />
+      <StageBase palette={palette} axes={3} color={color} top={postTop} fallback={null} />
       {/* the clip the slab's bottom edge sits in */}
       <RoundedBox
         args={[9, SAMPLE_CLIP_MM, 16]}
@@ -1277,7 +1289,7 @@ function SampleStageBelow({ palette, axis }: { palette: ScenePalette; axis: numb
         smoothness={2}
         position={[0, postTop + SAMPLE_CLIP_MM / 2, 0]}
       >
-        {blackPlate(palette)}
+        <StageFinish color={color} />
       </RoundedBox>
     </group>
   );
@@ -1307,7 +1319,17 @@ function sideStageFits(axis: number): boolean {
   return axis - SIDE_SLIDE_HEIGHT / 2 >= stageHeight(2) + SIDE_FOOT_MM + 1;
 }
 
-function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis: number; left: boolean }) {
+function SampleStageSide({
+  palette,
+  axis,
+  left,
+  color,
+}: {
+  palette: ScenePalette;
+  axis: number;
+  left: boolean;
+  color: string;
+}) {
   if (!sideStageFits(axis)) return null;
   const base = stageHeight(2);
   const bracketZ = SIDE_SLIDE_Z + SIDE_SLIDE_DEPTH;
@@ -1316,7 +1338,7 @@ function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis:
   return (
     <group rotation={[0, left ? Math.PI : 0, 0]}>
       <group position={[0, 0, SIDE_BLOCK_Z]}>
-        <TranslationStage palette={palette} axes={2} />
+        <TranslationStage palette={palette} axes={2} color={color} />
       </group>
       {/* the angle bracket: a foot on the block, an upright, a ledge on top */}
       <RoundedBox
@@ -1325,7 +1347,7 @@ function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis:
         smoothness={2}
         position={[0, base + SIDE_FOOT_MM / 2, bracketZ + 10]}
       >
-        {blackPlate(palette)}
+        <StageFinish color={color} />
       </RoundedBox>
       <RoundedBox
         args={[36, top - base, SIDE_BRACKET_DEPTH]}
@@ -1333,7 +1355,7 @@ function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis:
         smoothness={2}
         position={[0, (base + top) / 2, bracketZ + SIDE_BRACKET_DEPTH / 2]}
       >
-        {blackPlate(palette)}
+        <StageFinish color={color} />
       </RoundedBox>
       <RoundedBox
         args={[22, 5, SIDE_SLIDE_DEPTH + SIDE_BRACKET_DEPTH]}
@@ -1341,7 +1363,7 @@ function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis:
         smoothness={2}
         position={[0, top - 2.5, SIDE_SLIDE_Z + (SIDE_SLIDE_DEPTH + SIDE_BRACKET_DEPTH) / 2]}
       >
-        {blackPlate(palette)}
+        <StageFinish color={color} />
       </RoundedBox>
       {/* the Z slide, and the bright bearing seam behind it */}
       <RoundedBox
@@ -1350,11 +1372,11 @@ function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis:
         smoothness={2}
         position={[0, axis, SIDE_SLIDE_Z + (SIDE_SLIDE_DEPTH - 0.8) / 2]}
       >
-        {blackPlate(palette)}
+        <StageFinish color={color} />
       </RoundedBox>
       <mesh position={[0, axis, bracketZ - 0.4]}>
-        <boxGeometry args={[27, SIDE_SLIDE_HEIGHT - 3, 0.8]} />
-        <Hardware palette={palette} />
+        <boxGeometry args={[29.4, SIDE_SLIDE_HEIGHT - 0.6, 0.8]} />
+        <StageSeam palette={palette} />
       </mesh>
       {/* Z: upright on the ledge, over the slide */}
       <group position={[0, top, SIDE_SLIDE_Z + SIDE_SLIDE_DEPTH / 2]} rotation={[0, 0, Math.PI / 2]}>
@@ -1371,7 +1393,7 @@ function SampleStageSide({ palette, axis, left }: { palette: ScenePalette; axis:
         smoothness={2}
         position={[0, axis, SIDE_EDGE_Z + SAMPLE_CLIP_MM / 2]}
       >
-        {blackPlate(palette)}
+        <StageFinish color={color} />
       </RoundedBox>
     </group>
   );
@@ -1384,6 +1406,7 @@ function Sample({
   opacity,
   stage,
   left,
+  stageColor,
 }: {
   palette: ScenePalette;
   axis: number;
@@ -1391,13 +1414,14 @@ function Sample({
   opacity: number;
   stage: SampleStageStyle;
   left: boolean;
+  stageColor: string;
 }) {
   return (
     <group>
       {/* the sample's own choice, drawn whatever the Posts toggle says */}
       <PostsVisible.Provider value>
-        {stage === "below" ? <SampleStageBelow palette={palette} axis={axis} /> : null}
-        {stage === "side" ? <SampleStageSide palette={palette} axis={axis} left={left} /> : null}
+        {stage === "below" ? <SampleStageBelow palette={palette} axis={axis} color={stageColor} /> : null}
+        {stage === "side" ? <SampleStageSide palette={palette} axis={axis} left={left} color={stageColor} /> : null}
       </PostsVisible.Provider>
       <mesh position={[0, axis, 0]}>
         <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
@@ -1721,7 +1745,13 @@ const OBJECTIVE_PLATE_GEOMETRY = boredPlate(36, 4, 20, 6);
 /** the plate's middle along the beam: drawn at x = -23 and extruded 6 mm back */
 const OBJECTIVE_PLATE_X = -26;
 
-function Objective({ palette, color, axis, length }: ModelProps & { length: number }) {
+function Objective({
+  palette,
+  color,
+  axis,
+  length,
+  stageColor,
+}: ModelProps & { length: number; stageColor: string }) {
   const barrel = color ?? DEFAULT_OBJECTIVE_COLOR;
   // the barrel runs from x = -19 to `end`; the taper and nose add 14 mm, the thread 10
   const barrelLength = clamp(length, OBJECTIVE_LENGTH_RANGE_MM) - 24;
@@ -1737,6 +1767,7 @@ function Objective({ palette, color, axis, length }: ModelProps & { length: numb
         <StageBase
           palette={palette}
           axes={2}
+          color={stageColor}
           top={axis - 18}
           fallback={<Pillar palette={palette} top={axis - 18} />}
         />
@@ -2470,6 +2501,7 @@ export const ComponentMesh = memo(function ComponentMesh({
             axis={axis}
             stage={component.sampleStage ?? "below"}
             left={component.sampleStageLeft === true}
+            stageColor={component.stageColor ?? palette.stage}
             color={component.color ?? DEFAULT_SAMPLE_COLOR}
             opacity={component.opacity ?? SAMPLE_OPACITY}
           />
@@ -2495,6 +2527,7 @@ export const ComponentMesh = memo(function ComponentMesh({
           <Objective
             {...modelProps}
             length={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+            stageColor={component.stageColor ?? palette.stage}
           />
         ) : null}
         {component.type === "block" ? (

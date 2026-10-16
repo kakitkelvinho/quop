@@ -44,6 +44,7 @@ import {
   SAMPLE_OPACITY,
   SAMPLE_OPACITY_RANGE,
   SCENE_VERSION,
+  STAGED_TYPES,
   TABLE_GUARD_MM,
   defaultHeight,
   heightRange,
@@ -143,6 +144,10 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
   sampleStage: {
     text: '`"side"` draws its XYZ stage beside it, across the beam, holding it on an arm; `"none"` draws it floating. Leave it out for the default, the stage under it on a post.',
     only: "sample",
+  },
+  stageColor: {
+    text: "a hex colour for the plates of the translation stage it stands on (the micrometers stay silver). Leave it out for the theme's own: near-black by day, dark grey at night.",
+    only: [...STAGED_TYPES],
   },
   sampleStageLeft: {
     text: '`true` puts a `"side"` stage on the sample\'s left (−z, looking along +x) instead of its right; leave it out otherwise.',

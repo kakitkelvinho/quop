@@ -422,18 +422,43 @@ describe("setup-v13.json, the first version with a sample's stage style", () => 
     assert.equal(`${serializeScene(open("setup-v13.json"))}\n`, text);
   });
 
-  it("is v12's setup with the sample on a side stage, on its left", () => {
+  it("is v12's setup with the sample on a side stage, on its left, and the objective's stage coloured", () => {
     const setup = open("setup-v13.json");
     const sample = sampleOf(setup);
     assert.equal(sample?.sampleStage, "side");
     assert.equal(sample?.sampleStageLeft, true);
+    assert.equal(sample?.stageColor, undefined);
+    assert.equal(setup.components.find(({ id }) => id === "obj")?.stageColor, "#8a6d3b");
     const components = setup.components.map((component) => {
       const rest = { ...component };
       delete rest.sampleStage;
       delete rest.sampleStageLeft;
+      delete rest.stageColor;
       return rest;
     });
     assert.deepEqual({ ...setup, components }, open("setup-v12.json"));
+  });
+
+  it("keeps a stage colour through a save, only on a part with a stage, and saves none when unset", () => {
+    const coloured = withSample({ sampleStage: "side", stageColor: "#336699" });
+    assert.equal(sampleOf(coloured)?.stageColor, "#336699");
+    assert.equal(sampleOf(parseScene(JSON.parse(serializeScene(coloured!))))?.stageColor, "#336699");
+    assert.equal(sampleOf(withSample({ stageColor: "not a colour" }))?.stageColor, undefined);
+    assert.equal(sampleOf(withSample({ stageColor: "#336699" }, 12))?.stageColor, undefined);
+    const saved = readSaved("setup-v13.json") as unknown as { components: Record<string, unknown>[] };
+    const onMirror = parseScene({
+      ...saved,
+      components: saved.components.map((component) =>
+        component.id === "m1" ? { ...component, stageColor: "#336699" } : component,
+      ),
+    });
+    assert.equal(onMirror?.components.find(({ id }) => id === "m1")?.stageColor, undefined);
+    assert.ok(!serializeScene(withSample({})!).includes('"stageColor": "#336699"'));
+    assert.equal(
+      (serializeScene(withSample({})!).match(/"stageColor"/g) ?? []).length,
+      1,
+      "only the objective's, which the fixture sets",
+    );
   });
 
   it("opens each stage style, and keeps the side only on a side stage", () => {

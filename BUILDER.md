@@ -292,7 +292,11 @@ the table beside it, an angle bracket with a Z slide and an upright
 micrometer, and an arm across to a clip on the slab's edge; it stands across
 the beam from the sample, so it never blocks the light, on its left or
 right) or **None** (floating). Below the height a stage needs, an objective
-falls back to a pillar and a sample floats.
+falls back to a pillar and a sample floats. A stage's plates are the theme's
+own (near-black anodised by day, a dark grey at night so the block doesn't
+sink into the backdrop, with light seams between plates in both) unless the
+part has a **Stage colour**, set in the inspector beside where a mount colour
+goes and reset to the theme's from there; the micrometers stay silver.
 Parts too small to see at true scale (the sample slab, the Paul trap, a
 particle) are drawn larger than life.
 Parts whose hardware hides what they do are drawn the way lab diagrams draw
