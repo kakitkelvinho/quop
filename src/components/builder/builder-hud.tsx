@@ -15,6 +15,7 @@ import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
+import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -1138,10 +1139,11 @@ function LightingMenu({
 }
 
 /**
- * Show: a bubble of what is drawn on the table besides the setup, one switch
- * each: posts, grid, labels (with their size, which is saved with the setup)
- * and beam distances. A size drag previews as it moves and is one undo step:
- * its first change takes the snapshot.
+ * Show: a half ring that drops out of the eye with one wedge for each thing
+ * drawn on the table besides the setup: posts, grid, labels and beam
+ * distances. The label size, which is saved with the setup, sits in a card
+ * under the ring. A size drag previews as it moves and is one undo step: its
+ * first change takes the snapshot.
  */
 function ShowMenu({
   posts,
@@ -1170,67 +1172,89 @@ function ShowMenu({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const editing = useRef(false);
   const end = () => {
     editing.current = false;
   };
+  const items: WheelItem[] = [
+    {
+      id: "posts",
+      label: "Posts",
+      description: "Posts under the parts",
+      icon: "posts",
+      on: posts,
+      onToggle: onTogglePosts,
+    },
+    { id: "grid", label: "Grid", description: "The grid on the table", icon: "grid", on: grid, onToggle: onToggleGrid },
+    {
+      id: "labels",
+      label: "Labels",
+      description: "Part names on the table",
+      icon: "labels",
+      iconOff: "labelsOff",
+      on: labels,
+      onToggle: onToggleLabels,
+    },
+    {
+      id: "distances",
+      label: "Beam distances",
+      description: "Lengths along each beam",
+      icon: "ruler",
+      on: distances,
+      onToggle: onToggleDistances,
+    },
+  ];
 
   return (
     <div className="builderLighting" ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
         className={`builderIconBtn${open ? " is-active" : ""}`}
         aria-label="Show"
         aria-expanded={open}
-        aria-haspopup="dialog"
+        aria-haspopup="menu"
         title="Show"
         onClick={() => setOpen((current) => !current)}
       >
         <Icon name="eye" />
       </button>
       {open ? (
-        <div className="builderLighting__bubble" role="dialog" aria-label="Show">
-          <label className="builderLighting__toggle">
-            Posts
-            <input type="checkbox" role="switch" checked={posts} onChange={onTogglePosts} />
-          </label>
-          <label className="builderLighting__toggle">
-            Grid
-            <input type="checkbox" role="switch" checked={grid} onChange={onToggleGrid} />
-          </label>
-          <label className="builderLighting__toggle">
-            Labels
-            <input type="checkbox" role="switch" checked={labels} onChange={onToggleLabels} />
-          </label>
-          <label className="builderField">
-            <span className="builderField__label">
-              Label size
-              <span className="builderReadout">{Math.round(scale * 100)}%</span>
-            </span>
-            <input
-              className="builderSlider"
-              type="range"
-              min={LABEL_SCALE_RANGE[0]}
-              max={LABEL_SCALE_RANGE[1]}
-              step={0.05}
-              value={scale}
-              onChange={(event) => {
-                if (!editing.current) {
-                  editing.current = true;
-                  onBegin();
-                }
-                onChange(Number(event.target.value));
-              }}
-              onPointerUp={end}
-              onKeyUp={end}
-              onBlur={end}
-            />
-          </label>
-          <label className="builderLighting__toggle">
-            Beam distances
-            <input type="checkbox" role="switch" checked={distances} onChange={onToggleDistances} />
-          </label>
-        </div>
+        <ShowWheel
+          items={items}
+          onClose={() => {
+            setOpen(false);
+            buttonRef.current?.focus();
+          }}
+          footer={
+            <label className="builderField">
+              <span className="builderField__label">
+                Label size
+                <span className="builderReadout">{Math.round(scale * 100)}%</span>
+              </span>
+              <input
+                className="builderSlider"
+                type="range"
+                min={LABEL_SCALE_RANGE[0]}
+                max={LABEL_SCALE_RANGE[1]}
+                step={0.05}
+                value={scale}
+                disabled={!labels}
+                onChange={(event) => {
+                  if (!editing.current) {
+                    editing.current = true;
+                    onBegin();
+                  }
+                  onChange(Number(event.target.value));
+                }}
+                onPointerUp={end}
+                onKeyUp={end}
+                onBlur={end}
+              />
+            </label>
+          }
+        />
       ) : null}
     </div>
   );
