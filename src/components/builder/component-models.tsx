@@ -22,6 +22,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  type ReactNode,
 } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 
@@ -312,6 +313,172 @@ function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
         <cylinderGeometry args={[4.6, 4.6, 6, 16]} />
         <Stainless palette={palette} />
       </mesh>
+    </group>
+  );
+}
+
+/**
+ * A generic compact translation stage, the kind an objective or a sample
+ * stands on: a square of black-anodised plates stacked on a base, one carriage
+ * per axis, and a silver micrometer head for each. X and Y push out of two
+ * perpendicular sides at the height of the carriage they drive; a third (Z)
+ * carriage adds a plate and a micrometer standing upright on a corner. The top
+ * plate carries a tapped-hole pattern and a centre hole, which is where the
+ * post above it is screwed in. Schematic, not a catalogue part.
+ *
+ * The stage stands on the table at the model's origin; `stageHeight` is how
+ * tall it is, so a model can run its post from there up to the optic. It is
+ * hardware under the part, so the posts toggle hides it with the posts.
+ */
+const STAGE_SIZE = 44;
+const STAGE_BASE_MM = 5;
+const STAGE_PLATE_MM = 9;
+const STAGE_HOLE_PITCH = 15;
+
+export type StageAxes = 2 | 3;
+
+/** How tall a stage with this many axes stands, mm: base plus one plate per axis. */
+export function stageHeight(axes: StageAxes): number {
+  return STAGE_BASE_MM + axes * STAGE_PLATE_MM;
+}
+
+/**
+ * A micrometer head along local +x from its mounting face: a stainless
+ * sleeve, then the knurled thimble and a small ratchet cap. Turned by the
+ * caller to point out of the side it drives.
+ */
+function Micrometer({ palette }: { palette: ScenePalette }) {
+  return (
+    <group>
+      <mesh position={[3, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[4.2, 4.2, 6, 20]} />
+        <Hardware palette={palette} />
+      </mesh>
+      <mesh position={[11, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[3, 3, 10, 18]} />
+        <Stainless palette={palette} />
+      </mesh>
+      {/* the thimble: flat-shaded facets read as knurling, like the mounts' knobs */}
+      <mesh position={[20.5, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[5, 5, 9, 28]} />
+        <meshStandardMaterial color={palette.metal} roughness={0.35} metalness={0.85} flatShading />
+      </mesh>
+      <mesh position={[26.5, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[3, 3.4, 3, 18]} />
+        <Stainless palette={palette} />
+      </mesh>
+    </group>
+  );
+}
+
+function TranslationStage({ palette, axes }: { palette: ScenePalette; axes: StageAxes }) {
+  if (!useContext(PostsVisible)) return null;
+  const half = STAGE_SIZE / 2;
+  const top = stageHeight(axes);
+  const plate = palette.anodise;
+  // carriage n (0 = X, 1 = Y, 2 = Z) sits on the base, one plate above another
+  const carriageY = (index: number) => STAGE_BASE_MM + (index + 0.5) * STAGE_PLATE_MM;
+  return (
+    <group>
+      <RoundedBox
+        args={[STAGE_SIZE + 6, STAGE_BASE_MM, STAGE_SIZE + 6]}
+        radius={1}
+        smoothness={2}
+        position={[0, STAGE_BASE_MM / 2, 0]}
+      >
+        <meshStandardMaterial color={plate} roughness={0.5} metalness={0.35} />
+      </RoundedBox>
+      {Array.from({ length: axes }, (_, index) => (
+        <RoundedBox
+          key={index}
+          args={[STAGE_SIZE, STAGE_PLATE_MM - 0.8, STAGE_SIZE]}
+          radius={1}
+          smoothness={2}
+          position={[0, carriageY(index) + 0.4, 0]}
+        >
+          <meshStandardMaterial color={plate} roughness={0.5} metalness={0.35} />
+        </RoundedBox>
+      ))}
+      {/* the bearing gap under each carriage: a bright seam that splits the stack into plates */}
+      {Array.from({ length: axes }, (_, index) => (
+        <mesh key={`seam${index}`} position={[0, STAGE_BASE_MM + index * STAGE_PLATE_MM + 0.4, 0]}>
+          <boxGeometry args={[STAGE_SIZE - 3, 0.8, STAGE_SIZE - 3]} />
+          <Hardware palette={palette} />
+        </mesh>
+      ))}
+      {/* the top plate's tapped holes and centre hole */}
+      {[-1, 1].flatMap((sx) =>
+        [-1, 1].map((sz) => (
+          <mesh
+            key={`hole${sx}${sz}`}
+            position={[sx * STAGE_HOLE_PITCH, top + 0.05, sz * STAGE_HOLE_PITCH]}
+            rotation={[-Math.PI / 2, 0, 0]}
+          >
+            <circleGeometry args={[1.8, 14]} />
+            <meshBasicMaterial color="#0b0d10" />
+          </mesh>
+        )),
+      )}
+      <mesh position={[0, top + 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[5.5, 8, 28]} />
+        <meshBasicMaterial color="#0b0d10" />
+      </mesh>
+      {/* X out of the -x side, Y out of the +z side, each at its own carriage */}
+      <group position={[-half, carriageY(0), 4]} rotation={[0, Math.PI, 0]}>
+        <Micrometer palette={palette} />
+      </group>
+      <group position={[-4, carriageY(1), half]} rotation={[0, -Math.PI / 2, 0]}>
+        <Micrometer palette={palette} />
+      </group>
+      {axes === 3 ? (
+        // Z stands upright on a corner, away from the post in the middle
+        <group position={[half - 7, top, -(half - 7)]} rotation={[0, 0, Math.PI / 2]}>
+          <Micrometer palette={palette} />
+        </group>
+      ) : null}
+    </group>
+  );
+}
+
+/**
+ * The post a part stands on above its stage: a plain rod screwed into the
+ * stage's centre hole, up to `top`. Thinner than a pillar, as a short post on
+ * a stage is.
+ */
+const STAGE_POST_RADIUS = 5.5;
+
+function StagePost({ palette, from, top }: { palette: ScenePalette; from: number; top: number }) {
+  if (!useContext(PostsVisible) || top <= from) return null;
+  return (
+    <mesh position={[0, (from + top) / 2, 0]}>
+      <cylinderGeometry args={[STAGE_POST_RADIUS, STAGE_POST_RADIUS, top - from, 24]} />
+      <Enamel color={palette.post} />
+    </mesh>
+  );
+}
+
+/**
+ * A part on a stage: the stage on the table, and a post from its top to
+ * `top`. Too low for the stage to fit under, the part falls back to a plain
+ * pillar (`fallback`), so every height a part could be saved at still draws.
+ */
+function StageBase({
+  palette,
+  axes,
+  top,
+  fallback,
+}: {
+  palette: ScenePalette;
+  axes: StageAxes;
+  top: number;
+  fallback: ReactNode;
+}) {
+  const from = stageHeight(axes);
+  if (top < from) return <>{fallback}</>;
+  return (
+    <group>
+      <TranslationStage palette={palette} axes={axes} />
+      <StagePost palette={palette} from={from} top={top} />
     </group>
   );
 }
@@ -1080,30 +1247,61 @@ function Iris({ palette, color, axis }: ModelProps) {
  * like a lens. The real one is 10 x 10 x 1 mm, too small to see, so it is
  * drawn at beam-cube size. Its colour and opacity are the user's: plain
  * alpha rather than transmission, so the opacity slider means what it says.
+ *
+ * It stands in a small clip on a short post on an XYZ stage, as a sample on
+ * the bench does. The stage is the sample's own switch (`stageHidden`), not the
+ * view's Posts toggle: a sample is often drawn floating on purpose, and a
+ * floating slab with every other post hidden reads the same. Too low for the
+ * stage to fit under, it floats.
  */
+const SAMPLE_CLIP_MM = 4;
+
 function Sample({
+  palette,
   axis,
   color,
   opacity,
+  stage,
 }: {
+  palette: ScenePalette;
   axis: number;
   color: string;
   opacity: number;
+  stage: boolean;
 }) {
+  const clipTop = axis - OPTIC_D / 2;
+  const postTop = clipTop - SAMPLE_CLIP_MM;
+  const mounted = stage && postTop >= stageHeight(3);
   return (
-    <mesh position={[0, axis, 0]}>
-      <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
-      <meshPhysicalMaterial
-        color={color}
-        metalness={0}
-        roughness={0.35}
-        clearcoat={0.6}
-        clearcoatRoughness={0.2}
-        transparent={opacity < 1}
-        opacity={opacity}
-        depthWrite={opacity >= 1}
-      />
-    </mesh>
+    <group>
+      {mounted ? (
+        <PostsVisible.Provider value>
+          <StageBase palette={palette} axes={3} top={postTop} fallback={null} />
+          {/* the clip the slab's bottom edge sits in */}
+          <RoundedBox
+            args={[9, SAMPLE_CLIP_MM, 16]}
+            radius={0.6}
+            smoothness={2}
+            position={[0, postTop + SAMPLE_CLIP_MM / 2, 0]}
+          >
+            <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
+          </RoundedBox>
+        </PostsVisible.Provider>
+      ) : null}
+      <mesh position={[0, axis, 0]}>
+        <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
+        <meshPhysicalMaterial
+          color={color}
+          metalness={0}
+          roughness={0.35}
+          clearcoat={0.6}
+          clearcoatRoughness={0.2}
+          transparent={opacity < 1}
+          opacity={opacity}
+          depthWrite={opacity >= 1}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -1402,7 +1600,7 @@ function BeamBlock({ palette, axis }: ModelProps) {
 /**
  * A generic infinity-corrected microscope objective, beam in from -x and the
  * tip toward the focus (+x): a brass RMS thread screwed into a small plate on
- * the post, a satin barrel with a black band, and a taper down to the front
+ * a post on an XY translation stage, a satin barrel with a black band, and a taper down to the front
  * lens. The barrel takes the component colour, so it can be chrome, champagne
  * or gunmetal like the real ones. Its length runs from the back of the thread
  * to the nose; only the barrel stretches, so the thread stays put.
@@ -1422,9 +1620,15 @@ function Objective({ palette, color, axis, length }: ModelProps & { length: numb
   );
   return (
     <group>
-      {/* the post stands under the plate the thread screws into, not under the barrel */}
+      {/* an XY stage, and its post up to the plate the thread screws into,
+          stand under that plate, not under the barrel */}
       <group position={[OBJECTIVE_PLATE_X, 0, 0]}>
-        <Pillar palette={palette} top={axis - 18} />
+        <StageBase
+          palette={palette}
+          axes={2}
+          top={axis - 18}
+          fallback={<Pillar palette={palette} top={axis - 18} />}
+        />
       </group>
       <mesh
         geometry={OBJECTIVE_PLATE_GEOMETRY}
@@ -2151,7 +2355,9 @@ export const ComponentMesh = memo(function ComponentMesh({
         {component.type === "iris" ? <Iris {...modelProps} /> : null}
         {component.type === "sample" ? (
           <Sample
+            palette={palette}
             axis={axis}
+            stage={!component.stageHidden}
             color={component.color ?? DEFAULT_SAMPLE_COLOR}
             opacity={component.opacity ?? SAMPLE_OPACITY}
           />

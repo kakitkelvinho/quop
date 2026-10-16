@@ -140,6 +140,10 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
     text: "`true` leaves the light inside it out of the drawing; leave it out otherwise.",
     only: [...LIT_TYPES],
   },
+  stageHidden: {
+    text: "`true` draws the sample floating, without the XYZ stage and post it otherwise stands on; leave it out otherwise.",
+    only: "sample",
+  },
   particleRadius: {
     text: `mm, ${range(PARTICLE_RADIUS_RANGE_MM)}; default ${PARTICLE_RADIUS_MM}.`,
     only: "particle",
