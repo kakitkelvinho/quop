@@ -142,15 +142,16 @@ so they get their own tokens (`stage`, `stageSeam`) rather than the post grey.
 | theme | stage body | L\* | seams | L\* |
 |---|---|---|---|---|
 | light | `#1f2024` | ~12 | `#b4bac3` | ~75 |
-| dark | `#5a5f67` | ~40 | `#b8bfc9` | ~77 |
+| dark | `#45494f` | ~31 | `#b8bfc9` | ~77 |
 
 **By day, black anodised.** Near-black on the light sweep is the strongest
 silhouette on the bench, which is right: this is what a stage looks like.
 
 **At night, a dark grey.** A black block on a backdrop at L\* 2–18 and a table
-plate around L\* 12 is a hole, not a body. The stage body sits at L\* ~40: well
-clear of the backdrop and table, and still a step below the posts (L\* ~49),
-so a stage and its post read as two things. It is satin and only lightly
+plate around L\* 12 is a hole, not a body. The stage body sits at L\* ~31:
+clear of the backdrop and table, and well below the posts (L\* ~48), so a
+stage still reads as anodised black and a stage and its post read as two
+things. (L\* ~40 was tried first and sat too close to the posts.) It is satin and only lightly
 metallic, so the dark backdrop doesn't mirror back into it and pull it down.
 
 **Seams carry the structure.** A light line between each plate, proud of the

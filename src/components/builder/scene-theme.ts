@@ -116,7 +116,7 @@ export const DARK_PALETTE: ScenePalette = {
   post: "#6f7378",
   metal: "#c9ced6",
   anodise: "#4a4c52",
-  stage: "#5a5f67",
+  stage: "#45494f",
   stageSeam: "#b8bfc9",
 };
 
