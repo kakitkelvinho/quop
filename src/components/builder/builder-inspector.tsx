@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
-import { IconButton } from "@/components/builder/builder-icons";
+import { Icon, IconButton } from "@/components/builder/builder-icons";
+import { joinsOnToggle, membership } from "@/components/builder/groups";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
@@ -785,6 +786,13 @@ export function GroupInspector({
   onDelete,
   onSetHeight,
   onSetMountColor,
+  group,
+  canGroup,
+  onGroup,
+  onUngroup,
+  onSetGroupColor,
+  onCheckpoint,
+  groupsMenu,
 }: {
   selected: BuilderComponent[];
   onRotate: (direction: 1 | -1) => void;
@@ -792,6 +800,18 @@ export function GroupInspector({
   onDelete: () => void;
   onSetHeight: (height: number) => void;
   onSetMountColor: (color: string) => void;
+  /** the group these parts are, exactly, if any: Ungroup in place of Group */
+  group: Group | null;
+  /** false while a tool (a beam, a frame, a part to place) holds the table, as for ⌘G */
+  canGroup: boolean;
+  /** ⌘G's own action */
+  onGroup: () => void;
+  onUngroup: (id: string) => void;
+  /** unrecorded: a pick is made one undo step by onCheckpoint at its start */
+  onSetGroupColor: (id: string, color: string) => void;
+  onCheckpoint: () => void;
+  /** the Add to group menu */
+  groupsMenu?: ReactNode;
 }) {
   const height = selected[0].position[1];
   const sharedHeight = selected.every((component) => component.position[1] === height && !component.host);
@@ -815,6 +835,39 @@ export function GroupInspector({
           <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
         </span>
       </div>
+      <div className="builderInspector__turn">
+        {group ? (
+          <>
+            <span className="builderInspector__group">
+              <span className="builderBeamRow__dot" style={{ background: group.color }} />
+              <strong>{group.name}</strong>
+            </span>
+            <button
+              type="button"
+              className="builderButton"
+              title={`Ungroup ${group.name}; its parts stay on the table`}
+              disabled={!canGroup}
+              onClick={() => onUngroup(group.id)}
+            >
+              Ungroup
+            </button>
+          </>
+        ) : (
+          <>
+            <span>Keep them together</span>
+            <button
+              type="button"
+              className="builderButton"
+              title="Group the selection (⌘G)"
+              aria-keyshortcuts="Meta+G Control+G"
+              disabled={!canGroup}
+              onClick={onGroup}
+            >
+              Group
+            </button>
+          </>
+        )}
+      </div>
       {sharedHeight ? (
         <NumberField
           key={selected.map((component) => component.id).join()}
@@ -836,6 +889,17 @@ export function GroupInspector({
           onChange={onSetMountColor}
         />
       ) : null}
+      {group ? (
+        <ColorField
+          key={group.id}
+          label="Group colour"
+          title={`${group.name}'s colour, as in the Groups box`}
+          value={group.color}
+          onBegin={onCheckpoint}
+          onChange={(color) => onSetGroupColor(group.id, color)}
+        />
+      ) : null}
+      {groupsMenu}
     </div>
   );
 }
@@ -845,6 +909,7 @@ function ColorField({
   value,
   title,
   readout = value,
+  onBegin,
   onChange,
 }: {
   label: string;
@@ -852,13 +917,29 @@ function ColorField({
   title?: string;
   /** what the field reads, when that isn't the value */
   readout?: string;
+  /** once at the start of a pick, before its first change: a checkpoint makes the pick one undo step */
+  onBegin?: () => void;
   onChange: (color: string) => void;
 }) {
+  const picking = useRef(false);
   return (
     <label className="builderField" title={title}>
       <span className="builderField__label">{label}</span>
       <span className="builderField__control builderField__control--color">
-        <input type="color" value={value} onChange={(event) => onChange(event.target.value)} />
+        <input
+          type="color"
+          value={value}
+          onChange={(event) => {
+            if (!picking.current) {
+              picking.current = true;
+              onBegin?.();
+            }
+            onChange(event.target.value);
+          }}
+          onBlur={() => {
+            picking.current = false;
+          }}
+        />
         <span className="builderReadout">{readout}</span>
       </span>
     </label>
@@ -1299,33 +1380,150 @@ export function FrameInspector({
 }
 
 /**
- * A part's or frame's groups: a checkbox per group in the setup, so a part
- * shared by two experiments can be ticked into both. Nothing when there are none.
+ * The groups a part, a frame or a selection is in, and an Add to group menu:
+ * a row per group in the setup, with its colour and name, ticked when it holds
+ * the whole selection (a dash when it holds some). Pressing a row puts the
+ * selection in or takes it out, and the menu stays open for the next. Esc, Tab
+ * or a press outside closes it; the arrows, Home and End move through it.
+ * Nothing when the setup has no groups.
  */
-export function GroupsField({
+export function GroupsMenu({
   groups,
-  memberId,
+  memberIds,
   onChange,
 }: {
   groups: Group[];
-  memberId: string;
+  memberIds: string[];
   onChange: (groupId: string, isMember: boolean) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    listRef.current?.querySelector<HTMLButtonElement>('[role="menuitemcheckbox"]')?.focus();
+    const onDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+
   if (groups.length === 0) return null;
+
+  const held = groups.filter((group) => membership(group, memberIds) !== "none");
+  const summary = held.length === 0 ? "In no group" : held.length === 1 ? held[0].name : `${held.length} groups`;
+
+  const close = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const onMenuKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const items = [...(listRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitemcheckbox"]') ?? [])];
+    const at = items.indexOf(document.activeElement as HTMLButtonElement);
+    const focus = (index: number) => items[(index + items.length) % items.length]?.focus();
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        focus(at + 1);
+        break;
+      case "ArrowUp":
+        event.preventDefault();
+        focus(at - 1);
+        break;
+      case "Home":
+        event.preventDefault();
+        focus(0);
+        break;
+      case "End":
+        event.preventDefault();
+        focus(items.length - 1);
+        break;
+      case "Escape":
+        // the table's own Esc would deselect
+        event.preventDefault();
+        event.stopPropagation();
+        close();
+        break;
+      case "Tab":
+        setOpen(false);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
-    <fieldset className="builderField builderGroupsField">
-      <legend className="builderField__label">Groups</legend>
-      {groups.map((group) => (
-        <label key={group.id} className="builderGroupsField__option">
-          <input
-            type="checkbox"
-            checked={group.members.includes(memberId)}
-            onChange={(event) => onChange(group.id, event.target.checked)}
-          />
-          <span className="builderBeamRow__dot" style={{ background: group.color }} />
-          {group.name}
-        </label>
-      ))}
-    </fieldset>
+    <div className="builderGroupsMenu" ref={rootRef}>
+      <div className="builderInspector__turn">
+        <span className="builderGroupsMenu__summary" title={held.map((group) => group.name).join(", ") || undefined}>
+          {held.length ? (
+            <span className="builderGroupsMenu__dots" aria-hidden="true">
+              {held.slice(0, 5).map((group) => (
+                <span key={group.id} className="builderBeamRow__dot" style={{ background: group.color }} />
+              ))}
+            </span>
+          ) : null}
+          <span className="builderGroupsMenu__text">{summary}</span>
+        </span>
+        <button
+          ref={triggerRef}
+          type="button"
+          className="builderButton builderGroupsMenu__trigger"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          aria-controls={open ? menuId : undefined}
+          onClick={() => setOpen((current) => !current)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" && !open) {
+              event.preventDefault();
+              setOpen(true);
+            } else if (event.key === "Escape" && open) {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpen(false);
+            }
+          }}
+        >
+          Add to group
+          <Icon name="chevron" size={14} />
+        </button>
+      </div>
+      {open ? (
+        <div
+          ref={listRef}
+          id={menuId}
+          role="menu"
+          aria-label="Groups"
+          className="builderGroupsMenu__list"
+          onKeyDown={onMenuKeyDown}
+        >
+          {groups.map((group) => {
+            const state = membership(group, memberIds);
+            return (
+              <button
+                key={group.id}
+                type="button"
+                role="menuitemcheckbox"
+                tabIndex={-1}
+                aria-checked={state === "all" ? true : state === "some" ? "mixed" : false}
+                className="builderGroupsMenu__item"
+                onClick={() => onChange(group.id, joinsOnToggle(group, memberIds))}
+              >
+                <span className="builderBeamRow__dot" style={{ background: group.color }} />
+                <span className="builderGroupsMenu__name">{group.name}</span>
+                <span className="builderGroupsMenu__mark" aria-hidden="true">
+                  {state === "all" ? <Icon name="check" size={16} /> : state === "some" ? <Icon name="dash" size={16} /> : null}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
   );
 }

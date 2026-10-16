@@ -146,6 +146,8 @@ const ICONS = {
   ),
   frame: <rect x="4" y="6" width="16" height="12" rx="1.5" strokeDasharray="3 2.5" />,
   up: <path d="m6 15 6-6 6 6" />,
+  check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  dash: <path d="M6 12h12" />,
   down: <path d="m6 9 6 6 6-6" />,
   // a panel's title-bar buttons: collapse to the bar, fill the workspace, and back
   minimise: <path d="M6 16h12" />,
