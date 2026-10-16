@@ -491,17 +491,39 @@ is on screen until it is needed:
 
 **Panels move; toolbars stay.** The seven panels (Parts, Inspector, Beams,
 Frames, Groups, the setup brief and Setup JSON) each have a title bar: a
-grip, the panel's name and, for the brief and the JSON panel, their close
-button. The bar replaces the panel's own heading, and the panel is still
+grip, the panel's name, and buttons to minimise and maximise it and, for the
+brief and the JSON panel, to close it. Minimise (or double-click the title)
+collapses the panel to its bar, in place and at its width; maximise fills
+the workspace below the toolbars, and a maximised panel can't be dragged.
+Each undoes the other, and the same button restores. A minimised Inspector
+stays minimised as the selection changes, and its bar says what it holds:
+"Inspector: Mirror 3", a beam's, frame's or connection's name, or
+"Inspector: 4 parts". A panel's right edge, bottom edge and bottom-right
+corner resize it, down to 180 × 90 px and no further than the workspace's
+right and bottom edges (not while minimised or maximised). Until it is
+resized, a moved panel's height follows its content, up to its own cap and
+the workspace's bottom; once resized it keeps its size. Whatever its size,
+the panel's box clips and its contents scroll inside it, so its border stays
+whole. This browser remembers the arrangement (each panel's place and size,
+and whether it is minimised, maximised or resized) in `localStorage` under
+`quop-builder-panels:v1`, and brings it back when the Tabletop opens, pulled
+back in reach if the window is now smaller. Missing, unreadable or
+other-version data opens default panels, quietly; Reset panels forgets it.
+Like the graphics quality, it is the viewer's: it never reaches the setup
+file, the JSON panel or the brief (`panel-memory.ts`). The bar replaces the panel's own heading, and the panel is still
 labelled by it. Dragging the bar with the left button moves the panel
 anywhere in the workspace; until then it sits where it always has. The panel
 last pressed comes to the front, and every panel sits in one layer under the
-toolbars (File, Add, Tools, View), so it never covers one. A moved panel
+toolbars (File, Add, Tools, View), so it never covers one. While dragged, its
+edges snap, gently and with no guide lines, to the workspace's edges 12 px in
+and to the other panels' edges: lined up with one, or 8 px beside, above or
+below it. An edge snaps within 10 px, to the nearest target, each axis on its
+own. A moved panel
 keeps at least 90 px of its bar inside the workspace sideways, and all of it
 top to bottom, and slides back in when the window shrinks. Positions and
 sizes are whole pixels, so borders stay crisp at odd window sizes. Reset
 panels, in the View toolbar, or `⌥0` (`Alt+0`) puts every panel back where it
-starts. Under 900 px wide, or with a coarse pointer, panels have no title bar
+starts, open. Under 900 px wide, or with a coarse pointer, panels have no title bar
 and stay put. The geometry is `panel-geometry.ts`, the arrangement
 `panel-store.ts`, the drag `use-panel-drag.ts` and the bar `panel-frame.tsx`.
 
