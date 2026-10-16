@@ -520,7 +520,7 @@ export function useBuilderScene() {
     [commit],
   );
   const setGroupMembership = useCallback(
-    (groupId: string, id: string, isMember: boolean) =>
+    (groupId: string, id: string | string[], isMember: boolean) =>
       commit((current) => groups.setMembership(current, groupId, id, isMember)),
     [commit],
   );

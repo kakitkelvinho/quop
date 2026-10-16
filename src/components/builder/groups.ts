@@ -179,14 +179,14 @@ export function setGroupHidden(scene: BuilderSceneData, id: string, hidden: bool
   });
 }
 
-/** Put a part or frame in a group, or take it out; a periscope's two mirrors go together. */
+/** Put parts or frames in a group, or take them out; a periscope's two mirrors go together. */
 export function setMembership(
   scene: BuilderSceneData,
   groupId: string,
-  id: string,
+  id: string | string[],
   isMember: boolean,
 ): BuilderSceneData {
-  const ids = memberIdsOf(scene, [id]);
+  const ids = memberIdsOf(scene, typeof id === "string" ? [id] : id);
   if (ids.length === 0) return scene;
   return editGroup(scene, groupId, (group) => {
     const members = isMember
@@ -200,6 +200,43 @@ export function setMembership(
 export function deleteGroup(scene: BuilderSceneData, id: string): BuilderSceneData {
   const groups = scene.groups.filter((group) => group.id !== id);
   return groups.length === scene.groups.length ? scene : { ...scene, groups };
+}
+
+/** How much of a selection a group holds: all of it, some, or none. */
+export type Membership = "all" | "some" | "none";
+
+export function membership(group: Group, ids: string[]): Membership {
+  const held = ids.filter((id) => group.members.includes(id)).length;
+  return held === 0 ? "none" : held === ids.length ? "all" : "some";
+}
+
+/**
+ * A group's row in the Add to group menu: the selection leaves a group that
+ * holds all of it, and joins one that holds some or none of it.
+ */
+export function joinsOnToggle(group: Group, ids: string[]): boolean {
+  return membership(group, ids) !== "all";
+}
+
+/**
+ * The group the selected parts are, exactly: its parts on the table are the
+ * selection, no more and no fewer, as when its row in the Groups box was
+ * clicked. Its frames don't count, since a selection of parts holds none. The
+ * latest such group when several match; null when none does.
+ */
+export function selectedGroup(
+  scene: Pick<BuilderSceneData, "components" | "groups">,
+  selection: string[],
+): Group | null {
+  if (selection.length === 0) return null;
+  const parts = new Set(scene.components.map(({ id }) => id));
+  const picked = new Set(selection);
+  for (let index = scene.groups.length - 1; index >= 0; index -= 1) {
+    const group = scene.groups[index];
+    const members = new Set(group.members.filter((id) => parts.has(id)));
+    if (members.size === picked.size && [...picked].every((id) => members.has(id))) return group;
+  }
+  return null;
 }
 
 /**
