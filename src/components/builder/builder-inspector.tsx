@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { IconButton } from "@/components/builder/builder-icons";
+import { useScenePalette } from "@/components/builder/scene-theme";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
@@ -39,6 +40,7 @@ import {
   FRAME_FILL_OPACITY_RANGE,
   FRAME_SIZE_RANGE_MM,
   MOUNTED_TYPES,
+  hasStage,
   LIT_TYPES,
   DEFAULT_LIGHT_COLOR,
   ROTATION_STEP_DEG,
@@ -447,7 +449,70 @@ function LightFields({
   );
 }
 
-const SAMPLE_STAGES: { value: BuilderComponent["sampleStage"]; label: string }[] = [
+/**
+ * The plates of the translation stage a part stands on: the theme's own until
+ * set, with a way back to it. The micrometers stay silver whatever it is.
+ *
+ * A colour picker reports every step of a drag; the first one of a pick
+ * checkpoints and the rest preview, so one pick is one undo step. The pick
+ * ends when the picker commits (its native `change`) or loses focus.
+ */
+function StageColorField({
+  component,
+  onUpdate,
+  onCheckpoint,
+}: {
+  component: BuilderComponent;
+  onUpdate: (patch: ComponentPatch, record?: boolean) => void;
+  onCheckpoint: () => void;
+}) {
+  const palette = useScenePalette();
+  const color = component.stageColor;
+  const picking = useRef(false);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const element = input.current;
+    if (!element) return;
+    const end = () => {
+      picking.current = false;
+    };
+    element.addEventListener("change", end);
+    element.addEventListener("blur", end);
+    return () => {
+      element.removeEventListener("change", end);
+      element.removeEventListener("blur", end);
+    };
+  }, []);
+  return (
+    <>
+      <label className="builderField">
+        <span className="builderField__label">Stage colour</span>
+        <span className="builderField__control builderField__control--color">
+          <input
+            ref={input}
+            type="color"
+            value={color ?? palette.stage}
+            onChange={(event) => {
+              if (!picking.current) {
+                picking.current = true;
+                onCheckpoint();
+              }
+              onUpdate({ stageColor: event.target.value }, false);
+            }}
+          />
+          <span className="builderReadout">{color ?? "Theme default"}</span>
+        </span>
+      </label>
+      {color ? (
+        <button type="button" className="builderButton" onClick={() => onUpdate({ stageColor: undefined })}>
+          Reset to theme default
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+const SAMPLE_STAGES:{ value: BuilderComponent["sampleStage"]; label: string }[] = [
   { value: undefined, label: "Below" },
   { value: "side", label: "Side" },
   { value: "none", label: "None" },
@@ -731,6 +796,9 @@ export function ComponentInspector({
             <span className="builderReadout">{component.color ?? DEFAULT_MOUNT_COLOR}</span>
           </span>
         </label>
+      ) : null}
+      {hasStage(component) ? (
+        <StageColorField component={component} onUpdate={onUpdate} onCheckpoint={onCheckpoint} />
       ) : null}
       {component.type === "sample" ? (
         <>

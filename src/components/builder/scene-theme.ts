@@ -48,6 +48,15 @@ export type ScenePalette = {
    * by day; at night lifted to a charcoal, or it vanishes into the backdrop
    */
   anodise: string;
+  /**
+   * a translation stage's plates, where the part has no stage colour of its
+   * own: near-black anodised by day; at night a dark grey, a block well above
+   * the backdrop and the table plate but below the posts, so it reads as a
+   * body rather than a hole (see SHADING.md, "Stages")
+   */
+  stage: string;
+  /** the bearing seams between a stage's plates: light lines that split the stack */
+  stageSeam: string;
 };
 
 /**
@@ -85,6 +94,8 @@ export const LIGHT_PALETTE: ScenePalette = {
   post: "#8d9095",
   metal: "#d8dce2",
   anodise: "#1b1c1f",
+  stage: "#1f2024",
+  stageSeam: "#b4bac3",
 };
 
 export const DARK_PALETTE: ScenePalette = {
@@ -105,6 +116,8 @@ export const DARK_PALETTE: ScenePalette = {
   post: "#6f7378",
   metal: "#c9ced6",
   anodise: "#4a4c52",
+  stage: "#5a5f67",
+  stageSeam: "#b8bfc9",
 };
 
 /** The site writes its theme to `data-theme`; treat that attribute as the store. */

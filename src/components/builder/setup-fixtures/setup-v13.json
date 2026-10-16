@@ -134,7 +134,8 @@
         579
       ],
       "rotation": 90,
-      "objectiveLength": 80
+      "objectiveLength": 80,
+      "stageColor": "#8a6d3b"
     },
     {
       "id": "cam",

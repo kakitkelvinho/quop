@@ -64,6 +64,15 @@ export const MOUNTED_TYPES: ReadonlySet<ComponentType> = new Set([
   "periscope-top",
 ]);
 
+/** Components that can stand on a translation stage, so can carry a `stageColor`. */
+export const STAGED_TYPES: ReadonlySet<ComponentType> = new Set(["objective", "sample"]);
+
+/** Whether this component is drawn on a stage: an objective always, a sample unless it floats. */
+export function hasStage(component: BuilderComponent): boolean {
+  if (component.type === "sample") return component.sampleStage !== "none";
+  return STAGED_TYPES.has(component.type);
+}
+
 export type Vec3 = [number, number, number];
 
 export type BuilderComponent = {
@@ -89,6 +98,12 @@ export type BuilderComponent = {
    * looking along +x) rather than its right; stored only when true
    */
   sampleStageLeft?: true;
+  /**
+   * objective and sample only: a hex colour for the plates of the
+   * translation stage it stands on; missing means the theme's own, stored
+   * only when set. Missing in setups from before version 13.
+   */
+  stageColor?: string;
   label?: string;
   /** lens only */
   lensShape?: LensShape;
@@ -1635,6 +1650,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     const opacity = finiteNumber(raw.opacity);
     if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
     if (version >= 13) Object.assign(component, parseSampleStage(raw));
+  }
+  if (STAGED_TYPES.has(type as ComponentType) && version >= 13) {
+    const stage = cssColor(raw.stageColor, undefined);
+    if (stage !== undefined) component.stageColor = stage;
   }
   if (type === "particle") {
     if (typeof raw.host === "string") component.host = raw.host;
