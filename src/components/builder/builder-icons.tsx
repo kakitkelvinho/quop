@@ -52,6 +52,38 @@ const ICONS = {
     </>
   ),
   fit: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,
+  // the Show wheel's overlays: a grid, a part label, a ruler, a post
+  grid: <path d="M4 4h16v16H4zM4 9.33h16M4 14.67h16M9.33 4v16M14.67 4v16" />,
+  labels: (
+    <>
+      <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+      <circle cx="7.5" cy="8.5" r="1.2" />
+    </>
+  ),
+  // the same tag struck through: labels hidden
+  labelsOff: (
+    <>
+      <path d="M3 12V4h8l10 10-8 8L3 12Z" />
+      <circle cx="7.5" cy="8.5" r="1.2" />
+      <path d="M4 4l16 16" />
+    </>
+  ),
+  // a ruler laid at a slant, with its ticks
+  ruler: (
+    <>
+      <path d="m3.5 15.5 12-12 5 5-12 12z" />
+      <path d="m7.5 11.5 2 2M10.5 8.5 12 10M13.5 5.5l2 2M6 13l1.5 1.5" />
+    </>
+  ),
+  // a fluted classical column: abacus and echinus, three flutes, base and plinth
+  posts: (
+    <>
+      <path d="M4 4h16" />
+      <path d="M6 4.5c0 1.4.9 2 2 2h8c1.1 0 2-.6 2-2" />
+      <path d="M7.5 6.5v11M12 6.5v11M16.5 6.5v11" />
+      <path d="M6.5 17.5h11M4.5 20.5h15" />
+    </>
+  ),
   theme: (
     <>
       <circle cx="12" cy="12" r="8" />
