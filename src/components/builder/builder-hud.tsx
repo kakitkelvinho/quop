@@ -17,9 +17,10 @@ import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from 
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import { MinimisedColumn, PanelsMenu, useInspectorReopens } from "@/components/builder/minimised-column";
 import { minimisedIn, partsSpotShowing, restorePanel, selectionKey, tabletopPanels } from "@/components/builder/minimised-panels";
-import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
 import { FileFan } from "@/components/builder/file-fan";
 import { JsonPanelFiles } from "@/components/builder/json-panel-files";
+import { ShowWheelDial } from "@/components/builder/show-wheel-dial";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -1000,76 +1001,14 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
   return ref;
 }
 
-/** The lightbulb: a bubble of how the table is rendered, under the tool pill. */
-function LightingMenu({
-  lighting,
-  onChange,
-  lightGraphics,
-  onToggleQuality,
-}: {
-  lighting: Lighting;
-  onChange: (patch: Partial<Lighting>) => void;
-  lightGraphics: boolean;
-  onToggleQuality: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
-
-  return (
-    <div className="builderLighting" ref={ref}>
-      <button
-        type="button"
-        className={`builderIconBtn${open ? " is-active" : ""}`}
-        aria-label="Lighting"
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        title="Lighting"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <Icon name="light" />
-      </button>
-      {open ? (
-        <div className="builderLighting__bubble" role="dialog" aria-label="Lighting">
-          <label className="builderField">
-            <span className="builderField__label">
-              Brightness
-              <span className="builderReadout">{Math.round(lighting.brightness * 100)}%</span>
-            </span>
-            <input
-              className="builderSlider"
-              type="range"
-              min={BRIGHTNESS_RANGE[0]}
-              max={BRIGHTNESS_RANGE[1]}
-              step={0.05}
-              value={lighting.brightness}
-              onChange={(event) => onChange({ brightness: Number(event.target.value) })}
-            />
-          </label>
-          <label className="builderLighting__toggle">
-            Shadows
-            <input
-              type="checkbox"
-              role="switch"
-              checked={lighting.shadows}
-              onChange={(event) => onChange({ shadows: event.target.checked })}
-            />
-          </label>
-          <label className="builderLighting__toggle" title="Simpler drawing, for a slow computer">
-            Light graphics
-            <input type="checkbox" role="switch" checked={lightGraphics} onChange={onToggleQuality} />
-          </label>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 /**
  * Show: a half ring that drops out of the eye with one wedge for each thing
- * drawn on the table besides the setup: posts, grid, labels and beam
- * distances. The label size, which is saved with the setup, sits in a card
- * under the ring. A size drag previews as it moves and is one undo step: its
- * first change takes the snapshot.
+ * drawn on the table besides the setup, and for how it is drawn: posts, grid,
+ * labels, beam distances, shadows and light graphics. Two rim dials hug the
+ * ring. Round its outside, the label size, which is saved with the setup: a
+ * drag previews as it moves and is one undo step (its first change takes the
+ * snapshot), and it rests while labels are off. Round the eye inside it, the
+ * brightness, which is neither saved nor undone.
  */
 function ShowMenu({
   posts,
@@ -1083,6 +1022,10 @@ function ShowMenu({
   scale,
   onBegin,
   onChange,
+  lighting,
+  onLightingChange,
+  lightGraphics,
+  onToggleQuality,
 }: {
   posts: boolean;
   grid: boolean;
@@ -1095,14 +1038,14 @@ function ShowMenu({
   scale: number;
   onBegin: () => void;
   onChange: (scale: number) => void;
+  lighting: Lighting;
+  onLightingChange: (patch: Partial<Lighting>) => void;
+  lightGraphics: boolean;
+  onToggleQuality: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const editing = useRef(false);
-  const end = () => {
-    editing.current = false;
-  };
   const items: WheelItem[] = [
     {
       id: "posts",
@@ -1130,6 +1073,22 @@ function ShowMenu({
       on: distances,
       onToggle: onToggleDistances,
     },
+    {
+      id: "shadows",
+      label: "Shadows",
+      description: "Shadows cast by the key light",
+      icon: "shadow",
+      on: lighting.shadows,
+      onToggle: () => onLightingChange({ shadows: !lighting.shadows }),
+    },
+    {
+      id: "light-graphics",
+      label: "Light graphics",
+      description: "Simpler drawing, for a slow computer",
+      icon: "gauge",
+      on: lightGraphics,
+      onToggle: onToggleQuality,
+    },
   ];
 
   return (
@@ -1153,32 +1112,30 @@ function ShowMenu({
             setOpen(false);
             buttonRef.current?.focus();
           }}
-          footer={
-            <label className="builderField">
-              <span className="builderField__label">
-                Label size
-                <span className="builderReadout">{Math.round(scale * 100)}%</span>
-              </span>
-              <input
-                className="builderSlider"
-                type="range"
-                min={LABEL_SCALE_RANGE[0]}
-                max={LABEL_SCALE_RANGE[1]}
-                step={0.05}
+          rims={
+            <>
+              <ShowWheelDial
+                label="Label size"
+                icon="labels"
+                arc={{ r: RING.outer + 14, from: Math.PI, to: 0 }}
+                side={1}
+                range={LABEL_SCALE_RANGE}
                 value={scale}
                 disabled={!labels}
-                onChange={(event) => {
-                  if (!editing.current) {
-                    editing.current = true;
-                    onBegin();
-                  }
-                  onChange(Number(event.target.value));
-                }}
-                onPointerUp={end}
-                onKeyUp={end}
-                onBlur={end}
+                disabledHint="turn labels on first"
+                onBegin={onBegin}
+                onChange={onChange}
               />
-            </label>
+              <ShowWheelDial
+                label="Brightness"
+                icon="light"
+                arc={{ r: RING.inner - 18, from: Math.PI, to: 0 }}
+                side={-1}
+                range={BRIGHTNESS_RANGE}
+                value={lighting.brightness}
+                onChange={(brightness) => onLightingChange({ brightness })}
+              />
+            </>
           }
         />
       ) : null}
@@ -1510,10 +1467,8 @@ export default function BuilderHud(props: BuilderHudProps) {
                 scale={props.labelScale}
                 onBegin={props.onCheckpoint}
                 onChange={props.onLabelScaleChange}
-              />
-              <LightingMenu
                 lighting={props.lighting}
-                onChange={props.onLightingChange}
+                onLightingChange={props.onLightingChange}
                 lightGraphics={props.quality === "light"}
                 onToggleQuality={props.onToggleQuality}
               />

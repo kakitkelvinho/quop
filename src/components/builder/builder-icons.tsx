@@ -90,7 +90,7 @@ const ICONS = {
       <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
     </>
   ),
-  // a bulb: the lighting settings
+  // a bulb: the brightness, on its knob in the Show wheel
   light: (
     <>
       <path d="M9 17.5h6M10 20.5h4" />
@@ -226,6 +226,21 @@ const ICONS = {
       <rect x="3.5" y="3.5" width="8" height="8" rx="1.5" />
       <rect x="12.5" y="12.5" width="8" height="8" rx="1.5" />
       <path d="M11.5 7.5h3a2 2 0 0 1 2 2v3" />
+    </>
+  ),
+  // a ball and the shadow it casts on the table: the Show wheel's Shadows
+  shadow: (
+    <>
+      <circle cx="12" cy="9.5" r="5" />
+      <ellipse cx="13.5" cy="19" rx="6" ry="1.6" fill="currentColor" opacity="0.45" stroke="none" />
+    </>
+  ),
+  // a gauge with its needle turned down low: the Show wheel's Light graphics
+  gauge: (
+    <>
+      <path d="M4.5 17a8 8 0 1 1 15 0" />
+      <path d="m12 14-3.5-4" />
+      <circle cx="12" cy="14" r="1" fill="currentColor" />
     </>
   ),
 } satisfies Record<string, ReactNode>;
