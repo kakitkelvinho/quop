@@ -6,8 +6,8 @@
  * Here it leaves the table and lives in a tray instead. Variants, via ?variant=
  * on /builder/tabletop (wide screens only, where panels move):
  *   A        Dock: a new island bottom centre, one icon per panel, macOS-style dots
- *   B        Chips: nothing until a panel is minimised; then labelled chips stacked bottom left,
- *            the lists stepping right of them
+ *   B        Chips: nothing until a panel is minimised; then its icon, in a thin column
+ *            bottom left, the lists stepping right of it
  *   C        Rail: no new island; panel icons join the + island top left
  *   current  Today: collapse to the title bar in place
  * A tray button: closed → open, minimised → restore, open behind → front, open in front → minimise.
@@ -157,11 +157,15 @@ export function PanelChips({ panels, besideParts }: { panels: TrayPanel[]; besid
       aria-label="Minimised panels"
     >
       {minimised.map((panel) => (
-        <button key={panel.id} type="button" className="ptChip" title={`Restore ${panel.title}`} onClick={() => press(panel)}>
+        <button
+          key={panel.id}
+          type="button"
+          className="builderIconBtn ptChip"
+          aria-label={`Restore ${panel.title}`}
+          title={`Restore ${panel.title}${panel.subtitle ? `: ${panel.subtitle}` : ""}`}
+          onClick={() => press(panel)}
+        >
           <Glyph id={panel.id} />
-          <span className="ptChip__title">{panel.title}</span>
-          {panel.subtitle ? <span className="ptChip__sub">{panel.subtitle}</span> : null}
-          {panel.count ? <span className="ptChip__sub">{panel.count}</span> : null}
         </button>
       ))}
     </div>
@@ -192,13 +196,13 @@ export function TrayStyles() {
 }
 /* B: a column bottom left, beside the parts panel while it is open; the lists step right of it */
 .ptChips {
-  left: 0.9rem; bottom: 0.9rem; z-index: 6; width: 11rem;
+  left: 0.9rem; bottom: 0.9rem; z-index: 6;
   flex-direction: column; align-items: stretch;
 }
 .ptChips.is-besideParts { left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem); }
-.builderPanels.is-on:has(~ .ptChips) .builderHud__lists { padding-left: calc(0.9rem + 11rem + 0.5rem); }
+.builderPanels.is-on:has(~ .ptChips) .builderHud__lists { padding-left: calc(0.9rem + 2.6rem + 0.4rem); }
 .builderPanels.is-on:has(~ .ptChips) .builderHud__lists.is-besideParts {
-  padding-left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem + 11rem + 0.5rem);
+  padding-left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem + 2.6rem + 0.4rem);
 }
 .ptTray__btn { position: relative; }
 .ptTray__btn:disabled { opacity: 0.3; cursor: default; }
@@ -217,16 +221,7 @@ export function TrayStyles() {
   font: 700 0.55rem/0.85rem var(--font-mono); text-align: center;
 }
 .ptChips { gap: 0.2rem; animation: builderSlide 180ms ease; }
-.ptChip {
-  display: inline-flex; align-items: center; gap: 0.35rem; height: 2rem; padding: 0 0.6rem 0 0.45rem;
-  border: 1px solid var(--border); border-radius: 0.55rem; background: var(--background);
-  color: var(--foreground); font: 600 0.75rem/1 inherit; cursor: pointer; min-width: 0; text-align: left;
-}
-.ptChip > svg, .ptChip > .ptTray__text { flex: none; }
-.ptChip__title { flex: none; }
-.ptChip__sub { margin-left: auto; }
-.ptChip:hover { background: var(--accent-soft); }
-.ptChip__sub { color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ptChip { color: var(--accent); }
 `}</style>
   );
 }
