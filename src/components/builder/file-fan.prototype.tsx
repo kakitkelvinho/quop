@@ -364,7 +364,7 @@ html[data-theme="dark"] .fileFan__svg { filter: drop-shadow(0 18px 28px rgb(0 0 
   cursor: pointer;
   pointer-events: auto;
   outline: none;
-  animation: fileFanPop 320ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation: fileFanPop 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 .fileFan__dot {
   display: grid;
