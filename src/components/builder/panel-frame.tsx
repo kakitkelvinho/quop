@@ -10,7 +10,7 @@ import type { PanelEdge } from "@/components/builder/panel-geometry";
  * maximise and, for a panel that closes, close. It replaces the panel's own
  * heading, so the title carries the id the panel is labelled by. Dragging it
  * moves the panel and double-clicking it minimises or restores it (usePanel's
- * `bar` props). A minimised panel's title can say what it holds.
+ * `bar` props).
  */
 export function PanelBar({
   title,

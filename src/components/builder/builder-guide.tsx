@@ -36,7 +36,8 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "beams", text: "Beams", sides: ["above", "right"] },
   { key: "frames", text: "Frames", sides: ["right", "above"] },
   { key: "groups", text: "Groups: click to select, eye to hide", sides: ["right", "above"] },
-  { key: "view", text: "Iso / top · fit · day / night · reset panels", sides: ["above", "left"] },
+  { key: "view", text: "Iso / top · fit · day / night · panels", sides: ["above", "left"] },
+  { key: "minimised", text: "Minimised panels: click to restore", sides: ["right", "above"] },
 ];
 
 const GAP = 10;

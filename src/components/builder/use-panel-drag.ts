@@ -86,9 +86,11 @@ export const PANEL_LAYER_CLASS = "builderPanels";
  * with `fitWidth`) and, with `keepHeight` for a panel the CSS stretches
  * between the workspace's top and bottom, its height.
  *
- * Its bar also minimises it (collapsed to the bar, in place, at its width)
- * and maximises it (filling the workspace below the toolbars), each undoing
- * the other; a maximised panel doesn't move.
+ * Its bar also minimises it (it leaves the table, and waits in the
+ * minimised column until restored: minimised-column.tsx) and maximises it
+ * (filling the workspace below the toolbars), each undoing the other; a
+ * maximised panel doesn't move. A panel that closes, with `opensRestored`,
+ * opens again on the table even if it was minimised when it closed.
  *
  * Its right edge, bottom edge and corner resize it (`resize` props, for
  * PanelResize), except while minimised or maximised. Until then a moved
@@ -97,7 +99,11 @@ export const PANEL_LAYER_CLASS = "builderPanels";
  */
 export function usePanel(
   id: string,
-  { fitWidth = false, keepHeight = false }: { fitWidth?: boolean; keepHeight?: boolean } = {},
+  {
+    fitWidth = false,
+    keepHeight = false,
+    opensRestored = false,
+  }: { fitWidth?: boolean; keepHeight?: boolean; opensRestored?: boolean } = {},
 ) {
   const moves = usePanelsMove();
   useSyncExternalStore(subscribePanels, panelsVersion, panelsVersion);
@@ -107,6 +113,10 @@ export function usePanel(
     ref.current = element;
   }, []);
   useEffect(() => () => teardown.current(), []);
+  // opened from its button, a closing panel shows, rather than waiting hidden in the column
+  useLayoutEffect(() => {
+    if (opensRestored && panelState(id).minimised) setPanelView(id, "restored");
+  }, [id, opensRestored]);
 
   // one gesture for both: dragging the bar moves the panel, an edge or the corner resizes it
   const startGesture = useCallback(
@@ -131,8 +141,8 @@ export function usePanel(
       const drawn = measure(element);
       const kept = panelState(id).rect ?? drawn;
       const start = { ...kept, w: drawn.w, h: drawn.h };
-      // the others, measured once: none of them moves while this one does
-      const others = Array.from(layer.querySelectorAll(".builderPanel"))
+      // the others on the table, measured once: none of them moves while this one does
+      const others = Array.from(layer.querySelectorAll(".builderPanel:not(.is-minimised)"))
         .filter((panel) => panel !== element)
         .map(measure);
       const startX = event.clientX;
@@ -169,20 +179,11 @@ export function usePanel(
     [id],
   );
 
-  // minimising pins the panel where it is drawn, so collapsing keeps its place and width
-  const pinHere = useCallback(() => {
-    const element = ref.current;
-    const layer = element?.closest<HTMLElement>(`.${PANEL_LAYER_CLASS}`);
-    if (!element || !layer || panelState(id).rect) return;
-    const box = element.getBoundingClientRect();
-    const origin = layer.getBoundingClientRect();
-    movePanelTo(id, wholeRect({ x: box.left - origin.left, y: box.top - origin.top, w: box.width, h: box.height }));
-  }, [id]);
+  // a minimised panel is hidden, so it keeps its place as it is: moved, or where the CSS puts it
   const toggleMinimised = useCallback(() => {
     const { minimised } = panelState(id);
-    if (!minimised) pinHere();
     setPanelView(id, minimised ? "restored" : "minimised");
-  }, [id, pinHere]);
+  }, [id]);
   const toggleMaximised = useCallback(() => {
     const { maximised } = panelState(id);
     setPanelView(id, maximised ? "restored" : "maximised");
@@ -207,8 +208,7 @@ export function usePanel(
           top: rect.y,
           right: "auto",
           bottom: "auto",
-          // a minimised list keeps the width it had; its rows no longer set it
-          width: fitWidth && !maximised && !minimised && !sized ? undefined : rect.w,
+          width: fitWidth && !maximised && !sized ? undefined : rect.w,
           height: fixed ? rect.h : undefined,
           maxHeight: fixed ? "none" : undefined,
           // content-sized, it may grow no further than the workspace's bottom (CSS takes the smaller of this and its own cap)
@@ -227,6 +227,7 @@ export function usePanel(
     frame: {
       ref: setRef,
       style,
+      "data-panel": id,
       onPointerDownCapture: moves ? () => bringPanelToFront(id) : undefined,
     },
     bar: {
