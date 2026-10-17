@@ -2464,46 +2464,14 @@ html[data-theme="dark"] .builderIsland {
   border-top: 1px solid var(--border);
 }
 
-/* the lightbulb's bubble hangs under the tool pill, over the cheat sheet tab */
+/* the eye's button: its Show wheel hangs under the tool pill, over the cheat sheet tab */
 .builderLighting {
   position: relative;
   display: flex;
 }
 
-.builderLighting__bubble {
-  position: absolute;
-  top: calc(100% + 0.55rem);
-  left: 50%;
-  z-index: 50;
-  display: grid;
-  gap: 0.6rem;
-  width: 13rem;
-  padding: 0.7rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--surface-strong);
-  box-shadow: var(--shadow);
-  translate: -50% 0;
-  animation: builderDrop 160ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.builderLighting__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.builderLighting__toggle input {
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* the eye's Show wheel: a half ring of wedges dropping out of the button, the
-   label size card under it */
+/* the eye's Show wheel: a half ring of wedges dropping out of the button, with
+   the label size dial round its outside and the brightness dial round the eye */
 .showWheel {
   position: absolute;
   top: calc(100% + 0.45rem);
@@ -2516,7 +2484,21 @@ html[data-theme="dark"] .builderIsland {
   pointer-events: none;
 }
 
+/* the open wheel spreads over the islands beside the pill (the brief's, on a
+   phone), and the cheat sheet tab steps aside rather than show through the hole */
+.builderHud__tools > .builderIsland:has(.showWheel) {
+  position: relative;
+  z-index: 6;
+}
+
+.builderHud__tools:has(.showWheel) > .builderSheetTab {
+  visibility: hidden;
+}
+
+/* on a phone the wheel is wider than the window: it shrinks to fit, and slides in from the edge */
 .showWheel__ring {
+  max-width: calc(100vw - 16px);
+  height: auto;
   overflow: visible;
   filter: drop-shadow(0 14px 22px rgb(31 41 51 / 0.16));
   transform-origin: 50% 0;
@@ -2525,12 +2507,6 @@ html[data-theme="dark"] .builderIsland {
 
 html[data-theme="dark"] .showWheel__ring {
   filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
-}
-
-.showWheel__hole {
-  fill: var(--surface-strong);
-  stroke: var(--border);
-  pointer-events: auto;
 }
 
 .showWheel__segment {
@@ -2585,19 +2561,78 @@ html[data-theme="dark"] .showWheel__ring {
   stroke-width: 2.5;
 }
 
-.showWheel__footer {
-  width: 12rem;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--surface-strong);
-  box-shadow: var(--shadow);
+/* a rim dial: a track bent round the ring, its filled part up to a knob */
+.showWheel__dial {
+  color: var(--accent);
+  outline: none;
+  cursor: grab;
   pointer-events: auto;
+  touch-action: none;
   animation: showWheelFade 260ms 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-.showWheel__footer input:disabled {
-  opacity: 0.4;
+.showWheel__dial:active {
+  cursor: grabbing;
+}
+
+/* a wide, unseen stroke along the track: what a finger grabs */
+.showWheel__dialHit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 24;
+}
+
+.showWheel__dialTrack,
+.showWheel__dialFill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.showWheel__dialTrack {
+  stroke: var(--surface-strong);
+}
+
+.showWheel__dialFill {
+  stroke: color-mix(in srgb, var(--accent) 55%, var(--surface-strong));
+}
+
+.showWheel__dialKnob {
+  fill: var(--surface-strong);
+  stroke: var(--accent);
+  stroke-width: 2;
+  transition: fill 120ms ease;
+}
+
+.showWheel__dial:hover .showWheel__dialKnob {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+}
+
+.showWheel__dial:focus-visible .showWheel__dialKnob {
+  stroke: var(--focus-ring);
+  stroke-width: 3;
+}
+
+.showWheel__dialIcon {
+  pointer-events: none;
+}
+
+.showWheel__dialReadout {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  /* a halo in the ring's colour keeps the label size's % legible over the table */
+  stroke: var(--surface-strong);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+/* the label size rests while labels are off */
+.showWheel__dial.is-disabled {
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -4285,10 +4320,9 @@ body[data-panel-gesture="se"] * {
   .builderParts,
   .builderAbout,
   .builderMenu__list,
-  .builderLighting__bubble,
   .showWheel__ring,
   .showWheel__segment,
-  .showWheel__footer,
+  .showWheel__dial,
   .builderHud__inspector {
     animation: none;
   }

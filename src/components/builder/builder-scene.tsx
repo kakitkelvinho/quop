@@ -1227,7 +1227,7 @@ export default function BuilderScene() {
   const handleSlowView = useCallback(() => {
     setQuality("light");
     setAutoQuality(false);
-    announce("Switched to light graphics. Click ⚡ in the View toolbar to undo.");
+    announce("Switched to light graphics. Turn it off in the eye's Show wheel.");
   }, [announce]);
 
   const toggleQuality = useCallback(() => {
