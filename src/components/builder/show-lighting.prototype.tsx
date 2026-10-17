@@ -16,7 +16,7 @@ export const EYE_LIGHTING_VARIANTS = [
   { key: "six", name: "Six wedges, brightness in card" },
   { key: "card", name: "Four wedges, lighting card" },
   { key: "rim", name: "Six wedges, brightness rim dial" },
-  { key: "rims", name: "Brightness rim out, label size rim in" },
+  { key: "rims", name: "Label size rim out, brightness rim in" },
   { key: "split", name: "One rim: label size left, brightness right" },
 ] as const;
 
@@ -211,12 +211,13 @@ export function EyeLightingPrototype(props: Props) {
           }
         />
       );
-    const brightnessDial = (r: number, from: number, to: number) => (
+    const brightnessDial = (r: number, from: number, to: number, side: 1 | -1 = 1) => (
       <Dial
         label="Brightness"
         r={r}
         from={from}
         to={to}
+        side={side}
         range={BRIGHTNESS_RANGE}
         value={lighting.brightness}
         onChange={(b) => onLightingChange({ brightness: b })}
@@ -246,8 +247,8 @@ export function EyeLightingPrototype(props: Props) {
           {...ROOMY_HOLED}
           rim={(outer, inner) => (
             <>
-              {brightnessDial(outer + 14, Math.PI, 0)}
-              {labelDial(inner - 18, Math.PI, 0, -1)}
+              {labelDial(outer + 14, Math.PI, 0, 1)}
+              {brightnessDial(inner - 18, Math.PI, 0, -1)}
             </>
           )}
         />

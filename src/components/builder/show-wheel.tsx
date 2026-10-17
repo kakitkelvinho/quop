@@ -89,11 +89,12 @@ export function ShowWheel({
   outer?: number;
   inner?: number;
 }) {
-  // the default ring keeps today's spots; a resized one puts names a bit
-  // past the middle of the wedge, where it is wider, and the icon near the rim
+  // the default ring keeps today's spots; a resized one stacks each wedge
+  // outwards from the centre: icon, then name, then On/Off
   const sized = outer !== OUTER || inner !== INNER;
-  const nameRadius = sized ? inner + (outer - inner) * 0.46 : NAME_RADIUS;
-  const iconRadius = sized ? outer - 32 : ICON_RADIUS;
+  const iconRadius = sized ? inner + 24 : ICON_RADIUS;
+  const nameRadius = sized ? inner + (outer - inner) * 0.56 : NAME_RADIUS;
+  const stateRadius = nameRadius + 30;
   const hole = inner - 4;
   const [focus, setFocus] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -188,7 +189,13 @@ export function ShowWheel({
                 <Icon name={item.on ? item.icon : (item.iconOff ?? item.icon)} size={20} />
               </g>
               <Name text={item.label} at={[nx, ny]} />
-              <text className="showWheel__state" x={nx} y={ny + 22} textAnchor="middle">
+              <text
+                className="showWheel__state"
+                x={sized ? polar(stateRadius, mid)[0] : nx}
+                y={sized ? polar(stateRadius, mid)[1] : ny + 22}
+                textAnchor="middle"
+                dominantBaseline={sized ? "central" : undefined}
+              >
                 {item.on ? "On" : "Off"}
               </text>
             </g>
