@@ -51,9 +51,12 @@ function span(i: number, n: number) {
 }
 
 /** A name centred on a point, a long two-word one ("Beam distances") over two lines. */
+function twoLines(text: string) {
+  return text.split(" ").length > 1 && text.length > 8;
+}
+
 function Name({ text, at }: { text: string; at: Point }) {
-  const words = text.split(" ");
-  const lines = words.length > 1 && text.length > 8 ? words : [text];
+  const lines = twoLines(text) ? text.split(" ") : [text];
   const lead = ((lines.length - 1) * 1.1) / 2;
   return (
     <text className="showWheel__name" x={at[0]} y={at[1]} textAnchor="middle" dominantBaseline="central">
@@ -90,11 +93,11 @@ export function ShowWheel({
   inner?: number;
 }) {
   // the default ring keeps today's spots; a resized one stacks each wedge
-  // outwards from the centre: icon, then name, then On/Off
+  // outwards from the centre: icon, then name with its On/Off under it (under,
+  // not further out: out is sideways on the end wedges, into a two-line name)
   const sized = outer !== OUTER || inner !== INNER;
   const iconRadius = sized ? inner + 24 : ICON_RADIUS;
   const nameRadius = sized ? inner + (outer - inner) * 0.56 : NAME_RADIUS;
-  const stateRadius = nameRadius + 30;
   const hole = inner - 4;
   const [focus, setFocus] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -191,10 +194,9 @@ export function ShowWheel({
               <Name text={item.label} at={[nx, ny]} />
               <text
                 className="showWheel__state"
-                x={sized ? polar(stateRadius, mid)[0] : nx}
-                y={sized ? polar(stateRadius, mid)[1] : ny + 22}
+                x={nx}
+                y={ny + (sized && twoLines(item.label) ? 28 : 22)}
                 textAnchor="middle"
-                dominantBaseline={sized ? "central" : undefined}
               >
                 {item.on ? "On" : "Off"}
               </text>
