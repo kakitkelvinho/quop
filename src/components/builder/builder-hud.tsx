@@ -19,6 +19,7 @@ import {
   PanelRail,
   TRAY_VARIANTS,
   TrayStyles,
+  minimiseAll,
   type TrayPanel,
 } from "@/components/builder/panel-tray.prototype";
 import { PrototypeSwitcher, usePrototypeVariant } from "@/components/prototype-switcher";
@@ -1095,6 +1096,59 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
 }
 
 /** The lightbulb: a bubble of how the table is rendered, under the tool pill. */
+/** PROTOTYPE: the reset-panels button opens a bubble: minimise every panel, or put them all back. */
+function PanelsMenu({ panels, onReset }: { panels: TrayPanel[]; onReset: () => void }) {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  const ref = useBubbleDismiss(open, close);
+  const anyOpen = panels.some((p) => p.open && p.available);
+  return (
+    <div className="builderMenu" ref={ref}>
+      <button
+        type="button"
+        className={`builderIconBtn${open ? " is-active" : ""}`}
+        aria-label="Panels"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Panels"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Icon name="resetPanels" />
+      </button>
+      {open ? (
+        <div
+          className="builderMenu__list"
+          role="menu"
+          style={{ top: "auto", bottom: "calc(100% + 0.55rem)", left: "auto", right: "-0.25rem" }}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            disabled={!anyOpen}
+            style={anyOpen ? undefined : { opacity: 0.4, cursor: "default" }}
+            onClick={() => {
+              minimiseAll(panels);
+              close();
+            }}
+          >
+            Minimise all
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              onReset();
+              close();
+            }}
+          >
+            Reset panels <span className="builderReadout">⌥0</span>
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function LightingMenu({
   lighting,
   onChange,
@@ -1743,7 +1797,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton icon="fit" label="Fit" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
+        {panelsMove ? <PanelsMenu panels={trayPanels} onReset={props.onResetPanels} /> : null}
       </div>
       {tray === "A" ? <PanelDock panels={trayPanels} /> : null}
       {tray === "B" ? <PanelChips panels={trayPanels} besideParts={besideParts} /> : null}

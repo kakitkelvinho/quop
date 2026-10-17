@@ -131,6 +131,13 @@ function TrayButton({ panel, vertical = false }: { panel: TrayPanel; vertical?: 
   );
 }
 
+/** Every panel on the table, minimised; how many that was. */
+export function minimiseAll(panels: TrayPanel[]): number {
+  const open = panels.filter((p) => status(p) === "open");
+  open.forEach((p) => setPanelView(p.id, "minimised"));
+  return open.length;
+}
+
 /** A: its own island, bottom centre; every panel always has an icon. */
 export function PanelDock({ panels }: { panels: TrayPanel[] }) {
   usePanelStore();
