@@ -13,6 +13,15 @@ import { selectedGroup } from "@/components/builder/groups";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
+import {
+  PanelChips,
+  PanelDock,
+  PanelRail,
+  TRAY_VARIANTS,
+  TrayStyles,
+  type TrayPanel,
+} from "@/components/builder/panel-tray.prototype";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/components/prototype-switcher";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
@@ -1299,6 +1308,9 @@ export default function BuilderHud(props: BuilderHudProps) {
   const panelsMove = usePanelsMove();
   const inspectorPanel = usePanel("inspector");
   useRememberedPanels();
+  // PROTOTYPE: where minimised panels go (panel-tray.prototype.tsx)
+  const trayVariant = usePrototypeVariant(TRAY_VARIANTS.map((v) => v.key));
+  const tray = panelsMove && trayVariant && trayVariant !== "current" ? trayVariant : null;
   // when the workspace shrinks, moved panels slide back in so their bars can be grabbed
   const panelLayerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1465,6 +1477,16 @@ export default function BuilderHud(props: BuilderHudProps) {
       ? { label: "Cancel connection", run: props.onCancelConnect }
       : null;
 
+  const trayPanels: TrayPanel[] = [
+    { id: "inspector", title: "Inspector", subtitle: inspectorSubtitle, available: Boolean(inspector), open: Boolean(inspector) },
+    { id: "beams", title: "Beams", count: beams.length, available: beams.length > 0, open: beams.length > 0 },
+    { id: "frames", title: "Frames", count: props.frames.length, available: props.frames.length > 0, open: props.frames.length > 0 },
+    { id: "groups", title: "Groups", count: props.groups.length, available: props.groups.length > 0, open: props.groups.length > 0 },
+    { id: "brief", title: "Setup brief", available: true, open: briefOpen && !trayOpen, onOpen: toggleBrief },
+    { id: "json", title: "Setup JSON", available: true, open: jsonOpen && !trayOpen, onOpen: showJson },
+    { id: "parts", title: "Parts", available: true, open: trayOpen, onOpen: props.onToggleTray, launcher: false },
+  ];
+
   const aboutPanels = (
     <>
       {briefOpen && !trayOpen ? (
@@ -1531,6 +1553,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           onClick={connectDraft ? props.onCancelConnect : props.onStartConnect}
           disabled={components.length < 2}
         />
+        {tray === "C" ? <PanelRail panels={trayPanels} /> : null}
       </div>
 
       <div className="builderHud__center">
@@ -1588,6 +1611,7 @@ export default function BuilderHud(props: BuilderHudProps) {
             </button>
           </div>
           {/* the brief is neither a tool nor a guide: its own island, across the tools from the Guide pill */}
+          {tray === "A" || tray === "C" ? null : (
           <div className="builderIsland builderHud__brief">
             <button
               type="button"
@@ -1601,6 +1625,7 @@ export default function BuilderHud(props: BuilderHudProps) {
               .md
             </button>
           </div>
+          )}
         </div>
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
@@ -1630,7 +1655,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       {/* Every panel, in one layer under the toolbars. Where panels stay put
           the layer is no box at all, and the brief and JSON panels keep their
           old place in the page, so the stacking is today's. */}
-      <div ref={panelLayerRef} className={`${PANEL_LAYER_CLASS}${panelsMove ? " is-on" : ""}`}>
+      <div ref={panelLayerRef} className={`${PANEL_LAYER_CLASS}${panelsMove ? " is-on" : ""}${tray ? " is-trayed" : ""}`}>
       {panelsMove ? aboutPanels : null}
       {trayOpen ? (
         <PartsPanel
@@ -1720,6 +1745,14 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
         {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
       </div>
+      {tray === "A" ? <PanelDock panels={trayPanels} /> : null}
+      {tray === "B" ? <PanelChips panels={trayPanels} /> : null}
+      {panelsMove && trayVariant ? (
+        <>
+          <TrayStyles />
+          <PrototypeSwitcher variants={TRAY_VARIANTS} current={trayVariant} />
+        </>
+      ) : null}
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
       <p className="builderStatus" role="status" aria-live="polite">
