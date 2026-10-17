@@ -176,6 +176,47 @@ const ICONS = {
       <circle cx="15" cy="18" r="1" />
     </>
   ),
+  // the file fan: a setup's JSON, a picture of the view, the example table
+  braces: (
+    <path d="M9 4H8a2 2 0 0 0-2 2v3.5A2.5 2.5 0 0 1 3.5 12 2.5 2.5 0 0 1 6 14.5V18a2 2 0 0 0 2 2h1M15 4h1a2 2 0 0 1 2 2v3.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0-2.5 2.5V18a2 2 0 0 1-2 2h-1" />
+  ),
+  image: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="1.5" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="m4 17.5 5-5 4 4 2.5-2.5 4.5 4.5" />
+    </>
+  ),
+  example: (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      <circle cx="7" cy="14.5" r="1.3" />
+      <path d="M8.3 14.5H14l3-5M15.5 8.2l3 2.6" />
+    </>
+  ),
+  // the JSON panel: copy, paste, save as .json, open a .json
+  copy: (
+    <>
+      <rect x="8.5" y="8.5" width="11" height="12" rx="1.5" />
+      <path d="M15.5 8.5V5A1.5 1.5 0 0 0 14 3.5H6A1.5 1.5 0 0 0 4.5 5v9A1.5 1.5 0 0 0 6 15.5h2.5" />
+    </>
+  ),
+  paste: (
+    <>
+      <path d="M9 5H6.5A1.5 1.5 0 0 0 5 6.5v13A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-13A1.5 1.5 0 0 0 17.5 5H15" />
+      <rect x="9" y="3" width="6" height="4" rx="1" />
+      <path d="M9 12h6M9 16h4" />
+    </>
+  ),
+  floppy: (
+    <>
+      <path d="M6 4h10l4 4v10.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4Z" />
+      <path d="M8 4v4.5h7V4M7.5 20v-6h9v6" />
+    </>
+  ),
+  folder: (
+    <path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5Z" />
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

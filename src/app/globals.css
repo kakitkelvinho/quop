@@ -2614,6 +2614,113 @@ html[data-theme="dark"] .showWheel__ring {
   }
 }
 
+/* the Tabletop menu's file fan: a quarter ring of wedges from the workspace's
+   top-left corner, its hole clear of the file island; the box sits on the
+   corner (placed from the script), the ring draws down and right from it */
+.fileFan {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.fileFan__ring {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 14px 22px rgb(31 41 51 / 0.16));
+  transform-origin: 4px 4px;
+  animation: fileFanOpen 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .fileFan__ring {
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
+}
+
+.fileFan__item {
+  color: var(--muted);
+  outline: none;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* the gaps between wedges are their strokes, in the ring's own colour */
+.fileFan__wedge {
+  fill: var(--surface-strong);
+  stroke: var(--surface-strong);
+  stroke-width: 3;
+  transition: fill 120ms ease;
+}
+
+.fileFan__name {
+  fill: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fileFan__item.is-file .fileFan__name {
+  font-family: var(--font-mono);
+}
+
+.fileFan__hint {
+  fill: currentColor;
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.fileFan__item:hover,
+.fileFan__item:focus-visible {
+  color: var(--accent-strong);
+}
+
+.fileFan__item:hover .fileFan__name,
+.fileFan__item:focus-visible .fileFan__name {
+  fill: currentColor;
+}
+
+.fileFan__item:hover .fileFan__wedge,
+.fileFan__item:focus-visible .fileFan__wedge {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+}
+
+/* Clear empties the table: orange, not the accent */
+.fileFan__item.is-danger:hover,
+.fileFan__item.is-danger:focus-visible {
+  color: #c2410c;
+}
+
+html[data-theme="dark"] .fileFan__item.is-danger:hover,
+html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
+  color: #fb8c4a;
+}
+
+.fileFan__item.is-danger:hover .fileFan__wedge,
+.fileFan__item.is-danger:focus-visible .fileFan__wedge {
+  fill: color-mix(in srgb, #ea580c 14%, var(--surface-strong));
+}
+
+.fileFan__item:focus-visible .fileFan__wedge {
+  stroke: var(--focus-ring);
+  stroke-width: 2.5;
+}
+
+@keyframes fileFanOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fileFan__ring,
+  .fileFan__item {
+    animation: none;
+  }
+
+  .fileFan__wedge {
+    transition: none;
+  }
+}
+
 /* top centre: tools, the parts tray, and the mode badge */
 .builderHud__center {
   position: absolute;
@@ -4180,6 +4287,13 @@ body[data-panel-gesture="se"] * {
 /* the JSON panel's box: the brief's text, but editable, and wider actions */
 .builderJson .builderBrief__actions {
   flex-wrap: wrap;
+}
+
+/* after Apply: copy, paste, save, open */
+.builderJson__icons {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
 }
 
 .builderJson__text {

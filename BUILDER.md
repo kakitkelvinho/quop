@@ -169,7 +169,7 @@ switch are one undo step.
 **A setup brief for an AI assistant.** The `.md` button, in its own island at
 the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
 author pastes into an AI assistant so it writes a setup file for the experiment
-they describe, which then opens with Open JSON… like any other: the brief asks
+they describe, which then opens in the Setup JSON panel like any other: the brief asks
 for a downloadable `.json` file, or the JSON alone in one code block to paste. The panel shows
 the brief with **Copy** (to the clipboard, confirmed in the status line) and
 **Download .md**; Esc or its close button shuts it. The brief tells the
@@ -347,9 +347,10 @@ angle from one. Setups from before version 3 open with no connections.
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
 
-**Import into this table merges; Open JSON… → Apply replaces.** The two stay
-apart so Apply keeps meaning one thing. Import into this table…, in the file
-menu, picks a `.json` setup, checks it as Open does (`checkSceneText`: the
+**The folder's Add merges; its Replace → Apply replaces.** The two stay
+apart so Apply keeps meaning one thing. The JSON panel's folder picks a `.json`
+setup and asks: **Replace the table** fills the box with it, for Apply;
+**Add to the table** checks it as the box does (`checkSceneText`: the
 same limits and migrations), and merges it into what is on the table as one
 undo step (`mergeSetup` in `merge-setup.ts`), announcing what came in
 ("Imported 12 parts, 3 beams into Group 2"). It completes the assembly
@@ -411,10 +412,12 @@ and keeps at most 100 groups. In code the multi-selection editor
 (`group-edits.ts`, `GroupInspector`) is not a Group, and the parts panel's
 headings are `PART_CATEGORIES`.
 
-**Open JSON… is a text panel.** It opens in the parts panel's place, below the
-top-left islands, with the setup as it stands in an editable box: tweak it,
-**Paste** one over it, **Open file…** to fill the box from a `.json`, or
-**Copy** it out. Nothing reaches the table until **Apply**, which replaces it
+**Setup JSON is a text panel.** Tabletop ▾ → .json opens it in the parts
+panel's place, below the top-left islands, with the setup as it stands in an
+editable box. Apply is its one text button; after it, icon buttons **Copy** it
+out, **Paste** one over it, **save** the table as a `.json` (the floppy), or
+**open** a `.json` (the folder: Replace fills the box, Add merges, see
+above). Nothing reaches the table until **Apply**, which replaces it
 as one undo step. The text is checked as it changes (`scene-text.ts`), and
 Apply only takes text that passes: at most 1 MB, valid JSON (an error names
 its line and column), one object with a `components` list, at most 500 parts,
@@ -432,8 +435,11 @@ fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
 - **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
-  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, import a setup into this table, export PNG,
-  load the example, clear the table).
+  (with Draw a beam and Connect beside it), and the Tabletop ▾ menu: a quarter fan
+  of four wedges from the corner (`file-fan.tsx`), whose hole clears the file
+  island and lets clicks through to the + island: .json (the Setup JSON panel,
+  which saves, opens and imports), .png (export the view), Example (load the
+  example) and Clear (empty the table).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and name, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
@@ -578,7 +584,7 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Share a part between groups | Add to group in its inspector, then press each group's row (several parts at once work too) |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Move a panel | Drag its title bar. Reset panels (View toolbar) or `⌥0` puts them all back |
-| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |
+| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you with the JSON panel's folder (Replace), or paste its JSON into the panel |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet
@@ -653,7 +659,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file fan, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons, and search |

@@ -310,11 +310,11 @@ export const SETUP_BRIEF_FILENAME = "quop-setup-brief.md";
 export function setupBrief(): string {
   return `# Writing a QUOP setup file
 
-You are helping someone draw an optics experiment in the QUOP Tabletop, a notebook for sketching setups on an optical table. It records the layout the author intends; it does not simulate light. They will describe their experiment, and you will write a setup file (\`.json\`) that they open in the Tabletop with **Open JSON…** in its file menu, which takes a file or pasted text.
+You are helping someone draw an optics experiment in the QUOP Tabletop, a notebook for sketching setups on an optical table. It records the layout the author intends; it does not simulate light. They will describe their experiment, and you will write a setup file (\`.json\`) that they open in the Tabletop's **Setup JSON** panel (**Tabletop ▾ → .json**), which takes a file or pasted text.
 
 **First, ask about anything unclear** rather than guessing: which parts, the order the light passes them, rough distances between them, where one beam splits into two, and any fibres or cables. Keep it to what changes the drawing.
 
-**Then give them the setup as a file to download**, named after the experiment (for example \`hom-interferometer.json\`): if you can create files, attach it as a downloadable \`.json\` file. If you can't, reply with the JSON alone in one fenced \`\`\`json code block, with no other text, so they can copy it into the Tabletop's Open JSON… panel. Either way the JSON itself carries no comments (JSON has none). The Tabletop drops anything it does not recognise, so a wrong name loses that part silently.
+**Then give them the setup as a file to download**, named after the experiment (for example \`hom-interferometer.json\`): if you can create files, attach it as a downloadable \`.json\` file. If you can't, reply with the JSON alone in one fenced \`\`\`json code block, with no other text, so they can paste it into the Tabletop's Setup JSON panel. Either way the JSON itself carries no comments (JSON has none). The Tabletop drops anything it does not recognise, so a wrong name loses that part silently.
 
 ## Conventions
 

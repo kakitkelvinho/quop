@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
@@ -16,6 +16,8 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+import { FileFan } from "@/components/builder/file-fan";
+import { JsonPanelFiles } from "@/components/builder/json-panel-files";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -59,8 +61,6 @@ function partnerAngleBeam(components: BuilderComponent[], beams: Beam[], compone
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
-import { findTool } from "@/components/navigation";
-import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
   components: BuilderComponent[];
@@ -764,7 +764,7 @@ function BriefPanel({
         </h2>
       )}
       <p className="builderAbout__description">
-        For an AI assistant. Open its reply with Open JSON….
+        For an AI assistant. Open its reply in the Setup JSON panel: Tabletop ▾, then .json.
       </p>
       <div className="builderBrief__actions">
         <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
@@ -809,11 +809,15 @@ function JsonPanel({
   emptyClicks,
   onApply,
   onClose,
+  onSave,
+  onImport,
 }: {
   scene: BuilderSceneData;
   emptyClicks: number;
   onApply: (scene: BuilderSceneData, summary: string) => void;
   onClose: () => void;
+  onSave: () => void;
+  onImport: BuilderHudProps["onImport"];
 }) {
   // A drag previews a new scene on every pointer move, so the box writes the
   // table out once it has been still for a moment, not on every frame.
@@ -826,12 +830,16 @@ function JsonPanel({
   const view = jsonPanelView(live, draft);
   const { text, edited } = view;
   const [note, setNote] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   // a large paste is checked once typing settles, not on every keystroke
   const settled = useDeferredValue(text);
   const check = useMemo(() => checkSceneText(settled), [settled]);
   const edit = (next: string) => setDraft(editJson(live, draft, next));
-  useEscapeCloses(onClose);
+  // an open dialog (open a .json, or a group already on the table) takes its own Esc
+  useEscapeCloses(
+    useCallback(() => {
+      if (!document.querySelector('[role="alertdialog"]')) onClose();
+    }, [onClose]),
+  );
   // a click on empty table closes the panel, unless it holds edits not yet applied
   const seenClicks = useRef(emptyClicks);
   useEffect(() => {
@@ -861,16 +869,22 @@ function JsonPanel({
       setNote("Paste blocked: use ⌘V.");
     }
   };
-  const openFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
+  // the folder's Replace: the file fills the box as a draft, for Apply
+  const replaceFrom = async (file: File) => {
     if (file.size > SCENE_TEXT_MAX_BYTES) {
       setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
       return;
     }
     edit(await file.text());
     setNote(`Read ${file.name}.`);
+  };
+  // the folder's Add: merged into the table as it stands (merge-setup)
+  const addFrom = async (file: File) => {
+    if (file.size > SCENE_TEXT_MAX_BYTES) {
+      onImport(null, file.name);
+      return;
+    }
+    onImport(await file.text(), file.name);
   };
   const panel = usePanel("json", { keepHeight: true });
 
@@ -903,18 +917,13 @@ function JsonPanel({
         >
           Apply
         </button>
-        <button type="button" className="builderButton" onClick={() => void copy()}>
-          Copy
-        </button>
-        <button type="button" className="builderButton" onClick={() => void paste()}>
-          Paste
-        </button>
-        <button type="button" className="builderButton" onClick={() => fileRef.current?.click()}>
-          Open file…
-        </button>
-        {/* No accept filter: macOS sometimes greys out .json files the first
-            time the picker opens; the check turns away anything that isn't one. */}
-        <input ref={fileRef} type="file" hidden onChange={(event) => void openFile(event)} />
+        <JsonPanelFiles
+          onCopy={() => void copy()}
+          onPaste={() => void paste()}
+          onSave={onSave}
+          onReplace={(file) => void replaceFrom(file)}
+          onAdd={(file) => void addFrom(file)}
+        />
       </div>
       <textarea
         className="builderBrief__text builderJson__text"
@@ -957,102 +966,6 @@ function JsonPanel({
       )}
       {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </aside>
-  );
-}
-
-function FileMenu({
-  onSave,
-  onShowJson,
-  onImport,
-  onExportPng,
-  onResetExample,
-  onClear,
-}: Pick<BuilderHudProps, "onSave" | "onImport" | "onExportPng" | "onResetExample" | "onClear"> & {
-  onShowJson: () => void;
-}) {
-  const importRef = useRef<HTMLInputElement>(null);
-  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (file.size > SCENE_TEXT_MAX_BYTES) {
-      onImport(null, file.name);
-      return;
-    }
-    onImport(await file.text(), file.name);
-  };
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  const run = (action: () => void) => () => {
-    action();
-    setOpen(false);
-  };
-
-  return (
-    <div className="builderMenu" ref={ref}>
-      <button
-        type="button"
-        className="builderMenu__trigger"
-        data-guide="file"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="builderMenu__title">Tabletop</span>
-        <BetaMark tool={findTool("/builder/tabletop")} />
-        <Icon name="chevron" size={14} />
-      </button>
-      {open ? (
-        <div className="builderMenu__list" role="menu">
-          <button type="button" role="menuitem" onClick={run(onSave)}>
-            Save as JSON
-          </button>
-          <button type="button" role="menuitem" onClick={run(onShowJson)}>
-            Open JSON…
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              importRef.current?.click();
-            }}
-          >
-            Import into this table…
-          </button>
-          <button type="button" role="menuitem" onClick={run(onExportPng)}>
-            Export view as PNG
-          </button>
-          <hr />
-          <button type="button" role="menuitem" onClick={run(onResetExample)}>
-            Load example
-          </button>
-          <button type="button" role="menuitem" onClick={run(onClear)}>
-            Clear table
-          </button>
-        </div>
-      ) : null}
-      {/* kept out of the list, which unmounts as the picker opens; no accept
-          filter, as in the JSON panel: the check turns away anything else */}
-      <input ref={importRef} type="file" hidden onChange={(event) => void importFile(event)} />
-    </div>
   );
 }
 
@@ -1471,7 +1384,14 @@ export default function BuilderHud(props: BuilderHudProps) {
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel scene={props.scene} emptyClicks={props.emptyClicks} onApply={props.onApplyScene} onClose={closeJson} />
+        <JsonPanel
+          scene={props.scene}
+          emptyClicks={props.emptyClicks}
+          onApply={props.onApplyScene}
+          onClose={closeJson}
+          onSave={props.onSave}
+          onImport={props.onImport}
+        />
       ) : null}
     </>
   );
@@ -1484,10 +1404,8 @@ export default function BuilderHud(props: BuilderHudProps) {
           QUOP
         </Link>
         <span className="builderIsland__sep" />
-        <FileMenu
-          onSave={props.onSave}
+        <FileFan
           onShowJson={showJson}
-          onImport={props.onImport}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
