@@ -77,10 +77,13 @@ export function ShowWheel({
   items,
   onClose,
   footer,
+  rim,
 }: {
   items: WheelItem[];
   onClose: () => void;
   footer?: ReactNode;
+  /** PROTOTYPE: drawn in the ring's svg, round the outside (given its outer radius) */
+  rim?: (outer: number) => ReactNode;
 }) {
   const [focus, setFocus] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -128,7 +131,9 @@ export function ShowWheel({
     run();
   };
 
-  const size = 2 * (OUTER + PAD);
+  // PROTOTYPE: a rim needs room round the ring
+  const pad = rim ? PAD + 22 : PAD;
+  const size = 2 * (OUTER + pad);
 
   return (
     <div className="showWheel" ref={rootRef}>
@@ -137,11 +142,12 @@ export function ShowWheel({
         role="menu"
         aria-label="Show"
         aria-orientation="horizontal"
-        viewBox={`${-OUTER - PAD} ${-PAD} ${size} ${OUTER + 2 * PAD}`}
+        viewBox={`${-OUTER - pad} ${-PAD} ${size} ${OUTER + PAD + pad}`}
         width={size}
-        height={OUTER + 2 * PAD}
+        height={OUTER + PAD + pad}
         onKeyDown={onKeyDown}
       >
+        {rim?.(OUTER)}
         <path className="showWheel__hole" d={`M${-HOLE} 0A${HOLE} ${HOLE} 0 0 0 ${HOLE} 0Z`} />
         {items.map((item, i) => {
           const { a0, a1, mid } = span(i, n);

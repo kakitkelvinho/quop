@@ -5118,3 +5118,67 @@ html[data-theme="dark"] .builderAngleBadge {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* PROTOTYPE (eye + lighting): the wheel's card with more in it, and the brightness rim */
+.protoEyeCard {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.protoEyeCard__head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.protoRim {
+  color: var(--accent);
+  outline: none;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.protoRim__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 24;
+}
+
+.protoRim__track {
+  fill: none;
+  stroke: var(--surface-strong);
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.protoRim__fill {
+  fill: none;
+  stroke: color-mix(in srgb, var(--accent) 55%, var(--surface-strong));
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.protoRim__knob {
+  fill: var(--surface-strong);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.protoRim:focus-visible .protoRim__knob {
+  stroke: var(--focus-ring);
+  stroke-width: 3;
+}
+
+.protoRim__readout {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+}

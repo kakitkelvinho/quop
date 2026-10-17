@@ -97,6 +97,19 @@ const ICONS = {
       <path d="M9 17.5v-1.8c0-1.2-.6-2-1.4-2.9A5.5 5.5 0 1 1 16.4 12.8c-.8.9-1.4 1.7-1.4 2.9v1.8" />
     </>
   ),
+  // PROTOTYPE (eye + lighting): a ball and its shadow; a gauge for light graphics
+  shadow: (
+    <>
+      <circle cx="12" cy="10" r="5" />
+      <ellipse cx="13.5" cy="19" rx="6" ry="1.6" fill="currentColor" opacity="0.45" stroke="none" />
+    </>
+  ),
+  gauge: (
+    <>
+      <path d="M4.5 17a8 8 0 1 1 15 0" />
+      <path d="m12 14-3.5-4" />
+    </>
+  ),
   // a large and a small letter: the labels' size
   // three dots: more for this row
   more: (

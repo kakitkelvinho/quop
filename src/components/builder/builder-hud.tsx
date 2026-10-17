@@ -16,6 +16,9 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+// PROTOTYPE: eye + lighting variants
+import { EYE_LIGHTING_VARIANTS, EyeLightingPrototype } from "@/components/builder/show-lighting.prototype";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/components/prototype-switcher";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -1272,6 +1275,7 @@ function ShowMenu({
 }
 
 export default function BuilderHud(props: BuilderHudProps) {
+  const eyeVariant = usePrototypeVariant(EYE_LIGHTING_VARIANTS.map((v) => v.key));
   const {
     components,
     beams,
@@ -1553,6 +1557,27 @@ export default function BuilderHud(props: BuilderHudProps) {
           <div className="builderHud__tools" data-guide="tools">
             <div className="builderIsland" role="toolbar" aria-label="Tools">
               <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
+              {eyeVariant && eyeVariant !== "current" ? (
+                <EyeLightingPrototype
+                  variant={eyeVariant}
+                  posts={props.showPosts}
+                  grid={props.showGrid}
+                  labels={props.showLabels}
+                  distances={props.showDistances}
+                  onTogglePosts={props.onTogglePosts}
+                  onToggleGrid={props.onToggleGrid}
+                  onToggleLabels={props.onToggleLabels}
+                  onToggleDistances={props.onToggleDistances}
+                  scale={props.labelScale}
+                  onBegin={props.onCheckpoint}
+                  onScaleChange={props.onLabelScaleChange}
+                  lighting={props.lighting}
+                  onLightingChange={props.onLightingChange}
+                  lightGraphics={props.quality === "light"}
+                  onToggleQuality={props.onToggleQuality}
+                />
+              ) : (
+                <>
               <ShowMenu
                 posts={props.showPosts}
                 grid={props.showGrid}
@@ -1572,6 +1597,11 @@ export default function BuilderHud(props: BuilderHudProps) {
                 lightGraphics={props.quality === "light"}
                 onToggleQuality={props.onToggleQuality}
               />
+                </>
+              )}
+              {eyeVariant
+                ? createPortal(<PrototypeSwitcher variants={[...EYE_LIGHTING_VARIANTS]} current={eyeVariant} />, document.body)
+                : null}
               <span className="builderIsland__sep" />
               <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
               <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
