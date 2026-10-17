@@ -5182,3 +5182,8 @@ html[data-theme="dark"] .builderAngleBadge {
   font-size: 10px;
   font-weight: 600;
 }
+
+.protoRim.is-disabled {
+  opacity: 0.35;
+  cursor: default;
+}

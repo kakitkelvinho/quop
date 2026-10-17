@@ -22,7 +22,6 @@ type Point = [number, number];
 const OUTER = 152;
 const INNER = 46;
 const PAD = 6;
-const HOLE = INNER - 4;
 // where a segment's icon and name sit, from the centre
 const ICON_RADIUS = 122;
 const NAME_RADIUS = 86;
@@ -78,13 +77,24 @@ export function ShowWheel({
   onClose,
   footer,
   rim,
+  outer = OUTER,
+  inner = INNER,
 }: {
   items: WheelItem[];
   onClose: () => void;
   footer?: ReactNode;
-  /** PROTOTYPE: drawn in the ring's svg, round the outside (given its outer radius) */
-  rim?: (outer: number) => ReactNode;
+  /** PROTOTYPE: drawn in the ring's svg over the hole (given the ring's radii) */
+  rim?: (outer: number, inner: number) => ReactNode;
+  /** PROTOTYPE: a roomier ring for more wedges */
+  outer?: number;
+  inner?: number;
 }) {
+  // the default ring keeps today's spots; a resized one puts names a bit
+  // past the middle of the wedge, where it is wider, and the icon near the rim
+  const sized = outer !== OUTER || inner !== INNER;
+  const nameRadius = sized ? inner + (outer - inner) * 0.46 : NAME_RADIUS;
+  const iconRadius = sized ? outer - 32 : ICON_RADIUS;
+  const hole = inner - 4;
   const [focus, setFocus] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const segmentRefs = useRef<(SVGGElement | null)[]>([]);
@@ -132,8 +142,8 @@ export function ShowWheel({
   };
 
   // PROTOTYPE: a rim needs room round the ring
-  const pad = rim ? PAD + 22 : PAD;
-  const size = 2 * (OUTER + pad);
+  const pad = rim ? PAD + 40 : PAD;
+  const size = 2 * (outer + pad);
 
   return (
     <div className="showWheel" ref={rootRef}>
@@ -142,17 +152,18 @@ export function ShowWheel({
         role="menu"
         aria-label="Show"
         aria-orientation="horizontal"
-        viewBox={`${-OUTER - pad} ${-PAD} ${size} ${OUTER + PAD + pad}`}
+        viewBox={`${-outer - pad} ${-PAD} ${size} ${outer + PAD + pad}`}
         width={size}
-        height={OUTER + PAD + pad}
+        height={outer + PAD + pad}
         onKeyDown={onKeyDown}
       >
-        {rim?.(OUTER)}
-        <path className="showWheel__hole" d={`M${-HOLE} 0A${HOLE} ${HOLE} 0 0 0 ${HOLE} 0Z`} />
+        {/* PROTOTYPE: the resized ring drops the idle half disc under the eye */}
+        {sized ? null : <path className="showWheel__hole" d={`M${-hole} 0A${hole} ${hole} 0 0 0 ${hole} 0Z`} />}
+        {rim?.(outer, inner)}
         {items.map((item, i) => {
           const { a0, a1, mid } = span(i, n);
-          const [nx, ny] = polar(NAME_RADIUS, mid);
-          const [ix, iy] = polar(ICON_RADIUS, mid);
+          const [nx, ny] = polar(nameRadius, mid);
+          const [ix, iy] = polar(iconRadius, mid);
           return (
             <g
               key={item.id}
@@ -172,7 +183,7 @@ export function ShowWheel({
               onFocus={() => setFocus(i)}
             >
               <title>{item.description}</title>
-              <path className="showWheel__wedge" d={wedge(INNER, OUTER, a0, a1)} />
+              <path className="showWheel__wedge" d={wedge(inner, outer, a0, a1)} />
               <g transform={`translate(${ix - 10} ${iy - 10})`}>
                 <Icon name={item.on ? item.icon : (item.iconOff ?? item.icon)} size={20} />
               </g>
