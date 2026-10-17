@@ -499,7 +499,7 @@ is on screen until it is needed:
   announced. Members of a hidden group draw no ghost when their row selects
   them; the selection and the inspector still show them.
 - **Bottom right**: how you look at the table: Iso / Top, Fit, Day / night
-  and Reset panels (below). What is drawn on the table is the tool pill's.
+  and the panels menu (below). What is drawn on the table is the tool pill's.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
 - **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
@@ -524,12 +524,27 @@ is on screen until it is needed:
 Frames, Groups, the setup brief and Setup JSON) each have a title bar: a
 grip, the panel's name, and buttons to minimise and maximise it and, for the
 brief and the JSON panel, to close it. Minimise (or double-click the title)
-collapses the panel to its bar, in place and at its width; maximise fills
-the workspace below the toolbars, and a maximised panel can't be dragged.
-Each undoes the other, and the same button restores. A minimised Inspector
-stays minimised as the selection changes, and its bar says what it holds:
-"Inspector: Mirror 3", a beam's, frame's or connection's name, or
-"Inspector: 4 parts". A panel's right edge, bottom edge and bottom-right
+takes the panel off the table: it is hidden, and its icon waits in the
+*minimised column*, a thin island at the bottom left that shows only while a
+panel is minimised (beside the Parts panel, or the brief or JSON in its
+place, while that is showing). Its icons are in the accent colour, with no
+names or counts; hovering one, or focusing it with the keyboard, slides its
+name out to the right, with what it holds in muted text for the Inspector
+("**Inspector** Mirror 3", a beam's, frame's or connection's name, or
+"4 parts"), and its accessible name says the same ("Restore Inspector:
+Mirror 3"). Clicking an icon puts the panel back where it was, in front.
+While the column shows, the Beams, Frames and Groups boxes step right of it,
+unless moved by hand; they step right of the parts panel's spot only while a
+panel there is showing, so a minimised one leaves no gap. Opening the parts
+panel, the brief or the .json wedge shows it, even if it was minimised when it
+closed. A minimised Inspector opens again, in front, when the selection
+changes: a different part, set of parts, beam, frame, connection or group,
+or a new beam or connection draft. Selecting the same thing again doesn't
+count, and minimising it again keeps it minimised until the next new
+selection. Maximise fills the workspace below the toolbars, and a maximised
+panel can't be dragged. Minimise and maximise each undo the other, and the
+same button restores. The logic is `minimised-panels.ts`, the column and
+the panels menu `minimised-column.tsx`. A panel's right edge, bottom edge and bottom-right
 corner resize it, down to 180 × 90 px and no further than the workspace's
 right and bottom edges (not while minimised or maximised). Until it is
 resized, a moved panel's height follows its content, up to its own cap and
@@ -552,9 +567,12 @@ below it. An edge snaps within 10 px, to the nearest target, each axis on its
 own. A moved panel
 keeps at least 90 px of its bar inside the workspace sideways, and all of it
 top to bottom, and slides back in when the window shrinks. Positions and
-sizes are whole pixels, so borders stay crisp at odd window sizes. Reset
-panels, in the View toolbar, or `⌥0` (`Alt+0`) puts every panel back where it
-starts, open. Under 900 px wide, or with a coarse pointer, panels have no title bar
+sizes are whole pixels, so borders stay crisp at odd window sizes. The
+panels button in the View toolbar opens a menu, upward: **Minimise all**
+sends every panel showing to the minimised column (greyed out when none is
+showing), and **Reset panels** puts every panel back where it starts, open,
+as `⌥0` (`Alt+0`) does without the menu. A pick, a click outside or Esc
+closes it. Under 900 px wide, or with a coarse pointer, panels have no title bar
 and stay put. The geometry is `panel-geometry.ts`, the arrangement
 `panel-store.ts`, the drag `use-panel-drag.ts` and the bar `panel-frame.tsx`.
 
@@ -583,7 +601,8 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
 | Share a part between groups | Add to group in its inspector, then press each group's row (several parts at once work too) |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Move a panel | Drag its title bar. Reset panels (View toolbar) or `⌥0` puts them all back |
+| Move a panel | Drag its title bar. The panels button (View toolbar) → Reset panels, or `⌥0`, puts them all back |
+| Minimise a panel | Its title bar's minimise button, or double-click the title: its icon waits in the column at the bottom left; click it to bring the panel back. The panels button (View toolbar) → Minimise all clears the table |
 | Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you with the JSON panel's folder (Replace), or paste its JSON into the panel |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 

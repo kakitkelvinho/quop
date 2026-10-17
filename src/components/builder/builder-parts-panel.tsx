@@ -32,7 +32,7 @@ export default function PartsPanel({
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const panel = usePanel("parts", { keepHeight: true });
+  const panel = usePanel("parts", { keepHeight: true, opensRestored: true });
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     // a part that comes with another (a periscope's top mirror) is never placed alone

@@ -29,6 +29,25 @@ describe("the panels' saved arrangement", () => {
     );
   });
 
+  it("keeps a panel minimised where the CSS put it, with no place", () => {
+    const panels = new Map<string, PanelState>([
+      ["beams", { minimised: true, z: 12 }],
+      ["frames", { maximised: true }],
+      ["inspector", { rect, minimised: true }],
+    ]);
+    assert.deepEqual(
+      parseSavedPanels(serializePanels(panels)),
+      new Map<string, PanelState>([
+        ["beams", { minimised: true }],
+        ["inspector", { rect, minimised: true }],
+      ]),
+    );
+  });
+
+  it("leaves out a panel with no place that isn't minimised", () => {
+    assert.equal(parseSavedPanels(saved({ parts: {}, beams: { maximised: true }, groups: { minimised: 1 } })).size, 0);
+  });
+
   it("is nothing when every panel is where it starts", () => {
     assert.equal(serializePanels(new Map([["parts", { z: 12 }]])), null);
   });

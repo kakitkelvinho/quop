@@ -15,6 +15,8 @@ import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
+import { MinimisedColumn, PanelsMenu, useInspectorReopens } from "@/components/builder/minimised-column";
+import { minimisedIn, partsSpotShowing, restorePanel, selectionKey, tabletopPanels } from "@/components/builder/minimised-panels";
 import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
 import { FileFan } from "@/components/builder/file-fan";
 import { JsonPanelFiles } from "@/components/builder/json-panel-files";
@@ -748,7 +750,7 @@ function BriefPanel({
 }) {
   const brief = useMemo(() => setupBrief(), []);
   useEscapeCloses(onClose);
-  const panel = usePanel("brief", { keepHeight: true });
+  const panel = usePanel("brief", { keepHeight: true, opensRestored: true });
 
   return (
     <aside
@@ -886,7 +888,7 @@ function JsonPanel({
     }
     onImport(await file.text(), file.name);
   };
-  const panel = usePanel("json", { keepHeight: true });
+  const panel = usePanel("json", { keepHeight: true, opensRestored: true });
 
   return (
     <aside
@@ -1223,8 +1225,10 @@ export default function BuilderHud(props: BuilderHudProps) {
     observer.observe(layer);
     return () => observer.disconnect();
   }, [panelsMove]);
-  // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for them
-  const besideParts = trayOpen || briefOpen || jsonOpen;
+  // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for
+  // them, or for the parts panel, while one is showing: a minimised one is hidden and leaves no gap
+  const isMinimised = minimisedIn(panelsMove);
+  const besideParts = partsSpotShowing({ partsOpen: trayOpen, briefOpen, jsonOpen }, isMinimised);
   const toggleBrief = useCallback(() => {
     onCloseTray();
     setJsonOpen(false);
@@ -1234,6 +1238,7 @@ export default function BuilderHud(props: BuilderHudProps) {
     onCloseTray();
     setBriefOpen(false);
     setJsonOpen(true);
+    restorePanel("json");
   }, [onCloseTray]);
 
   let inspector = null;
@@ -1358,7 +1363,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       : selected.length > 1
         ? "group"
         : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedFrame?.id ?? props.selectedConnection?.id);
-  // what a minimised inspector's bar says it holds
+  // what a minimised inspector holds, as the minimised column says
   const inspectorSubtitle =
     selected.length > 1
       ? `${selected.length} parts`
@@ -1377,6 +1382,28 @@ export default function BuilderHud(props: BuilderHudProps) {
     : connectDraft
       ? { label: "Cancel connection", run: props.onCancelConnect }
       : null;
+  // a minimised Inspector opens again on a new selection; a minimised panel waits in the column
+  useInspectorReopens(
+    selectionKey({
+      beamDraft: beamMode,
+      connectDraft: Boolean(connectDraft),
+      parts: selected.map((component) => component.id),
+      beam: selectedBeam?.id,
+      frame: props.selectedFrame?.id,
+      connection: props.selectedConnection?.id,
+    }),
+    panelsMove,
+  );
+  const panelList = tabletopPanels({
+    inspector: inspector ? { subtitle: inspectorSubtitle } : null,
+    beams: beams.length,
+    frames: props.frames.length,
+    groups: props.groups.length,
+    partsOpen: trayOpen,
+    briefOpen,
+    jsonOpen,
+  });
+  const columnShows = panelList.some((panel) => panel.mounted && isMinimised(panel.id));
 
   const aboutPanels = (
     <>
@@ -1582,7 +1609,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length || props.frames.length || props.groups.length ? (
-        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
+        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}${columnShows ? " is-besideColumn" : ""}`}>
       {beams.length ? (
         <BeamList
           components={components}
@@ -1636,8 +1663,9 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton icon="fit" label="Fit" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
+        {panelsMove ? <PanelsMenu panels={panelList} onReset={props.onResetPanels} /> : null}
       </div>
+      {panelsMove ? <MinimisedColumn panels={panelList} besideParts={besideParts} /> : null}
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
       <p className="builderStatus" role="status" aria-live="polite">
