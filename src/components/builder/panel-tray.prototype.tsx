@@ -6,7 +6,8 @@
  * Here it leaves the table and lives in a tray instead. Variants, via ?variant=
  * on /builder/tabletop (wide screens only, where panels move):
  *   A        Dock: a new island bottom centre, one icon per panel, macOS-style dots
- *   B        Chips: nothing until a panel is minimised; then a labelled chip, bottom centre
+ *   B        Chips: nothing until a panel is minimised; then labelled chips stacked bottom left,
+ *            the lists stepping right of them
  *   C        Rail: no new island; panel icons join the + island top left
  *   current  Today: collapse to the title bar in place
  * A tray button: closed → open, minimised → restore, open behind → front, open in front → minimise.
@@ -144,12 +145,17 @@ export function PanelDock({ panels }: { panels: TrayPanel[] }) {
 }
 
 /** B: only minimised panels, as labelled chips; nothing when none are. */
-export function PanelChips({ panels }: { panels: TrayPanel[] }) {
+export function PanelChips({ panels, besideParts }: { panels: TrayPanel[]; besideParts: boolean }) {
   usePanelStore();
   const minimised = panels.filter((p) => status(p) === "minimised");
   if (!minimised.length) return null;
   return (
-    <div className="builderIsland ptChips" role="toolbar" aria-label="Minimised panels">
+    <div
+      className={`builderIsland ptChips${besideParts ? " is-besideParts" : ""}`}
+      role="toolbar"
+      aria-orientation="vertical"
+      aria-label="Minimised panels"
+    >
       {minimised.map((panel) => (
         <button key={panel.id} type="button" className="ptChip" title={`Restore ${panel.title}`} onClick={() => press(panel)}>
           <Glyph id={panel.id} />
@@ -181,8 +187,18 @@ export function TrayStyles() {
   return (
     <style>{`
 .builderPanels.is-trayed .builderPanel.is-minimised { display: none !important; }
-.ptDock, .ptChips {
+.ptDock {
   left: 50%; bottom: 0.9rem; translate: -50% 0; z-index: 6;
+}
+/* B: a column bottom left, beside the parts panel while it is open; the lists step right of it */
+.ptChips {
+  left: 0.9rem; bottom: 0.9rem; z-index: 6; width: 11rem;
+  flex-direction: column; align-items: stretch;
+}
+.ptChips.is-besideParts { left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem); }
+.builderPanels.is-on:has(~ .ptChips) .builderHud__lists { padding-left: calc(0.9rem + 11rem + 0.5rem); }
+.builderPanels.is-on:has(~ .ptChips) .builderHud__lists.is-besideParts {
+  padding-left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem + 11rem + 0.5rem);
 }
 .ptTray__btn { position: relative; }
 .ptTray__btn:disabled { opacity: 0.3; cursor: default; }
@@ -200,12 +216,15 @@ export function TrayStyles() {
   border-radius: 999px; background: var(--muted); color: var(--surface);
   font: 700 0.55rem/0.85rem var(--font-mono); text-align: center;
 }
-.ptChips { gap: 0.25rem; animation: builderSlide 180ms ease; }
+.ptChips { gap: 0.2rem; animation: builderSlide 180ms ease; }
 .ptChip {
   display: inline-flex; align-items: center; gap: 0.35rem; height: 2rem; padding: 0 0.6rem 0 0.45rem;
   border: 1px solid var(--border); border-radius: 0.55rem; background: var(--background);
-  color: var(--foreground); font: 600 0.75rem/1 inherit; cursor: pointer; max-width: 15rem;
+  color: var(--foreground); font: 600 0.75rem/1 inherit; cursor: pointer; min-width: 0; text-align: left;
 }
+.ptChip > svg, .ptChip > .ptTray__text { flex: none; }
+.ptChip__title { flex: none; }
+.ptChip__sub { margin-left: auto; }
 .ptChip:hover { background: var(--accent-soft); }
 .ptChip__sub { color: var(--muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 `}</style>

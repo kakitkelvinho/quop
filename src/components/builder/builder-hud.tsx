@@ -1746,7 +1746,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
       </div>
       {tray === "A" ? <PanelDock panels={trayPanels} /> : null}
-      {tray === "B" ? <PanelChips panels={trayPanels} /> : null}
+      {tray === "B" ? <PanelChips panels={trayPanels} besideParts={besideParts} /> : null}
       {panelsMove && trayVariant ? (
         <>
           <TrayStyles />
