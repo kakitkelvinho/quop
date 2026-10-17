@@ -18,14 +18,24 @@ export type WheelItem = {
 
 type Point = [number, number];
 
-// the wheel's outer radius, the hole the eye button sits over, and the gap round it, in px
-const OUTER = 152;
-const INNER = 46;
+// the wheel's outer radius, the hole the eye button sits over, and the gap round it, in px:
+// room for six wedges' names, and for a rim dial round the eye inside the hole
+const OUTER = 192;
+const INNER = 84;
 const PAD = 6;
-const HOLE = INNER - 4;
-// where a segment's icon and name sit, from the centre
-const ICON_RADIUS = 122;
-const NAME_RADIUS = 86;
+// the room left round the ring for rim dials and their readouts, in px
+const RIM_ROOM = 40;
+// each wedge stacks outwards from the centre: its icon, then its name with On/Off
+// under it (under, not further out: out is sideways on the end wedges, into a
+// two-line name)
+const ICON_RADIUS = INNER + 24;
+const NAME_RADIUS = INNER + (OUTER - INNER) * 0.56;
+// how far below the name's middle On/Off sits, and a name's line height, in px
+const STATE_DROP = 22;
+const NAME_LINE = 11 * 1.1;
+
+/** The ring's radii, for placing rim dials round it. */
+export const RING = { outer: OUTER, inner: INNER } as const;
 // how close the wheel may come to the window's sides, in px
 const EDGE = 8;
 
@@ -51,10 +61,15 @@ function span(i: number, n: number) {
   return { a0, a1, mid: (a0 + a1) / 2 };
 }
 
-/** A name centred on a point, a long two-word one ("Beam distances") over two lines. */
-function Name({ text, at }: { text: string; at: Point }) {
+/** A name's lines: a long two-word one ("Beam distances") goes over two. */
+function nameLines(text: string) {
   const words = text.split(" ");
-  const lines = words.length > 1 && text.length > 8 ? words : [text];
+  return words.length > 1 && text.length > 8 ? words : [text];
+}
+
+/** A name centred on a point, over its lines. */
+function Name({ text, at }: { text: string; at: Point }) {
+  const lines = nameLines(text);
   const lead = ((lines.length - 1) * 1.1) / 2;
   return (
     <text className="showWheel__name" x={at[0]} y={at[1]} textAnchor="middle" dominantBaseline="central">
@@ -71,16 +86,18 @@ function Name({ text, at }: { text: string; at: Point }) {
  * The Show wheel: a half ring that drops out of the eye button, one wedge per
  * item with its icon, name and On/Off. It is a menu of checkbox items with one
  * roving tab stop: the arrows walk the arc, Home/End jump to its ends, Enter or
- * Space toggles, Esc closes. `footer` hangs in a card under the ring.
+ * Space toggles, Esc closes. `rims` draws in the ring's svg, its centre at
+ * the eye: rim dials round the outside of the ring (`RING.outer`) or round
+ * the eye inside it (`RING.inner`), each its own tab stop after the wedges.
  */
 export function ShowWheel({
   items,
   onClose,
-  footer,
+  rims,
 }: {
   items: WheelItem[];
   onClose: () => void;
-  footer?: ReactNode;
+  rims?: ReactNode;
 }) {
   const [focus, setFocus] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -109,6 +126,9 @@ export function ShowWheel({
   };
 
   const onKeyDown = (event: KeyboardEvent<SVGSVGElement>) => {
+    // a rim dial keeps its own keys; only Esc reaches here from one
+    const onSegment = segmentRefs.current.some((node) => node === event.target);
+    if (!onSegment && event.key !== "Escape") return;
     const keys: Record<string, () => void> = {
       ArrowRight: () => move(focus + 1),
       ArrowDown: () => move(focus + 1),
@@ -128,7 +148,8 @@ export function ShowWheel({
     run();
   };
 
-  const size = 2 * (OUTER + PAD);
+  const pad = rims ? PAD + RIM_ROOM : PAD;
+  const size = 2 * (OUTER + pad);
 
   return (
     <div className="showWheel" ref={rootRef}>
@@ -137,12 +158,11 @@ export function ShowWheel({
         role="menu"
         aria-label="Show"
         aria-orientation="horizontal"
-        viewBox={`${-OUTER - PAD} ${-PAD} ${size} ${OUTER + 2 * PAD}`}
+        viewBox={`${-OUTER - pad} ${-PAD} ${size} ${OUTER + PAD + pad}`}
         width={size}
-        height={OUTER + 2 * PAD}
+        height={OUTER + PAD + pad}
         onKeyDown={onKeyDown}
       >
-        <path className="showWheel__hole" d={`M${-HOLE} 0A${HOLE} ${HOLE} 0 0 0 ${HOLE} 0Z`} />
         {items.map((item, i) => {
           const { a0, a1, mid } = span(i, n);
           const [nx, ny] = polar(NAME_RADIUS, mid);
@@ -171,14 +191,19 @@ export function ShowWheel({
                 <Icon name={item.on ? item.icon : (item.iconOff ?? item.icon)} size={20} />
               </g>
               <Name text={item.label} at={[nx, ny]} />
-              <text className="showWheel__state" x={nx} y={ny + 22} textAnchor="middle">
+              <text
+                className="showWheel__state"
+                x={nx}
+                y={ny + STATE_DROP + ((nameLines(item.label).length - 1) * NAME_LINE) / 2}
+                textAnchor="middle"
+              >
                 {item.on ? "On" : "Off"}
               </text>
             </g>
           );
         })}
+        {rims}
       </svg>
-      {footer ? <div className="showWheel__footer">{footer}</div> : null}
     </div>
   );
 }

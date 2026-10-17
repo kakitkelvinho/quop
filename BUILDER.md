@@ -169,7 +169,7 @@ switch are one undo step.
 **A setup brief for an AI assistant.** The `.md` button, in its own island at
 the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
 author pastes into an AI assistant so it writes a setup file for the experiment
-they describe, which then opens with Open JSON… like any other: the brief asks
+they describe, which then opens in the Setup JSON panel like any other: the brief asks
 for a downloadable `.json` file, or the JSON alone in one code block to paste. The panel shows
 the brief with **Copy** (to the clipboard, confirmed in the status line) and
 **Download .md**; Esc or its close button shuts it. The brief tells the
@@ -347,9 +347,10 @@ angle from one. Setups from before version 3 open with no connections.
 entirely in the browser. Scenes autosave to `localStorage` and export as JSON;
 the view exports as a PNG for a lab log.
 
-**Import into this table merges; Open JSON… → Apply replaces.** The two stay
-apart so Apply keeps meaning one thing. Import into this table…, in the file
-menu, picks a `.json` setup, checks it as Open does (`checkSceneText`: the
+**The folder's Add merges; its Replace → Apply replaces.** The two stay
+apart so Apply keeps meaning one thing. The JSON panel's folder picks a `.json`
+setup and asks: **Replace the table** fills the box with it, for Apply;
+**Add to the table** checks it as the box does (`checkSceneText`: the
 same limits and migrations), and merges it into what is on the table as one
 undo step (`mergeSetup` in `merge-setup.ts`), announcing what came in
 ("Imported 12 parts, 3 beams into Group 2"). It completes the assembly
@@ -411,10 +412,12 @@ and keeps at most 100 groups. In code the multi-selection editor
 (`group-edits.ts`, `GroupInspector`) is not a Group, and the parts panel's
 headings are `PART_CATEGORIES`.
 
-**Open JSON… is a text panel.** It opens in the parts panel's place, below the
-top-left islands, with the setup as it stands in an editable box: tweak it,
-**Paste** one over it, **Open file…** to fill the box from a `.json`, or
-**Copy** it out. Nothing reaches the table until **Apply**, which replaces it
+**Setup JSON is a text panel.** Tabletop ▾ → .json opens it in the parts
+panel's place, below the top-left islands, with the setup as it stands in an
+editable box. Apply is its one text button; after it, icon buttons **Copy** it
+out, **Paste** one over it, **save** the table as a `.json` (the floppy), or
+**open** a `.json` (the folder: Replace fills the box, Add merges, see
+above). Nothing reaches the table until **Apply**, which replaces it
 as one undo step. The text is checked as it changes (`scene-text.ts`), and
 Apply only takes text that passes: at most 1 MB, valid JSON (an error names
 its line and column), one object with a `components` list, at most 500 parts,
@@ -432,8 +435,11 @@ fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
 - **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
-  (with Draw a beam and Connect beside it), and the File menu (save/open JSON, import a setup into this table, export PNG,
-  load the example, clear the table).
+  (with Draw a beam and Connect beside it), and the Tabletop ▾ menu: a quarter fan
+  of four wedges from the corner (`file-fan.tsx`), whose hole clears the file
+  island and lets clicks through to the + island: .json (the Setup JSON panel,
+  which saves, opens and imports), .png (export the view), Example (load the
+  example) and Clear (empty the table).
 - **Left**: the parts panel, shown while the + is on: every part with its
   icon and name, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
@@ -493,7 +499,7 @@ is on screen until it is needed:
   announced. Members of a hidden group draw no ghost when their row selects
   them; the selection and the inspector still show them.
 - **Bottom right**: how you look at the table: Iso / Top, Fit, Day / night
-  and Reset panels (below). What is drawn on the table is the tool pill's.
+  and the panels menu (below). What is drawn on the table is the tool pill's.
   There is no readout: the inspector and the beams box already carry every
   number worth reading.
 - **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
@@ -518,12 +524,27 @@ is on screen until it is needed:
 Frames, Groups, the setup brief and Setup JSON) each have a title bar: a
 grip, the panel's name, and buttons to minimise and maximise it and, for the
 brief and the JSON panel, to close it. Minimise (or double-click the title)
-collapses the panel to its bar, in place and at its width; maximise fills
-the workspace below the toolbars, and a maximised panel can't be dragged.
-Each undoes the other, and the same button restores. A minimised Inspector
-stays minimised as the selection changes, and its bar says what it holds:
-"Inspector: Mirror 3", a beam's, frame's or connection's name, or
-"Inspector: 4 parts". A panel's right edge, bottom edge and bottom-right
+takes the panel off the table: it is hidden, and its icon waits in the
+*minimised column*, a thin island at the bottom left that shows only while a
+panel is minimised (beside the Parts panel, or the brief or JSON in its
+place, while that is showing). Its icons are in the accent colour, with no
+names or counts; hovering one, or focusing it with the keyboard, slides its
+name out to the right, with what it holds in muted text for the Inspector
+("**Inspector** Mirror 3", a beam's, frame's or connection's name, or
+"4 parts"), and its accessible name says the same ("Restore Inspector:
+Mirror 3"). Clicking an icon puts the panel back where it was, in front.
+While the column shows, the Beams, Frames and Groups boxes step right of it,
+unless moved by hand; they step right of the parts panel's spot only while a
+panel there is showing, so a minimised one leaves no gap. Opening the parts
+panel, the brief or the .json wedge shows it, even if it was minimised when it
+closed. A minimised Inspector opens again, in front, when the selection
+changes: a different part, set of parts, beam, frame, connection or group,
+or a new beam or connection draft. Selecting the same thing again doesn't
+count, and minimising it again keeps it minimised until the next new
+selection. Maximise fills the workspace below the toolbars, and a maximised
+panel can't be dragged. Minimise and maximise each undo the other, and the
+same button restores. The logic is `minimised-panels.ts`, the column and
+the panels menu `minimised-column.tsx`. A panel's right edge, bottom edge and bottom-right
 corner resize it, down to 180 × 90 px and no further than the workspace's
 right and bottom edges (not while minimised or maximised). Until it is
 resized, a moved panel's height follows its content, up to its own cap and
@@ -546,9 +567,12 @@ below it. An edge snaps within 10 px, to the nearest target, each axis on its
 own. A moved panel
 keeps at least 90 px of its bar inside the workspace sideways, and all of it
 top to bottom, and slides back in when the window shrinks. Positions and
-sizes are whole pixels, so borders stay crisp at odd window sizes. Reset
-panels, in the View toolbar, or `⌥0` (`Alt+0`) puts every panel back where it
-starts, open. Under 900 px wide, or with a coarse pointer, panels have no title bar
+sizes are whole pixels, so borders stay crisp at odd window sizes. The
+panels button in the View toolbar opens a menu, upward: **Minimise all**
+sends every panel showing to the minimised column (greyed out when none is
+showing), and **Reset panels** puts every panel back where it starts, open,
+as `⌥0` (`Alt+0`) does without the menu. A pick, a click outside or Esc
+closes it. Under 900 px wide, or with a coarse pointer, panels have no title bar
 and stay put. The geometry is `panel-geometry.ts`, the arrangement
 `panel-store.ts`, the drag `use-panel-drag.ts` and the bar `panel-frame.tsx`.
 
@@ -577,8 +601,9 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
 | Share a part between groups | Add to group in its inspector, then press each group's row (several parts at once work too) |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Move a panel | Drag its title bar. Reset panels (View toolbar) or `⌥0` puts them all back |
-| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you, or paste its JSON, with Open JSON… |
+| Move a panel | Drag its title bar. The panels button (View toolbar) → Reset panels, or `⌥0`, puts them all back |
+| Minimise a panel | Its title bar's minimise button, or double-click the title: its icon waits in the column at the bottom left; click it to bring the panel back. The panels button (View toolbar) → Minimise all clears the table |
+| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you with the JSON panel's folder (Replace), or paste its JSON into the panel |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet
@@ -653,7 +678,7 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file menu, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
+| `src/components/builder/builder-hud.tsx` | The floating islands: file fan, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons, and search |

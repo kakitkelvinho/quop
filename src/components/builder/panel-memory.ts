@@ -3,7 +3,8 @@ import type { PanelState } from "./panel-store.ts";
 
 /**
  * The panels' arrangement, kept in this browser: each panel's place and size,
- * and whether it is minimised, maximised or resized. A viewer setting, like
+ * and whether it is minimised, maximised or resized. A panel minimised where
+ * the CSS put it has no place to keep, only `minimised: true`. A viewer setting, like
  * the graphics quality: never in the setup file, the JSON panel or the brief.
  * The stacking order isn't kept; panels open in their own CSS order.
  */
@@ -16,13 +17,17 @@ export const PANEL_IDS = ["parts", "inspector", "beams", "frames", "groups", "br
 /** Far past any screen, px: a coordinate or size beyond it is not one this page wrote. */
 const LIMIT_PX = 20000;
 
-type SavedPanel = PanelRect & { minimised?: true; maximised?: true; sized?: true };
+type SavedPanel = (PanelRect | Record<never, never>) & { minimised?: true; maximised?: true; sized?: true };
 
 /** The arrangement as text to save, or null when every panel is where it starts. */
 export function serializePanels(panels: ReadonlyMap<string, PanelState>): string | null {
   const saved: Record<string, SavedPanel> = {};
   for (const [id, { rect, minimised, maximised, sized }] of panels) {
-    if (!rect) continue;
+    if (!rect) {
+      // minimised in its CSS place: it comes back minimised, and restores to that place
+      if (minimised) saved[id] = { minimised: true };
+      continue;
+    }
     saved[id] = {
       ...rect,
       ...(minimised && { minimised: true }),
@@ -62,6 +67,11 @@ export function parseSavedPanels(text: string | null): Map<string, PanelState> {
     const entry = (saved as Record<string, unknown>)[id];
     if (typeof entry !== "object" || entry === null) continue;
     const { x, y, w, h, minimised, maximised, sized } = entry as Record<string, unknown>;
+    const placed = [x, y, w, h].some((value) => value !== undefined);
+    if (!placed) {
+      if (minimised === true) panels.set(id, { minimised: true });
+      continue;
+    }
     if (!isCoordinate(x) || !isCoordinate(y) || !isSize(w) || !isSize(h)) continue;
     panels.set(id, {
       rect: { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) },
