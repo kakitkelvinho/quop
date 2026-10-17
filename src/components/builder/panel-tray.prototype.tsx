@@ -161,11 +161,14 @@ export function PanelChips({ panels, besideParts }: { panels: TrayPanel[]; besid
           key={panel.id}
           type="button"
           className="builderIconBtn ptChip"
-          aria-label={`Restore ${panel.title}`}
-          title={`Restore ${panel.title}${panel.subtitle ? `: ${panel.subtitle}` : ""}`}
+          aria-label={`Restore ${panel.title}${panel.subtitle ? `: ${panel.subtitle}` : ""}`}
           onClick={() => press(panel)}
         >
           <Glyph id={panel.id} />
+          <span className="ptChip__label" aria-hidden="true">
+            {panel.title}
+            {panel.subtitle ? <span className="ptChip__sub">{panel.subtitle}</span> : null}
+          </span>
         </button>
       ))}
     </div>
@@ -221,7 +224,19 @@ export function TrayStyles() {
   font: 700 0.55rem/0.85rem var(--font-mono); text-align: center;
 }
 .ptChips { gap: 0.2rem; animation: builderSlide 180ms ease; }
-.ptChip { color: var(--accent); }
+.ptChip { position: relative; color: var(--accent); }
+/* its name, out to the right on hover or keyboard focus */
+.ptChip__label {
+  position: absolute; left: calc(100% + 0.55rem); top: 50%;
+  display: inline-flex; align-items: baseline; gap: 0.4rem;
+  padding: 0.35rem 0.55rem; border: 1px solid var(--border); border-radius: 0.5rem;
+  background: var(--surface); color: var(--foreground); box-shadow: 0 6px 18px rgb(0 0 0 / 0.14);
+  font: 600 0.75rem/1 var(--font-sans, inherit); white-space: nowrap;
+  opacity: 0; translate: -0.3rem -50%; pointer-events: none;
+  transition: opacity 120ms ease, translate 120ms ease;
+}
+.ptChip:hover .ptChip__label, .ptChip:focus-visible .ptChip__label { opacity: 1; translate: 0 -50%; }
+.ptChip__sub { color: var(--muted); font-weight: 500; }
 `}</style>
   );
 }
