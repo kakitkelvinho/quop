@@ -283,6 +283,8 @@ export default function BuilderScene() {
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   // a frame is selected on its own, never along with parts
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
+  // counts plain clicks on empty table, so the HUD can close what they should dismiss
+  const [emptyClicks, setEmptyClicks] = useState(0);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
@@ -441,6 +443,7 @@ export default function BuilderScene() {
       setSelectedBeamId(null);
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
+      setEmptyClicks((count) => count + 1);
     },
     [addingStops, api, beamMode, connectDraft, drawing, placingType],
   );
@@ -1638,6 +1641,7 @@ export default function BuilderScene() {
         canUndo={api.canUndo}
         canRedo={api.canRedo}
         status={status}
+        emptyClicks={emptyClicks}
         onToggleTray={() => setTrayOpen((open) => !open)}
         onPickType={(type) => {
           // the panel stays open, so a run of parts goes down without reopening it

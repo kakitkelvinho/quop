@@ -95,6 +95,8 @@ export type BuilderHudProps = {
   canUndo: boolean;
   canRedo: boolean;
   status: string | null;
+  /** goes up on each plain click on empty table */
+  emptyClicks: number;
   onToggleTray: () => void;
   onPickType: (type: ComponentType) => void;
   onCloseTray: () => void;
@@ -804,10 +806,12 @@ const JSON_SETTLE_MS = 120;
  */
 function JsonPanel({
   scene,
+  emptyClicks,
   onApply,
   onClose,
 }: {
   scene: BuilderSceneData;
+  emptyClicks: number;
   onApply: (scene: BuilderSceneData, summary: string) => void;
   onClose: () => void;
 }) {
@@ -828,6 +832,13 @@ function JsonPanel({
   const check = useMemo(() => checkSceneText(settled), [settled]);
   const edit = (next: string) => setDraft(editJson(live, draft, next));
   useEscapeCloses(onClose);
+  // a click on empty table closes the panel, unless it holds edits not yet applied
+  const seenClicks = useRef(emptyClicks);
+  useEffect(() => {
+    if (emptyClicks === seenClicks.current) return;
+    seenClicks.current = emptyClicks;
+    if (!edited) onClose();
+  }, [emptyClicks, edited, onClose]);
 
   const copy = async () => {
     try {
@@ -1460,7 +1471,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel scene={props.scene} onApply={props.onApplyScene} onClose={closeJson} />
+        <JsonPanel scene={props.scene} emptyClicks={props.emptyClicks} onApply={props.onApplyScene} onClose={closeJson} />
       ) : null}
     </>
   );
