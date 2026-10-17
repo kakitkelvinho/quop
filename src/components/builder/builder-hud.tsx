@@ -16,6 +16,9 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+// PROTOTYPE (file fan)
+import { FAN_VARIANTS, FileFanMenu } from "@/components/builder/file-fan.prototype";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/components/prototype-switcher";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -809,11 +812,15 @@ function JsonPanel({
   emptyClicks,
   onApply,
   onClose,
+  onSave,
+  onImport,
 }: {
   scene: BuilderSceneData;
   emptyClicks: number;
   onApply: (scene: BuilderSceneData, summary: string) => void;
   onClose: () => void;
+  onSave: () => void;
+  onImport: BuilderHudProps["onImport"];
 }) {
   // A drag previews a new scene on every pointer move, so the box writes the
   // table out once it has been still for a moment, not on every frame.
@@ -827,6 +834,17 @@ function JsonPanel({
   const { text, edited } = view;
   const [note, setNote] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.size > SCENE_TEXT_MAX_BYTES) {
+      onImport(null, file.name);
+      return;
+    }
+    onImport(await file.text(), file.name);
+  };
   // a large paste is checked once typing settles, not on every keystroke
   const settled = useDeferredValue(text);
   const check = useMemo(() => checkSceneText(settled), [settled]);
@@ -909,9 +927,13 @@ function JsonPanel({
         <button type="button" className="builderButton" onClick={() => void paste()}>
           Paste
         </button>
-        <button type="button" className="builderButton" onClick={() => fileRef.current?.click()}>
-          Open file…
-        </button>
+        {/* PROTOTYPE (file fan): save / load / import as icons */}
+        <span className="builderJson__icons">
+          <IconButton icon="floppy" label="Save as .json" onClick={onSave} />
+          <IconButton icon="folder" label="Load a .json into the box" onClick={() => fileRef.current?.click()} />
+          <IconButton icon="folderPlus" label="Import a .json into this table" onClick={() => importRef.current?.click()} />
+        </span>
+        <input ref={importRef} type="file" hidden onChange={(event) => void importFile(event)} />
         {/* No accept filter: macOS sometimes greys out .json files the first
             time the picker opens; the check turns away anything that isn't one. */}
         <input ref={fileRef} type="file" hidden onChange={(event) => void openFile(event)} />
@@ -1295,6 +1317,9 @@ export default function BuilderHud(props: BuilderHudProps) {
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
   const closeJson = useCallback(() => setJsonOpen(false), []);
+  // PROTOTYPE (file fan)
+  const fanVariant = usePrototypeVariant(FAN_VARIANTS.map((v) => v.key));
+  const fileIslandRef = useRef<HTMLDivElement>(null);
   const { onCloseTray } = props;
   const panelsMove = usePanelsMove();
   const inspectorPanel = usePanel("inspector");
@@ -1471,28 +1496,54 @@ export default function BuilderHud(props: BuilderHudProps) {
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel scene={props.scene} emptyClicks={props.emptyClicks} onApply={props.onApplyScene} onClose={closeJson} />
+        <JsonPanel scene={props.scene} emptyClicks={props.emptyClicks} onApply={props.onApplyScene} onClose={closeJson} onSave={props.onSave} onImport={props.onImport} />
       ) : null}
     </>
   );
 
   return (
     <>
-      <div className="builderIsland builderHud__file">
+      <div className="builderIsland builderHud__file" ref={fileIslandRef}>
         <Link href="/" className="builderBack" aria-label="Back to the QUOP site">
           <Icon name="back" size={16} />
           QUOP
         </Link>
         <span className="builderIsland__sep" />
-        <FileMenu
-          onSave={props.onSave}
-          onShowJson={showJson}
-          onImport={props.onImport}
-          onExportPng={props.onExportPng}
-          onResetExample={props.onResetExample}
-          onClear={props.onClear}
-        />
+        {fanVariant && fanVariant !== "current" ? (
+          <FileFanMenu
+            variant={fanVariant}
+            islandRef={fileIslandRef}
+            onShowJson={showJson}
+            onExportPng={props.onExportPng}
+            onResetExample={props.onResetExample}
+            onClear={props.onClear}
+            trigger={({ open, toggle }) => (
+              <button
+                type="button"
+                className="builderMenu__trigger"
+                data-guide="file"
+                aria-expanded={open}
+                aria-haspopup="menu"
+                onClick={toggle}
+              >
+                <span className="builderMenu__title">Tabletop</span>
+                <BetaMark tool={findTool("/builder/tabletop")} />
+                <Icon name="chevron" size={14} />
+              </button>
+            )}
+          />
+        ) : (
+          <FileMenu
+            onSave={props.onSave}
+            onShowJson={showJson}
+            onImport={props.onImport}
+            onExportPng={props.onExportPng}
+            onResetExample={props.onResetExample}
+            onClear={props.onClear}
+          />
+        )}
       </div>
+      {fanVariant ? <PrototypeSwitcher variants={FAN_VARIANTS} current={fanVariant} /> : null}
 
       {panelsMove ? null : aboutPanels}
 
