@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import { useNightInk } from "@/components/night-ink.prototype";
 
 /**
  * The canvas can't read CSS custom properties, so the day/night swap has to be
@@ -140,5 +141,15 @@ function getServerSnapshot(): "light" | "dark" {
 
 export function useScenePalette(): ScenePalette {
   const mode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  return mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+  // PROTOTYPE (night-oxblood, #258): the scene's selection takes the night ink being tried
+  const ink = useNightInk();
+  return useMemo(
+    () =>
+      mode === "dark"
+        ? ink
+          ? { ...DARK_PALETTE, accent: ink.ring, hover: ink.text === "#ffffff" ? "#e07a86" : ink.text }
+          : DARK_PALETTE
+        : LIGHT_PALETTE,
+    [mode, ink],
+  );
 }

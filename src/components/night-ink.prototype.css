@@ -1,0 +1,39 @@
+/* PROTOTYPE: night-ink variants for #258, keyed on html[data-ink]. Not for main. */
+
+html[data-theme="dark"][data-ink="A"] {
+  --accent: #8b1e3f;
+  --accent-strong: #d9545f;
+  --accent-soft: rgb(139 30 63 / 0.38);
+  --focus-ring: #c23a48;
+}
+
+html[data-theme="dark"][data-ink="B"] {
+  --accent: #b3304a;
+  --accent-strong: #b3304a;
+  --accent-soft: rgb(179 48 74 / 0.3);
+  --focus-ring: #b3304a;
+}
+
+html[data-theme="dark"][data-ink="C"] {
+  --accent: #8b1e3f;
+  --accent-strong: #ffffff;
+  --accent-soft: rgb(139 30 63 / 0.38);
+  --focus-ring: #c23a48;
+}
+
+/* words on an oxblood fill are light, as they are by day (amber took dark ones) */
+html[data-theme="dark"][data-ink] :is(
+    .buttonLink,
+    .skipLink,
+    .builderGuideButton,
+    .builderButton--primary,
+    .builderLabel.is-selected,
+    .builderOrderBadge,
+    .builderAngleBadge
+  ) {
+  color: #fffaf1;
+}
+
+html[data-theme="dark"][data-ink] :is(.fitsFullHeader__copy:focus-visible, .fitsFullHeader > summary:focus-visible) {
+  outline-color: var(--focus-ring);
+}
