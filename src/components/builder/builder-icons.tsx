@@ -221,11 +221,12 @@ const ICONS = {
   // (Frames and Parts use `frame` and `add`, the buttons that make them)
   inspector: <path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4" />,
   beams: <path d="M3 17 10 8l4 6 7-9" />,
+  // PROTOTYPE (flat-hud D): two parts inside a dashed fence, so it can't be read as the cable
   groups: (
     <>
-      <rect x="3.5" y="3.5" width="8" height="8" rx="1.5" />
-      <rect x="12.5" y="12.5" width="8" height="8" rx="1.5" />
-      <path d="M11.5 7.5h3a2 2 0 0 1 2 2v3" />
+      <rect x="2.5" y="2.5" width="19" height="19" rx="2" strokeDasharray="3 2.4" />
+      <rect x="6.5" y="6.5" width="5" height="5" rx="1" />
+      <rect x="12.5" y="12.5" width="5" height="5" rx="1" />
     </>
   ),
   // a ball and the shadow it casts on the table: the Show wheel's Shadows

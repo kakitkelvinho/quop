@@ -1161,11 +1161,40 @@ export default function BuilderHud(props: BuilderHudProps) {
     connectDraft,
     view,
   } = props;
-  const mode = modeHints(props);
+  const mode0 = modeHints(props);
   // PROTOTYPE (D): the minimal layout, and which lists the rail has put away
   const protoD = useHudVariant() === "D";
   const router = useRouter();
   const [railHidden, setRailHidden] = useState<Record<string, boolean>>({});
+  // PROTOTYPE (D): the empty Groups slot starts a mode, as Frames does: pick parts, Enter groups them
+  const [groupPicking, setGroupPicking] = useState(false);
+  const picked = props.selected.length;
+  const { onGroupSelected } = props;
+  useEffect(() => {
+    if (!groupPicking) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setGroupPicking(false);
+      if (event.key === "Enter" && picked > 1) {
+        event.preventDefault();
+        onGroupSelected();
+        setGroupPicking(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [groupPicking, picked, onGroupSelected]);
+  const groupMode = groupPicking
+    ? {
+        label: "Group",
+        hints: [
+          ["⌘ click", "pick"],
+          ["⌘ drag", "box"],
+          ["Enter", picked > 1 ? `group ${picked}` : "group"],
+          ["Esc", "cancel"],
+        ] as Hint[],
+      }
+    : null;
+  const mode = groupMode ?? mode0;
   const selecting = !beamMode && !drawingFrame && !connectDraft && !placingType && !trayOpen;
   // the brief and the JSON panel share the parts panel's spot, so opening one closes the others
   const [briefOpen, setBriefOpen] = useState(false);
@@ -1454,7 +1483,8 @@ export default function BuilderHud(props: BuilderHudProps) {
           <ProtoFan
             icon="add"
             label="Add"
-            quarter="se"
+            corner="tl"
+            clearOf=".builderHud__file, .builderHud__add"
             active={liveMode}
             onTrigger={cancelLive}
             items={[
@@ -1517,7 +1547,8 @@ export default function BuilderHud(props: BuilderHudProps) {
           <ProtoFan
             icon="info"
             label="Help"
-            quarter="sw"
+            corner="tr"
+            clearOf=".protoHelp"
             items={[
               {
                 id: "guide",
@@ -1707,6 +1738,19 @@ export default function BuilderHud(props: BuilderHudProps) {
       {protoD ? (
         <>
           <div className="protoViewRow">
+          <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
+            <ProtoFan
+              icon={view === "top" ? "top" : "iso"}
+              label="Camera"
+              corner="br"
+              clearOf=".protoViewRow"
+              items={[
+                { id: "fit", label: "Fit", icon: "fit", run: props.onFit },
+                { id: "top", label: "Top", icon: "top", run: () => props.onViewChange("top"), active: view === "top" },
+                { id: "iso", label: "Iso", icon: "iso", run: () => props.onViewChange("iso"), active: view === "iso" },
+              ]}
+            />
+          </div>
           <button
             type="button"
             className="builderIconBtn protoTheme"
@@ -1716,18 +1760,6 @@ export default function BuilderHud(props: BuilderHudProps) {
           >
             <Icon name="theme" />
           </button>
-          <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
-            <ProtoFan
-              icon={view === "top" ? "top" : "iso"}
-              label="Camera"
-              quarter="nw"
-              items={[
-                { id: "fit", label: "Fit", icon: "fit", run: props.onFit },
-                { id: "top", label: "Top", icon: "top", run: () => props.onViewChange("top"), active: view === "top" },
-                { id: "iso", label: "Iso", icon: "iso", run: () => props.onViewChange("iso"), active: view === "iso" },
-              ]}
-            />
-          </div>
           </div>
           <PanelRail
             slots={[
@@ -1769,10 +1801,18 @@ export default function BuilderHud(props: BuilderHudProps) {
                 shown: listShown("groups") && !isMinimised("groups"),
                 onToggle: railToggle("groups"),
                 create: {
-                  label: selected.length > 1 ? "Group the selected parts" : "Select two or more parts to group them",
-                  run: props.onGroupSelected,
-                  can: selected.length > 1,
-                  live: false,
+                  label: groupPicking
+                    ? picked > 1
+                      ? `Group the ${picked} picked parts`
+                      : "Stop grouping"
+                    : "Group parts",
+                  run: () => setGroupPicking(true),
+                  cancel: () => {
+                    if (picked > 1) props.onGroupSelected();
+                    setGroupPicking(false);
+                  },
+                  can: components.length > 1,
+                  live: groupPicking,
                 },
               },
             ]}

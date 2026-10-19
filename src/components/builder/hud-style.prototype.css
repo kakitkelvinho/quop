@@ -357,10 +357,18 @@ html[data-hud="D"] .builderHud__inspector {
   top: 3.9rem;
 }
 
-/* a list panel is a title and its rows: the rail shows and hides it, the
-   whole bar drags it, so no grip and no window buttons */
-html[data-hud="D"] .builderHud__lists :is(.builderPanelBar__grip, .builderPanelBar__buttons) {
+/* a list panel is a title, its rows and one small minimise: the rail brings it
+   back, the whole bar drags it, so no grip and no maximise */
+html[data-hud="D"] .builderHud__lists :is(.builderPanelBar__grip, .builderPanelBar__buttons > :not(:first-child)) {
   display: none;
+}
+
+html[data-hud="D"] .builderHud__lists .builderPanelBar__title {
+  flex: 1;
+}
+
+html[data-hud="D"] .builderHud__lists .builderPanelBar__button {
+  color: var(--muted);
 }
 
 html[data-hud="D"] .builderHud__lists .builderPanelBar {

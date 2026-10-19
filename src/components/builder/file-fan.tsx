@@ -63,7 +63,7 @@ function useCornerGeometry(rootRef: RefObject<HTMLDivElement | null>, roomy = fa
  * wheel. The arrows walk the arc, Home/End jump to its ends, Enter or Space
  * runs the item, Esc closes; the table's own keys stay out.
  */
-function FanRing({ items, geo, onClose }: { items: FanItem[]; geo: Geometry; onClose: () => void }) {
+function FanRing({ items, geo, onClose, petals }: { items: FanItem[]; geo: Geometry; onClose: () => void; petals?: boolean }) {
   const [focus, setFocus] = useState(0);
   const refs = useRef<(SVGGElement | null)[]>([]);
   const n = items.length;
@@ -117,6 +117,8 @@ function FanRing({ items, geo, onClose }: { items: FanItem[]; geo: Geometry; onC
     >
       {items.map((item, i) => {
         const { a0, a1, mid } = quarterSpan(i, n);
+        // PROTOTYPE (flat-hud D): petals, a gap between wedges that widens outward
+        const inset = petals ? 3 / inner : 0;
         const [ix, iy] = polar(iconAt, mid);
         const [nx, ny] = polar(nameAt, mid);
         return (
@@ -134,7 +136,7 @@ function FanRing({ items, geo, onClose }: { items: FanItem[]; geo: Geometry; onC
             onClick={item.run}
           >
             <title>{item.hint}</title>
-            <path className="fileFan__wedge" d={wedge(inner, outer, a0, a1)} />
+            <path className="fileFan__wedge" d={wedge(inner, outer, a0 + inset, a1 - inset)} />
             <g transform={`translate(${ix - ICON / 2} ${iy - ICON / 2})`}>
               <Icon name={item.icon} size={ICON} />
             </g>
@@ -159,7 +161,7 @@ function Fan({ items, onClose, roomy }: { items: FanItem[]; onClose: () => void;
   const geo = useCornerGeometry(rootRef, roomy);
   return (
     <div ref={rootRef} className="fileFan" style={geo ? { left: geo.left, top: geo.top } : { visibility: "hidden" }}>
-      {geo ? <FanRing items={items} geo={geo} onClose={onClose} /> : null}
+      {geo ? <FanRing items={items} geo={geo} onClose={onClose} petals={roomy} /> : null}
     </div>
   );
 }
