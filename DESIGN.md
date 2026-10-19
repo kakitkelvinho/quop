@@ -156,7 +156,7 @@ One oxblood accent in both themes, a neutral scale that runs to pure white and p
 **Readout Font:** `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace` — reserved for FITS/instrument readouts, inline code, mono data fields, and the route label on a chalk card.
 **Equation Font:** EB Garamond italic (`--font-serif`) — reserved for the equations on the homepage board, which are hand-set HTML rather than KaTeX. Nothing else on the site is set in serif.
 
-**Character:** IBM Plex Sans carries the interface alone — there's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is genuinely measured data, and Garamond italic where the content is a physicist's handwriting.
+**Character:** IBM Plex Sans carries the interface — there's no separate display face — except on the Tabletop, whose HUD is set in Inter (see Tabletop HUD). Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is genuinely measured data, and Garamond italic where the content is a physicist's handwriting.
 
 ### Hierarchy
 - **Display** (400, `clamp(2.2rem, 5vw, 4.6rem)`, line-height 1.02, letter-spacing -0.03em): page `h1`s — one per page, tight and large.
@@ -262,7 +262,7 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
 
 - **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
 - **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
-- **Type:** smaller than the rest of the site, because the scene is the content.
+- **Type:** set in **Inter** (`--font-inter`), a tighter grotesk than the notebook's Plex and closer to a game HUD's; numbers stay mono. Smaller than the rest of the site, because the scene is the content.
   - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
   - Titles `0.92rem` 700: the inspector's head, a panel's title.
   - Rows `0.8–0.84rem` 600: a part's name, a group item, buttons; a list row's name `0.8rem` 500.
