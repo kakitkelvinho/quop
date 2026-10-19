@@ -11,12 +11,16 @@
   --accent: #8b1e3f;
   --accent-strong: #61122b;
   --accent-soft: rgb(139 30 63 / 0.1);
+  /* words in the ink: oxblood by day; white at night, where oxblood text fails */
+  --accent-text: var(--accent);
   --shadow: 0 20px 50px rgb(31 41 51 / 0.1);
   /* the deeper shadow a card lifts into on hover */
   --shadow-lift: 0 26px 60px rgb(31 41 51 / 0.16);
   /* keyboard focus, in the ink itself: the 0.3 wash it once was fell under
      the 3:1 a focus indicator needs against the page */
   --focus-ring: var(--accent);
+  /* a hovered fill darkens the ink by one step, so it follows --accent */
+  --accent-hover: color-mix(in srgb, var(--accent) 70%, #000);
   --mark: 17 17 17;
   --chalk-alpha: 0.26;
   --chalk-dust: 0.09;
@@ -31,12 +35,18 @@ html[data-theme="dark"] {
   --foreground: #ffffff;
   --muted: #a1a1a1;
   --border: rgb(255 255 255 / 0.14);
-  --accent: #f4b942;
-  --accent-strong: #ffd67c;
-  --accent-soft: rgb(244 185 66 / 0.14);
+  /* one ink, day and night: a fill keeps the day's oxblood (white on it is
+     about 9:1), thin marks lift toward red to clear 3:1 on black, and words
+     never take it: they go white and get their emphasis from size and weight */
+  --accent: #8b1e3f;
+  --accent-strong: #ffffff;
+  --accent-soft: rgb(139 30 63 / 0.38);
+  --accent-text: var(--foreground);
   --shadow: 0 28px 60px rgb(0 0 0 / 0.6);
   --shadow-lift: 0 34px 72px rgb(0 0 0 / 0.7);
-  --focus-ring: var(--accent);
+  /* the ring: the ink lifted to #c23a48, about 4:1 on black, turning toward
+     red as it lightens (a merely lighter oxblood reads as pink) */
+  --focus-ring: color-mix(in srgb, var(--accent) 50%, #f95651);
   --mark: 255 255 255;
   --chalk-alpha: 0.3;
   --chalk-dust: 0.15;
@@ -99,13 +109,18 @@ html[data-theme="dark"] {
     background: color-mix(in srgb, var(--accent) 28%, transparent);
   }
 
+  /* 28% of oxblood on black is barely there */
+  html[data-theme="dark"] ::selection {
+    background: var(--accent-soft);
+  }
+
   html {
     scrollbar-color: color-mix(in srgb, var(--muted) 50%, transparent) transparent;
   }
 
   input,
   textarea {
-    caret-color: var(--accent);
+    caret-color: var(--focus-ring);
   }
 }
 
@@ -184,8 +199,20 @@ h2 {
   cursor: pointer;
 }
 
-/* the hovered-link wash from the ink pair */
+/* the hovered-link wash from the ink */
 .siteFooter a:hover {
+  background: var(--accent-soft);
+}
+
+/* at night a link's words are white like the text round it, so it keeps a
+   fine underline, and hovering washes it in the ink */
+html[data-theme="dark"] :is(.siteFooter a, .chapter__links a) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
+html[data-theme="dark"] :is(.chapter__links a, .chapter__cta):hover {
   background: var(--accent-soft);
 }
 
@@ -234,7 +261,7 @@ h2 {
 
 a.toolCard:hover {
   transform: translateY(-2px);
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
   box-shadow: var(--shadow-lift);
 }
 
@@ -423,12 +450,18 @@ a.toolCard:hover .toolCard__open span {
   color: var(--accent-strong);
 }
 
+/* at night the ink's words are white, so a kicker steps back to muted and
+   keeps its weight and tracking to stay distinct from content */
+html[data-theme="dark"] :is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle) {
+  color: var(--muted);
+}
+
 /* a tool that works but hasn't met the release checklist; sized in rem so it
    reads the same beside a page title, a card heading or the builder's menu */
 .betaBadge {
   display: inline-block;
   padding: 0.18rem 0.5rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--focus-ring);
   border-radius: 999px;
   background: var(--accent-soft);
   color: var(--accent-strong);
@@ -452,10 +485,6 @@ a.toolCard:hover .toolCard__open span {
   color: #fffaf1;
   font-weight: 700;
   text-decoration: none;
-}
-
-html[data-theme="dark"] .buttonLink {
-  color: #1a1d26;
 }
 
 .buttonLink--ghost {
@@ -553,7 +582,7 @@ html[data-theme="dark"] .buttonLink--ghost {
 
 .fileDrop:hover,
 .fileDrop.is-over {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
   background: var(--accent-soft);
 }
 
@@ -1172,7 +1201,7 @@ html[data-theme="dark"] .visualizerOverlayState {
   color: var(--muted);
 }
 
-/* Keyboard focus anywhere, in the ink pair rather than the browser's blue.
+/* Keyboard focus anywhere, in the ink rather than the browser's blue.
    Zero specificity, so any control that draws its own focus keeps it. */
 :where(:focus-visible) {
   outline: 2px solid var(--focus-ring);
@@ -1213,10 +1242,6 @@ main:focus {
 
 .skipLink:focus-visible {
   transform: none;
-}
-
-html[data-theme="dark"] .skipLink {
-  color: #1a1d26;
 }
 
 @media (max-width: 900px) {
@@ -1459,13 +1484,14 @@ html[data-theme="dark"] .skipLink {
 
 .fitsFullHeader__copy:focus-visible,
 .fitsFullHeader > summary:focus-visible {
-  outline: 3px solid rgb(139 30 63 / 0.3);
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 30%, transparent);
   outline-offset: 2px;
 }
 
+/* a 0.3 wash of the ring vanishes on black: at night it's the ring itself */
 html[data-theme="dark"] .fitsFullHeader__copy:focus-visible,
 html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
-  outline-color: rgb(244 185 66 / 0.4);
+  outline-color: var(--focus-ring);
 }
 
 .fitsFullHeader__empty {
@@ -2225,7 +2251,7 @@ html[data-theme="dark"] .fitsColorControl__select {
    Experiment Builder
    A full-window workspace: the canvas fills the viewport and a few small
    islands float over its edges, all in the notebook language (surface,
-   hairline border, lifted shadow, oxblood/amber ink). Only the transient mode
+   hairline border, lifted shadow, oxblood ink). Only the transient mode
    badge borrows the instrument toolbar amber.
    =========================================================================== */
 
@@ -2270,7 +2296,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 .builderBoxSelect {
   position: absolute;
   z-index: 1;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--focus-ring);
   border-radius: 2px;
   background: var(--accent-soft);
   pointer-events: none;
@@ -2340,7 +2366,7 @@ html[data-theme="dark"] .builderIsland {
 }
 
 .builderWorkspace :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
@@ -2549,11 +2575,11 @@ html[data-theme="dark"] .showWheel__ring {
 }
 
 .showWheel__segment.is-on {
-  color: var(--accent);
+  color: var(--focus-ring);
 }
 
 .showWheel__segment.is-on .showWheel__wedge {
-  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+  fill: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-strong));
 }
 
 .showWheel__segment:focus-visible .showWheel__wedge {
@@ -2563,7 +2589,7 @@ html[data-theme="dark"] .showWheel__ring {
 
 /* a rim dial: a track bent round the ring, its filled part up to a knob */
 .showWheel__dial {
-  color: var(--accent);
+  color: var(--focus-ring);
   outline: none;
   cursor: grab;
   pointer-events: auto;
@@ -2594,18 +2620,18 @@ html[data-theme="dark"] .showWheel__ring {
 }
 
 .showWheel__dialFill {
-  stroke: color-mix(in srgb, var(--accent) 55%, var(--surface-strong));
+  stroke: color-mix(in srgb, var(--focus-ring) 55%, var(--surface-strong));
 }
 
 .showWheel__dialKnob {
   fill: var(--surface-strong);
-  stroke: var(--accent);
+  stroke: var(--focus-ring);
   stroke-width: 2;
   transition: fill 120ms ease;
 }
 
 .showWheel__dial:hover .showWheel__dialKnob {
-  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+  fill: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-strong));
 }
 
 .showWheel__dial:focus-visible .showWheel__dialKnob {
@@ -2858,7 +2884,7 @@ html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
 
 .builderPart.is-active {
   background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
 }
 
 .builderPart__icon {
@@ -2870,7 +2896,7 @@ html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
   border: 1px solid var(--border);
   border-radius: 0.55rem;
   background: var(--background);
-  color: var(--accent);
+  color: var(--focus-ring);
 }
 
 .builderPart__name {
@@ -3034,11 +3060,7 @@ html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
 }
 
 .builderGuideButton:hover {
-  background: var(--accent-strong);
-}
-
-html[data-theme="dark"] .builderGuideButton {
-  color: #1a1d26;
+  background: var(--accent-hover);
 }
 
 /* while the coach marks are up they stand in for it, and its spot is free for a tag */
@@ -3422,7 +3444,7 @@ html[data-theme="dark"] .builderCoach {
 }
 
 .builderField__control:focus-within {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
 }
 
 .builderField__control input {
@@ -3454,14 +3476,14 @@ html[data-theme="dark"] .builderCoach {
 /* a number field holding typed text it hasn't applied yet: tinted, with a ↵
    that is always laid out so showing it doesn't shift the field */
 .builderField--pending .builderField__control {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
   background: color-mix(in srgb, var(--accent) 8%, var(--background));
 }
 
 .builderField__pending {
   visibility: hidden;
   margin-right: 0.3rem;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.75rem;
   cursor: help;
 }
@@ -3623,7 +3645,7 @@ html[data-theme="dark"] .builderCoach {
 }
 
 .builderButton:hover:not(:disabled) {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
 }
 
 .builderButton--primary {
@@ -3632,13 +3654,9 @@ html[data-theme="dark"] .builderCoach {
   color: #fffaf1;
 }
 
-html[data-theme="dark"] .builderButton--primary {
-  color: #1a1d26;
-}
-
 .builderButton[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--focus-ring);
+  color: var(--accent-text);
 }
 
 /* a pair of mutually exclusive options, e.g. a lens's shape */
@@ -3734,7 +3752,7 @@ html[data-theme="dark"] .builderButton--primary {
 }
 
 .builderBeamRow.is-selected {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
   color: var(--accent-strong);
 }
 
@@ -4003,7 +4021,7 @@ body[data-panel-gesture="se"] * {
 
 .builderMinimised__button {
   position: relative;
-  color: var(--accent);
+  color: var(--focus-ring);
 }
 
 .builderMinimised__button:hover:not(:disabled) {
@@ -4247,7 +4265,7 @@ body[data-panel-gesture="se"] * {
 }
 
 .builderGroupRow__swatch:focus-within {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -4260,7 +4278,7 @@ body[data-panel-gesture="se"] * {
   min-width: 0;
   margin: 0.15rem 0.2rem 0.15rem 0.45rem;
   padding: 0.15rem 0.35rem;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--focus-ring);
   border-radius: 0.4rem;
   background: var(--surface-strong);
   color: var(--foreground);
@@ -4360,7 +4378,7 @@ body[data-panel-gesture="se"] * {
   display: inline-flex;
   flex: none;
   width: 1rem;
-  color: var(--accent);
+  color: var(--focus-ring);
 }
 
 .builderBeamRow__dot--square {
@@ -4455,7 +4473,7 @@ body[data-panel-gesture="se"] * {
 }
 
 .builderJson__text[aria-invalid="true"] {
-  border-color: var(--accent);
+  border-color: var(--focus-ring);
 }
 
 .builderJson__check {
@@ -4719,10 +4737,6 @@ body[data-panel-gesture="se"] * {
   color: #fffaf1;
 }
 
-html[data-theme="dark"] .builderLabel.is-selected {
-  color: #1a1d26;
-}
-
 /* a leg's length along a beam: a bare number in the beam's colour (set
    inline), turned to run along the leg by BeamDistances. Four fifths of a
    part's label and sized with it, in the same type at medium weight, so a
@@ -4756,10 +4770,6 @@ html[data-theme="dark"] .builderLabel.is-selected {
   pointer-events: none;
 }
 
-html[data-theme="dark"] .builderOrderBadge {
-  color: #1a1d26;
-}
-
 /* the rotation handle's live angle */
 .builderAngleBadge {
   display: inline-flex;
@@ -4774,10 +4784,6 @@ html[data-theme="dark"] .builderOrderBadge {
   font-weight: 800;
   white-space: nowrap;
   pointer-events: none;
-}
-
-html[data-theme="dark"] .builderAngleBadge {
-  color: #1a1d26;
 }
 
 /* ---------------------------------------------------------------------------
@@ -4924,6 +4930,11 @@ html[data-theme="dark"] .builderAngleBadge {
 .chalkEq__ink--accent {
   color: color-mix(in srgb, var(--accent) 72%, rgb(var(--mark)));
   opacity: 0.86;
+}
+
+/* oxblood mixed with white chalk is pink: at night the chalk is the ring's red */
+html[data-theme="dark"] .chalkEq__ink--accent {
+  color: var(--focus-ring);
 }
 
 .chalkboard__welcome {
@@ -5168,7 +5179,7 @@ html[data-theme="dark"] .builderAngleBadge {
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
   font-style: normal;
   letter-spacing: 0.06em;
   border: 1px solid currentColor;
@@ -5189,7 +5200,7 @@ html[data-theme="dark"] .builderAngleBadge {
 .chapter__cta {
   margin-top: 0.5rem;
   padding-bottom: 0.15rem;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 700;
   text-decoration: none;
   border-bottom: 1.5px solid currentColor;
@@ -5283,6 +5294,14 @@ html[data-theme="dark"] .builderAngleBadge {
 
 .chapter__chalk .chapter__accentText {
   fill: color-mix(in srgb, var(--accent) 80%, rgb(var(--mark)));
+}
+
+html[data-theme="dark"] :is(.chapter__beam, .chapter__accent) {
+  stroke: var(--focus-ring);
+}
+
+html[data-theme="dark"] .chapter__chalk .chapter__accentText {
+  fill: var(--focus-ring);
 }
 
 .chapter__wave {
