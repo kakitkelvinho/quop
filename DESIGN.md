@@ -184,9 +184,9 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 
 **The one exception: the chalk card family.** The homepage's four section cards carry no shadow, no fill, and no border — they are a wobbled SVG frame drawn onto the page surface. A mark on a board has nothing to cast a shadow with, and giving these cards one would break the single idea the homepage is built on. The exception is scoped to `.chalkCard` and does not extend to any other card; a new card type defaults back to the Always-Lifted Rule unless it is literally drawn in chalk.
 
-**The second exception: the Tabletop HUD.** The Tabletop HUD is drawn on the glass, not set on the table: flat, opaque, square, no shadow. Under it is a lit 3D scene with its own hard light and real cast shadows; a soft floating card on top of that read as generic, and a second, fake depth competed with the scene's. So every builder surface (islands, menus, the Show wheel and the file fan, panels and their bars, the cheat sheet tab, the Guide button, coach marks, labels, badges and the status toast) has no `box-shadow`, no `backdrop-filter` and no `drop-shadow` filter, and an opaque fill (`--surface-strong`, a solid near-black at night). What would have been the shadow's job, separating a plate from the scene, is done by a clear 1px hairline (`--builder-hairline`, `color-mix(in srgb, var(--foreground) 22%, transparent)`), which stays visible on the night void. The only inset rings left are state, not depth: the active part tile's and the active swatch's. The exception is scoped to the builder section of `globals.css`; it does not license flat cards elsewhere.
+**The second exception: the Tabletop HUD.** The Tabletop HUD is drawn on the glass, not set on the table: flat, opaque, square, no shadow. Under it is a lit 3D scene with its own hard light and real cast shadows; a soft floating card on top of that read as generic, and a second, fake depth competed with the scene's. So every builder surface (islands, menus, the Show wheel and the corner fans, panels and their bars, the panel rail, the cheat sheet, coach marks, labels, badges and the status toast) has no `box-shadow`, no `backdrop-filter` and no `drop-shadow` filter, and an opaque fill (`--surface-strong`, a solid near-black at night). What would have been the shadow's job, separating a plate from the scene, is done by a clear 1px hairline (`--builder-hairline`, `color-mix(in srgb, var(--foreground) 22%, transparent)`), which stays visible on the night void. The only inset rings left are state, not depth: the active part tile's and the active swatch's. The exception is scoped to the builder section of `globals.css`; it does not license flat cards elsewhere.
 
-Inside the HUD the accent is spent only on what is live: the active tool is a solid `--accent` fill with a white icon, the selection keeps its `--focus-ring` border, and the mode badge carries a small square `--accent` marker. Hovers are a neutral wash (`--builder-hover`, `color-mix(in srgb, var(--foreground) 8%, transparent)`), never `--accent-soft`, and the Guide button is a plate like the islands rather than an accent fill.
+Inside the HUD the accent is spent only on what is live: the active tool is a solid `--accent` fill with a white icon, the selection keeps its `--focus-ring` border, and the mode badge carries a small square `--accent` marker. Hovers are a neutral wash (`--builder-hover`, `color-mix(in srgb, var(--foreground) 8%, transparent)`), never `--accent-soft`. A rail slot whose list is showing is pressed in with that neutral wash and a foreground bar along its foot, not the accent; it takes the accent only while the mode it started is live. A corner fan's current wedge (the camera's view, an open panel) is the one place `--accent-soft` fills, because it marks state rather than hover.
 
 ### Shadow Vocabulary
 - **Card ambient** (`box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1)`, day / `0 28px 60px rgba(0, 0, 0, 0.35)`, night): the resting shadow under every `sectionCard`, `inputCard`, and `infoPanel`.
@@ -242,13 +242,31 @@ The FITS/CSV plotters depart deliberately from the notebook language into instru
 ### Tabletop HUD (the builder)
 The controls over the Tabletop's 3D scene are a compact, hard-edged instrument panel, flat by exception (see Elevation & Depth). They have their own scale, set in the builder section of `globals.css`.
 
+**The Minimal HUD Rule.** In the spirit of a game's pro HUD, and against the clutter of GIMP or Inkscape, the HUD shows only what is needed at rest, and related controls sit behind one button each. At rest there are eleven: the QUOP mark, the +, the dock (undo, the eye, redo), the ?, the camera, the day/night switch, and the panel rail's three slots. Help (the guide, the cheat sheet, the AI brief) is one ? away rather than in everyone's face; Select has no button, since it is the resting state and Esc returns to it. A new control joins a fan or the rail before it earns a place of its own.
+
+- **Layout:**
+  ```
+  QUOP ▾                 [↶  ◉  ↷]                 [?]
+  [+]
+                 BEAM ▪ Click stop · Enter done          (only while in a mode)
+
+  [≡ ▭ ⊞]                                    [cube] ☾
+  ```
+  - Top left: the QUOP mark (the wordmark, `0.8rem` 800, tracked `0.14em`, and a ▾) is the file menu, as a logo menu is: Home · .json · .png · Example · Clear. The + under it adds: Part · Beam · Frame · Cable; it lights while adding is live and, pressed again, stops it.
+  - Top centre: the dock, one island of undo, the eye (the Show wheel) and redo. The eye is in the middle so its wheel drops symmetrically. The mode badge and the cheat sheet hang under it.
+  - Top right: the ? (an info icon): Guide · Keys · AI brief. The inspector opens below it, at `top: 3.9rem`.
+  - Bottom right: the camera, showing the current view's icon (iso cube or top): Fit · Top · Iso. Right of it, outside the camera's ring, the day/night switch: a plain icon button with no plate, so it reads as the page's switch, not a table tool.
+  - Bottom left: the panel rail, three fixed slots (Beams, Frames, Groups) with their counts in `0.6rem` mono in the corner. The lists stack up from it like windows over a taskbar. An empty slot creates: a small + in place of its count, dimmed to 45 % until pointed at, its tooltip naming the action.
+- **Corner fans:** the one menu idiom. Every menu is a quarter fan from a workspace corner, flush with the screen edges, its hole clear of the islands in that corner (the QUOP and + fans lie on one ring). The band is about `150px` deep, thinning to a `64px` floor on a small screen. Wedges are petals: a `6px` gap at the hole that widens outward. Each holds a `24px` icon and one word at `13px` 700 (a file format in mono), with no hints; the longer hint is the tooltip. Hover and focus are the neutral wash; Clear tints orange (`#c2410c` day, `#fb8c4a` night), never the accent; a disabled wedge drops to 35 %. One fan is open at a time.
+- **List panels** (Beams, Frames, Groups) have no window chrome: no grip and no maximise, the title muted at 600, and one small minimise on the right of the bar; the rail brings a minimised list back. Row names are 500. A row's eye and bin show only on hover or focus (on a device that hovers), and a hidden row keeps its closed eye.
+
 - **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
 - **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
 - **Type:** smaller than the rest of the site, because the scene is the content.
   - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
   - Titles `0.92rem` 700: the inspector's head, a panel's title.
-  - Rows `0.8–0.84rem` 600: a part's name, a beam or frame row, a group item, buttons.
-  - Small `0.72–0.75rem`: hints, panel bar titles, the cheat sheet, mono readouts (`0.75rem`).
+  - Rows `0.8–0.84rem` 600: a part's name, a group item, buttons; a list row's name `0.8rem` 500.
+  - Small `0.72–0.75rem`: hints, panel bar titles (a list's muted, at 600), the cheat sheet, mono readouts (`0.75rem`).
   - Labels `0.62–0.68rem` 600–800: field labels (sentence case); list and group titles uppercase, tracked `0.04–0.08em`.
   - Key caps `0.6–0.62rem` mono 700.
   - Metric values `0.95rem` mono 700.

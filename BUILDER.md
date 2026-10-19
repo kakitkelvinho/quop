@@ -166,8 +166,8 @@ corners, a side under 10 mm, over 5000 mm overall, junk values) opens as the
 rectangle around it rather than being dropped. Hiding, showing and each Fill
 switch are one undo step.
 
-**A setup brief for an AI assistant.** The `.md` button, in its own island at
-the top centre, right of the tool pill, opens the setup brief: Markdown instructions an
+**A setup brief for an AI assistant.** AI brief, in the ? fan at the top
+right, opens the setup brief: Markdown instructions an
 author pastes into an AI assistant so it writes a setup file for the experiment
 they describe, which then opens in the Setup JSON panel like any other: the brief asks
 for a downloadable `.json` file, or the JSON alone in one code block to paste. The panel shows
@@ -373,7 +373,7 @@ group, and its inner beams and connections) and brings the file's in;
 the table alone. A merge that would go over the setup limits is refused with
 a notice, and the table is left as it was.
 
-**Label size is the setup's.** The Show button (an eye) in the tool pill
+**Label size is the setup's.** The Show button (an eye) in the middle of the dock
 drops a half ring of wedges for what is drawn besides the setup: Posts, Grid,
 Labels and Beam distances, each with its icon, name and On/Off, and a Label
 size slider (50–200 % in 5 % steps) in a card under the ring. The arrow keys
@@ -412,7 +412,7 @@ and keeps at most 100 groups. In code the multi-selection editor
 (`group-edits.ts`, `GroupInspector`) is not a Group, and the parts panel's
 headings are `PART_CATEGORIES`.
 
-**Setup JSON is a text panel.** Tabletop ▾ → .json opens it in the parts
+**Setup JSON is a text panel.** QUOP ▾ → .json opens it in the parts
 panel's place, below the top-left islands, with the setup as it stands in an
 editable box. Apply is its one text button; after it, icon buttons **Copy** it
 out, **Paste** one over it, **save** the table as a `.json` (the floppy), or
@@ -434,46 +434,81 @@ The builder is a full-window workspace: the site nav steps aside and the canvas
 fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
-- **Top left**: "‹ QUOP" back to the site, the + that opens the parts panel
-  (with Draw a beam and Connect beside it), and the Tabletop ▾ menu: a quarter fan
-  of four wedges from the corner (`file-fan.tsx`), whose hole clears the file
-  island and lets clicks through to the + island: .json (the Setup JSON panel,
-  which saves, opens and imports), .png (export the view), Example (load the
-  example) and Clear (empty the table).
-- **Left**: the parts panel, shown while the + is on: every part with its
+At rest there are eleven controls and nothing else: the QUOP mark, the +, the
+dock (undo, the eye, redo), the ?, the camera, the day/night switch and the
+three slots of the panel rail. Related controls are grouped behind one
+button each, in the spirit of a game's minimal HUD.
+
+**One menu idiom: the corner fan** (`corner-fan.tsx`). Every menu is a quarter
+fan of wedges from a corner of the workspace, flush with its edges. Its hole
+clears the islands in that corner, measured when it opens and again when the
+window resizes, so clicks pass through to them. The band is 150 px deep
+(`fanRing`'s depth), thinner on a small screen down to its 64 px floor. Each
+wedge is a petal: the wedges part by a 6 px gap at the hole that widens
+outward (`petalInset`), and each holds a 24 px icon and one word at 13 px,
+with its longer hint in the tooltip. It is a `menu` with a roving tab stop:
+the arrows walk it (forward is the way the wedges run from the corner),
+Home/End jump to its ends, Enter or Space runs a wedge, and Esc closes it and
+puts the focus back on its trigger. Picking a wedge closes it, and so does a
+pointer-down outside. One fan is open at a time. The geometry is
+`ring-geometry.ts` (`cornerSpan`, `cornerClear`, `fanArrows`).
+
+- **Top left**: the QUOP mark (the wordmark and a ▾) is the file menu, as a
+  logo menu is. Its fan: **Home** (the site, through the router so the base
+  path holds), **.json** (the Setup JSON panel, which saves, opens and
+  imports), **.png** (export the view), **Example** (load the example) and
+  **Clear** (empty the table; tinted orange). The **+** under it opens the
+  same ring, its hole clear of both islands: **Part** (the parts panel),
+  **Beam**, **Frame** and **Cable** (Beam and Cable need two parts). While
+  adding is live (the parts panel is open, or a beam, frame or cable is being
+  drawn) the + is lit, and pressing it again stops it.
+- **Left**: the parts panel, shown from + → Part: every part with its
   icon and name, grouped as a bench walk-through, with a search box
   on top. It stays open while placing, so a run of parts goes down without
   reopening it. The JSON panel
   and the setup brief open in the same spot, so opening one
   closes the others.
-- **Top centre**: the Guide pill, then the tool pill (Select; Show, a half ring
-  of what is drawn on the table: Posts, Grid, Labels, Beam distances, with
-  the label size under it; Lighting, a bubble of how it is rendered: Brightness, Shadows,
-  Light graphics; then Undo, Redo) with the Cheat sheet tab hung under it, then the setup brief's
-  `.md` button in its own island (it is neither a tool nor a guide). The `.md`
-  island hangs off the row's end, so the Guide and tool pills stay centred.
-  While placing, drawing or connecting, a mode badge under the pill carries
-  that mode's key hints. On a phone the column moves to the right edge, clear
-  of the + island: the Guide pill sits level with the file island, the tool
-  pill drops below it and the `.md` island below that, with the brief opening
-  under it.
-- **Right**: the inspector, shown only while something is selected: a
-  component, several components, a beam, or a beam being drawn. For several
-  it reads "N parts selected", with rotate, duplicate and delete, a height
-  while they all stand at one (and none sits in a host), and a mount colour
-  for those held in a mount.
-- **Bottom left**: the beams box, one stacked row per beam with its colour,
+- **Top centre**: the dock: undo, the eye (Show, a half ring of what is drawn
+  on the table and how: Posts, Grid, Labels, Beam distances, Shadows, Light
+  graphics, with the label size and brightness dials round it) and redo. The
+  eye sits in the middle, so its wheel drops symmetrically. While placing,
+  drawing, connecting or grouping, a mode badge under the dock carries that
+  mode's key hints; on a phone it wraps, between the + and the right edge.
+  Select has no button: it is the resting state, and Esc returns to it.
+- **Top right**: the ? (help). Its fan: **Guide** (the coach marks), **Keys**
+  (the cheat sheet) and **AI brief** (the setup brief).
+- **Right**: the inspector, below the ?, shown only while something is
+  selected: a component, several components, a beam, or a beam being drawn.
+  For several it reads "N parts selected", with rotate, duplicate and delete,
+  a height while they all stand at one (and none sits in a host), and a mount
+  colour for those held in a mount. It closes when nothing is selected.
+- **Bottom left**: the *panel rail*, an island with three slots that are
+  always there: **Beams**, **Frames** and **Groups**, each with its count in
+  small mono type in its corner (`panel-rail.tsx`, `rail-slots.ts`). A slot
+  with items shows or hides its list, which stacks up from the rail like a
+  window over a taskbar; a slot whose list is minimised brings it back. A
+  shown list's slot is pressed in, in a neutral tint. An empty slot creates
+  instead: it shows a small + for its count, sits dimmed until pointed at,
+  and its tooltip names the action. Beams starts beam mode (two parts or
+  more), Frames starts drawing a frame, and Groups starts *group mode*:
+  ⌘ click or ⌘ drag picks parts, and Enter (or the slot again) groups them if
+  two or more are picked, else just stops; Esc cancels. Pressed again while
+  its mode is live, a slot stops it, and the slot is lit in the accent while
+  it is. Starting any other mode ends group mode (`group-mode.ts`).
+
+  The beams box has one stacked row per beam with its colour,
   name and path length; click a row to select that beam, or press anywhere on
   it and drag it to a new place in the list (the rows around it open a gap; on
   a touch screen, rest a finger on the row first, then drag; `Esc` cancels; a
   focused row also moves with `Alt+↑` / `Alt+↓`). Each row also has buttons to
   hide or show it on the table, and to delete it (the beam only: its parts
-  stay). The list order is
+  stay); with a mouse they show only on the row under the pointer or with
+  focus, and a hidden row keeps its closed eye. The list order is
   the setup's beam order, so it is saved, and each move, hide or delete is one
   undo step. It scrolls once there
   are more beams than fit. While the parts panel (or the setup brief, which
-  takes its place and size) is open the box moves to sit
-  beside it; on a phone, where the panel spans the width, it hides until the
+  takes its place and size) is open the lists move to sit
+  beside it; on a phone, where the panel spans the width, they hide until the
   panel closes. The Frames box, when there are frames, sits under it: one row
   per frame with its colour and label, an eye to hide or show it, and a trash button.
   Its rows drag to reorder, like the beams box's.
@@ -498,53 +533,44 @@ is on screen until it is needed:
   one undo step per pick. Every one of these is one undo step and is
   announced. Members of a hidden group draw no ghost when their row selects
   them; the selection and the inspector still show them.
-- **Bottom right**: how you look at the table: Iso / Top, Fit, Day / night
-  and the panels menu (below). What is drawn on the table is the tool pill's.
-  There is no readout: the inspector and the beams box already carry every
-  number worth reading.
-- **Quick guide**, in two sizes. The Guide pill opens *coach marks*: the
-  builder dims and each control on screen is ringed and tagged in place, in
-  a few words ("Draw a beam", "Draw a frame round an area", "Beams: drag a row to
-  reorder"), with the camera and selection keys in a card. A control under
-  another island, or with no free spot for its tag, goes untagged; its
-  tooltip still names it. Any click, Esc or "Got it" closes them, and focus
-  returns to the pill. The Cheat sheet tab opens the *cheat sheet*: a strip
-  under the tool pill of one-line how-tos in four groups (build, edit,
-  reorder and hide, camera), covering frames, dragging beam and stop rows,
-  `Alt+↑` / `Alt+↓` and the snap back onto a beam line. It doesn't block the
-  table, so it can stay open while you work; its close button, Esc inside
-  it, or the tab closes it, and the coach marks' card can open it. The Guide
-  pill closes it, so only one size is up at a time. Below 1350 px wide it
-  folds to two columns, clear of the inspector. A control the coach marks
+- **Bottom right**: the camera, a button showing the current view's icon (iso
+  cube or top). Its fan: **Fit**, **Top** and **Iso**, the current view's
+  wedge marked in the accent's wash. Right of it, outside the camera's ring,
+  the day/night switch: a plain icon with no plate, so it reads as the page's
+  own switch rather than a table tool. There is no readout: the inspector and
+  the beams box already carry every number worth reading.
+- **Quick guide**, in two sizes, both from the ? fan. **Guide** opens *coach
+  marks*: the builder dims and each control on screen is ringed and tagged in
+  place with what its fan or slots hold, in their own words ("Home · .json ·
+  .png · example · clear", "Camera: fit · top · iso"), with the camera and
+  selection keys in a card. A control under another island, or with no free
+  spot for its tag, goes untagged; its tooltip still names it. Any click, Esc
+  or "Got it" closes them, and focus returns to the ?. **Keys** opens the
+  *cheat sheet*: a strip under the dock of one-line how-tos in four groups
+  (build, edit, lists and panels, camera), covering frames, group mode,
+  dragging beam and stop rows, `Alt+↑` / `Alt+↓`, the snap back onto a beam
+  line and `⌥0`. It doesn't block the table, so it can stay open while you
+  work; its close button, Esc inside it, or Keys again closes it, and the
+  coach marks' card can open it. Guide closes it, so only one size is up at a
+  time. Below 1350 px wide it folds to two columns. A control the coach marks
   tag carries `data-guide` with its key in `TAGS` (`builder-guide.tsx`); the
   cheat sheet's lines are `SHEET` there. A control that moves or changes is
   updated in both.
 
 **Panels move; toolbars stay.** The seven panels (Parts, Inspector, Beams,
-Frames, Groups, the setup brief and Setup JSON) each have a title bar: a
-grip, the panel's name, and buttons to minimise and maximise it and, for the
-brief and the JSON panel, to close it. Minimise (or double-click the title)
-takes the panel off the table: it is hidden, and its icon waits in the
-*minimised column*, a thin island at the bottom left that shows only while a
-panel is minimised (beside the Parts panel, or the brief or JSON in its
-place, while that is showing). Its icons are in the accent colour, with no
-names or counts; hovering one, or focusing it with the keyboard, slides its
-name out to the right, with what it holds in muted text for the Inspector
-("**Inspector** Mirror 3", a beam's, frame's or connection's name, or
-"4 parts"), and its accessible name says the same ("Restore Inspector:
-Mirror 3"). Clicking an icon puts the panel back where it was, in front.
-While the column shows, the Beams, Frames and Groups boxes step right of it,
-unless moved by hand; they step right of the parts panel's spot only while a
-panel there is showing, so a minimised one leaves no gap. Opening the parts
-panel, the brief or the .json wedge shows it, even if it was minimised when it
-closed. A minimised Inspector opens again, in front, when the selection
-changes: a different part, set of parts, beam, frame, connection or group,
-or a new beam or connection draft. Selecting the same thing again doesn't
-count, and minimising it again keeps it minimised until the next new
-selection. Maximise fills the workspace below the toolbars, and a maximised
-panel can't be dragged. Minimise and maximise each undo the other, and the
-same button restores. The logic is `minimised-panels.ts`, the column and
-the panels menu `minimised-column.tsx`. A panel's right edge, bottom edge and bottom-right
+Frames, Groups, the setup brief and Setup JSON) each have a title bar. The
+Inspector, Parts, brief and JSON panels have a grip, the panel's name, a
+maximise button and, for the panels that close, a close button; they have no
+minimise, since each closes instead (the Inspector when nothing is
+selected). The three lists have no window chrome: their muted name and one
+small minimise, and the whole bar drags. A minimised list leaves the table
+until its slot on the panel rail brings it back where it was, in front; where
+panels stay put, the slot hides and shows the list instead. A panel that
+can't minimise or maximise is put back if an older visit saved it so.
+Double-clicking a list's bar minimises it; another panel's maximises it.
+Maximise fills the workspace below the toolbars, and a maximised panel can't
+be dragged. Minimise and maximise each undo the other, and the same button
+restores. A panel's right edge, bottom edge and bottom-right
 corner resize it, down to 180 × 90 px and no further than the workspace's
 right and bottom edges (not while minimised or maximised). Until it is
 resized, a moved panel's height follows its content, up to its own cap and
@@ -560,19 +586,17 @@ file, the JSON panel or the brief (`panel-memory.ts`). The bar replaces the pane
 labelled by it. Dragging the bar with the left button moves the panel
 anywhere in the workspace; until then it sits where it always has. The panel
 last pressed comes to the front, and every panel sits in one layer under the
-toolbars (File, Add, Tools, View), so it never covers one. While dragged, its
+toolbars (the QUOP mark, the +, the dock, the ?, the camera and the rail),
+so it never covers one. While dragged, its
 edges snap, gently and with no guide lines, to the workspace's edges 12 px in
 and to the other panels' edges: lined up with one, or 8 px beside, above or
 below it. An edge snaps within 10 px, to the nearest target, each axis on its
 own. A moved panel
 keeps at least 90 px of its bar inside the workspace sideways, and all of it
 top to bottom, and slides back in when the window shrinks. Positions and
-sizes are whole pixels, so borders stay crisp at odd window sizes. The
-panels button in the View toolbar opens a menu, upward: **Minimise all**
-sends every panel showing to the minimised column (greyed out when none is
-showing), and **Reset panels** puts every panel back where it starts, open,
-as `⌥0` (`Alt+0`) does without the menu. A pick, a click outside or Esc
-closes it. Under 900 px wide, or with a coarse pointer, panels have no title bar
+sizes are whole pixels, so borders stay crisp at odd window sizes. `⌥0`
+(`Alt+0`) resets the panels, every one back where it starts, open; Keys lists
+it. Under 900 px wide, or with a coarse pointer, panels have no title bar
 and stay put. The geometry is `panel-geometry.ts`, the arrangement
 `panel-store.ts`, the drag `use-panel-drag.ts` and the bar `panel-frame.tsx`.
 
@@ -587,24 +611,24 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
 | Slide a delay line's stage | Select it and drag the bubble on its carriage's thumbscrew along the rail, or set Position in its inspector |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
-| Draw a beam | Draw a beam, beside the ＋ at the top left; click parts in order, `Enter` |
+| Draw a beam | + → Beam at the top left, or the empty Beams slot on the rail; click parts in order, `Enter`. The + (or the slot) pressed again stops |
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
-| Add, move or edit a frame | The dashed-rectangle button beside Draw a beam draws one: drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag an unselected frame's edge to select and move it whole (`⇧` for fine steps). On a selected frame, drag a side in or out or drag a corner handle to reshape it (stops at the last valid outline, one undo step per drag); `Alt`-drag or the arrow keys move it whole, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
+| Add, move or edit a frame | + → Frame, or the empty Frames slot on the rail, draws one (pressed again, it stops): drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag an unselected frame's edge to select and move it whole (`⇧` for fine steps). On a selected frame, drag a side in or out or drag a corner handle to reshape it (stops at the last valid outline, one undo step per drag); `Alt`-drag or the arrow keys move it whole, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
 | Hide, show, reorder or delete a frame | The eye and trash buttons on its row in the Frames box; drag the row to a new place (or focus it and press `Alt+↑` / `Alt+↓`). A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |
-| Connect two parts | Connect, beside Draw a beam; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
+| Connect two parts | + → Cable; pick Fibre or Cable, click the part it leaves from, then the part it goes to |
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
-| Group parts | Select them and press **Group** in their inspector or `⌘G` (`Ctrl G`), or with no parts selected, `⌘G` on a selected frame: a "Group n" row appears in the Groups box with its name ready to type. One undo step |
+| Group parts | Select them and press **Group** in their inspector or `⌘G` (`Ctrl G`), or with no parts selected, `⌘G` on a selected frame; or, with no groups yet, the empty Groups slot on the rail starts group mode: ⌘ click or ⌘ drag to pick, `Enter` to group, `Esc` to cancel. Either way, a "Group n" row appears in the Groups box with its name ready to type. One undo step |
 | Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group, or **Ungroup** in the inspector while its parts are selected, to ungroup. Hover the row to see its members ringed on the table |
 | Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
 | Share a part between groups | Add to group in its inspector, then press each group's row (several parts at once work too) |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
-| Move a panel | Drag its title bar. The panels button (View toolbar) → Reset panels, or `⌥0`, puts them all back |
-| Minimise a panel | Its title bar's minimise button, or double-click the title: its icon waits in the column at the bottom left; click it to bring the panel back. The panels button (View toolbar) → Minimise all clears the table |
-| Have an AI write a setup | The `.md` button, top centre, right of the tool pill: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you with the JSON panel's folder (Replace), or paste its JSON into the panel |
-| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam or a connection, then leaves Add stops, then deselects) |
+| Move a panel | Drag its title bar. `⌥0` puts them all back |
+| Minimise a list | Its bar's minimise button, double-click its bar, or its slot on the panel rail; the slot brings it back |
+| Have an AI write a setup | ? → AI brief, top right: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you with the JSON panel's folder (Replace), or paste its JSON into the panel |
+| Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, a frame or a connection, then leaves Add stops, then leaves group mode, then deselects) |
 
 Shortcuts live in button tooltips and in the mode badge; the cheat sheet
 gathers the ones worth learning, and stays shut until asked for.
@@ -678,7 +702,10 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: file fan, tool pill, mode badge, beams box, view controls, the setup brief's button and panel |
+| `src/components/builder/builder-hud.tsx` | The floating islands: the QUOP and + fans, the dock, the ? fan, mode badge, lists, the panel rail, the camera, the setup brief and JSON panels |
+| `src/components/builder/corner-fan.tsx` | The corner fan: a quarter ring of petal wedges from a workspace corner, a keyboard menu |
+| `src/components/builder/file-fan.tsx` | The QUOP mark's file fan |
+| `src/components/builder/panel-rail.tsx` | The panel rail's slots; what a press does is `rail-slots.ts`, group mode `group-mode.ts` |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |
 | `src/components/builder/builder-parts-panel.tsx` | The parts panel: grouped parts with icons, and search |
