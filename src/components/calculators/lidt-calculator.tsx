@@ -74,62 +74,60 @@ export function LidtCalculator() {
   const energy = formatPrefixed(pulseEnergy, "J");
 
   return (
-    <section className="pageSection">
+    <section className="pageSection calculatorPage">
       <ToolIntro href="/calculators/lidt-calculator" aside="Laser-induced damage threshold" />
 
-      <div className="calculatorGrid calculatorGrid--single">
-        <div className="inputCard">
-          <h2>Pulsed Lasers</h2>
-          <div className="fieldStack">
-            <LaserField
-              field="Average power"
-              property="power"
-              unit="W"
-              value={laser.power}
-              setLaser={setLaser}
-            />
-            <LaserField
-              field="Repetition rate"
-              property="repetition"
-              unit="Hz"
-              value={laser.repetition}
-              setLaser={setLaser}
-            />
-            <LaserField
-              field="Beam radius (1/e²)"
-              property="radius"
-              unit="cm"
-              value={laser.radius}
-              setLaser={setLaser}
-            />
-          </div>
+      <div className="calculatorSheet">
+        <div className="fieldStack">
+          <LaserField
+            field="Average power"
+            property="power"
+            unit="W"
+            value={laser.power}
+            setLaser={setLaser}
+          />
+          <LaserField
+            field="Repetition rate"
+            property="repetition"
+            unit="Hz"
+            value={laser.repetition}
+            setLaser={setLaser}
+          />
+          <LaserField
+            field="Beam radius (1/e²)"
+            property="radius"
+            unit="cm"
+            value={laser.radius}
+            setLaser={setLaser}
+          />
+        </div>
 
-          <div className="readoutGroup">
-            <Readout
-              primary
-              label={
-                <>
-                  Fluence <span className="readout__formula">E/(πw²)</span>
-                </>
-              }
-              value={Number.isFinite(fluence) ? formatSignificant(fluence, 3) : null}
-              unit="J/cm²"
-            />
-            <Readout
-              label="Pulse energy"
-              value={Number.isFinite(pulseEnergy) ? energy.value : null}
-              unit={energy.unit}
-            />
-            <Readout
-              label={
-                <>
-                  Peak fluence <span className="readout__formula">2E/(πw²)</span>
-                </>
-              }
-              value={Number.isFinite(peakFluence) ? formatSignificant(peakFluence, 3) : null}
-              unit="J/cm²"
-            />
-          </div>
+        <div className="calculatorSheet__result">
+          <Readout
+            primary
+            label={
+              <>
+                Fluence <span className="readout__formula">E/(πw²)</span>
+              </>
+            }
+            value={Number.isFinite(fluence) ? formatSignificant(fluence, 3) : null}
+            unit="J/cm²"
+          />
+          <p className="readoutAside">
+            <span className="readoutAside__item">
+              Pulse energy{" "}
+              <span className="readoutAside__value">
+                {Number.isFinite(pulseEnergy) ? `${energy.value} ${energy.unit}` : "—"}
+              </span>
+            </span>
+            <span aria-hidden="true"> · </span>
+            <span className="readoutAside__item">
+              Peak fluence <span className="readout__formula">2E/(πw²)</span>{" "}
+              <span className="readoutAside__value">
+                {Number.isFinite(peakFluence) ? `${formatSignificant(peakFluence, 3)} J/cm²` : "—"}
+              </span>
+            </span>
+          </p>
         </div>
       </div>
     </section>
