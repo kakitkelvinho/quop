@@ -52,10 +52,11 @@ export type ProtoFanItem = {
 
 // which quarter the fan opens into, as start angles (0 = right, clockwise on screen)
 const QUARTERS = { se: 0, sw: Math.PI / 2, nw: Math.PI, ne: (3 * Math.PI) / 2 } as const;
-const INNER = 26;
-const BAND = 104;
+// roomy: the fans are out of sight until opened, so they can afford the space
+const INNER = 30;
+const BAND = 150;
 const PAD = 6;
-const ICON = 20;
+const ICON = 24;
 
 export function ProtoFan({
   icon,
@@ -190,13 +191,13 @@ export type RailSlot = {
   count: number;
   shown: boolean;
   onToggle: () => void;
-  /** an empty slot starts the first one instead */
-  create: { label: string; run: () => void; can: boolean; live: boolean };
+  /** an empty slot starts the first one instead; pressed again, it stops */
+  create: { label: string; run: () => void; cancel?: () => void; can: boolean; live: boolean };
 };
 
 export function PanelRail({ slots }: { slots: RailSlot[] }) {
   return (
-    <div className="builderIsland protoRail" role="toolbar" aria-label="Panels" aria-orientation="vertical">
+    <div className="builderIsland protoRail" role="toolbar" aria-label="Panels">
       {slots.map((slot) => {
         const empty = slot.count === 0;
         const name = empty ? slot.create.label : `${slot.label} (${slot.count})`;
@@ -209,7 +210,9 @@ export function PanelRail({ slots }: { slots: RailSlot[] }) {
             aria-pressed={empty ? undefined : slot.shown}
             title={name}
             disabled={empty && !slot.create.can && !slot.create.live}
-            onClick={empty ? slot.create.run : slot.onToggle}
+            onClick={
+              empty ? (slot.create.live && slot.create.cancel ? slot.create.cancel : slot.create.run) : slot.onToggle
+            }
           >
             <Icon name={slot.icon} />
             <span className="protoRail__count">{empty ? "+" : slot.count}</span>

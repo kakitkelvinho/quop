@@ -35,7 +35,7 @@ type Geometry = { left: number; top: number; ring: ReturnType<typeof fanRing> };
  * file island sits in. The hole clears the whole island, and the band thins on
  * a small workspace (see fanRing). Measured again when the window resizes.
  */
-function useCornerGeometry(rootRef: RefObject<HTMLDivElement | null>) {
+function useCornerGeometry(rootRef: RefObject<HTMLDivElement | null>, roomy = false) {
   const [geo, setGeo] = useState<Geometry | null>(null);
   useLayoutEffect(() => {
     const measure = () => {
@@ -49,12 +49,12 @@ function useCornerGeometry(rootRef: RefObject<HTMLDivElement | null>) {
       const i = island.getBoundingClientRect();
       const clear = Math.hypot(i.right - s.left, i.bottom - s.top) + GAP;
       const room = Math.min(s.width, s.height) - EDGE;
-      setGeo({ left: s.left - b.left, top: s.top - b.top, ring: fanRing(clear, room) });
+      setGeo({ left: s.left - b.left, top: s.top - b.top, ring: roomy ? fanRing(clear, room, 150, false) : fanRing(clear, room) });
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [rootRef]);
+  }, [rootRef, roomy]);
   return geo;
 }
 
@@ -154,9 +154,9 @@ function FanRing({ items, geo, onClose }: { items: FanItem[]; geo: Geometry; onC
 }
 
 /** The fan, laid at the workspace's corner once it is measured. */
-function Fan({ items, onClose }: { items: FanItem[]; onClose: () => void }) {
+function Fan({ items, onClose, roomy }: { items: FanItem[]; onClose: () => void; roomy?: boolean }) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const geo = useCornerGeometry(rootRef);
+  const geo = useCornerGeometry(rootRef, roomy);
   return (
     <div ref={rootRef} className="fileFan" style={geo ? { left: geo.left, top: geo.top } : { visibility: "hidden" }}>
       {geo ? <FanRing items={items} geo={geo} onClose={onClose} /> : null}
@@ -217,7 +217,7 @@ export function FileFan({
     action();
   };
   const items: FanItem[] = [
-    ...(onSite ? [{ id: "site", label: "QUOP", hint: "Back to the site", icon: "back" as const, run: pick(onSite) }] : []),
+    ...(onSite ? [{ id: "site", label: "Home", hint: "Back to the QUOP site", icon: "back" as const, run: pick(onSite) }] : []),
     { id: "json", label: ".json", hint: "Save, load, edit", icon: "braces", file: true, run: pick(onShowJson) },
     { id: "png", label: ".png", hint: "Export the view", icon: "image", file: true, run: pick(onExportPng) },
     { id: "example", label: "Example", hint: "Load the example", icon: "example", run: pick(onResetExample) },
@@ -245,7 +245,7 @@ export function FileFan({
         )}
         <Icon name="chevron" size={14} />
       </button>
-      {open ? <Fan items={items} onClose={close} /> : null}
+      {open ? <Fan items={items} onClose={close} roomy={brand} /> : null}
     </div>
   );
 }

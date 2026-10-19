@@ -39,7 +39,7 @@ export const FAN_BAND = { full: 118, hints: 100, least: 64 } as const;
  * off the edge rather than its labels crowding. A thin band leaves the hints
  * out.
  */
-export function fanRing(clear: number, room: number) {
-  const band = Math.max(FAN_BAND.least, Math.min(FAN_BAND.full, room - clear));
-  return { inner: clear, outer: clear + band, band, hints: band >= FAN_BAND.hints };
+export function fanRing(clear: number, room: number, full: number = FAN_BAND.full, hints = true) {
+  const band = Math.max(FAN_BAND.least, Math.min(full, room - clear));
+  return { inner: clear, outer: clear + band, band, hints: hints && band >= FAN_BAND.hints };
 }

@@ -209,12 +209,13 @@ html[data-hud="C"] .fileFan__item.is-danger:focus-visible .fileFan__wedge {
 
 /* ---------- D · Minimal: B's shapes, oxblood day and night, grouped controls. ---------- */
 
-/* one ink in both themes; at night it is lifted to read on black, and turned
-   toward red as it lifts, or the lighter oxblood goes pink */
+/* one ink in both themes. A fill stays the day's oxblood at night (a white icon
+   on it is ~9:1); only what is drawn thin, rings and ink text, lifts to read on
+   black, turned toward red as it lifts or it goes pink */
 html[data-hud="D"][data-theme="dark"] {
-  --accent: #c23a48;
+  --accent: #8b1e3f;
   --accent-strong: #d9545f;
-  --accent-soft: rgb(194 58 72 / 0.18);
+  --accent-soft: rgb(139 30 63 / 0.38);
   --focus-ring: #c23a48;
 }
 
@@ -274,7 +275,7 @@ html[data-hud="D"] .fileFan__item.is-disabled {
 }
 
 .protoFan__ring .fileFan__name {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* the places D gives things */
@@ -286,7 +287,26 @@ html[data-hud="D"] .fileFan__item.is-disabled {
 .protoRail {
   left: 0.9rem;
   bottom: 0.9rem;
-  flex-direction: column;
+}
+
+/* the theme and the camera share the bottom-right corner; the theme has no
+   plate, so it reads as the page's own switch rather than a table tool */
+.protoViewRow {
+  position: absolute;
+  z-index: 5;
+  right: 0.9rem;
+  bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.protoViewRow > .builderHud__view {
+  position: static;
+}
+
+.protoTheme {
+  color: var(--muted);
 }
 
 /* undo and redo straddle the eye, so its wheel drops from the middle */
@@ -322,25 +342,14 @@ html[data-hud="D"] .fileFan__item.is-disabled {
   line-height: 1;
 }
 
-/* the lists open beside the rail, above the undo pair */
+/* the lists stack up from the rail, like windows over a taskbar */
 html[data-hud="D"] .builderHud__lists {
-  left: 3.6rem;
+  bottom: 3.6rem;
 }
 
 html[data-hud="D"] .builderPanels.is-on .builderHud__lists {
-  left: 0;
   bottom: 0;
-  padding: 0 0 0.9rem 3.6rem;
-}
-
-html[data-hud="D"] .builderPanels.is-on .builderHud__lists.is-besideParts,
-html[data-hud="D"] .builderHud__lists.is-besideParts {
-  padding-left: calc(3.6rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
-}
-
-html[data-hud="D"] .builderHud__lists.is-besideParts:not(.builderPanels.is-on *) {
-  left: calc(3.6rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
-  padding-left: 0;
+  padding-bottom: 3.6rem;
 }
 
 /* the inspector clears the help button */

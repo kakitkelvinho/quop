@@ -1389,15 +1389,6 @@ export default function BuilderHud(props: BuilderHudProps) {
     </>
   );
 
-  // PROTOTYPE (D): day/night is one more thing the eye shows
-  const nightItem: WheelItem = {
-    id: "night",
-    label: "Night",
-    description: "The table with the lights off",
-    icon: "theme",
-    on: typeof document !== "undefined" && document.documentElement.dataset.theme === "dark",
-    onToggle: props.onToggleTheme,
-  };
   const showMenu = (
     <ShowMenu
       posts={props.showPosts}
@@ -1415,7 +1406,6 @@ export default function BuilderHud(props: BuilderHudProps) {
       onLightingChange={props.onLightingChange}
       lightGraphics={props.quality === "light"}
       onToggleQuality={props.onToggleQuality}
-    extra={protoD ? [nightItem] : undefined}
     />
   );
   const liveMode = trayOpen || beamMode || drawingFrame || Boolean(connectDraft);
@@ -1716,6 +1706,16 @@ export default function BuilderHud(props: BuilderHudProps) {
 
       {protoD ? (
         <>
+          <div className="protoViewRow">
+          <button
+            type="button"
+            className="builderIconBtn protoTheme"
+            aria-label="Day / night"
+            title="Day / night"
+            onClick={props.onToggleTheme}
+          >
+            <Icon name="theme" />
+          </button>
           <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
             <ProtoFan
               icon={view === "top" ? "top" : "iso"}
@@ -1728,6 +1728,7 @@ export default function BuilderHud(props: BuilderHudProps) {
               ]}
             />
           </div>
+          </div>
           <PanelRail
             slots={[
               {
@@ -1737,7 +1738,13 @@ export default function BuilderHud(props: BuilderHudProps) {
                 count: beams.length,
                 shown: listShown("beams") && !isMinimised("beams"),
                 onToggle: railToggle("beams"),
-                create: { label: "Draw a beam", run: props.onStartBeam, can: components.length >= 2, live: beamMode },
+                create: {
+                  label: beamMode ? "Stop drawing the beam" : "Draw a beam",
+                  run: props.onStartBeam,
+                  cancel: props.onCancelBeam,
+                  can: components.length >= 2,
+                  live: beamMode,
+                },
               },
               {
                 id: "frames",
@@ -1746,7 +1753,13 @@ export default function BuilderHud(props: BuilderHudProps) {
                 count: props.frames.length,
                 shown: listShown("frames") && !isMinimised("frames"),
                 onToggle: railToggle("frames"),
-                create: { label: "Draw a frame", run: props.onStartFrame, can: true, live: drawingFrame },
+                create: {
+                  label: drawingFrame ? "Stop drawing the frame" : "Draw a frame",
+                  run: props.onStartFrame,
+                  cancel: props.onCancelFrame,
+                  can: true,
+                  live: drawingFrame,
+                },
               },
               {
                 id: "groups",
