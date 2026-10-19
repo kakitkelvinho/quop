@@ -2464,46 +2464,14 @@ html[data-theme="dark"] .builderIsland {
   border-top: 1px solid var(--border);
 }
 
-/* the lightbulb's bubble hangs under the tool pill, over the cheat sheet tab */
+/* the eye's button: its Show wheel hangs under the tool pill, over the cheat sheet tab */
 .builderLighting {
   position: relative;
   display: flex;
 }
 
-.builderLighting__bubble {
-  position: absolute;
-  top: calc(100% + 0.55rem);
-  left: 50%;
-  z-index: 50;
-  display: grid;
-  gap: 0.6rem;
-  width: 13rem;
-  padding: 0.7rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--surface-strong);
-  box-shadow: var(--shadow);
-  translate: -50% 0;
-  animation: builderDrop 160ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.builderLighting__toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.builderLighting__toggle input {
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-/* the eye's Show wheel: a half ring of wedges dropping out of the button, the
-   label size card under it */
+/* the eye's Show wheel: a half ring of wedges dropping out of the button, with
+   the label size dial round its outside and the brightness dial round the eye */
 .showWheel {
   position: absolute;
   top: calc(100% + 0.45rem);
@@ -2516,7 +2484,21 @@ html[data-theme="dark"] .builderIsland {
   pointer-events: none;
 }
 
+/* the open wheel spreads over the islands beside the pill (the brief's, on a
+   phone), and the cheat sheet tab steps aside rather than show through the hole */
+.builderHud__tools > .builderIsland:has(.showWheel) {
+  position: relative;
+  z-index: 6;
+}
+
+.builderHud__tools:has(.showWheel) > .builderSheetTab {
+  visibility: hidden;
+}
+
+/* on a phone the wheel is wider than the window: it shrinks to fit, and slides in from the edge */
 .showWheel__ring {
+  max-width: calc(100vw - 16px);
+  height: auto;
   overflow: visible;
   filter: drop-shadow(0 14px 22px rgb(31 41 51 / 0.16));
   transform-origin: 50% 0;
@@ -2525,12 +2507,6 @@ html[data-theme="dark"] .builderIsland {
 
 html[data-theme="dark"] .showWheel__ring {
   filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
-}
-
-.showWheel__hole {
-  fill: var(--surface-strong);
-  stroke: var(--border);
-  pointer-events: auto;
 }
 
 .showWheel__segment {
@@ -2585,19 +2561,78 @@ html[data-theme="dark"] .showWheel__ring {
   stroke-width: 2.5;
 }
 
-.showWheel__footer {
-  width: 12rem;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.8rem;
-  background: var(--surface-strong);
-  box-shadow: var(--shadow);
+/* a rim dial: a track bent round the ring, its filled part up to a knob */
+.showWheel__dial {
+  color: var(--accent);
+  outline: none;
+  cursor: grab;
   pointer-events: auto;
+  touch-action: none;
   animation: showWheelFade 260ms 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-.showWheel__footer input:disabled {
-  opacity: 0.4;
+.showWheel__dial:active {
+  cursor: grabbing;
+}
+
+/* a wide, unseen stroke along the track: what a finger grabs */
+.showWheel__dialHit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 24;
+}
+
+.showWheel__dialTrack,
+.showWheel__dialFill {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+}
+
+.showWheel__dialTrack {
+  stroke: var(--surface-strong);
+}
+
+.showWheel__dialFill {
+  stroke: color-mix(in srgb, var(--accent) 55%, var(--surface-strong));
+}
+
+.showWheel__dialKnob {
+  fill: var(--surface-strong);
+  stroke: var(--accent);
+  stroke-width: 2;
+  transition: fill 120ms ease;
+}
+
+.showWheel__dial:hover .showWheel__dialKnob {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+}
+
+.showWheel__dial:focus-visible .showWheel__dialKnob {
+  stroke: var(--focus-ring);
+  stroke-width: 3;
+}
+
+.showWheel__dialIcon {
+  pointer-events: none;
+}
+
+.showWheel__dialReadout {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  /* a halo in the ring's colour keeps the label size's % legible over the table */
+  stroke: var(--surface-strong);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+  pointer-events: none;
+}
+
+/* the label size rests while labels are off */
+.showWheel__dial.is-disabled {
+  opacity: 0.35;
   cursor: default;
 }
 
@@ -2611,6 +2646,113 @@ html[data-theme="dark"] .showWheel__ring {
 @keyframes showWheelFade {
   from {
     opacity: 0;
+  }
+}
+
+/* the Tabletop menu's file fan: a quarter ring of wedges from the workspace's
+   top-left corner, its hole clear of the file island; the box sits on the
+   corner (placed from the script), the ring draws down and right from it */
+.fileFan {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.fileFan__ring {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 14px 22px rgb(31 41 51 / 0.16));
+  transform-origin: 4px 4px;
+  animation: fileFanOpen 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="dark"] .fileFan__ring {
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / 0.55));
+}
+
+.fileFan__item {
+  color: var(--muted);
+  outline: none;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* the gaps between wedges are their strokes, in the ring's own colour */
+.fileFan__wedge {
+  fill: var(--surface-strong);
+  stroke: var(--surface-strong);
+  stroke-width: 3;
+  transition: fill 120ms ease;
+}
+
+.fileFan__name {
+  fill: var(--foreground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fileFan__item.is-file .fileFan__name {
+  font-family: var(--font-mono);
+}
+
+.fileFan__hint {
+  fill: currentColor;
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.fileFan__item:hover,
+.fileFan__item:focus-visible {
+  color: var(--accent-strong);
+}
+
+.fileFan__item:hover .fileFan__name,
+.fileFan__item:focus-visible .fileFan__name {
+  fill: currentColor;
+}
+
+.fileFan__item:hover .fileFan__wedge,
+.fileFan__item:focus-visible .fileFan__wedge {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+}
+
+/* Clear empties the table: orange, not the accent */
+.fileFan__item.is-danger:hover,
+.fileFan__item.is-danger:focus-visible {
+  color: #c2410c;
+}
+
+html[data-theme="dark"] .fileFan__item.is-danger:hover,
+html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
+  color: #fb8c4a;
+}
+
+.fileFan__item.is-danger:hover .fileFan__wedge,
+.fileFan__item.is-danger:focus-visible .fileFan__wedge {
+  fill: color-mix(in srgb, #ea580c 14%, var(--surface-strong));
+}
+
+.fileFan__item:focus-visible .fileFan__wedge {
+  stroke: var(--focus-ring);
+  stroke-width: 2.5;
+}
+
+@keyframes fileFanOpen {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fileFan__ring,
+  .fileFan__item {
+    animation: none;
+  }
+
+  .fileFan__wedge {
+    transition: none;
   }
 }
 
@@ -3829,21 +3971,128 @@ body[data-panel-gesture="se"] * {
   padding: 0;
 }
 
-/* minimised: only the bar shows, at the panel's width, in its place */
-.builderPanel.is-minimised {
-  max-height: none;
-  padding-bottom: 0;
-  overflow: hidden;
+/* minimised: the panel leaves the table; its icon waits in the minimised column */
+.builderPanels.is-on .builderPanel.is-minimised {
+  display: none;
 }
 
-.builderPanel.is-minimised > :not(.builderPanelBar) {
-  display: none !important;
+/* The minimised column: a thin island bottom left, an icon per minimised
+   panel, beside the parts panel (or the brief or JSON in its place) while it
+   is showing. The lists step right of it, unless moved by hand. */
+.builderMinimised {
+  left: 0.9rem;
+  bottom: 0.9rem;
+  z-index: 6;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  animation: builderSlideRight 180ms ease;
 }
 
-.builderPanel.is-minimised .builderPanelBar {
-  margin-bottom: 0;
-  border-bottom-color: transparent;
-  border-radius: calc(0.8rem - 1px);
+.builderMinimised.is-besideParts {
+  left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
+}
+
+.builderPanels.is-on .builderHud__lists.is-besideColumn {
+  padding-left: calc(0.9rem + 2.6rem + 0.4rem);
+}
+
+.builderPanels.is-on .builderHud__lists.is-besideParts.is-besideColumn {
+  padding-left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem + 2.6rem + 0.4rem);
+}
+
+.builderMinimised__button {
+  position: relative;
+  color: var(--accent);
+}
+
+.builderMinimised__button:hover:not(:disabled) {
+  color: var(--accent-strong);
+}
+
+.builderMinimised__text {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* its name, out to the right on hover or keyboard focus */
+.builderMinimised__label {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 0.55rem);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface-strong);
+  box-shadow: var(--shadow);
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  translate: -0.3rem -50%;
+  transition:
+    opacity 120ms ease,
+    translate 120ms ease;
+}
+
+.builderMinimised__button:hover .builderMinimised__label,
+.builderMinimised__button:focus-visible .builderMinimised__label {
+  opacity: 1;
+  translate: 0 -50%;
+}
+
+.builderMinimised__sub {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* the View island's panels menu opens upward, its right edge on the island's */
+.builderPanelsMenu .builderMenu__list {
+  top: auto;
+  right: -0.25rem;
+  bottom: calc(100% + 0.55rem);
+  left: auto;
+  animation-name: builderRise;
+}
+
+.builderPanelsMenu .builderMenu__list button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.builderPanelsMenu .builderMenu__list button:disabled {
+  background: transparent;
+  color: var(--foreground);
+  opacity: 0.4;
+  cursor: default;
+}
+
+@keyframes builderRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .builderMinimised,
+  .builderPanelsMenu .builderMenu__list {
+    animation: none;
+  }
+
+  .builderMinimised__label {
+    transition: none;
+  }
 }
 
 /* maximised: the panel's box is set inline; its lists give up their own caps */
@@ -4182,6 +4431,13 @@ body[data-panel-gesture="se"] * {
   flex-wrap: wrap;
 }
 
+/* after Apply: copy, paste, save, open */
+.builderJson__icons {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
 .builderJson__text {
   width: 100%;
   resize: none;
@@ -4285,10 +4541,9 @@ body[data-panel-gesture="se"] * {
   .builderParts,
   .builderAbout,
   .builderMenu__list,
-  .builderLighting__bubble,
   .showWheel__ring,
   .showWheel__segment,
-  .showWheel__footer,
+  .showWheel__dial,
   .builderHud__inspector {
     animation: none;
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type ChangeEvent, type RefObject } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
@@ -15,8 +15,13 @@ import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
-import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+import { MinimisedColumn, PanelsMenu, useInspectorReopens } from "@/components/builder/minimised-column";
+import { minimisedIn, partsSpotShowing, restorePanel, selectionKey, tabletopPanels } from "@/components/builder/minimised-panels";
+import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+import { FileFan } from "@/components/builder/file-fan";
 import { HudStylePrototype } from "@/components/builder/hud-style.prototype";
+import { JsonPanelFiles } from "@/components/builder/json-panel-files";
+import { ShowWheelDial } from "@/components/builder/show-wheel-dial";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -60,8 +65,6 @@ function partnerAngleBeam(components: BuilderComponent[], beams: Beam[], compone
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
-import { findTool } from "@/components/navigation";
-import { BetaMark } from "@/components/beta-badge";
 
 export type BuilderHudProps = {
   components: BuilderComponent[];
@@ -749,7 +752,7 @@ function BriefPanel({
 }) {
   const brief = useMemo(() => setupBrief(), []);
   useEscapeCloses(onClose);
-  const panel = usePanel("brief", { keepHeight: true });
+  const panel = usePanel("brief", { keepHeight: true, opensRestored: true });
 
   return (
     <aside
@@ -765,7 +768,7 @@ function BriefPanel({
         </h2>
       )}
       <p className="builderAbout__description">
-        For an AI assistant. Open its reply with Open JSON….
+        For an AI assistant. Open its reply in the Setup JSON panel: Tabletop ▾, then .json.
       </p>
       <div className="builderBrief__actions">
         <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
@@ -810,11 +813,15 @@ function JsonPanel({
   emptyClicks,
   onApply,
   onClose,
+  onSave,
+  onImport,
 }: {
   scene: BuilderSceneData;
   emptyClicks: number;
   onApply: (scene: BuilderSceneData, summary: string) => void;
   onClose: () => void;
+  onSave: () => void;
+  onImport: BuilderHudProps["onImport"];
 }) {
   // A drag previews a new scene on every pointer move, so the box writes the
   // table out once it has been still for a moment, not on every frame.
@@ -827,12 +834,16 @@ function JsonPanel({
   const view = jsonPanelView(live, draft);
   const { text, edited } = view;
   const [note, setNote] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
   // a large paste is checked once typing settles, not on every keystroke
   const settled = useDeferredValue(text);
   const check = useMemo(() => checkSceneText(settled), [settled]);
   const edit = (next: string) => setDraft(editJson(live, draft, next));
-  useEscapeCloses(onClose);
+  // an open dialog (open a .json, or a group already on the table) takes its own Esc
+  useEscapeCloses(
+    useCallback(() => {
+      if (!document.querySelector('[role="alertdialog"]')) onClose();
+    }, [onClose]),
+  );
   // a click on empty table closes the panel, unless it holds edits not yet applied
   const seenClicks = useRef(emptyClicks);
   useEffect(() => {
@@ -862,10 +873,8 @@ function JsonPanel({
       setNote("Paste blocked: use ⌘V.");
     }
   };
-  const openFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
+  // the folder's Replace: the file fills the box as a draft, for Apply
+  const replaceFrom = async (file: File) => {
     if (file.size > SCENE_TEXT_MAX_BYTES) {
       setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
       return;
@@ -873,7 +882,15 @@ function JsonPanel({
     edit(await file.text());
     setNote(`Read ${file.name}.`);
   };
-  const panel = usePanel("json", { keepHeight: true });
+  // the folder's Add: merged into the table as it stands (merge-setup)
+  const addFrom = async (file: File) => {
+    if (file.size > SCENE_TEXT_MAX_BYTES) {
+      onImport(null, file.name);
+      return;
+    }
+    onImport(await file.text(), file.name);
+  };
+  const panel = usePanel("json", { keepHeight: true, opensRestored: true });
 
   return (
     <aside
@@ -904,18 +921,13 @@ function JsonPanel({
         >
           Apply
         </button>
-        <button type="button" className="builderButton" onClick={() => void copy()}>
-          Copy
-        </button>
-        <button type="button" className="builderButton" onClick={() => void paste()}>
-          Paste
-        </button>
-        <button type="button" className="builderButton" onClick={() => fileRef.current?.click()}>
-          Open file…
-        </button>
-        {/* No accept filter: macOS sometimes greys out .json files the first
-            time the picker opens; the check turns away anything that isn't one. */}
-        <input ref={fileRef} type="file" hidden onChange={(event) => void openFile(event)} />
+        <JsonPanelFiles
+          onCopy={() => void copy()}
+          onPaste={() => void paste()}
+          onSave={onSave}
+          onReplace={(file) => void replaceFrom(file)}
+          onAdd={(file) => void addFrom(file)}
+        />
       </div>
       <textarea
         className="builderBrief__text builderJson__text"
@@ -961,102 +973,6 @@ function JsonPanel({
   );
 }
 
-function FileMenu({
-  onSave,
-  onShowJson,
-  onImport,
-  onExportPng,
-  onResetExample,
-  onClear,
-}: Pick<BuilderHudProps, "onSave" | "onImport" | "onExportPng" | "onResetExample" | "onClear"> & {
-  onShowJson: () => void;
-}) {
-  const importRef = useRef<HTMLInputElement>(null);
-  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    if (file.size > SCENE_TEXT_MAX_BYTES) {
-      onImport(null, file.name);
-      return;
-    }
-    onImport(await file.text(), file.name);
-  };
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  const run = (action: () => void) => () => {
-    action();
-    setOpen(false);
-  };
-
-  return (
-    <div className="builderMenu" ref={ref}>
-      <button
-        type="button"
-        className="builderMenu__trigger"
-        data-guide="file"
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="builderMenu__title">Tabletop</span>
-        <BetaMark tool={findTool("/builder/tabletop")} />
-        <Icon name="chevron" size={14} />
-      </button>
-      {open ? (
-        <div className="builderMenu__list" role="menu">
-          <button type="button" role="menuitem" onClick={run(onSave)}>
-            Save as JSON
-          </button>
-          <button type="button" role="menuitem" onClick={run(onShowJson)}>
-            Open JSON…
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              importRef.current?.click();
-            }}
-          >
-            Import into this table…
-          </button>
-          <button type="button" role="menuitem" onClick={run(onExportPng)}>
-            Export view as PNG
-          </button>
-          <hr />
-          <button type="button" role="menuitem" onClick={run(onResetExample)}>
-            Load example
-          </button>
-          <button type="button" role="menuitem" onClick={run(onClear)}>
-            Clear table
-          </button>
-        </div>
-      ) : null}
-      {/* kept out of the list, which unmounts as the picker opens; no accept
-          filter, as in the JSON panel: the check turns away anything else */}
-      <input ref={importRef} type="file" hidden onChange={(event) => void importFile(event)} />
-    </div>
-  );
-}
-
 /**
  * Close a toolbar bubble on a pointer-down outside it, or on Esc. A part of it
  * drawn elsewhere (in a portal) counts as inside when its element is in `also`.
@@ -1086,76 +1002,14 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
   return ref;
 }
 
-/** The lightbulb: a bubble of how the table is rendered, under the tool pill. */
-function LightingMenu({
-  lighting,
-  onChange,
-  lightGraphics,
-  onToggleQuality,
-}: {
-  lighting: Lighting;
-  onChange: (patch: Partial<Lighting>) => void;
-  lightGraphics: boolean;
-  onToggleQuality: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
-
-  return (
-    <div className="builderLighting" ref={ref}>
-      <button
-        type="button"
-        className={`builderIconBtn${open ? " is-active" : ""}`}
-        aria-label="Lighting"
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        title="Lighting"
-        onClick={() => setOpen((current) => !current)}
-      >
-        <Icon name="light" />
-      </button>
-      {open ? (
-        <div className="builderLighting__bubble" role="dialog" aria-label="Lighting">
-          <label className="builderField">
-            <span className="builderField__label">
-              Brightness
-              <span className="builderReadout">{Math.round(lighting.brightness * 100)}%</span>
-            </span>
-            <input
-              className="builderSlider"
-              type="range"
-              min={BRIGHTNESS_RANGE[0]}
-              max={BRIGHTNESS_RANGE[1]}
-              step={0.05}
-              value={lighting.brightness}
-              onChange={(event) => onChange({ brightness: Number(event.target.value) })}
-            />
-          </label>
-          <label className="builderLighting__toggle">
-            Shadows
-            <input
-              type="checkbox"
-              role="switch"
-              checked={lighting.shadows}
-              onChange={(event) => onChange({ shadows: event.target.checked })}
-            />
-          </label>
-          <label className="builderLighting__toggle" title="Simpler drawing, for a slow computer">
-            Light graphics
-            <input type="checkbox" role="switch" checked={lightGraphics} onChange={onToggleQuality} />
-          </label>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 /**
  * Show: a half ring that drops out of the eye with one wedge for each thing
- * drawn on the table besides the setup: posts, grid, labels and beam
- * distances. The label size, which is saved with the setup, sits in a card
- * under the ring. A size drag previews as it moves and is one undo step: its
- * first change takes the snapshot.
+ * drawn on the table besides the setup, and for how it is drawn: posts, grid,
+ * labels, beam distances, shadows and light graphics. Two rim dials hug the
+ * ring. Round its outside, the label size, which is saved with the setup: a
+ * drag previews as it moves and is one undo step (its first change takes the
+ * snapshot), and it rests while labels are off. Round the eye inside it, the
+ * brightness, which is neither saved nor undone.
  */
 function ShowMenu({
   posts,
@@ -1169,6 +1023,10 @@ function ShowMenu({
   scale,
   onBegin,
   onChange,
+  lighting,
+  onLightingChange,
+  lightGraphics,
+  onToggleQuality,
 }: {
   posts: boolean;
   grid: boolean;
@@ -1181,14 +1039,14 @@ function ShowMenu({
   scale: number;
   onBegin: () => void;
   onChange: (scale: number) => void;
+  lighting: Lighting;
+  onLightingChange: (patch: Partial<Lighting>) => void;
+  lightGraphics: boolean;
+  onToggleQuality: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const editing = useRef(false);
-  const end = () => {
-    editing.current = false;
-  };
   const items: WheelItem[] = [
     {
       id: "posts",
@@ -1216,6 +1074,22 @@ function ShowMenu({
       on: distances,
       onToggle: onToggleDistances,
     },
+    {
+      id: "shadows",
+      label: "Shadows",
+      description: "Shadows cast by the key light",
+      icon: "shadow",
+      on: lighting.shadows,
+      onToggle: () => onLightingChange({ shadows: !lighting.shadows }),
+    },
+    {
+      id: "light-graphics",
+      label: "Light graphics",
+      description: "Simpler drawing, for a slow computer",
+      icon: "gauge",
+      on: lightGraphics,
+      onToggle: onToggleQuality,
+    },
   ];
 
   return (
@@ -1239,32 +1113,30 @@ function ShowMenu({
             setOpen(false);
             buttonRef.current?.focus();
           }}
-          footer={
-            <label className="builderField">
-              <span className="builderField__label">
-                Label size
-                <span className="builderReadout">{Math.round(scale * 100)}%</span>
-              </span>
-              <input
-                className="builderSlider"
-                type="range"
-                min={LABEL_SCALE_RANGE[0]}
-                max={LABEL_SCALE_RANGE[1]}
-                step={0.05}
+          rims={
+            <>
+              <ShowWheelDial
+                label="Label size"
+                icon="labels"
+                arc={{ r: RING.outer + 14, from: Math.PI, to: 0 }}
+                side={1}
+                range={LABEL_SCALE_RANGE}
                 value={scale}
                 disabled={!labels}
-                onChange={(event) => {
-                  if (!editing.current) {
-                    editing.current = true;
-                    onBegin();
-                  }
-                  onChange(Number(event.target.value));
-                }}
-                onPointerUp={end}
-                onKeyUp={end}
-                onBlur={end}
+                disabledHint="turn labels on first"
+                onBegin={onBegin}
+                onChange={onChange}
               />
-            </label>
+              <ShowWheelDial
+                label="Brightness"
+                icon="light"
+                arc={{ r: RING.inner - 18, from: Math.PI, to: 0 }}
+                side={-1}
+                range={BRIGHTNESS_RANGE}
+                value={lighting.brightness}
+                onChange={(brightness) => onLightingChange({ brightness })}
+              />
+            </>
           }
         />
       ) : null}
@@ -1311,8 +1183,10 @@ export default function BuilderHud(props: BuilderHudProps) {
     observer.observe(layer);
     return () => observer.disconnect();
   }, [panelsMove]);
-  // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for them
-  const besideParts = trayOpen || briefOpen || jsonOpen;
+  // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for
+  // them, or for the parts panel, while one is showing: a minimised one is hidden and leaves no gap
+  const isMinimised = minimisedIn(panelsMove);
+  const besideParts = partsSpotShowing({ partsOpen: trayOpen, briefOpen, jsonOpen }, isMinimised);
   const toggleBrief = useCallback(() => {
     onCloseTray();
     setJsonOpen(false);
@@ -1322,6 +1196,7 @@ export default function BuilderHud(props: BuilderHudProps) {
     onCloseTray();
     setBriefOpen(false);
     setJsonOpen(true);
+    restorePanel("json");
   }, [onCloseTray]);
 
   let inspector = null;
@@ -1446,7 +1321,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       : selected.length > 1
         ? "group"
         : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedFrame?.id ?? props.selectedConnection?.id);
-  // what a minimised inspector's bar says it holds
+  // what a minimised inspector holds, as the minimised column says
   const inspectorSubtitle =
     selected.length > 1
       ? `${selected.length} parts`
@@ -1465,6 +1340,28 @@ export default function BuilderHud(props: BuilderHudProps) {
     : connectDraft
       ? { label: "Cancel connection", run: props.onCancelConnect }
       : null;
+  // a minimised Inspector opens again on a new selection; a minimised panel waits in the column
+  useInspectorReopens(
+    selectionKey({
+      beamDraft: beamMode,
+      connectDraft: Boolean(connectDraft),
+      parts: selected.map((component) => component.id),
+      beam: selectedBeam?.id,
+      frame: props.selectedFrame?.id,
+      connection: props.selectedConnection?.id,
+    }),
+    panelsMove,
+  );
+  const panelList = tabletopPanels({
+    inspector: inspector ? { subtitle: inspectorSubtitle } : null,
+    beams: beams.length,
+    frames: props.frames.length,
+    groups: props.groups.length,
+    partsOpen: trayOpen,
+    briefOpen,
+    jsonOpen,
+  });
+  const columnShows = panelList.some((panel) => panel.mounted && isMinimised(panel.id));
 
   const aboutPanels = (
     <>
@@ -1472,7 +1369,14 @@ export default function BuilderHud(props: BuilderHudProps) {
         <BriefPanel onCopy={props.onCopyBrief} onDownload={props.onDownloadBrief} onClose={closeBrief} />
       ) : null}
       {jsonOpen && !trayOpen ? (
-        <JsonPanel scene={props.scene} emptyClicks={props.emptyClicks} onApply={props.onApplyScene} onClose={closeJson} />
+        <JsonPanel
+          scene={props.scene}
+          emptyClicks={props.emptyClicks}
+          onApply={props.onApplyScene}
+          onClose={closeJson}
+          onSave={props.onSave}
+          onImport={props.onImport}
+        />
       ) : null}
     </>
   );
@@ -1485,10 +1389,8 @@ export default function BuilderHud(props: BuilderHudProps) {
           QUOP
         </Link>
         <span className="builderIsland__sep" />
-        <FileMenu
-          onSave={props.onSave}
+        <FileFan
           onShowJson={showJson}
-          onImport={props.onImport}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
@@ -1566,10 +1468,8 @@ export default function BuilderHud(props: BuilderHudProps) {
                 scale={props.labelScale}
                 onBegin={props.onCheckpoint}
                 onChange={props.onLabelScaleChange}
-              />
-              <LightingMenu
                 lighting={props.lighting}
-                onChange={props.onLightingChange}
+                onLightingChange={props.onLightingChange}
                 lightGraphics={props.quality === "light"}
                 onToggleQuality={props.onToggleQuality}
               />
@@ -1665,7 +1565,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {beams.length || props.frames.length || props.groups.length ? (
-        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
+        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}${columnShows ? " is-besideColumn" : ""}`}>
       {beams.length ? (
         <BeamList
           components={components}
@@ -1719,8 +1619,9 @@ export default function BuilderHud(props: BuilderHudProps) {
         <IconButton icon="fit" label="Fit" onClick={props.onFit} />
         <span className="builderIsland__sep" />
         <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        {panelsMove ? <IconButton icon="resetPanels" label="Reset panels (⌥0)" onClick={props.onResetPanels} /> : null}
+        {panelsMove ? <PanelsMenu panels={panelList} onReset={props.onResetPanels} /> : null}
       </div>
+      {panelsMove ? <MinimisedColumn panels={panelList} besideParts={besideParts} /> : null}
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
       <p className="builderStatus" role="status" aria-live="polite">

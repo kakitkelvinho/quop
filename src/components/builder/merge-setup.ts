@@ -1,5 +1,5 @@
-// Import into this table: a setup file merged into the table as it stands,
-// rather than replacing it as Open JSON… → Apply does. It completes the
+// Add to the table (the JSON panel's folder): a setup file merged into the
+// table as it stands, rather than replacing it as Replace → Apply does. It completes the
 // assembly workflow: each experiment built in its own file (Export group),
 // then composed on one table. Pure, so the UI only picks the file and
 // answers the dialog for a group that is already on the table.

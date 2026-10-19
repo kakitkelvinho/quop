@@ -9,7 +9,7 @@ html[data-hud] :is([class^="builder"], [class*=" builder"]) *:not(.builderPart.i
   backdrop-filter: none !important;
 }
 
-html[data-hud] :is(.showWheel, .showWheel *) {
+html[data-hud] :is(.showWheel, .showWheel *, .fileFan, .fileFan *) {
   filter: none !important;
 }
 
@@ -43,7 +43,9 @@ html[data-hud="C"] :is(
     .builderLighting__bubble,
     .showWheel__footer,
     .builderSheetTab,
-    .builderGroupsMenu__list
+    .builderGroupsMenu__list,
+    .builderMinimised,
+    .fileFan
   ) {
   /* the plate redefines the tokens, so everything inside follows */
   --background: #000;
@@ -177,4 +179,30 @@ html[data-hud="C"] .builderCoach__button.is-primary {
   border-color: #e4002b;
   background: #e4002b;
   color: #fff;
+}
+
+/* the corner fan: black wedges, neutral hover, red only for the danger wedge */
+html[data-hud="C"] .fileFan__wedge {
+  fill: #0b0b0b;
+  stroke: #0b0b0b;
+}
+
+html[data-hud="C"] .fileFan__item:hover,
+html[data-hud="C"] .fileFan__item:focus-visible {
+  color: #fff;
+}
+
+html[data-hud="C"] .fileFan__item:hover .fileFan__wedge,
+html[data-hud="C"] .fileFan__item:focus-visible .fileFan__wedge {
+  fill: #262626;
+}
+
+html[data-hud="C"] .fileFan__item.is-danger:hover,
+html[data-hud="C"] .fileFan__item.is-danger:focus-visible {
+  color: #ff2a4f;
+}
+
+html[data-hud="C"] .fileFan__item.is-danger:hover .fileFan__wedge,
+html[data-hud="C"] .fileFan__item.is-danger:focus-visible .fileFan__wedge {
+  fill: #2a0008;
 }
