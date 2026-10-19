@@ -190,26 +190,32 @@ export type RailSlot = {
   count: number;
   shown: boolean;
   onToggle: () => void;
+  /** an empty slot starts the first one instead */
+  create: { label: string; run: () => void; can: boolean; live: boolean };
 };
 
 export function PanelRail({ slots }: { slots: RailSlot[] }) {
   return (
     <div className="builderIsland protoRail" role="toolbar" aria-label="Panels" aria-orientation="vertical">
-      {slots.map((slot) => (
-        <button
-          key={slot.id}
-          type="button"
-          className={`builderIconBtn protoRail__slot${slot.shown && slot.count ? " is-active" : ""}`}
-          aria-label={slot.count ? `${slot.label} (${slot.count})` : `${slot.label}: none yet`}
-          aria-pressed={slot.shown && slot.count > 0}
-          title={slot.count ? `${slot.label} (${slot.count})` : `${slot.label}: none yet`}
-          disabled={!slot.count}
-          onClick={slot.onToggle}
-        >
-          <Icon name={slot.icon} />
-          {slot.count ? <span className="protoRail__count">{slot.count}</span> : null}
-        </button>
-      ))}
+      {slots.map((slot) => {
+        const empty = slot.count === 0;
+        const name = empty ? slot.create.label : `${slot.label} (${slot.count})`;
+        return (
+          <button
+            key={slot.id}
+            type="button"
+            className={`builderIconBtn protoRail__slot${empty ? " is-empty" : ""}${(slot.shown && !empty) || slot.create.live ? " is-active" : ""}`}
+            aria-label={name}
+            aria-pressed={empty ? undefined : slot.shown}
+            title={name}
+            disabled={empty && !slot.create.can && !slot.create.live}
+            onClick={empty ? slot.create.run : slot.onToggle}
+          >
+            <Icon name={slot.icon} />
+            <span className="protoRail__count">{empty ? "+" : slot.count}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

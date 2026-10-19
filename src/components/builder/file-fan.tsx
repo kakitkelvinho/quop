@@ -175,11 +175,16 @@ export function FileFan({
   onExportPng,
   onResetExample,
   onClear,
+  brand,
+  onSite,
 }: {
   onShowJson: () => void;
   onExportPng: () => void;
   onResetExample: () => void;
   onClear: () => void;
+  /** PROTOTYPE (flat-hud D): the trigger is the QUOP mark, and the fan's first wedge goes back to the site */
+  brand?: boolean;
+  onSite?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -212,6 +217,7 @@ export function FileFan({
     action();
   };
   const items: FanItem[] = [
+    ...(onSite ? [{ id: "site", label: "QUOP", hint: "Back to the site", icon: "back" as const, run: pick(onSite) }] : []),
     { id: "json", label: ".json", hint: "Save, load, edit", icon: "braces", file: true, run: pick(onShowJson) },
     { id: "png", label: ".png", hint: "Export the view", icon: "image", file: true, run: pick(onExportPng) },
     { id: "example", label: "Example", hint: "Load the example", icon: "example", run: pick(onResetExample) },
@@ -229,8 +235,14 @@ export function FileFan({
         aria-haspopup="menu"
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="builderMenu__title">Tabletop</span>
-        <BetaMark tool={findTool("/builder/tabletop")} />
+        {brand ? (
+          <span className="builderMenu__title protoBrand">QUOP</span>
+        ) : (
+          <>
+            <span className="builderMenu__title">Tabletop</span>
+            <BetaMark tool={findTool("/builder/tabletop")} />
+          </>
+        )}
         <Icon name="chevron" size={14} />
       </button>
       {open ? <Fan items={items} onClose={close} /> : null}

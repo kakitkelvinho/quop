@@ -209,12 +209,13 @@ html[data-hud="C"] .fileFan__item.is-danger:focus-visible .fileFan__wedge {
 
 /* ---------- D · Minimal: B's shapes, oxblood day and night, grouped controls. ---------- */
 
-/* one ink in both themes; at night the same hue is lifted so it reads on black */
+/* one ink in both themes; at night it is lifted to read on black, and turned
+   toward red as it lifts, or the lighter oxblood goes pink */
 html[data-hud="D"][data-theme="dark"] {
-  --accent: #d14a6e;
-  --accent-strong: #e7809c;
-  --accent-soft: rgb(209 74 110 / 0.16);
-  --focus-ring: #d14a6e;
+  --accent: #c23a48;
+  --accent-strong: #d9545f;
+  --accent-soft: rgb(194 58 72 / 0.18);
+  --focus-ring: #c23a48;
 }
 
 /* hovers go neutral: the ink is spent only on what's live */
@@ -237,11 +238,6 @@ html[data-hud="D"] .builderIconBtn.is-active,
 html[data-hud="D"] .builderPart.is-active {
   background: var(--accent) !important;
   color: #fff !important;
-}
-
-html[data-hud="D"][data-theme="dark"] .builderIconBtn.is-active,
-html[data-hud="D"][data-theme="dark"] .builderPart.is-active {
-  color: #000 !important;
 }
 
 html[data-hud="D"] .fileFan__item:hover .fileFan__wedge,
@@ -287,23 +283,33 @@ html[data-hud="D"] .fileFan__item.is-disabled {
   right: 0.9rem;
 }
 
-.protoUndo {
-  left: 0.9rem;
-  bottom: 0.9rem;
-}
-
 .protoRail {
   left: 0.9rem;
-  bottom: 3.75rem;
+  bottom: 0.9rem;
   flex-direction: column;
+}
+
+/* undo and redo straddle the eye, so its wheel drops from the middle */
+.protoDock {
+  position: static;
+}
+
+.protoBrand {
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .protoRail__slot {
   position: relative;
 }
 
-.protoRail__slot:disabled {
-  opacity: 0.3;
+.protoRail__slot:disabled,
+.protoRail__slot.is-empty:not(.is-active) {
+  opacity: 0.4;
+}
+
+.protoRail__slot.is-empty:not(:disabled):hover {
+  opacity: 1;
 }
 
 .protoRail__count {
@@ -319,13 +325,12 @@ html[data-hud="D"] .fileFan__item.is-disabled {
 /* the lists open beside the rail, above the undo pair */
 html[data-hud="D"] .builderHud__lists {
   left: 3.6rem;
-  bottom: 3.75rem;
 }
 
 html[data-hud="D"] .builderPanels.is-on .builderHud__lists {
   left: 0;
   bottom: 0;
-  padding: 0 0 3.75rem 3.6rem;
+  padding: 0 0 0.9rem 3.6rem;
 }
 
 html[data-hud="D"] .builderPanels.is-on .builderHud__lists.is-besideParts,
@@ -341,6 +346,33 @@ html[data-hud="D"] .builderHud__lists.is-besideParts:not(.builderPanels.is-on *)
 /* the inspector clears the help button */
 html[data-hud="D"] .builderHud__inspector {
   top: 3.9rem;
+}
+
+/* a list panel is a title and its rows: the rail shows and hides it, the
+   whole bar drags it, so no grip and no window buttons */
+html[data-hud="D"] .builderHud__lists :is(.builderPanelBar__grip, .builderPanelBar__buttons) {
+  display: none;
+}
+
+html[data-hud="D"] .builderHud__lists .builderPanelBar {
+  padding-left: 0.6rem;
+}
+
+html[data-hud="D"] .builderPanelBar__title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+html[data-hud="D"] .builderBeamRow__select {
+  font-weight: 500;
+}
+
+/* a row's eye and bin show on the row you're at; a hidden row keeps its closed eye */
+@media (hover: hover) {
+  html[data-hud="D"] .builderBeamRow:not(:hover):not(:focus-within):not(.is-hidden) .builderBeamRow__actions {
+    opacity: 0;
+  }
 }
 
 /* the mode is the headline while it lasts */

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
@@ -1163,6 +1164,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   const mode = modeHints(props);
   // PROTOTYPE (D): the minimal layout, and which lists the rail has put away
   const protoD = useHudVariant() === "D";
+  const router = useRouter();
   const [railHidden, setRailHidden] = useState<Record<string, boolean>>({});
   const selecting = !beamMode && !drawingFrame && !connectDraft && !placingType && !trayOpen;
   // the brief and the JSON panel share the parts panel's spot, so opening one closes the others
@@ -1436,16 +1438,22 @@ export default function BuilderHud(props: BuilderHudProps) {
   return (
     <>
       <div className="builderIsland builderHud__file">
-        <Link href="/" className="builderBack" aria-label="Back to the QUOP site">
-          <Icon name="back" size={16} />
-          QUOP
-        </Link>
-        <span className="builderIsland__sep" />
+        {protoD ? null : (
+          <>
+            <Link href="/" className="builderBack" aria-label="Back to the QUOP site">
+              <Icon name="back" size={16} />
+              QUOP
+            </Link>
+            <span className="builderIsland__sep" />
+          </>
+        )}
         <FileFan
           onShowJson={showJson}
           onExportPng={props.onExportPng}
           onResetExample={props.onResetExample}
           onClear={props.onClear}
+          brand={protoD}
+          onSite={protoD ? () => router.push("/") : undefined}
         />
       </div>
 
@@ -1538,7 +1546,13 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       <div className="builderHud__center">
-        {protoD ? null : (
+        {protoD ? (
+          <div className="builderIsland protoDock" role="toolbar" aria-label="Tools">
+            <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
+            {showMenu}
+            <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
+          </div>
+        ) : (
         <div className="builderHud__toolRow">
           <button
             type="button"
@@ -1703,7 +1717,6 @@ export default function BuilderHud(props: BuilderHudProps) {
       {protoD ? (
         <>
           <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
-            {showMenu}
             <ProtoFan
               icon={view === "top" ? "top" : "iso"}
               label="Camera"
@@ -1715,15 +1728,40 @@ export default function BuilderHud(props: BuilderHudProps) {
               ]}
             />
           </div>
-          <div className="builderIsland protoUndo" role="toolbar" aria-label="History">
-            <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
-            <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
-          </div>
           <PanelRail
             slots={[
-              { id: "beams", label: "Beams", icon: "beams", count: beams.length, shown: listShown("beams") && !isMinimised("beams"), onToggle: railToggle("beams") },
-              { id: "frames", label: "Frames", icon: "frame", count: props.frames.length, shown: listShown("frames") && !isMinimised("frames"), onToggle: railToggle("frames") },
-              { id: "groups", label: "Groups", icon: "groups", count: props.groups.length, shown: listShown("groups") && !isMinimised("groups"), onToggle: railToggle("groups") },
+              {
+                id: "beams",
+                label: "Beams",
+                icon: "beams",
+                count: beams.length,
+                shown: listShown("beams") && !isMinimised("beams"),
+                onToggle: railToggle("beams"),
+                create: { label: "Draw a beam", run: props.onStartBeam, can: components.length >= 2, live: beamMode },
+              },
+              {
+                id: "frames",
+                label: "Frames",
+                icon: "frame",
+                count: props.frames.length,
+                shown: listShown("frames") && !isMinimised("frames"),
+                onToggle: railToggle("frames"),
+                create: { label: "Draw a frame", run: props.onStartFrame, can: true, live: drawingFrame },
+              },
+              {
+                id: "groups",
+                label: "Groups",
+                icon: "groups",
+                count: props.groups.length,
+                shown: listShown("groups") && !isMinimised("groups"),
+                onToggle: railToggle("groups"),
+                create: {
+                  label: selected.length > 1 ? "Group the selected parts" : "Select two or more parts to group them",
+                  run: props.onGroupSelected,
+                  can: selected.length > 1,
+                  live: false,
+                },
+              },
             ]}
           />
         </>
