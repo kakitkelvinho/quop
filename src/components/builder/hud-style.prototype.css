@@ -1,0 +1,180 @@
+/* PROTOTYPE: throwaway HUD surface languages for the Tabletop (?variant=current|A|B|C).
+   Not for main. Everything keys off html[data-hud], set by hud-style.prototype.tsx. */
+
+/* ---------- A · Flat: no shadow, no blur, solid fill. Corners unchanged. ---------- */
+
+html[data-hud] :is([class^="builder"], [class*=" builder"]):not(.builderPart.is-active):not(.builderSwatch.is-active),
+html[data-hud] :is([class^="builder"], [class*=" builder"]) *:not(.builderPart.is-active):not(.builderSwatch.is-active) {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-hud] :is(.showWheel, .showWheel *) {
+  filter: none !important;
+}
+
+html[data-hud] .builderIsland,
+html[data-hud] .builderSheetTab {
+  background: var(--surface-strong);
+}
+
+html[data-hud][data-theme="dark"] .builderIsland,
+html[data-hud][data-theme="dark"] .builderSheetTab {
+  background: #0a0a0a;
+}
+
+/* ---------- B · Flat + hard-edged: A, plus square corners everywhere. ---------- */
+
+html:is([data-hud="B"], [data-hud="C"]) :is([class^="builder"], [class*=" builder"]):not(.builderSwatch):not([class*="__dot"]):not([class*="Dots"]):not([class*="__dots"]),
+html:is([data-hud="B"], [data-hud="C"]) :is([class^="builder"], [class*=" builder"]) :not(.builderSwatch):not([class*="__dot"]):not([class*="__dots"]):not([class*="showWheel"]) {
+  border-radius: 0 !important;
+}
+
+/* the island seams were soft gaps; on a hard plate they read as cut lines */
+html:is([data-hud="B"], [data-hud="C"]) .builderIsland {
+  border-color: color-mix(in srgb, var(--foreground) 22%, transparent);
+}
+
+/* ---------- C · Signal: B, plus HITMAN-style black plates and one red. ---------- */
+
+html[data-hud="C"] :is(
+    .builderIsland,
+    .builderMenu__list,
+    .builderLighting__bubble,
+    .showWheel__footer,
+    .builderSheetTab,
+    .builderGroupsMenu__list
+  ) {
+  /* the plate redefines the tokens, so everything inside follows */
+  --background: #000;
+  --surface: #0b0b0b;
+  --surface-strong: #0b0b0b;
+  --foreground: #f4f4f4;
+  --muted: #9c9c9c;
+  --border: rgb(255 255 255 / 0.14);
+  --accent: #e4002b;
+  --accent-strong: #ff2a4f;
+  /* hover washes go neutral: red is spent only on what's live */
+  --accent-soft: rgb(255 255 255 / 0.09);
+  --focus-ring: #fff;
+  color-scheme: dark;
+  background: #0b0b0b !important;
+  border-color: #0b0b0b !important;
+  color: var(--foreground);
+}
+
+html[data-hud="C"][data-theme="dark"] :is(.builderIsland, .builderMenu__list, .builderLighting__bubble, .showWheel__footer, .builderSheetTab) {
+  border-color: rgb(255 255 255 / 0.16) !important;
+}
+
+html[data-hud="C"] .builderIsland :is(input, select, textarea) {
+  color: inherit;
+}
+
+/* the live tool is the one red thing in a toolbar */
+html[data-hud="C"] .builderIconBtn.is-active,
+html[data-hud="C"] .builderButton[aria-pressed="true"],
+html[data-hud="C"] .builderPart.is-active {
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+html[data-hud="C"] .builderPart__icon {
+  color: var(--foreground);
+}
+
+html[data-hud="C"] .builderIsland__sep {
+  background: rgb(255 255 255 / 0.18);
+}
+
+/* help steps down: a plain plate, not the loudest thing on screen */
+html[data-hud="C"] .builderGuideButton {
+  height: 2.5rem;
+  padding: 0 0.85rem 0 0.7rem;
+  background: #0b0b0b !important;
+  color: #f4f4f4 !important;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+html[data-hud="C"] .builderGuideButton:hover {
+  background: #1d1d1d !important;
+}
+
+html[data-hud="C"][data-theme="dark"] .builderGuideButton {
+  outline: 1px solid rgb(255 255 255 / 0.16);
+  outline-offset: -1px;
+}
+
+/* the mode is the headline while it lasts */
+html[data-hud="C"] .builderModeBadge {
+  gap: 1.1rem;
+  padding: 0.55rem 0.9rem 0.55rem 0.8rem;
+  background: #0b0b0b;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+html[data-hud="C"] .builderModeBadge::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  background: #e4002b;
+}
+
+html[data-hud="C"] .builderModeBadge__hints {
+  color: #b4b4b4;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+html[data-hud="C"] .builderModeBadge kbd {
+  border-color: rgb(255 255 255 / 0.3);
+  background: transparent;
+  color: #fff;
+}
+
+html[data-hud="C"] .builderStatus {
+  padding: 0.25rem 0.7rem;
+  background: #0b0b0b;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+/* in-scene labels: black tags, red when selected */
+html[data-hud="C"] .builderLabel:not(.builderLabel--frame) {
+  border-color: #0b0b0b;
+  background: #0b0b0b;
+  color: #f4f4f4;
+}
+
+html[data-hud="C"] .builderLabel.is-selected {
+  border-color: #e4002b;
+  background: #e4002b;
+  color: #fff;
+}
+
+html[data-hud="C"] .builderControlsHint {
+  color: color-mix(in srgb, var(--foreground) 55%, transparent);
+}
+
+/* the tour drops its amber for white and red */
+html[data-hud="C"] .builderCoach__ring {
+  border-color: #fff;
+}
+
+html[data-hud="C"] :is(.builderCoach__tag, .builderCoach__card) {
+  background: #0b0b0b;
+}
+
+html[data-hud="C"] .builderCoach__button.is-primary {
+  border-color: #e4002b;
+  background: #e4002b;
+  color: #fff;
+}

@@ -16,6 +16,7 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside } from "@/components/builder/panel-store";
 import { ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+import { HudStylePrototype } from "@/components/builder/hud-style.prototype";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -1725,6 +1726,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       <p className="builderStatus" role="status" aria-live="polite">
         {props.status}
       </p>
+      <HudStylePrototype />
     </>
   );
 }
