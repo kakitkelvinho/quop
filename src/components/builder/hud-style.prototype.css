@@ -25,13 +25,13 @@ html[data-hud][data-theme="dark"] .builderSheetTab {
 
 /* ---------- B · Flat + hard-edged: A, plus square corners everywhere. ---------- */
 
-html:is([data-hud="B"], [data-hud="C"]) :is([class^="builder"], [class*=" builder"]):not(.builderSwatch):not([class*="__dot"]):not([class*="Dots"]):not([class*="__dots"]),
-html:is([data-hud="B"], [data-hud="C"]) :is([class^="builder"], [class*=" builder"]) :not(.builderSwatch):not([class*="__dot"]):not([class*="__dots"]):not([class*="showWheel"]) {
+html:is([data-hud="B"], [data-hud="C"], [data-hud="D"]) :is([class^="builder"], [class*=" builder"]):not(.builderSwatch):not([class*="__dot"]):not([class*="Dots"]):not([class*="__dots"]),
+html:is([data-hud="B"], [data-hud="C"], [data-hud="D"]) :is([class^="builder"], [class*=" builder"]) :not(.builderSwatch):not([class*="__dot"]):not([class*="__dots"]):not([class*="showWheel"]) {
   border-radius: 0 !important;
 }
 
 /* the island seams were soft gaps; on a hard plate they read as cut lines */
-html:is([data-hud="B"], [data-hud="C"]) .builderIsland {
+html:is([data-hud="B"], [data-hud="C"], [data-hud="D"]) .builderIsland {
   border-color: color-mix(in srgb, var(--foreground) 22%, transparent);
 }
 
@@ -205,4 +205,195 @@ html[data-hud="C"] .fileFan__item.is-danger:focus-visible {
 html[data-hud="C"] .fileFan__item.is-danger:hover .fileFan__wedge,
 html[data-hud="C"] .fileFan__item.is-danger:focus-visible .fileFan__wedge {
   fill: #2a0008;
+}
+
+/* ---------- D · Minimal: B's shapes, oxblood day and night, grouped controls. ---------- */
+
+/* one ink in both themes; at night the same hue is lifted so it reads on black */
+html[data-hud="D"][data-theme="dark"] {
+  --accent: #d14a6e;
+  --accent-strong: #e7809c;
+  --accent-soft: rgb(209 74 110 / 0.16);
+  --focus-ring: #d14a6e;
+}
+
+/* hovers go neutral: the ink is spent only on what's live */
+html[data-hud="D"] :is(
+    .builderIconBtn:hover:not(:disabled),
+    .builderMenu__trigger:hover,
+    .builderBack:hover,
+    .builderPart:hover,
+    .builderBeamRow:hover,
+    .builderHud__close:hover,
+    .builderPanelBar__button:hover,
+    .builderMenu__list button:hover,
+    .builderGroupsMenu__item:hover,
+    .builderMinimised__button:hover:not(:disabled)
+  ) {
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
+html[data-hud="D"] .builderIconBtn.is-active,
+html[data-hud="D"] .builderPart.is-active {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+
+html[data-hud="D"][data-theme="dark"] .builderIconBtn.is-active,
+html[data-hud="D"][data-theme="dark"] .builderPart.is-active {
+  color: #000 !important;
+}
+
+html[data-hud="D"] .fileFan__item:hover .fileFan__wedge,
+html[data-hud="D"] .fileFan__item:focus-visible .fileFan__wedge {
+  fill: color-mix(in srgb, var(--foreground) 9%, var(--surface-strong));
+}
+
+html[data-hud="D"] .fileFan__item:hover,
+html[data-hud="D"] .fileFan__item:focus-visible {
+  color: var(--foreground);
+}
+
+html[data-hud="D"] .fileFan__item.is-on .fileFan__wedge {
+  fill: var(--accent-soft);
+}
+
+html[data-hud="D"] .fileFan__item.is-disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* the fans open from their own buttons */
+.protoFan {
+  position: relative;
+  display: inline-grid;
+}
+
+.protoFan__layer {
+  z-index: 60;
+}
+
+.protoFan__ring {
+  transform-origin: center;
+}
+
+.protoFan__ring .fileFan__name {
+  font-size: 12px;
+}
+
+/* the places D gives things */
+.protoHelp {
+  top: 0.9rem;
+  right: 0.9rem;
+}
+
+.protoUndo {
+  left: 0.9rem;
+  bottom: 0.9rem;
+}
+
+.protoRail {
+  left: 0.9rem;
+  bottom: 3.75rem;
+  flex-direction: column;
+}
+
+.protoRail__slot {
+  position: relative;
+}
+
+.protoRail__slot:disabled {
+  opacity: 0.3;
+}
+
+.protoRail__count {
+  position: absolute;
+  right: 1px;
+  bottom: 0;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* the lists open beside the rail, above the undo pair */
+html[data-hud="D"] .builderHud__lists {
+  left: 3.6rem;
+  bottom: 3.75rem;
+}
+
+html[data-hud="D"] .builderPanels.is-on .builderHud__lists {
+  left: 0;
+  bottom: 0;
+  padding: 0 0 3.75rem 3.6rem;
+}
+
+html[data-hud="D"] .builderPanels.is-on .builderHud__lists.is-besideParts,
+html[data-hud="D"] .builderHud__lists.is-besideParts {
+  padding-left: calc(3.6rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
+}
+
+html[data-hud="D"] .builderHud__lists.is-besideParts:not(.builderPanels.is-on *) {
+  left: calc(3.6rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
+  padding-left: 0;
+}
+
+/* the inspector clears the help button */
+html[data-hud="D"] .builderHud__inspector {
+  top: 3.9rem;
+}
+
+/* the mode is the headline while it lasts */
+html[data-hud="D"] .builderModeBadge {
+  gap: 1.1rem;
+  padding: 0.55rem 0.9rem 0.55rem 0.8rem;
+  background: #111;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+html[data-hud="D"][data-theme="dark"] .builderModeBadge {
+  background: #fff;
+  color: #000;
+}
+
+html[data-hud="D"] .builderModeBadge::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--accent);
+}
+
+html[data-hud="D"] .builderModeBadge__hints {
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+html[data-hud="D"] .builderModeBadge kbd {
+  border-color: color-mix(in srgb, currentColor 35%, transparent);
+  background: transparent;
+  color: inherit;
+}
+
+html[data-hud="D"] .builderStatus {
+  padding: 0.25rem 0.7rem;
+  background: var(--foreground);
+  color: var(--background);
+  font-size: 0.8rem;
+}
+
+/* the tour drops its amber for the ink */
+html[data-hud="D"] .builderCoach__ring {
+  border-color: var(--accent);
+}
+
+html[data-hud="D"] .builderCoach__button.is-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
