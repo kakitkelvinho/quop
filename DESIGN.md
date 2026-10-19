@@ -110,7 +110,7 @@ Two color systems run in parallel and must not be confused: the oxblood ink is t
 
 **Key Characteristics:**
 - White paper by day, black board by night — one oxblood ink in both, worn as fills and rings at night while the words go white
-- Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat
+- Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat, except the chalk cards and the Tabletop HUD (see Elevation & Depth)
 - Uppercase, letter-spaced kicker labels mark structure and category; regular-case text is always actual content
 - FITS/data-instrument surfaces (crosshair readouts, colorbars) speak in mono type and green-phosphor/amber highlights, deliberately more "instrument" than the plain chrome around them
 - Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the oxblood ink accent
@@ -184,6 +184,10 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 
 **The one exception: the chalk card family.** The homepage's four section cards carry no shadow, no fill, and no border — they are a wobbled SVG frame drawn onto the page surface. A mark on a board has nothing to cast a shadow with, and giving these cards one would break the single idea the homepage is built on. The exception is scoped to `.chalkCard` and does not extend to any other card; a new card type defaults back to the Always-Lifted Rule unless it is literally drawn in chalk.
 
+**The second exception: the Tabletop HUD.** The Tabletop HUD is drawn on the glass, not set on the table: flat, opaque, square, no shadow. Under it is a lit 3D scene with its own hard light and real cast shadows; a soft floating card on top of that read as generic, and a second, fake depth competed with the scene's. So every builder surface (islands, menus, the Show wheel and the file fan, panels and their bars, the cheat sheet tab, the Guide button, coach marks, labels, badges and the status toast) has no `box-shadow`, no `backdrop-filter` and no `drop-shadow` filter, and an opaque fill (`--surface-strong`, a solid near-black at night). What would have been the shadow's job, separating a plate from the scene, is done by a clear 1px hairline (`--builder-hairline`, `color-mix(in srgb, var(--foreground) 22%, transparent)`), which stays visible on the night void. The only inset rings left are state, not depth: the active part tile's and the active swatch's. The exception is scoped to the builder section of `globals.css`; it does not license flat cards elsewhere.
+
+Inside the HUD the accent is spent only on what is live: the active tool is a solid `--accent` fill with a white icon, the selection keeps its `--focus-ring` border, and the mode badge carries a small square `--accent` marker. Hovers are a neutral wash (`--builder-hover`, `color-mix(in srgb, var(--foreground) 8%, transparent)`), never `--accent-soft`, and the Guide button is a plate like the islands rather than an accent fill.
+
 ### Shadow Vocabulary
 - **Card ambient** (`box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1)`, day / `0 28px 60px rgba(0, 0, 0, 0.35)`, night): the resting shadow under every `sectionCard`, `inputCard`, and `infoPanel`.
 - **Control ambient** (`box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14)`, deepens to `0 16px 28px rgba(91, 102, 117, 0.18)` on hover): the metallic plotter/action buttons (`buttonControl`).
@@ -192,7 +196,7 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 
 ## Shapes
 
-Corners are soft throughout but not uniform: primary buttons and small controls round to `0.8rem`, inputs and secondary surfaces to `0.9–0.95rem`, primary cards to the largest radius at `1.1rem`. Badges and the sidebar toggle go fully round (`999px`). The header is the exception: its items, the theme toggle among them, are square, full-height tabs in the bar. A 1px hairline border in the hairline/frost neutral appears on almost every container. The chalk section cards are the one departure: no radius and no border at all, because their edge is a drawn line rather than a box — see the Chalk Section Cards component.
+Corners are soft throughout but not uniform: primary buttons and small controls round to `0.8rem`, inputs and secondary surfaces to `0.9–0.95rem`, primary cards to the largest radius at `1.1rem`. Badges and the sidebar toggle go fully round (`999px`). The header is the exception: its items, the theme toggle among them, are square, full-height tabs in the bar. A 1px hairline border in the hairline/frost neutral appears on almost every container. The chalk section cards are the one departure: no radius and no border at all, because their edge is a drawn line rather than a box — see the Chalk Section Cards component. The Tabletop HUD is the other: one radius, `0`, everywhere — see the Tabletop HUD component.
 
 ## Components
 
@@ -235,11 +239,28 @@ Four cards — Builder, Notes, Plotters, Calculators — each a hand-drawn frame
 ### Signature Component — FITS Instrument Readout
 The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. Icon-button toolbars use amber highlighting (`rgba(230, 171, 88, 0.16)` background, `#8f5f12`/`#ffd99d` text) for active/open states rather than the oxblood ink — this toolbar-amber is a separate, narrower accent scoped only to these instrument controls.
 
+### Tabletop HUD (the builder)
+The controls over the Tabletop's 3D scene are a compact, hard-edged instrument panel, flat by exception (see Elevation & Depth). They have their own scale, set in the builder section of `globals.css`.
+
+- **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
+- **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
+- **Type:** smaller than the rest of the site, because the scene is the content.
+  - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
+  - Titles `0.92rem` 700: the inspector's head, a panel's title.
+  - Rows `0.8–0.84rem` 600: a part's name, a beam or frame row, a group item, buttons.
+  - Small `0.72–0.75rem`: hints, panel bar titles, the cheat sheet, mono readouts (`0.75rem`).
+  - Labels `0.62–0.68rem` 600–800: field labels (sentence case); list and group titles uppercase, tracked `0.04–0.08em`.
+  - Key caps `0.6–0.62rem` mono 700.
+  - Metric values `0.95rem` mono 700.
+  - Mode badge: the name `1.1rem` 700, uppercase, tracked `0.18em` (BEAM, FRAME, GROUP), after a `0.6rem` square `--accent` marker; its key hints `0.75rem` in sentence case.
+  - Status toast `0.8rem` 600.
+- **Coach marks:** rings and leader lines in `--focus-ring`, so a thin mark clears 3:1 at night; tags on an `--accent` fill with light words; the card a flat dark plate with a white focus ring.
+
 ## Do's and Don'ts
 
 ### Do:
 - **Do** keep one oxblood ink in both themes: fills unchanged, thin marks lifted toward red, words white at night — see The Day/Night Ink Rule.
-- **Do** give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice, unless it is part of the chalk card family.
+- **Do** give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice, unless it is part of the chalk card family or the Tabletop HUD.
 - **Do** keep hand-drawn texture on the homepage board and off everything else — the chalk filters, the wobbled frames, and the serif italic are one scoped gesture, not a site-wide style.
 - **Do** keep the four section wayfinding colors (ember-orange, sky-blue, seafoam-teal, coral-pink) purely categorical — section identification only, never a general accent.
 - **Do** reserve uppercase/letter-spaced type for structural labels (kickers, nav, cluster labels) and keep all real content sentence-case — see The Case Rule.
@@ -249,5 +270,5 @@ The FITS/CSV plotters depart deliberately from the notebook language into instru
 - **Don't** treat `TransitionProvider`, `NavTransitionLink`, `WavefunctionBanner`, or the `orbitalPhase` field on `navSections` as part of the live design system. They exist in source but are not wired into the app (no page imports `TransitionProvider` or `WavefunctionBanner`; `AppShell` uses a plain `Link`, not `NavTransitionLink`; `orbitalPhase` is never read). They're leftover from a prior orbital/atom hero and should be treated as dead code, not incumbent authority, until someone deliberately revives or removes them.
 - **Don't** raise `--chalk-alpha` until the marks read as confidently as interface text. They are meant to sit at the edge of legibility; an equation that competes with the welcome copy has been pushed too far.
 - **Don't** let the oxblood ink and the section wayfinding colors trade places — they answer "what's emphasized" and "what section is this" respectively, and mixing them removes the only categorical signal the site has.
-- **Don't** flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule.
+- **Don't** flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule. The Tabletop HUD is the reverse: don't give any of its surfaces a shadow, a blur or a rounded corner.
 - **Don't** mix the two live corner-radius idioms (Tailwind's `rounded-2xl`/`rounded-full` on newer components vs. the hand-set `0.8–1.1rem` scale on older CSS classes) within a single component; match whichever the surrounding file already uses.
