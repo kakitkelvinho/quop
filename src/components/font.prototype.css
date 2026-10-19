@@ -1,0 +1,28 @@
+/* PROTOTYPE: font variants for #266, keyed on html[data-font] / [data-font-bold]. Not for main.
+   The fonts' variables come from layout.tsx; the HUD's --font-inter follows the site's here. */
+
+html[data-font="switzer"] {
+  --font-ibm-plex-sans: "Switzer";
+  --font-inter: "Switzer";
+}
+
+html[data-font="geist"] {
+  --font-ibm-plex-sans: var(--font-proto-geist);
+  --font-inter: var(--font-proto-geist);
+}
+
+html[data-font="inter-tight"] {
+  --font-ibm-plex-sans: var(--font-proto-inter-tight);
+  --font-inter: var(--font-proto-inter-tight);
+}
+
+html[data-font="roboto"] {
+  --font-ibm-plex-sans: var(--font-proto-roboto);
+  --font-inter: var(--font-proto-roboto);
+}
+
+/* bold headings: the page title and section headings step up to 700 */
+html[data-font-bold] :is(h1, h2, h3, .toolTitle) {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}

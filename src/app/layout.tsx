@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 
 import { AppShell } from "@/components/app-shell";
+import { FontPrototype } from "@/components/font.prototype";
 import { SiteFooter } from "@/components/site-footer";
 import { SITE_VERSION } from "@/components/site-version";
 
@@ -34,6 +35,23 @@ const ebGaramond = localFont({
 const inter = localFont({
   src: [{ path: "./fonts/inter-100-900-normal.woff2", weight: "100 900", style: "normal" }],
   variable: "--font-inter",
+  preload: false,
+});
+
+// PROTOTYPE (#266): candidate site fonts, switched by ?variant=. Not for main.
+const protoGeist = localFont({
+  src: [{ path: "./fonts/prototype/geist.woff2", weight: "100 900", style: "normal" }],
+  variable: "--font-proto-geist",
+  preload: false,
+});
+const protoInterTight = localFont({
+  src: [{ path: "./fonts/prototype/inter-tight.woff2", weight: "100 900", style: "normal" }],
+  variable: "--font-proto-inter-tight",
+  preload: false,
+});
+const protoRoboto = localFont({
+  src: [{ path: "./fonts/prototype/roboto.woff2", weight: "100 900", style: "normal" }],
+  variable: "--font-proto-roboto",
   preload: false,
 });
 
@@ -85,13 +103,14 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${ibmPlexSans.variable} ${ebGaramond.variable} ${inter.variable}`}
+      className={`${ibmPlexSans.variable} ${ebGaramond.variable} ${inter.variable} ${protoGeist.variable} ${protoInterTight.variable} ${protoRoboto.variable}`}
       lang="en"
       suppressHydrationWarning
     >
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <AppShell footer={<SiteFooter />}>{children}</AppShell>
+        <FontPrototype />
       </body>
     </html>
   );
