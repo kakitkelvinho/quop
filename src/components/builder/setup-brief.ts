@@ -310,7 +310,7 @@ export const SETUP_BRIEF_FILENAME = "quop-setup-brief.md";
 export function setupBrief(): string {
   return `# Writing a QUOP setup file
 
-You are helping someone draw an optics experiment in the QUOP Tabletop, a notebook for sketching setups on an optical table. It records the layout the author intends; it does not simulate light. They will describe their experiment, and you will write a setup file (\`.json\`) that they open in the Tabletop's **Setup JSON** panel (**Tabletop ▾ → .json**), which takes a file or pasted text.
+You are helping someone draw an optics experiment in the QUOP Tabletop, a notebook for sketching setups on an optical table. It records the layout the author intends; it does not simulate light. They will describe their experiment, and you will write a setup file (\`.json\`) that they open in the Tabletop's **Setup JSON** panel (**QUOP ▾ → .json**), which takes a file or pasted text.
 
 **First, ask about anything unclear** rather than guessing: which parts, the order the light passes them, rough distances between them, where one beam splits into two, and any fibres or cables. Keep it to what changes the drawing.
 

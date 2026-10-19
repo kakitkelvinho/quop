@@ -6,13 +6,13 @@ import { createPortal } from "react-dom";
 import { Icon, type IconName } from "@/components/builder/builder-icons";
 
 /*
- * The quick guide comes in two sizes, both opened from the top centre:
+ * The quick guide comes in two sizes, both from the ? fan at the top right:
  *
- * - Coach marks, from the Guide pill: a one-off tour that dims the builder and
- *   tags each real control where it sits, with the camera and selection keys
- *   in a card in the middle. Any click or Esc closes it.
- * - The cheat sheet, from the tab under the tool pill: a strip of short how-tos
- *   that stays open beside the work until it is closed.
+ * - Coach marks, from Guide: a one-off tour that dims the builder and tags
+ *   each real control where it sits, with the camera and selection keys in a
+ *   card in the middle. Any click or Esc closes it.
+ * - The cheat sheet, from Keys: a strip of short how-tos under the dock that
+ *   stays open beside the work until it is closed.
  *
  * A control the coach marks tag carries `data-guide` with its key in TAGS.
  */
@@ -21,23 +21,21 @@ type Side = "below" | "above" | "right" | "left";
 
 /**
  * One tag per control. They are placed in this order, each clear of those
- * before it. The + island's go right to left, so its tags step down and left
- * and no leader crosses a tag.
+ * before it. Each names what the control's fan or slots hold, in the words
+ * they use.
  */
 const TAGS: { key: string; text: string; sides: Side[] }[] = [
-  { key: "file", text: "File", sides: ["right", "below"] },
-  { key: "connect", text: "Fibre or cable", sides: ["below"] },
-  { key: "frame", text: "Frame", sides: ["below"] },
-  { key: "beam", text: "Beam", sides: ["below"] },
-  { key: "add", text: "Part", sides: ["below"] },
-  { key: "brief", text: "AI brief", sides: ["right", "below"] },
-  { key: "tools", text: "Select · show and lighting · undo", sides: ["right", "below"] },
+  { key: "file", text: "Home · .json · .png · example · clear", sides: ["right", "below"] },
+  { key: "add", text: "Add: part · beam · frame · cable", sides: ["right", "below"] },
+  { key: "dock", text: "Undo · show · redo", sides: ["below", "right"] },
+  { key: "help", text: "Guide · keys · AI brief", sides: ["left", "below"] },
   { key: "inspector", text: "Inspector", sides: ["left", "above"] },
   { key: "beams", text: "Beams", sides: ["above", "right"] },
   { key: "frames", text: "Frames", sides: ["right", "above"] },
   { key: "groups", text: "Groups: click to select, eye to hide", sides: ["right", "above"] },
-  { key: "view", text: "Iso / top · fit · day / night · panels", sides: ["above", "left"] },
-  { key: "minimised", text: "Minimised panels: click to restore", sides: ["right", "above"] },
+  { key: "rail", text: "Beams · frames · groups: show a list, or start one", sides: ["above", "right"] },
+  { key: "view", text: "Camera: fit · top · iso", sides: ["above", "left"] },
+  { key: "theme", text: "Day / night", sides: ["above", "left"] },
 ];
 
 const GAP = 10;
@@ -174,7 +172,7 @@ export function CoachMarks({ onClose, onShowCheatSheet }: { onClose: () => void;
   const cardRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
-  // read while rendering: by the first effect the Guide pill is hidden, and has lost focus
+  // read while rendering: the ? that opened the fan the guide came from
   const [opener] = useState(() => document.activeElement);
 
   useLayoutEffect(() => {
@@ -271,7 +269,7 @@ export function CoachMarks({ onClose, onShowCheatSheet }: { onClose: () => void;
               onShowCheatSheet();
             }}
           >
-            Cheat sheet
+            Keys
           </button>
           {/* closes like any other click on the overlay */}
           <button ref={closeRef} type="button" className="builderCoach__button is-primary">
@@ -295,7 +293,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Click parts, Enter" },
       { icon: "frame", text: "Drag, or corners + Enter" },
       { icon: "connect", text: "From, then to" },
-      { keys: ".md", text: "AI brief" },
+      { icon: "groups", text: "⌘ click parts, Enter" },
     ],
   },
   {
@@ -312,12 +310,14 @@ const SHEET: { title: string; lines: Line[] }[] = [
     ],
   },
   {
-    title: "Reorder, hide",
+    title: "Lists, panels",
     lines: [
       { icon: "grip", text: "Drag a row" },
       { keys: "Alt ↑↓", text: "Move a row" },
       { icon: "eye", text: "Hide" },
       { icon: "trash", text: "Delete" },
+      { icon: "minimise", text: "Slot brings it back" },
+      { keys: "⌥0", text: "Reset panels" },
     ],
   },
   {
@@ -326,13 +326,13 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { keys: "drag", text: "Pan" },
       { keys: "scroll", text: "Zoom" },
       { keys: "⇧ drag", text: "Orbit" },
-      { icon: "iso", text: "Iso / top, fit" },
+      { icon: "iso", text: "Fit, top, iso" },
     ],
   },
 ];
 
 /**
- * The cheat sheet: a strip under the tool pill. It doesn't block the table,
+ * The cheat sheet: a strip under the dock, from the ? fan's Keys. It doesn't block the table,
  * so it can stay open while you work; Esc inside it, or its close button,
  * closes it.
  */
@@ -347,7 +347,7 @@ export function CheatSheet({ id, onClose }: { id: string; onClose: () => void })
   return (
     <section id={id} className="builderIsland builderSheet" aria-labelledby={`${id}-title`} onKeyDown={onKeyDown}>
       <h2 id={`${id}-title`} className="builderSheet__title">
-        Cheat sheet
+        Keys
       </h2>
       {SHEET.map((group) => (
         <div key={group.title} className="builderSheet__group">
@@ -371,7 +371,7 @@ export function CheatSheet({ id, onClose }: { id: string; onClose: () => void })
       <button
         type="button"
         className="builderHud__close"
-        aria-label="Close cheat sheet"
+        aria-label="Close keys"
         title="Close (Esc)"
         onClick={onClose}
       >

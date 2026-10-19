@@ -86,11 +86,13 @@ export const PANEL_LAYER_CLASS = "builderPanels";
  * with `fitWidth`) and, with `keepHeight` for a panel the CSS stretches
  * between the workspace's top and bottom, its height.
  *
- * Its bar also minimises it (it leaves the table, and waits in the
- * minimised column until restored: minimised-column.tsx) and maximises it
- * (filling the workspace below the toolbars), each undoing the other; a
- * maximised panel doesn't move. A panel that closes, with `opensRestored`,
- * opens again on the table even if it was minimised when it closed.
+ * Its bar also minimises it (it leaves the table until its slot on the
+ * panel rail brings it back: only the lists do, with `minimises`) and
+ * maximises it (filling the workspace below the toolbars; not the lists,
+ * without `maximises`), each undoing the other; a maximised panel doesn't
+ * move. A panel that closes, with `opensRestored`, opens again on the table
+ * even if it was minimised when it closed. A panel that can't minimise or
+ * maximise never shows so, whatever an older visit saved.
  *
  * Its right edge, bottom edge and corner resize it (`resize` props, for
  * PanelResize), except while minimised or maximised. Until then a moved
@@ -103,7 +105,15 @@ export function usePanel(
     fitWidth = false,
     keepHeight = false,
     opensRestored = false,
-  }: { fitWidth?: boolean; keepHeight?: boolean; opensRestored?: boolean } = {},
+    minimises = false,
+    maximises = true,
+  }: {
+    fitWidth?: boolean;
+    keepHeight?: boolean;
+    opensRestored?: boolean;
+    minimises?: boolean;
+    maximises?: boolean;
+  } = {},
 ) {
   const moves = usePanelsMove();
   useSyncExternalStore(subscribePanels, panelsVersion, panelsVersion);
@@ -114,9 +124,11 @@ export function usePanel(
   }, []);
   useEffect(() => () => teardown.current(), []);
   // opened from its button, a closing panel shows, rather than waiting hidden in the column
+  // and one that can't minimise or maximise is put back, if an older layout left it so
   useLayoutEffect(() => {
-    if (opensRestored && panelState(id).minimised) setPanelView(id, "restored");
-  }, [id, opensRestored]);
+    const { minimised, maximised } = panelState(id);
+    if ((minimised && (opensRestored || !minimises)) || (maximised && !maximises)) setPanelView(id, "restored");
+  }, [id, opensRestored, minimises, maximises]);
 
   // one gesture for both: dragging the bar moves the panel, an edge or the corner resizes it
   const startGesture = useCallback(
@@ -192,8 +204,8 @@ export function usePanel(
 
   const state = panelState(id);
   const bounds = workspaceBounds();
-  const maximised = moves && Boolean(state.maximised) && bounds !== null;
-  const minimised = moves && Boolean(state.minimised);
+  const maximised = moves && maximises && Boolean(state.maximised) && bounds !== null;
+  const minimised = moves && minimises && Boolean(state.minimised);
   const sized = moves && Boolean(state.sized) && !maximised;
   const rect = !moves ? undefined : maximised ? maximisedRect(bounds!) : state.rect;
   // a panel whose box is set: maximised, resized by hand, or stretched by the CSS
@@ -236,6 +248,8 @@ export function usePanel(
       maximised,
       onToggleMinimised: toggleMinimised,
       onToggleMaximised: toggleMaximised,
+      canMinimise: minimises,
+      canMaximise: maximises,
     },
     /** none while it can't be resized: minimised, maximised, or where panels stay put */
     resize:

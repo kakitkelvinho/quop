@@ -34,6 +34,7 @@ import { existingGroups, mergeSetup, type OnExisting } from "@/components/builde
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { useBuilderScene } from "@/components/builder/use-builder-scene";
 import { resetPanels } from "@/components/builder/panel-store";
+import { finishGroupMode } from "@/components/builder/group-mode";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
 import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
@@ -311,6 +312,8 @@ export default function BuilderScene() {
   const [snapGuide, setSnapGuide] = useState<[Vec3, Vec3] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [trayOpen, setTrayOpen] = useState(false);
+  // group mode, from the panel rail's empty Groups slot: pick parts, Enter groups them
+  const [groupPicking, setGroupPicking] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
   const turnRef = useRef<TurnState | null>(null);
@@ -857,6 +860,7 @@ export default function BuilderScene() {
   // "Add a frame" draws one: placing, drawing a beam or a frame and connecting are one mode at a time
   const startFrame = useCallback(() => {
     setDrawing(NEW_DRAWING);
+    setGroupPicking(false);
     setSelection([]);
     setSelectedBeamId(null);
     setSelectedFrameId(null);
@@ -993,6 +997,7 @@ export default function BuilderScene() {
 
   // Placing, drawing a beam or a frame and connecting are one mode at a time.
   const startConnect = useCallback(() => {
+    setGroupPicking(false);
     setBeamMode(false);
     setBeamDraft([]);
     setDrawing(null);
@@ -1011,6 +1016,7 @@ export default function BuilderScene() {
   // ---- beams ---------------------------------------------------------------
 
   const startBeam = useCallback(() => {
+    setGroupPicking(false);
     setBeamMode(true);
     setBeamDraft([]);
     setConnectDraft(null);
@@ -1280,6 +1286,26 @@ export default function BuilderScene() {
     setRenamingGroupId(id);
   }, [announce, api, selectedFrame, selectedIds]);
 
+  // group mode is live only while no other mode is: one mode at a time
+  const groupMode = groupPicking && !beamMode && !drawing && !connectDraft && !placingType && !trayOpen;
+
+  const startGroupMode = useCallback(() => {
+    setBeamMode(false);
+    setBeamDraft([]);
+    setConnectDraft(null);
+    setDrawing(null);
+    setPlacingType(null);
+    setTrayOpen(false);
+    setAddingStopsTo(null);
+    setGroupPicking(true);
+  }, []);
+
+  /** Enter, or the Groups slot pressed again: two parts or more become a group; fewer, it just stops. */
+  const finishGrouping = useCallback(() => {
+    if (finishGroupMode(selectedIds.length) === "group") groupSelected();
+    setGroupPicking(false);
+  }, [groupSelected, selectedIds.length]);
+
   /** A group's row: select its parts, hidden ones too, so they move, turn, copy or delete together. */
   const handleSelectGroup = useCallback(
     (id: string) => {
@@ -1388,12 +1414,19 @@ export default function BuilderScene() {
         else if (drawing) cancelFrame();
         else if (connectDraft) cancelConnect();
         else if (addingStops) setAddingStopsTo(null);
+        else if (groupMode) setGroupPicking(false);
         else {
           setSelection([]);
           setSelectedBeamId(null);
           setSelectedFrameId(null);
           setSelectedConnectionId(null);
         }
+        return;
+      }
+
+      if (groupMode && event.key === "Enter") {
+        event.preventDefault();
+        finishGrouping();
         return;
       }
 
@@ -1499,6 +1532,8 @@ export default function BuilderScene() {
     drawing,
     duplicateSelected,
     finishBeam,
+    finishGrouping,
+    groupMode,
     groupSelected,
     handleDeleteFrame,
     placingType,
@@ -1642,7 +1677,10 @@ export default function BuilderScene() {
         canRedo={api.canRedo}
         status={status}
         emptyClicks={emptyClicks}
-        onToggleTray={() => setTrayOpen((open) => !open)}
+        onToggleTray={() => {
+          setGroupPicking(false);
+          setTrayOpen((open) => !open);
+        }}
         onPickType={(type) => {
           // the panel stays open, so a run of parts goes down without reopening it
           cancelBeam();
@@ -1651,13 +1689,6 @@ export default function BuilderScene() {
           setPlacingType(type);
         }}
         onCloseTray={() => setTrayOpen(false)}
-        onSelectTool={() => {
-          cancelBeam();
-          cancelConnect();
-          cancelFrame();
-          setPlacingType(null);
-          setTrayOpen(false);
-        }}
         onDeselect={() => {
           setSelection([]);
           setSelectedBeamId(null);
@@ -1712,6 +1743,9 @@ export default function BuilderScene() {
         onSetGroupHidden={handleSetGroupHidden}
         onDeleteGroup={handleDeleteGroup}
         onGroupSelected={groupSelected}
+        groupMode={groupMode}
+        onStartGroupMode={startGroupMode}
+        onFinishGroupMode={finishGrouping}
         onExportGroup={handleExportGroup}
         onImport={handleImport}
         importChoice={pendingImport && { names: pendingImport.names }}
@@ -1732,7 +1766,6 @@ export default function BuilderScene() {
         onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}
         quality={quality}
         onToggleQuality={toggleQuality}
-        onResetPanels={resetAllPanels}
         onUndo={api.undo}
         onRedo={api.redo}
         onSave={handleSave}
