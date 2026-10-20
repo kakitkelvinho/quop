@@ -5,7 +5,7 @@ import type { NavLink } from "@/components/navigation";
 import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
 
 /**
- * What each tool turns out, as one line in the readout's mono: the index card
+ * What each tool turns out, as one line of figures: the index card
  * shows a tool's result before it is opened, as the homepage chapters do.
  * The calculators' and the builder's are worked from their own defaults, so
  * every number is one the tool gives; the plotters' show what goes in and out.

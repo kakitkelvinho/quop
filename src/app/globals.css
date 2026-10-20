@@ -310,9 +310,10 @@ a.toolCard:focus-visible {
 .toolCard__sample {
   max-width: 100%;
   overflow-wrap: anywhere;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -655,9 +656,10 @@ select.linkedField__unit {
 .fileDrop__name {
   overflow-wrap: anywhere;
   color: var(--foreground);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .buttonCluster {
@@ -1253,9 +1255,10 @@ main:focus {
 .fitsHeaderChip__value {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .fitsHeaderNotRecorded {
@@ -1354,9 +1357,10 @@ main:focus {
 
 .fitsFullHeader__table tbody th,
 .fitsFullHeader__value {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 /* a keyword is one token: keep it whole unless it truly cannot fit */
@@ -1548,9 +1552,10 @@ main:focus {
   border-radius: var(--radius);
   background: rgb(12 18 14 / 0.78);
   color: #b9ffb3;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 500;
   backdrop-filter: blur(8px);
 }
 
@@ -1575,9 +1580,10 @@ main:focus {
 /* one line: the column grows to fit the value rather than wrapping it */
 .fitsColorbar__label {
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.2;
   text-align: center;
   white-space: nowrap;
@@ -1792,9 +1798,10 @@ html[data-theme="dark"] .fitsColorControl__select {
 .fitsSurfaceLabel {
   display: block;
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   user-select: none;
@@ -1858,9 +1865,10 @@ html[data-theme="dark"] .fitsColorControl__select {
 /* one line: the column grows to fit the value rather than wrapping it */
 .fitsColorbar__label {
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.2;
   text-align: center;
   white-space: nowrap;
@@ -2040,9 +2048,10 @@ html[data-theme="dark"] .fitsColorControl__select {
 .fitsImageTick {
   position: absolute;
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.68rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   user-select: none;
@@ -2269,7 +2278,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 
 .builderReadout {
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
@@ -2583,7 +2592,8 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 .cornerFan__item.is-file .cornerFan__name {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 .cornerFan__item:hover,
@@ -2836,9 +2846,10 @@ html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
   border-radius: var(--builder-radius);
   background: transparent;
   color: var(--background);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 /* beside the pointer while a frame is drawn: the outline's size, or why a click there is refused */
@@ -2849,9 +2860,10 @@ html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
   border-radius: var(--builder-radius);
   background: var(--foreground);
   color: var(--background);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -2968,9 +2980,10 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
   border-bottom-width: 2px;
   border-radius: var(--builder-radius);
   background: var(--background);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.6rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 /* coach marks: the builder dimmed, its controls ringed in the accent's thin
@@ -3082,9 +3095,10 @@ html[data-theme="dark"] .builderCoach {
   border-radius: var(--builder-radius);
   background: transparent;
   color: #fff;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .builderCoach__actions {
@@ -3263,7 +3277,7 @@ html[data-theme="dark"] .builderCoach {
 }
 
 .builderField__control input[type="number"] {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
@@ -3349,9 +3363,9 @@ html[data-theme="dark"] .builderCoach {
 
 .builderMetrics dd {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 
@@ -3364,7 +3378,8 @@ html[data-theme="dark"] .builderCoach {
 }
 
 .builderStops li::marker {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.66rem;
 }
 
@@ -4149,9 +4164,9 @@ body[data-panel-gesture="se"] * {
   position: absolute;
   right: 1px;
   bottom: 1px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.6rem;
-  font-weight: 700;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
@@ -4476,9 +4491,10 @@ body[data-panel-gesture="se"] * {
   border-radius: var(--builder-radius);
   background: var(--accent);
   color: #fffaf1;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 600;
   pointer-events: none;
 }
 
@@ -4491,9 +4507,10 @@ body[data-panel-gesture="se"] * {
   border-radius: var(--builder-radius);
   background: var(--accent);
   color: #fffaf1;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   pointer-events: none;
 }
@@ -4797,7 +4814,8 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   margin-top: auto;
   padding-top: 0.625rem;
   color: var(--muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
   font-size: 0.72rem;
 }
 
@@ -5011,9 +5029,9 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 
 .chapter__readout {
   color: var(--muted);
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
 }
 

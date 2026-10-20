@@ -50,9 +50,14 @@ typography:
     fontWeight: 800
     letterSpacing: "0.08em"
   readout:
-    fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
+    fontFamily: "var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "0.78rem"
-    fontWeight: 700
+    fontWeight: 500
+    fontFeature: "tnum"
+  code:
+    fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
+    fontSize: "0.92em"
+    fontWeight: 400
   equation:
     fontFamily: "var(--font-eb-garamond), Georgia, 'Times New Roman', serif"
     fontSize: "1.5rem"
@@ -108,11 +113,11 @@ components:
 
 **Creative North Star: "The Working Board"**
 
-QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, blue annotations. By night it's the same room with the lights off and the board lit — true black, chalk-white marks, the same station blue lit as fills and rings around white words, the FITS viewers glowing with green phosphor crosshairs and mono readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.
+QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, blue annotations. By night it's the same room with the lights off and the board lit — true black, chalk-white marks, the same station blue lit as fills and rings around white words, the FITS viewers glowing with green phosphor crosshairs and readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.
 
 The homepage states that literally: a board the visitor arrives at mid-session, with equations from four domains being written and wiped behind the welcome. The rest of the site is the notebook the board's results get copied into.
 
-The mood is inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Invitation shows up in the hand-drawn marks, the unhurried writing and erasing, and controls that read at a glance as the signs of a station. Credibility shows up underneath: exact values in monospace, uppercase structural labels, and instrument-grade FITS readouts that don't soften their numbers for anyone.
+The mood is inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Invitation shows up in the hand-drawn marks, the unhurried writing and erasing, and controls that read at a glance as the signs of a station. Credibility shows up underneath: exact values in tabular figures, uppercase structural labels, and instrument-grade FITS readouts that don't soften their numbers for anyone.
 
 Two color systems run in parallel and must not be confused: the station blue is the notebook's *own* ink, by day and by night — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Builder, Notes, Plotters, Calculators) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink.
 
@@ -123,7 +128,7 @@ Two color systems run in parallel and must not be confused: the station blue is 
 - Cards have no frame: no border, no shadow, no fill. Two cards are told apart by one thin gray hairline between them — see The Hairline Rule
 - The interface is flat. Depth belongs to the Tabletop's 3D scene, not to the chrome (see Elevation & Depth)
 - Uppercase, letter-spaced labels mark structure and category; regular-case text is always actual content
-- FITS/data-instrument surfaces (crosshair readouts, colorbars) speak in mono type and green-phosphor highlights, deliberately more "instrument" than the plain chrome around them
+- FITS/data-instrument surfaces (crosshair readouts, colorbars) speak in tabular figures and green-phosphor highlights, deliberately more "instrument" than the plain chrome around them
 - Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the station-blue ink
 - Hand-drawn marks — wobbled card frames, textured chalk strokes, italic serif equations — belong to the homepage board and nowhere else; every other surface is precise
 
@@ -154,7 +159,7 @@ One station-blue accent in both themes, a neutral scale that runs to pure white 
 - **Icon-only signs** (a toolbar button, the theme toggle) are the square alone on a plate that pads it by `0.3em` on every side, so the white border never touches the plate's edge.
 - **On a pressed sign** the pictogram does not change; the foot bar carries the state.
 
-**What is not a sign.** A plate means "press here", so nothing that cannot be pressed wears one. Kickers, cluster labels, the beta badge and a tool's sample tag were plates under the old rule; they become uppercase, tracked labels in `--muted` led by a small (`0.5em`) square `--accent` marker, the mark the builder's mode badge already uses. The sample tag keeps its mono and its own case under the marker, because it is a real value (`550 nm`, not `550 NM`) and the Case Rule applies; so does a homepage chapter's status line. Inline links in running text stay text — 1px underline, `--accent-strong` — because a paragraph studded with plates is a timetable, not a sentence; they turn into a plate on hover, as before. Fields are not signs either: they are where the user writes, not where they press.
+**What is not a sign.** A plate means "press here", so nothing that cannot be pressed wears one. Kickers, cluster labels, the beta badge and a tool's sample tag were plates under the old rule; they become uppercase, tracked labels in `--muted` led by a small (`0.5em`) square `--accent` marker, the mark the builder's mode badge already uses. The sample tag keeps its own case under the marker, because it is a real value (`550 nm`, not `550 NM`) and the Case Rule applies; so does a homepage chapter's status line. Inline links in running text stay text — 1px underline, `--accent-strong` — because a paragraph studded with plates is a timetable, not a sentence; they turn into a plate on hover, as before. Fields are not signs either: they are where the user writes, not where they press.
 
 The sign selectors live in one list at the end of `globals.css`, so the gesture stays one gesture. The pictogram is one component, `SignIcon` (`src/components/sign-icon.tsx`), wrapping the repo's inline SVG icons; its CSS (`.signIcon`) strips every fill and sets the stroke, so an existing icon becomes an outline without being redrawn by hand.
 
@@ -183,17 +188,17 @@ The sign selectors live in one list at the end of `globals.css`, so the gesture 
 ## Typography
 
 **Body & Display Font:** Source Sans 3 (with `-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif`)
-**Readout Font:** `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace` — reserved for FITS/instrument readouts, inline code, mono data fields, and the route label on a chalk card.
+**Code Font:** `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`, the system's own, not shipped — reserved for code: inline `code`, the Tabletop's JSON and AI brief, and the plotters' typed-array inputs. Measured values are not code: they are Source Sans with tabular figures (see Readout).
 **Equation Font:** EB Garamond italic (`--font-serif`) — reserved for the equations on the homepage board, which are hand-set HTML rather than KaTeX. Nothing else on the site is set in serif.
 
-**Character:** Source Sans 3, Adobe's open-source sibling of Myriad, carries the whole interface, the Tabletop HUD included, so the brand speaks in one sans. It sits in the humanist signage tradition of Frutiger and the station boards it echoes. It sets smaller than a grotesk, so the root font size is `106.25%`. One variable file (200–900) is self-hosted in `src/app/fonts`. There's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is genuinely measured data, and Garamond italic where the content is a physicist's handwriting.
+**Character:** Source Sans 3, Adobe's open-source sibling of Myriad, carries the whole interface, the Tabletop HUD included, so the brand speaks in one sans. It sits in the humanist signage tradition of Frutiger and the station boards it echoes. It sets smaller than a grotesk, so the root font size is `106.25%`. One variable file (200–900) is self-hosted in `src/app/fonts`. There's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is code, and Garamond italic where the content is a physicist's handwriting.
 
 ### Hierarchy
 - **Display** (400, `clamp(2.2rem, 5vw, 4.6rem)`, line-height 1.02, letter-spacing -0.03em): the `h1`s of the homepage and the section index pages — one per page, tight and large, and light, because at that size weight shouts. The homepage's chapter headings (`chapter__heading`) stay light with it: they are the board's story, not a working sheet. On calculator and plotter pages every heading — the `toolTitle` `h1` and the `h2`s — is set bold (700), since those pages are working sheets with no frames left to group them.
 - **Headline** (700, `clamp(1.25rem, 2.4vw, 1.9rem)`, line-height 1.15): `h2`s inside cards and sections. Bold, because with the card frames gone a heading is what tells one group from the next; at 400 it read as a large paragraph.
 - **Body** (400, 1rem, line-height 1.6): running copy. Lead paragraphs step up to `1.08rem` in the muted color, capped at `44rem` measure.
 - **Label** (800, `0.75–0.84rem`, letter-spacing 0.08em, uppercase): sign lettering on buttons, header tab text, and the structural labels (kickers, cluster labels) — the first two on a plate, the labels in `--muted` behind a small square `--accent` marker (see The Sign Rule).
-- **Readout** (700, `0.72–0.78rem`, mono): FITS crosshair coordinates, colorbar labels, mono text inputs.
+- **Readout** (500, `0.72–0.78rem`, Source Sans with tabular figures, `tnum`): FITS crosshair coordinates, colorbar labels and ticks, header values, tool cards' sample lines, the Tabletop's lengths, counts and key caps. Lighter than the words round it, so a column of numbers reads as data rather than shouting; tabular figures keep the digits lined up the way mono did.
 - **Result** (800, `clamp(2rem, 5vw, 3.2rem)`, line-height 0.95, letter-spacing -0.04em): the one place numbers get genuinely large: every calculator's answer, through the shared `Readout` (`readout--primary`) or, on a converter, inside both linked fields, with tabular figures, a few significant figures and an SI prefix (`1.00 mJ`, never `1.000000e-3 J`). Secondary answers step down to one small muted line under it (`readoutAside`). A tool page's own heading (`toolTitle`, 700, `clamp(1.8rem, 3.4vw, 2.5rem)`) sits below Display, so the answer, not the tool's name, is the largest thing on it.
 - **Equation** (400 italic serif, `1.5–1.8rem`): the board's drifting equations. Sized per equation rather than by a scale step, because the shorter ones need to be larger to hold the same visual weight.
 
@@ -254,11 +259,11 @@ Every button is a sign (see The Sign Rule and The Pictogram Rule): a square `--a
 - **Separator:** one `1px` `--border` hairline between two cards, never around one.
 - **Internal Padding:** `1.3rem` top and bottom, `0` at the sides, with `0.85rem` gap between internal stacked elements.
 - **The label:** an uppercase, letter-spaced structural label (`sectionCard__kicker`), muted, behind a small square `--accent` marker, may label a group of controls. It never sits above a heading: the heading carries its own weight. It is not a plate, because it cannot be pressed.
-- **Tool cards** (`toolCard`, on index pages) open on a mono line of what the tool gives (`550 nm → 2.2543 eV`); on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing. The whole card is one link; at rest its tool name is a sign led by a right-arrow pictogram, the way a direction sign points to a platform, and the row behind it takes the neutral wash on hover. There is no other per-card button.
+- **Tool cards** (`toolCard`, on index pages) open on a line of figures of what the tool gives (`550 nm → 2.2543 eV`); on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing. The whole card is one link; at rest its tool name is a sign led by a right-arrow pictogram, the way a direction sign points to a platform, and the row behind it takes the neutral wash on hover. There is no other per-card button.
 
 ### Inputs / Fields
 - **Style:** a square, hairline-bordered outer container (`field__control`, radius `0`, Hairline/Frost border) housing a borderless inner `input`/`textarea` on Paper-Surface-Strong background; a unit label sits inline at the end in muted color. A unit picker is a `select`, square, bordered like the field — a field's part, not a sign.
-- **File input** (`FileDrop`): the one dashed-border treatment in the system (`1px dashed`, square), signaling "drop a file here" distinctly from typed fields. Its "choose a file" button is a sign with an upload pictogram. It names the file it was given, in mono, rather than the browser's "No file chosen".
+- **File input** (`FileDrop`): the one dashed-border treatment in the system (`1px dashed`, square), signaling "drop a file here" distinctly from typed fields. Its "choose a file" button is a sign with an upload pictogram. It names the file it was given rather than the browser's "No file chosen".
 - **Focus:** the ink-accent Focus Ring (see Elevation & Depth), not a border-color change.
 - **Linked fields** (`LinkedFields`, on the energy ↔ wavelength, light travel and pace calculators): one field per quantity, stacked, linked as in a unit converter. The field typed in last is the source and is never reformatted; the other is worked out from it and written in (5 s.f. for energy/wavelength, 6 for light travel, pace to the second), or emptied to a muted `—` placeholder when the source isn't a value. Both numbers are set at the Result step inside the input, the label small and muted above, the unit (or one unit picker per field, in the ink colour, white at night) beside. Changing a unit keeps the physical quantity. A visually hidden polite live region announces the worked-out field once typing pauses. The pure logic is `linked-pair.ts`.
 - **Side answers** (`readoutAside`): smaller answers under a calculator's main `Readout` share one small muted line (`Pulse energy 1.00 mJ · Peak fluence 2E/(πw²) 0.0637 J/cm²`), values in body colour, formula labels kept.
@@ -276,10 +281,10 @@ Four equations, one per domain — electromagnetism, classical mechanics, statis
 Everything the eye judges is a named constant at the top of `chalkboard-hero.tsx` (`ON_SCREEN_AT_ONCE`, `BOARD_HISTORY`, `HOLD_MS`, `RESPAWN_MS`, `SEED`, the equation and slot tables) or a CSS token (`--mark`, `--chalk-alpha`, `--chalk-dust`, `--chalk-filter`). Tuning belongs in those two places and nowhere else.
 
 ### Chalk Section Cards (homepage)
-Four cards — Builder, Notes, Plotters, Calculators — each a hand-drawn frame around a glyph, a name, a one-line tag in muted text, and the route in mono at the foot. The frame is four wobbled SVG edges with a gap at each corner, seeded per card so no two are identical, drawn on with `stroke-dasharray` when the card scrolls into view; the glyph and text follow on a short stagger. Hover darkens the frame and turns the name to the ink accent. These cards are flat like every card, and keep the one drawn frame on the site — see Elevation & Depth. They are links but not signs: the board is the one surface written in chalk rather than lettered on plates, and a blue plate on it would break the single idea the homepage is built on. They carry the mono route instead of an uppercase label, because a route is a real value and the Case Rule applies.
+Four cards — Builder, Notes, Plotters, Calculators — each a hand-drawn frame around a glyph, a name, a one-line tag in muted text, and the route at the foot, in tabular figures. The frame is four wobbled SVG edges with a gap at each corner, seeded per card so no two are identical, drawn on with `stroke-dasharray` when the card scrolls into view; the glyph and text follow on a short stagger. Hover darkens the frame and turns the name to the ink accent. These cards are flat like every card, and keep the one drawn frame on the site — see Elevation & Depth. They are links but not signs: the board is the one surface written in chalk rather than lettered on plates, and a blue plate on it would break the single idea the homepage is built on. They carry the route instead of an uppercase label, because a route is a real value and the Case Rule applies.
 
 ### Signature Component — FITS Instrument Readout
-The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. The phosphor language is for what the instrument *shows* — the frame, the crosshair, the readout. What the user *presses* around it follows the Sign Rule like every other control: the icon toolbar is a row of icon-only signs, and the toolbar-amber active state it used to have is retired.
+The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. The phosphor language is for what the instrument *shows* — the frame, the crosshair, the readout. What the user *presses* around it follows the Sign Rule like every other control: the icon toolbar is a row of icon-only signs, and the toolbar-amber active state it used to have is retired.
 
 ### Tabletop HUD (the builder)
 The controls over the Tabletop's 3D scene are a compact, hard-edged instrument panel, flat by exception (see Elevation & Depth). They have their own scale, set in the builder section of `globals.css`.
@@ -298,20 +303,20 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
   - Top centre: the dock, one island of undo, the eye (the Show wheel) and redo. The eye is in the middle so its wheel drops symmetrically. The mode badge and the cheat sheet hang under it.
   - Top right: the ? (an info icon): Guide · Keys · AI brief. The inspector opens below it, at `top: 3.9rem`.
   - Bottom right: the camera, showing the current view's icon (iso cube or top): Fit · Top · Iso. Right of it, outside the camera's ring, the day/night switch: a plain icon button with no plate, so it reads as the page's switch, not a table tool.
-  - Bottom left: the panel rail, three fixed slots (Beams, Frames, Groups) with their counts in `0.6rem` mono in the corner. The lists stack up from it like windows over a taskbar. An empty slot creates: a small + in place of its count, dimmed to 45 % until pointed at, its tooltip naming the action.
-- **Corner fans:** the one menu idiom. Every menu is a quarter fan from a workspace corner, flush with the screen edges, its hole clear of the islands in that corner (the QUOP and + fans lie on one ring). The band is about `150px` deep, thinning to a `64px` floor on a small screen. Wedges are petals: a `6px` gap at the hole that widens outward. Each holds a `24px` icon and one word at `13px` 700 (a file format in mono), with no hints; the longer hint is the tooltip. Hover and focus are the neutral wash; Clear tints orange (`#c2410c` day, `#fb8c4a` night), never the accent; a disabled wedge drops to 35 %. One fan is open at a time.
+  - Bottom left: the panel rail, three fixed slots (Beams, Frames, Groups) with their counts in `0.6rem` figures in the corner. The lists stack up from it like windows over a taskbar. An empty slot creates: a small + in place of its count, dimmed to 45 % until pointed at, its tooltip naming the action.
+- **Corner fans:** the one menu idiom. Every menu is a quarter fan from a workspace corner, flush with the screen edges, its hole clear of the islands in that corner (the QUOP and + fans lie on one ring). The band is about `150px` deep, thinning to a `64px` floor on a small screen. Wedges are petals: a `6px` gap at the hole that widens outward. Each holds a `24px` icon and one word at `13px` 700 (a file format in sentence case, `.json`), with no hints; the longer hint is the tooltip. Hover and focus are the neutral wash; Clear tints orange (`#c2410c` day, `#fb8c4a` night), never the accent; a disabled wedge drops to 35 %. One fan is open at a time.
 - **List panels** (Beams, Frames, Groups) have no window chrome: no grip and no maximise, the title muted at 600, and one small minimise on the right of the bar; the rail brings a minimised list back. Row names are 500. A row's eye and bin show only on hover or focus (on a device that hovers), and a hidden row keeps its closed eye.
 
 - **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
 - **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
-- **Type:** set in the site's **Source Sans 3**, like every other page, so the Tabletop and the notebook speak one voice; numbers stay mono. Smaller than the rest of the site, because the scene is the content.
+- **Type:** set in the site's **Source Sans 3**, like every other page, so the Tabletop and the notebook speak one voice; numbers are its tabular figures at a lighter weight, and only the JSON and AI brief are mono, because they are code. Smaller than the rest of the site, because the scene is the content.
   - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
   - Titles `0.92rem` 700: the inspector's head, a panel's title.
   - Rows `0.8–0.84rem` 600: a part's name, a group item, buttons; a list row's name `0.8rem` 500.
-  - Small `0.72–0.75rem`: hints, panel bar titles (a list's muted, at 600), the cheat sheet, mono readouts (`0.75rem`).
+  - Small `0.72–0.75rem`: hints, panel bar titles (a list's muted, at 600), the cheat sheet, readouts (`0.75rem`, 500).
   - Labels `0.62–0.68rem` 600–800: field labels (sentence case); list and group titles uppercase, tracked `0.04–0.08em`.
-  - Key caps `0.6–0.62rem` mono 700.
-  - Metric values `0.95rem` mono 700.
+  - Key caps `0.6–0.62rem` 500, tabular.
+  - Metric values `0.95rem` 500, tabular.
   - Mode badge: the name `1.1rem` 700, uppercase, tracked `0.18em` (BEAM, FRAME, GROUP), after a `0.6rem` square `--accent` marker; its key hints `0.75rem` in sentence case.
   - Status toast `0.8rem` 600.
 - **Coach marks:** rings and leader lines in `--focus-ring`, so a thin mark clears 3:1 at night; tags on an `--accent` fill with light words; the card a flat dark plate with a white focus ring.
@@ -326,7 +331,7 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
 - **Do** keep hand-drawn texture on the homepage board and off everything else — the chalk filters, the wobbled frames, and the serif italic are one scoped gesture, not a site-wide style.
 - **Do** keep the four section wayfinding colors (ember-orange, sky-blue, seafoam-teal, coral-pink) purely categorical — section identification only, never a general accent.
 - **Do** reserve uppercase/letter-spaced type for structural labels (kickers, nav, cluster labels) and keep all real content sentence-case — see The Case Rule.
-- **Do** route FITS/data-instrument surfaces through mono type and the green-phosphor language, keeping them visibly distinct from the plain chrome around them.
+- **Do** route FITS/data-instrument surfaces through tabular figures and the green-phosphor language, and keep mono for code alone, keeping them visibly distinct from the plain chrome around them.
 
 ### Don't:
 - **Don't** treat `TransitionProvider`, `NavTransitionLink`, `WavefunctionBanner`, or the `orbitalPhase` field on `navSections` as part of the live design system. They exist in source but are not wired into the app (no page imports `TransitionProvider` or `WavefunctionBanner`; `AppShell` uses a plain `Link`, not `NavTransitionLink`; `orbitalPhase` is never read). They're leftover from a prior orbital/atom hero and should be treated as dead code, not incumbent authority, until someone deliberately revives or removes them.

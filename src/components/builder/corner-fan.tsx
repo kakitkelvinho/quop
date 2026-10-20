@@ -44,7 +44,7 @@ export type CornerFanItem = {
   disabled?: boolean;
   /** marked as the current one (the camera's view, an open panel) */
   on?: boolean;
-  /** a file format: its name is set in mono */
+  /** a file format, such as .json or .png */
   file?: boolean;
   /** tinted orange on hover and focus, not the accent */
   danger?: boolean;
