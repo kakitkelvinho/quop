@@ -10,7 +10,7 @@ export type PanelState = {
   rect?: PanelRect;
   /** its place in the stack: the panel last pressed is highest */
   z?: number;
-  /** off the table, its icon in the minimised column (minimised-panels.ts) */
+  /** off the table until its slot on the panel rail brings it back (a list: rail-slots.ts) */
   minimised?: boolean;
   /** filling the workspace below the toolbars; `rect` is where it goes back to */
   maximised?: boolean;

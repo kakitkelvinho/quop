@@ -158,14 +158,6 @@ const ICONS = {
       <path d="M8.5 8.5V6A1.5 1.5 0 0 1 10 4.5h8A1.5 1.5 0 0 1 19.5 6v8a1.5 1.5 0 0 1-1.5 1.5h-2.5" />
     </>
   ),
-  // two panels, and the arrow that sends them home
-  resetPanels: (
-    <>
-      <rect x="3.5" y="4" width="7" height="9" rx="1.2" />
-      <rect x="3.5" y="15.5" width="7" height="4.5" rx="1.2" />
-      <path d="M14 9.5h3.5a3 3 0 0 1 0 6H14M16 7l-2.5 2.5L16 12" />
-    </>
-  ),
   grip: (
     <>
       <circle cx="9" cy="6" r="1" />
@@ -217,15 +209,14 @@ const ICONS = {
   folder: (
     <path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5Z" />
   ),
-  // the minimised-panels column: the Inspector's sliders, a folded beam, two grouped boxes
-  // (Frames and Parts use `frame` and `add`, the buttons that make them)
-  inspector: <path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4" />,
+  // the panel rail's slots: a folded beam, and two parts inside a dashed fence
+  // (the old two boxes joined by a curve read as the cable; Frames uses `frame`)
   beams: <path d="M3 17 10 8l4 6 7-9" />,
   groups: (
     <>
-      <rect x="3.5" y="3.5" width="8" height="8" rx="1.5" />
-      <rect x="12.5" y="12.5" width="8" height="8" rx="1.5" />
-      <path d="M11.5 7.5h3a2 2 0 0 1 2 2v3" />
+      <rect x="2.5" y="2.5" width="19" height="19" rx="2" strokeDasharray="3 2.4" />
+      <rect x="6.5" y="6.5" width="5" height="5" rx="1" />
+      <rect x="12.5" y="12.5" width="5" height="5" rx="1" />
     </>
   ),
   // a ball and the shadow it casts on the table: the Show wheel's Shadows

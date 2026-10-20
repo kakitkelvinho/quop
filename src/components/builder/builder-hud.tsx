@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
@@ -14,11 +13,13 @@ import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
-import { keepPanelsInside } from "@/components/builder/panel-store";
-import { MinimisedColumn, PanelsMenu, useInspectorReopens } from "@/components/builder/minimised-column";
-import { minimisedIn, partsSpotShowing, restorePanel, selectionKey, tabletopPanels } from "@/components/builder/minimised-panels";
+import { keepPanelsInside, panelState, setPanelView } from "@/components/builder/panel-store";
 import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
-import { FileFan } from "@/components/builder/file-fan";
+import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
+import { FileFan, TOP_LEFT_ISLANDS } from "@/components/builder/file-fan";
+import { PanelRail, type RailSlot } from "@/components/builder/panel-rail";
+import { toggleListPanel } from "@/components/builder/rail-slots";
+import { groupModeHints, groupSlotLabel, type ModeHint } from "@/components/builder/group-mode";
 import { JsonPanelFiles } from "@/components/builder/json-panel-files";
 import { ShowWheelDial } from "@/components/builder/show-wheel-dial";
 import {
@@ -40,7 +41,6 @@ import {
   LABEL_SCALE_RANGE,
   beamDisplayName,
   beamLengthMm,
-  componentDisplayName,
   derivedAngleBeam,
   frameDisplayName,
   periscopePartner,
@@ -103,7 +103,6 @@ export type BuilderHudProps = {
   onToggleTray: () => void;
   onPickType: (type: ComponentType) => void;
   onCloseTray: () => void;
-  onSelectTool: () => void;
   onDeselect: () => void;
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   /** any one part by id: a periscope mirror's inspector edits its other mirror too */
@@ -158,6 +157,11 @@ export type BuilderHudProps = {
   onDeleteGroup: (id: string) => void;
   /** ⌘G: the selection as a new group */
   onGroupSelected: () => void;
+  /** group mode, from the empty Groups slot: pick parts, then Enter groups them */
+  groupMode: boolean;
+  onStartGroupMode: () => void;
+  /** Enter, or the slot pressed again: groups two parts or more, else just stops */
+  onFinishGroupMode: () => void;
   /** download a group as its own setup file, `<name>.json` */
   onExportGroup: (id: string) => void;
   /** a setup file's text to merge into the table; null when the file was too big to read */
@@ -179,8 +183,6 @@ export type BuilderHudProps = {
   onToggleTheme: () => void;
   quality: GraphicsQuality;
   onToggleQuality: () => void;
-  /** every panel back where it starts (⌥0) */
-  onResetPanels: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onSave: () => void;
@@ -196,10 +198,14 @@ export type BuilderHudProps = {
   onClear: () => void;
 };
 
-type Hint = [key: string, action: string];
+type Hint = ModeHint;
+
+/** The lists the panel rail holds. */
+type ListId = "beams" | "frames" | "groups";
 
 /** Key hints appear only inside a mode — the rest of the time the canvas stays quiet. */
 function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | null {
+  if (props.groupMode) return { label: "Group", hints: groupModeHints(props.selected.length) };
   if (props.beamMode)
     return {
       label: "Beam",
@@ -255,6 +261,12 @@ function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | n
 }
 
 /**
+ * A list's panel: as wide as its rows, minimised and brought back by its slot
+ * on the panel rail, never maximised.
+ */
+const LIST_PANEL = { fitWidth: true, minimises: true, maximises: false };
+
+/**
  * The beams box: one row per beam, in list order. Press a row to select its
  * beam, or drag it to a new place in the list (Alt+↑ / Alt+↓ moves a focused
  * row one place); its buttons hide or show it on the table, or delete it. A
@@ -301,7 +313,7 @@ function BeamList({
       return onMove(beams[from].id, to, how);
     },
   });
-  const panel = usePanel("beams", { fitWidth: true });
+  const panel = usePanel("beams", LIST_PANEL);
 
   const list = (
     <ol
@@ -362,7 +374,7 @@ function BeamList({
       aria-labelledby="builderBeamsTitle"
       data-guide="beams"
     >
-      <PanelBar title="Beams" titleId="builderBeamsTitle" {...panel.bar} />
+      <PanelBar title="Beams" titleId="builderBeamsTitle" grip={false} {...panel.bar} />
       {list}
       {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
@@ -408,7 +420,7 @@ function FrameList({
       return onMove(frames[from].id, to, how);
     },
   });
-  const panel = usePanel("frames", { fitWidth: true });
+  const panel = usePanel("frames", LIST_PANEL);
 
   return (
     <section
@@ -418,7 +430,7 @@ function FrameList({
       data-guide="frames"
     >
       {panel.moves ? (
-        <PanelBar title="Frames" titleId="builderFramesTitle" {...panel.bar} />
+        <PanelBar title="Frames" titleId="builderFramesTitle" grip={false} {...panel.bar} />
       ) : (
         <h2 id="builderFramesTitle" className="builderHud__listTitle">
           Frames
@@ -599,7 +611,7 @@ function GroupList({
   onDelete: (id: string) => void;
 }) {
   const picking = useRef<string | null>(null);
-  const panel = usePanel("groups", { fitWidth: true });
+  const panel = usePanel("groups", LIST_PANEL);
   return (
     <section
       {...panel.frame}
@@ -608,7 +620,7 @@ function GroupList({
       data-guide="groups"
     >
       {panel.moves ? (
-        <PanelBar title="Groups" titleId="builderGroupsTitle" {...panel.bar} />
+        <PanelBar title="Groups" titleId="builderGroupsTitle" grip={false} {...panel.bar} />
       ) : (
         <h2 id="builderGroupsTitle" className="builderHud__listTitle">
           Groups
@@ -767,7 +779,7 @@ function BriefPanel({
         </h2>
       )}
       <p className="builderAbout__description">
-        For an AI assistant. Open its reply in the Setup JSON panel: Tabletop ▾, then .json.
+        For an AI assistant. Open its reply in the Setup JSON panel: QUOP ▾, then .json.
       </p>
       <div className="builderBrief__actions">
         <button type="button" className="builderButton builderButton--primary" onClick={onCopy}>
@@ -1154,10 +1166,10 @@ export default function BuilderHud(props: BuilderHudProps) {
     beamMode,
     drawingFrame,
     connectDraft,
+    groupMode,
     view,
   } = props;
   const mode = modeHints(props);
-  const selecting = !beamMode && !drawingFrame && !connectDraft && !placingType && !trayOpen;
   // the brief and the JSON panel share the parts panel's spot, so opening one closes the others
   const [briefOpen, setBriefOpen] = useState(false);
   const [jsonOpen, setJsonOpen] = useState(false);
@@ -1171,6 +1183,8 @@ export default function BuilderHud(props: BuilderHudProps) {
   const panelsMove = usePanelsMove();
   const inspectorPanel = usePanel("inspector");
   useRememberedPanels();
+  // where panels stay put, the rail hides a list rather than minimising it
+  const [railHidden, setRailHidden] = useState<Partial<Record<ListId, boolean>>>({});
   // when the workspace shrinks, moved panels slide back in so their bars can be grabbed
   const panelLayerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -1182,10 +1196,8 @@ export default function BuilderHud(props: BuilderHudProps) {
     observer.observe(layer);
     return () => observer.disconnect();
   }, [panelsMove]);
-  // the brief and the JSON panel take the parts panel's place and size, so the boxes step aside for
-  // them, or for the parts panel, while one is showing: a minimised one is hidden and leaves no gap
-  const isMinimised = minimisedIn(panelsMove);
-  const besideParts = partsSpotShowing({ partsOpen: trayOpen, briefOpen, jsonOpen }, isMinimised);
+  // the brief and the JSON panel take the parts panel's place and size, so the lists step aside for them
+  const besideParts = trayOpen || briefOpen || jsonOpen;
   const toggleBrief = useCallback(() => {
     onCloseTray();
     setJsonOpen(false);
@@ -1195,8 +1207,31 @@ export default function BuilderHud(props: BuilderHudProps) {
     onCloseTray();
     setBriefOpen(false);
     setJsonOpen(true);
-    restorePanel("json");
   }, [onCloseTray]);
+
+  // a list off the table: minimised where panels move, hidden from the rail where they stay put
+  const listHidden = (id: ListId) => (panelsMove ? Boolean(panelState(id).minimised) : Boolean(railHidden[id]));
+  const toggleList = (id: ListId) => {
+    if (panelsMove) toggleListPanel(id);
+    else setRailHidden((hidden) => ({ ...hidden, [id]: !hidden[id] }));
+  };
+  // an empty slot that starts the first one shows its list when that arrives
+  const showList = (id: ListId) => {
+    if (panelsMove) setPanelView(id, "restored");
+    else setRailHidden((hidden) => ({ ...hidden, [id]: false }));
+  };
+
+  // adding is live while the parts panel is open or a beam, frame or cable is being drawn: the + stops it
+  const adding = trayOpen || Boolean(placingType) || beamMode || drawingFrame || Boolean(connectDraft);
+  const stopAdding = () => {
+    if (beamMode) props.onCancelBeam();
+    else if (drawingFrame) props.onCancelFrame();
+    else if (connectDraft) props.onCancelConnect();
+    else if (trayOpen || placingType) props.onCloseTray();
+    else return false;
+    return true;
+  };
+  const twoParts = components.length >= 2;
 
   let inspector = null;
   if (beamMode) {
@@ -1320,47 +1355,12 @@ export default function BuilderHud(props: BuilderHudProps) {
       : selected.length > 1
         ? "group"
         : (selected[0]?.id ?? selectedBeam?.id ?? props.selectedFrame?.id ?? props.selectedConnection?.id);
-  // what a minimised inspector holds, as the minimised column says
-  const inspectorSubtitle =
-    selected.length > 1
-      ? `${selected.length} parts`
-      : selected[0]
-        ? componentDisplayName(selected[0])
-        : selectedBeam
-          ? beamDisplayName(selectedBeam)
-          : props.selectedFrame
-            ? frameDisplayName(props.selectedFrame)
-            : props.selectedConnection
-              ? props.selectedConnection.label?.trim() || CONNECTION_KINDS[props.selectedConnection.kind].label
-              : undefined;
   // the inspector's close button cancels a draft, or else deselects
   const cancelDraft = beamMode
     ? { label: "Cancel beam", run: props.onCancelBeam }
     : connectDraft
       ? { label: "Cancel connection", run: props.onCancelConnect }
       : null;
-  // a minimised Inspector opens again on a new selection; a minimised panel waits in the column
-  useInspectorReopens(
-    selectionKey({
-      beamDraft: beamMode,
-      connectDraft: Boolean(connectDraft),
-      parts: selected.map((component) => component.id),
-      beam: selectedBeam?.id,
-      frame: props.selectedFrame?.id,
-      connection: props.selectedConnection?.id,
-    }),
-    panelsMove,
-  );
-  const panelList = tabletopPanels({
-    inspector: inspector ? { subtitle: inspectorSubtitle } : null,
-    beams: beams.length,
-    frames: props.frames.length,
-    groups: props.groups.length,
-    partsOpen: trayOpen,
-    briefOpen,
-    jsonOpen,
-  });
-  const columnShows = panelList.some((panel) => panel.mounted && isMinimised(panel.id));
 
   const aboutPanels = (
     <>
@@ -1380,14 +1380,126 @@ export default function BuilderHud(props: BuilderHudProps) {
     </>
   );
 
+  const addItems: CornerFanItem[] = [
+    {
+      id: "part",
+      label: "Part",
+      hint: "Open the parts panel",
+      icon: "add",
+      run: () => {
+        setBriefOpen(false);
+        setJsonOpen(false);
+        props.onToggleTray();
+      },
+    },
+    {
+      id: "beam",
+      label: "Beam",
+      hint: twoParts ? "Draw a beam through parts" : "A beam needs two parts",
+      icon: "beam",
+      run: props.onStartBeam,
+      disabled: !twoParts,
+    },
+    { id: "frame", label: "Frame", hint: "Draw a frame round an area", icon: "frame", run: props.onStartFrame },
+    {
+      id: "cable",
+      label: "Cable",
+      hint: twoParts ? "Connect two parts with a fibre or cable" : "A cable needs two parts",
+      icon: "connect",
+      run: props.onStartConnect,
+      disabled: !twoParts,
+    },
+  ];
+  const helpItems: CornerFanItem[] = [
+    {
+      id: "guide",
+      label: "Guide",
+      hint: "Tag every control",
+      icon: "info",
+      // one size of the guide at a time: the coach marks would tag through the sheet
+      run: () => {
+        setSheetOpen(false);
+        setCoachOpen(true);
+      },
+    },
+    { id: "keys", label: "Keys", hint: "The cheat sheet", icon: "more", on: sheetOpen, run: () => setSheetOpen((open) => !open) },
+    { id: "brief", label: "AI brief", hint: "A brief for an AI assistant", icon: "copy", on: briefOpen, run: toggleBrief },
+  ];
+  const cameraItems: CornerFanItem[] = [
+    { id: "fit", label: "Fit", hint: "Fit the setup in view", icon: "fit", run: props.onFit },
+    { id: "top", label: "Top", hint: "Top view", icon: "top", on: view === "top", run: () => props.onViewChange("top") },
+    { id: "iso", label: "Iso", hint: "Isometric view", icon: "iso", on: view === "iso", run: () => props.onViewChange("iso") },
+  ];
+
+  const picked = selected.length;
+  const railSlots: RailSlot[] = [
+    {
+      id: "beams",
+      title: "Beams",
+      icon: "beams",
+      count: beams.length,
+      shown: !listHidden("beams"),
+      live: beamMode,
+      canCreate: twoParts,
+      onToggle: () => toggleList("beams"),
+      create: {
+        start: twoParts ? "Draw a beam" : "Draw a beam (needs two parts)",
+        stop: "Stop drawing the beam",
+        run: () => {
+          showList("beams");
+          props.onStartBeam();
+        },
+        cancel: props.onCancelBeam,
+      },
+    },
+    {
+      id: "frames",
+      title: "Frames",
+      icon: "frame",
+      count: props.frames.length,
+      shown: !listHidden("frames"),
+      live: drawingFrame,
+      canCreate: true,
+      onToggle: () => toggleList("frames"),
+      create: {
+        start: "Draw a frame",
+        stop: "Stop drawing the frame",
+        run: () => {
+          showList("frames");
+          props.onStartFrame();
+        },
+        cancel: props.onCancelFrame,
+      },
+    },
+    {
+      id: "groups",
+      title: "Groups",
+      icon: "groups",
+      count: props.groups.length,
+      shown: !listHidden("groups"),
+      live: groupMode,
+      canCreate: twoParts,
+      onToggle: () => toggleList("groups"),
+      create: {
+        start: twoParts ? "Group parts" : "Group parts (needs two parts)",
+        stop: groupSlotLabel(picked),
+        run: () => {
+          showList("groups");
+          props.onStartGroupMode();
+        },
+        cancel: props.onFinishGroupMode,
+      },
+    },
+  ];
+  // a list hidden from the rail leaves the page; a minimised one stays, hidden, so it keeps its place
+  const listOn = (id: ListId, count: number) => count > 0 && (panelsMove || !railHidden[id]);
+  const anyList =
+    listOn("beams", beams.length) || listOn("frames", props.frames.length) || listOn("groups", props.groups.length);
+
   return (
     <>
+      {/* top left: the QUOP mark is the file menu, and the + under it adds; their fans share one ring */}
       <div className="builderIsland builderHud__file">
-        <Link href="/" className="builderBack" aria-label="Back to the QUOP site">
-          <Icon name="back" size={16} />
-          QUOP
-        </Link>
-        <span className="builderIsland__sep" />
         <FileFan
           onShowJson={showJson}
           onExportPng={props.onExportPng}
@@ -1399,108 +1511,49 @@ export default function BuilderHud(props: BuilderHudProps) {
       {panelsMove ? null : aboutPanels}
 
       <div className="builderIsland builderHud__add">
-        <IconButton
-          icon="add"
-          label="Add part"
+        <CornerFan
+          corner="tl"
+          clearOf={TOP_LEFT_ISLANDS}
+          label={adding ? "Stop adding" : "Add"}
+          title={adding ? "Stop adding (Esc)" : "Add"}
+          items={addItems}
+          active={adding}
+          onTrigger={stopAdding}
           guide="add"
-          active={trayOpen}
-          onClick={() => {
-            setBriefOpen(false);
-            setJsonOpen(false);
-            props.onToggleTray();
-          }}
-        />
-        <IconButton
-          icon="beam"
-          label="Beam"
-          guide="beam"
-          active={beamMode}
-          onClick={beamMode ? props.onCancelBeam : props.onStartBeam}
-          disabled={components.length < 2}
-        />
-        <IconButton
-          icon="frame"
-          label="Frame"
-          guide="frame"
-          active={drawingFrame}
-          onClick={drawingFrame ? props.onCancelFrame : props.onStartFrame}
-        />
-        <IconButton
-          icon="connect"
-          label="Fibre or cable"
-          guide="connect"
-          active={Boolean(connectDraft)}
-          onClick={connectDraft ? props.onCancelConnect : props.onStartConnect}
-          disabled={components.length < 2}
-        />
+        >
+          <Icon name="add" />
+        </CornerFan>
       </div>
 
+      {/* top right: help, out of the way until it's wanted */}
+      <div className="builderIsland builderHud__help">
+        <CornerFan corner="tr" clearOf=".builderHud__help" label="Help" items={helpItems} guide="help">
+          <Icon name="info" />
+        </CornerFan>
+      </div>
+
+      {/* top centre: the dock, with the eye between undo and redo so its wheel drops from the middle */}
       <div className="builderHud__center">
-        <div className="builderHud__toolRow">
-          <button
-            type="button"
-            className="builderGuideButton"
-            aria-haspopup="dialog"
-            aria-expanded={coachOpen}
-            title="Guide"
-            // one size of the guide at a time: the coach marks would tag through the sheet
-            onClick={() => {
-              setSheetOpen(false);
-              setCoachOpen(true);
-            }}
-          >
-            <Icon name="info" size={16} />
-            Guide
-          </button>
-          <div className="builderHud__tools" data-guide="tools">
-            <div className="builderIsland" role="toolbar" aria-label="Tools">
-              <IconButton icon="select" label="Select and move" active={selecting} onClick={props.onSelectTool} />
-              <ShowMenu
-                posts={props.showPosts}
-                grid={props.showGrid}
-                labels={props.showLabels}
-                distances={props.showDistances}
-                onTogglePosts={props.onTogglePosts}
-                onToggleGrid={props.onToggleGrid}
-                onToggleLabels={props.onToggleLabels}
-                onToggleDistances={props.onToggleDistances}
-                scale={props.labelScale}
-                onBegin={props.onCheckpoint}
-                onChange={props.onLabelScaleChange}
-                lighting={props.lighting}
-                onLightingChange={props.onLightingChange}
-                lightGraphics={props.quality === "light"}
-                onToggleQuality={props.onToggleQuality}
-              />
-              <span className="builderIsland__sep" />
-              <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
-              <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
-            </div>
-            <button
-              type="button"
-              className="builderSheetTab"
-              aria-expanded={sheetOpen}
-              aria-controls="builder-cheat-sheet"
-              onClick={() => setSheetOpen((open) => !open)}
-            >
-              Cheat sheet
-              <Icon name="chevron" size={12} />
-            </button>
-          </div>
-          {/* the brief is neither a tool nor a guide: its own island, across the tools from the Guide pill */}
-          <div className="builderIsland builderHud__brief">
-            <button
-              type="button"
-              className={`builderIconBtn builderBriefButton${briefOpen ? " is-active" : ""}`}
-              aria-label="AI brief"
-              aria-pressed={briefOpen}
-              title="AI brief"
-              data-guide="brief"
-              onClick={toggleBrief}
-            >
-              .md
-            </button>
-          </div>
+        <div className="builderIsland builderHud__dock" role="toolbar" aria-label="Undo, show, redo" data-guide="dock">
+          <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
+          <ShowMenu
+            posts={props.showPosts}
+            grid={props.showGrid}
+            labels={props.showLabels}
+            distances={props.showDistances}
+            onTogglePosts={props.onTogglePosts}
+            onToggleGrid={props.onToggleGrid}
+            onToggleLabels={props.onToggleLabels}
+            onToggleDistances={props.onToggleDistances}
+            scale={props.labelScale}
+            onBegin={props.onCheckpoint}
+            onChange={props.onLabelScaleChange}
+            lighting={props.lighting}
+            onLightingChange={props.onLightingChange}
+            lightGraphics={props.quality === "light"}
+            onToggleQuality={props.onToggleQuality}
+          />
+          <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
         </div>
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
@@ -1510,7 +1563,7 @@ export default function BuilderHud(props: BuilderHudProps) {
             {mode.label}
             <span className="builderModeBadge__hints">
               {mode.hints.map(([key, action]) => (
-                <span key={key}>
+                <span key={`${key} ${action}`}>
                   <kbd>{key}</kbd> {action}
                 </span>
               ))}
@@ -1519,108 +1572,115 @@ export default function BuilderHud(props: BuilderHudProps) {
         ) : null}
       </div>
 
-      {/* always on and faint: the Shift orbit is the one nobody finds alone.
-          It sits above the inspector, which opens below it on the right. */}
-      <p className="builderControlsHint" aria-label="Mouse controls">
-        <span>
-          <kbd>⇧</kbd> drag orbit · drag pan · scroll zoom
-        </span>
-      </p>
-
       {/* Every panel, in one layer under the toolbars. Where panels stay put
           the layer is no box at all, and the brief and JSON panels keep their
           old place in the page, so the stacking is today's. */}
       <div ref={panelLayerRef} className={`${PANEL_LAYER_CLASS}${panelsMove ? " is-on" : ""}`}>
-      {panelsMove ? aboutPanels : null}
-      {trayOpen ? (
-        <PartsPanel
-          placingType={placingType}
-          onPick={props.onPickType}
-          onClose={props.onCloseTray}
-        />
-      ) : null}
+        {panelsMove ? aboutPanels : null}
+        {trayOpen ? <PartsPanel placingType={placingType} onPick={props.onPickType} onClose={props.onCloseTray} /> : null}
 
-      {inspector ? (
-        <aside
-          {...inspectorPanel.frame}
-          className={`builderIsland builderHud__inspector${inspectorPanel.className}`}
-          key={inspectorKey}
-          aria-label="Inspector"
-          data-guide="inspector"
-        >
-          {panelsMove ? <PanelBar title="Inspector" subtitle={inspectorSubtitle} {...inspectorPanel.bar} /> : null}
-          {inspector}
-          <button
-            type="button"
-            className="builderHud__close"
-            aria-label={cancelDraft ? cancelDraft.label : "Deselect (Esc)"}
-            title={cancelDraft ? `${cancelDraft.label} (Esc)` : "Deselect (Esc)"}
-            onClick={cancelDraft ? cancelDraft.run : props.onDeselect}
+        {inspector ? (
+          <aside
+            // the key before the spread: after it, the JSX compiles to createElement,
+            // whose children React warns about as an unkeyed list
+
+            key={inspectorKey}
+            {...inspectorPanel.frame}
+            className={`builderIsland builderHud__inspector${inspectorPanel.className}`}
+            aria-label="Inspector"
+            data-guide="inspector"
           >
-            <Icon name="close" size={16} />
-          </button>
-          {inspectorPanel.resize ? <PanelResize {...inspectorPanel.resize} /> : null}
-        </aside>
-      ) : null}
+            {panelsMove ? <PanelBar title="Inspector" {...inspectorPanel.bar} /> : null}
+            {inspector}
+            <button
+              type="button"
+              className="builderHud__close"
+              aria-label={cancelDraft ? cancelDraft.label : "Deselect (Esc)"}
+              title={cancelDraft ? `${cancelDraft.label} (Esc)` : "Deselect (Esc)"}
+              onClick={cancelDraft ? cancelDraft.run : props.onDeselect}
+            >
+              <Icon name="close" size={16} />
+            </button>
+            {inspectorPanel.resize ? <PanelResize {...inspectorPanel.resize} /> : null}
+          </aside>
+        ) : null}
 
-      {beams.length || props.frames.length || props.groups.length ? (
-        <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}${columnShows ? " is-besideColumn" : ""}`}>
-      {beams.length ? (
-        <BeamList
-          components={components}
-          beams={beams}
-          selectedId={selectedBeam?.id ?? null}
-          besideParts={besideParts}
-          onSelect={props.onSelectBeam}
-          onMove={props.onMoveBeam}
-          onSetHidden={props.onSetBeamHidden}
-          onDelete={props.onDeleteBeam}
-        />
-      ) : null}
-      {props.frames.length ? (
-        <FrameList
-          frames={props.frames}
-          selectedId={props.selectedFrame?.id ?? null}
-          onSelect={props.onSelectFrame}
-          onMove={props.onMoveFrame}
-          onSetHidden={props.onSetFrameHidden}
-          onDelete={props.onDeleteFrame}
-        />
-      ) : null}
-      {props.groups.length ? (
-        <GroupList
-          groups={props.groups}
-          renamingId={props.renamingGroupId}
-          onSelect={props.onSelectGroup}
-          onHover={props.onHoverGroup}
-          onRename={props.onRenameGroup}
-          onRenameStart={props.onRenameGroupStart}
-          onSetColor={props.onSetGroupColor}
-          onCheckpoint={props.onCheckpoint}
-          onSetHidden={props.onSetGroupHidden}
-          onExport={props.onExportGroup}
-          onDelete={props.onDeleteGroup}
-        />
-      ) : null}
-        </div>
-      ) : null}
+        {/* the lists stack up from the rail, like windows over a taskbar */}
+        {anyList ? (
+          <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
+            {listOn("beams", beams.length) ? (
+              <BeamList
+                components={components}
+                beams={beams}
+                selectedId={selectedBeam?.id ?? null}
+                besideParts={besideParts}
+                onSelect={props.onSelectBeam}
+                onMove={props.onMoveBeam}
+                onSetHidden={props.onSetBeamHidden}
+                onDelete={props.onDeleteBeam}
+              />
+            ) : null}
+            {listOn("frames", props.frames.length) ? (
+              <FrameList
+                frames={props.frames}
+                selectedId={props.selectedFrame?.id ?? null}
+                onSelect={props.onSelectFrame}
+                onMove={props.onMoveFrame}
+                onSetHidden={props.onSetFrameHidden}
+                onDelete={props.onDeleteFrame}
+              />
+            ) : null}
+            {listOn("groups", props.groups.length) ? (
+              <GroupList
+                groups={props.groups}
+                renamingId={props.renamingGroupId}
+                onSelect={props.onSelectGroup}
+                onHover={props.onHoverGroup}
+                onRename={props.onRenameGroup}
+                onRenameStart={props.onRenameGroupStart}
+                onSetColor={props.onSetGroupColor}
+                onCheckpoint={props.onCheckpoint}
+                onSetHidden={props.onSetGroupHidden}
+                onExport={props.onExportGroup}
+                onDelete={props.onDeleteGroup}
+              />
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {props.importChoice ? (
         <ImportChoiceDialog names={props.importChoice.names} onChoose={props.onImportChoice} />
       ) : null}
 
-      <div className="builderIsland builderHud__view" role="toolbar" aria-label="View" data-guide="view">
-        <span className="builderSegment">
-          <IconButton icon="iso" label="Isometric view" active={view === "iso"} onClick={() => props.onViewChange("iso")} />
-          <IconButton icon="top" label="Top view" active={view === "top"} onClick={() => props.onViewChange("top")} />
-        </span>
-        <IconButton icon="fit" label="Fit" onClick={props.onFit} />
-        <span className="builderIsland__sep" />
-        <IconButton icon="theme" label="Day / night" onClick={props.onToggleTheme} />
-        {panelsMove ? <PanelsMenu panels={panelList} onReset={props.onResetPanels} /> : null}
+      {/* bottom left: the panel rail, the same three slots every time */}
+      <PanelRail slots={railSlots} />
+
+      {/* bottom right: the camera, and the page's own day / night switch, plateless, outside the camera's ring */}
+      <div className="builderHud__viewRow">
+        <div className="builderIsland builderHud__view">
+          <CornerFan
+            corner="br"
+            clearOf=".builderHud__viewRow"
+            label="Camera"
+            title={`Camera: ${view === "top" ? "top" : "iso"}`}
+            items={cameraItems}
+            guide="view"
+          >
+            <Icon name={view === "top" ? "top" : "iso"} />
+          </CornerFan>
+        </div>
+        <button
+          type="button"
+          className="builderIconBtn builderTheme"
+          aria-label="Day / night"
+          title="Day / night"
+          data-guide="theme"
+          onClick={props.onToggleTheme}
+        >
+          <Icon name="theme" />
+        </button>
       </div>
-      {panelsMove ? <MinimisedColumn panels={panelList} besideParts={besideParts} /> : null}
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
       <p className="builderStatus" role="status" aria-live="polite">

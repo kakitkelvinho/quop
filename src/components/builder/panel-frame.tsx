@@ -9,8 +9,12 @@ import type { PanelEdge } from "@/components/builder/panel-geometry";
  * A panel's title bar: a grip, the panel's name, and its buttons: minimise,
  * maximise and, for a panel that closes, close. It replaces the panel's own
  * heading, so the title carries the id the panel is labelled by. Dragging it
- * moves the panel and double-clicking it minimises or restores it (usePanel's
- * `bar` props).
+ * moves the panel (usePanel's `bar` props). Double-clicking it minimises or
+ * restores it, or for a panel that doesn't minimise, maximises it.
+ *
+ * A list (Beams, Frames, Groups) keeps only a minimise, as the rail brings it
+ * back, and no grip: the whole bar drags. A panel that closes, or the
+ * Inspector, which closes when nothing is selected, has no minimise.
  */
 export function PanelBar({
   title,
@@ -21,6 +25,9 @@ export function PanelBar({
   maximised,
   onToggleMinimised,
   onToggleMaximised,
+  canMinimise,
+  canMaximise,
+  grip = true,
   onClose,
 }: {
   title: string;
@@ -32,6 +39,10 @@ export function PanelBar({
   maximised: boolean;
   onToggleMinimised: () => void;
   onToggleMaximised: () => void;
+  canMinimise: boolean;
+  canMaximise: boolean;
+  /** the grip glyph; a list's whole bar drags without one */
+  grip?: boolean;
   onClose?: () => void;
 }) {
   return (
@@ -39,27 +50,35 @@ export function PanelBar({
       className="builderPanelBar"
       onPointerDown={onPointerDown}
       onDoubleClick={(event) => {
-        if (!(event.target as Element).closest("button")) onToggleMinimised();
+        if ((event.target as Element).closest("button")) return;
+        if (canMinimise) onToggleMinimised();
+        else if (canMaximise) onToggleMaximised();
       }}
     >
-      <span className="builderPanelBar__grip">
-        <Icon name="grip" size={14} />
-      </span>
+      {grip ? (
+        <span className="builderPanelBar__grip">
+          <Icon name="grip" size={14} />
+        </span>
+      ) : null}
       <h2 id={titleId} className="builderPanelBar__title">
         {title}
         {minimised && subtitle ? `: ${subtitle}` : null}
       </h2>
       <span className="builderPanelBar__buttons">
-        <BarButton
-          icon={minimised ? "restore" : "minimise"}
-          label={`${minimised ? "Restore" : "Minimise"} ${title}`}
-          onClick={onToggleMinimised}
-        />
-        <BarButton
-          icon={maximised ? "restore" : "maximise"}
-          label={`${maximised ? "Restore" : "Maximise"} ${title}`}
-          onClick={onToggleMaximised}
-        />
+        {canMinimise ? (
+          <BarButton
+            icon={minimised ? "restore" : "minimise"}
+            label={`${minimised ? "Restore" : "Minimise"} ${title}`}
+            onClick={onToggleMinimised}
+          />
+        ) : null}
+        {canMaximise ? (
+          <BarButton
+            icon={maximised ? "restore" : "maximise"}
+            label={`${maximised ? "Restore" : "Maximise"} ${title}`}
+            onClick={onToggleMaximised}
+          />
+        ) : null}
         {onClose ? <BarButton icon="close" label={`Close ${title}`} title="Close (Esc)" onClick={onClose} /> : null}
       </span>
     </div>

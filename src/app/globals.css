@@ -2318,9 +2318,13 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 .builderWorkspace {
+  /* the lists' foot: clear of the panel rail under them */
+  --builder-rail-clear: 3.95rem;
   position: relative;
   height: 100%;
   overflow: hidden;
+  /* the HUD speaks a tighter grotesk than the notebook's Plex */
+  font-family: var(--font-inter), var(--font-sans);
   font-size: 0.82rem;
   line-height: 1.35;
 }
@@ -2433,39 +2437,29 @@ html[data-theme="dark"] .fitsColorControl__select {
   font-variant-numeric: tabular-nums;
 }
 
-/* top left: way back + file menu */
+/* top left: the QUOP mark, which is the file menu (home, .json, .png, example, clear) */
 .builderHud__file {
   top: 0.9rem;
   left: 0.9rem;
-  /* above the other islands and panels (5–7), so its file menu, which drops
-     down over the + island and the parts panel, is never painted under them;
-     below the coach marks (100) */
-  z-index: 8;
 }
 
-/* under it, on its own: the + that opens the parts panel */
+/* under it, on its own: the +, whose fan lies on the QUOP fan's ring */
 .builderHud__add {
   top: 4.1rem;
   left: 0.9rem;
 }
 
-.builderBack {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  height: 2rem;
-  padding: 0 0.55rem 0 0.35rem;
-  border-radius: var(--builder-radius);
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-decoration: none;
+/* top right: help (guide, keys, AI brief) */
+.builderHud__help {
+  top: 0.9rem;
+  right: 0.9rem;
 }
 
-.builderBack:hover {
-  background: var(--builder-hover);
-  color: var(--foreground);
+/* the wordmark: heavy and tracked, as the site's own */
+.builderBrand__mark {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
 }
 
 .builderMenu {
@@ -2531,7 +2525,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   border-top: 1px solid var(--border);
 }
 
-/* the eye's button: its Show wheel hangs under the tool pill, over the cheat sheet tab */
+/* the eye's button: its Show wheel hangs from the middle of the dock */
 .builderLighting {
   position: relative;
   display: flex;
@@ -2551,15 +2545,10 @@ html[data-theme="dark"] .fitsColorControl__select {
   pointer-events: none;
 }
 
-/* the open wheel spreads over the islands beside the pill (the brief's, on a
-   phone), and the cheat sheet tab steps aside rather than show through the hole */
-.builderHud__tools > .builderIsland:has(.showWheel) {
+/* the open wheel spreads over the islands and panels round the dock */
+.builderHud__dock:has(.showWheel) {
   position: relative;
   z-index: 6;
-}
-
-.builderHud__tools:has(.showWheel) > .builderSheetTab {
-  visibility: hidden;
 }
 
 /* on a phone the wheel is wider than the window: it shrinks to fit, and slides in from the edge */
@@ -2712,23 +2701,29 @@ html[data-theme="dark"] .fitsColorControl__select {
   }
 }
 
-/* the Tabletop menu's file fan: a quarter ring of wedges from the workspace's
-   top-left corner, its hole clear of the file island; the box sits on the
-   corner (placed from the script), the ring draws down and right from it */
-.fileFan {
+/* The corner fans: a quarter ring of wedges from a corner of the workspace,
+   flush with its edges, its hole clear of the islands there. The QUOP mark and
+   the + share the top left's ring; the ? opens from the top right, the camera
+   from the bottom right. The layer sits on the corner (placed from the
+   script); the wedges are petals, parted by a gap that widens outward. */
+.cornerFan__anchor {
+  position: relative;
+  display: inline-grid;
+}
+
+.cornerFan {
   position: absolute;
   z-index: 50;
   pointer-events: none;
 }
 
-.fileFan__ring {
+.cornerFan__ring {
   display: block;
   overflow: visible;
-  transform-origin: 4px 4px;
-  animation: fileFanOpen 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cornerFanOpen 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.fileFan__item {
+.cornerFan__item {
   color: var(--muted);
   outline: none;
   cursor: pointer;
@@ -2736,68 +2731,80 @@ html[data-theme="dark"] .fitsColorControl__select {
   animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
-/* the wedges are cut by the islands' hairline, which also edges the flat ring
-   against the scene (opaque, so a seam doesn't double where two strokes meet) */
-.fileFan__wedge {
+/* each petal is a plate of its own, edged in the islands' hairline */
+.cornerFan__wedge {
   fill: var(--surface-strong);
   stroke: color-mix(in srgb, var(--foreground) 22%, var(--surface-strong));
   stroke-width: 1;
   transition: fill 120ms ease;
 }
 
-.fileFan__name {
+.cornerFan__name {
   fill: var(--foreground);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
-.fileFan__item.is-file .fileFan__name {
+.cornerFan__item.is-file .cornerFan__name {
   font-family: var(--font-mono);
 }
 
-.fileFan__hint {
-  fill: currentColor;
-  font-size: 9.5px;
-  font-weight: 500;
-}
-
-.fileFan__item:hover,
-.fileFan__item:focus-visible {
+.cornerFan__item:hover,
+.cornerFan__item:focus-visible {
   color: var(--foreground);
 }
 
-.fileFan__item:hover .fileFan__name,
-.fileFan__item:focus-visible .fileFan__name {
-  fill: currentColor;
+/* hovers stay neutral: the ink is spent on what's live */
+.cornerFan__item:hover .cornerFan__wedge,
+.cornerFan__item:focus-visible .cornerFan__wedge {
+  fill: color-mix(in srgb, var(--foreground) 9%, var(--surface-strong));
 }
 
-.fileFan__item:hover .fileFan__wedge,
-.fileFan__item:focus-visible .fileFan__wedge {
-  fill: color-mix(in srgb, var(--foreground) 8%, var(--surface-strong));
+/* the current one (the camera's view, an open panel): the accent's wash, its icon in the ink */
+.cornerFan__item.is-on {
+  color: var(--accent-strong);
+}
+
+.cornerFan__item.is-on .cornerFan__wedge {
+  fill: var(--accent-soft);
+}
+
+.cornerFan__item.is-disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cornerFan__item.is-disabled:hover .cornerFan__wedge {
+  fill: var(--surface-strong);
 }
 
 /* Clear empties the table: orange, not the accent */
-.fileFan__item.is-danger:hover,
-.fileFan__item.is-danger:focus-visible {
+.cornerFan__item.is-danger:hover,
+.cornerFan__item.is-danger:focus-visible {
   color: #c2410c;
 }
 
-html[data-theme="dark"] .fileFan__item.is-danger:hover,
-html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
+html[data-theme="dark"] .cornerFan__item.is-danger:hover,
+html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
   color: #fb8c4a;
 }
 
-.fileFan__item.is-danger:hover .fileFan__wedge,
-.fileFan__item.is-danger:focus-visible .fileFan__wedge {
+.cornerFan__item.is-danger:hover .cornerFan__wedge,
+.cornerFan__item.is-danger:focus-visible .cornerFan__wedge {
   fill: color-mix(in srgb, #ea580c 14%, var(--surface-strong));
 }
 
-.fileFan__item:focus-visible .fileFan__wedge {
+.cornerFan__item.is-danger:hover .cornerFan__name,
+.cornerFan__item.is-danger:focus-visible .cornerFan__name {
+  fill: currentColor;
+}
+
+.cornerFan__item:focus-visible .cornerFan__wedge {
   stroke: var(--focus-ring);
   stroke-width: 2.5;
 }
 
-@keyframes fileFanOpen {
+@keyframes cornerFanOpen {
   from {
     opacity: 0;
     transform: scale(0.6);
@@ -2805,17 +2812,17 @@ html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fileFan__ring,
-  .fileFan__item {
+  .cornerFan__ring,
+  .cornerFan__item {
     animation: none;
   }
 
-  .fileFan__wedge {
+  .cornerFan__wedge {
     transition: none;
   }
 }
 
-/* top centre: tools, the parts tray, and the mode badge */
+/* top centre: the dock (undo, the eye, redo), the cheat sheet, and the mode badge */
 .builderHud__center {
   position: absolute;
   z-index: 6;
@@ -2829,6 +2836,11 @@ html[data-theme="dark"] .fileFan__item.is-danger:focus-visible {
 
 .builderHud__center > .builderIsland {
   position: static;
+}
+
+/* the cheat sheet holds its own close button */
+.builderHud__center > .builderIsland.builderSheet {
+  position: relative;
 }
 
 /* left: the parts panel, opened from the + below the top-left island */
@@ -3021,35 +3033,6 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
   color: #9b1c1c;
 }
 
-/* top right, above the inspector: how to drive the camera */
-.builderControlsHint {
-  position: absolute;
-  z-index: 4;
-  top: 1.05rem;
-  right: 1.1rem;
-  display: grid;
-  justify-items: end;
-  gap: 0.1rem;
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 600;
-  line-height: 1.35;
-  white-space: nowrap;
-  opacity: 0.8;
-  pointer-events: none;
-  user-select: none;
-}
-
-.builderControlsHint kbd {
-  padding: 0 0.22rem;
-  border: 1px solid var(--border);
-  border-radius: var(--builder-radius);
-  font-family: inherit;
-  font-size: 0.72rem;
-  line-height: 1.2;
-}
-
 /* left, where the parts panel opens: the brief and JSON panels */
 .builderAbout {
   top: 7.3rem;
@@ -3078,89 +3061,8 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
   line-height: 1.4;
 }
 
-/* the quick guide's two sizes: coach marks from the Guide pill, and the cheat sheet strip */
-.builderHud__toolRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
-}
-
-.builderHud__tools {
-  display: grid;
-  justify-items: center;
-}
-
-.builderHud__tools > .builderIsland {
-  position: static;
-}
-
-/* the way in for someone new: a plate like the islands, not an accent fill,
-   since the accent at rest belongs to the live tool and the selection */
-.builderGuideButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  height: 2.6rem;
-  padding: 0 0.95rem 0 0.75rem;
-  border: 1px solid var(--builder-hairline);
-  border-radius: var(--builder-radius);
-  background: var(--surface-strong);
-  color: var(--foreground);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: background-color 120ms ease;
-}
-
-.builderGuideButton:hover {
-  background: color-mix(in srgb, var(--foreground) 8%, var(--surface-strong));
-}
-
-/* while the coach marks are up they stand in for it, and its spot is free for a tag */
-.builderGuideButton[aria-expanded="true"] {
-  visibility: hidden;
-}
-
-/* a tab hung from the tool pill's lower edge */
-.builderSheetTab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  margin-top: -1px;
-  padding: 0.22rem 0.55rem 0.28rem 0.65rem;
-  border: 1px solid var(--builder-hairline);
-  border-top: 0;
-  border-radius: var(--builder-radius);
-  background: var(--surface-strong);
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.builderSheetTab:hover,
-.builderSheetTab[aria-expanded="true"] {
-  color: var(--foreground);
-}
-
-.builderSheetTab:hover {
-  background: color-mix(in srgb, var(--foreground) 8%, var(--surface-strong));
-}
-
-.builderSheetTab svg {
-  transition: transform 160ms ease;
-}
-
-.builderSheetTab[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
-
 .builderSheet {
-  position: static;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(4, auto);
   align-items: start;
@@ -3239,6 +3141,8 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
    the card is a flat dark plate */
 .builderCoach {
   position: fixed;
+  /* portalled to the body, outside the workspace's font */
+  font-family: var(--font-inter), var(--font-sans);
   z-index: 100;
   inset: 0;
   background: rgb(17 17 17 / 0.42);
@@ -3399,7 +3303,7 @@ html[data-theme="dark"] .builderCoach {
 
 /* right: the inspector, only while something is selected */
 .builderHud__inspector {
-  top: 4.2rem;
+  top: 3.9rem;
   right: 0.9rem;
   display: block;
   width: 16.5rem;
@@ -3763,12 +3667,12 @@ html[data-theme="dark"] .builderCoach {
   cursor: default;
 }
 
-/* bottom: the beams box and the frames box under it (left), view controls (right), status */
+/* bottom left: the lists, stacked up from the panel rail like windows over a taskbar */
 .builderHud__lists {
   position: absolute;
   z-index: 5;
   left: 0.9rem;
-  bottom: 0.9rem;
+  bottom: var(--builder-rail-clear);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -3840,7 +3744,7 @@ html[data-theme="dark"] .builderCoach {
   color: inherit;
   font: inherit;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
@@ -3929,7 +3833,7 @@ html[data-theme="dark"] .builderCoach {
   z-index: auto;
   justify-content: flex-end;
   max-width: none;
-  padding: 0 0 0.9rem 0.9rem;
+  padding: 0 0 var(--builder-rail-clear) 0.9rem;
 }
 
 .builderPanels.is-on .builderHud__lists.is-besideParts {
@@ -4026,6 +3930,29 @@ body[data-panel-gesture="se"] * {
   color: var(--foreground);
 }
 
+/* A list's bar has no window chrome: its name, muted, and one small minimise
+   (its rail slot brings it back). The whole bar drags, so no grip. */
+.builderHud__lists .builderPanelBar {
+  padding-left: 0.6rem;
+}
+
+.builderHud__lists .builderPanelBar__title {
+  flex: 1;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* a row's eye and bin show on the row you're at; a hidden row keeps its closed eye */
+@media (hover: hover) {
+  .builderBeamRow:not(:hover):not(:focus-within) .builderBeamRow__actions > * {
+    opacity: 0;
+  }
+
+  .builderBeamRow.is-hidden .builderBeamRow__actions > :first-child {
+    opacity: 1;
+  }
+}
+
 /* the bar spans the island, whatever its padding */
 .builderHud__frames.builderPanel .builderPanelBar {
   margin: 0 -0.25rem 0.15rem;
@@ -4054,123 +3981,9 @@ body[data-panel-gesture="se"] * {
   padding: 0;
 }
 
-/* minimised: the panel leaves the table; its icon waits in the minimised column */
+/* minimised: a list leaves the table; its slot on the panel rail brings it back */
 .builderPanels.is-on .builderPanel.is-minimised {
   display: none;
-}
-
-/* The minimised column: a thin island bottom left, an icon per minimised
-   panel, beside the parts panel (or the brief or JSON in its place) while it
-   is showing. The lists step right of it, unless moved by hand. */
-.builderMinimised {
-  left: 0.9rem;
-  bottom: 0.9rem;
-  z-index: 6;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.2rem;
-  animation: builderSlideRight 180ms ease;
-}
-
-.builderMinimised.is-besideParts {
-  left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);
-}
-
-.builderPanels.is-on .builderHud__lists.is-besideColumn {
-  padding-left: calc(0.9rem + 2.6rem + 0.4rem);
-}
-
-.builderPanels.is-on .builderHud__lists.is-besideParts.is-besideColumn {
-  padding-left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem + 2.6rem + 0.4rem);
-}
-
-.builderMinimised__button {
-  position: relative;
-  color: var(--foreground);
-}
-
-.builderMinimised__text {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-/* its name, out to the right on hover or keyboard focus */
-.builderMinimised__label {
-  position: absolute;
-  top: 50%;
-  left: calc(100% + 0.55rem);
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  padding: 0.35rem 0.55rem;
-  border: 1px solid var(--builder-hairline);
-  border-radius: var(--builder-radius);
-  background: var(--surface-strong);
-  color: var(--foreground);
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  translate: -0.3rem -50%;
-  transition:
-    opacity 120ms ease,
-    translate 120ms ease;
-}
-
-.builderMinimised__button:hover .builderMinimised__label,
-.builderMinimised__button:focus-visible .builderMinimised__label {
-  opacity: 1;
-  translate: 0 -50%;
-}
-
-.builderMinimised__sub {
-  color: var(--muted);
-  font-weight: 500;
-}
-
-/* the View island's panels menu opens upward, its right edge on the island's */
-.builderPanelsMenu .builderMenu__list {
-  top: auto;
-  right: -0.25rem;
-  bottom: calc(100% + 0.55rem);
-  left: auto;
-  animation-name: builderRise;
-}
-
-.builderPanelsMenu .builderMenu__list button {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.builderPanelsMenu .builderMenu__list button:disabled {
-  background: transparent;
-  color: var(--foreground);
-  opacity: 0.4;
-  cursor: default;
-}
-
-@keyframes builderRise {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.985);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .builderMinimised,
-  .builderPanelsMenu .builderMenu__list {
-    animation: none;
-  }
-
-  .builderMinimised__label {
-    transition: none;
-  }
 }
 
 /* maximised: the panel's box is set inline; its lists give up their own caps */
@@ -4445,29 +4258,67 @@ body[data-panel-gesture="se"] * {
   border-radius: var(--builder-radius);
 }
 
-.builderHud__view {
+/* bottom right: the camera, and right of it the day / night switch. The
+   switch has no plate, so it reads as the page's own rather than a table
+   tool, and the camera's ring clears it */
+.builderHud__viewRow {
+  position: absolute;
+  z-index: 5;
   right: 0.9rem;
+  bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.builderHud__viewRow > .builderHud__view {
+  position: static;
+}
+
+/* bottom left: the panel rail, three slots that are always there */
+.builderRail {
+  left: 0.9rem;
   bottom: 0.9rem;
 }
 
-/* top centre, right of the tool pill: the setup brief's own island. It hangs
-   off the row's end rather than widening it, so the Guide pill and the tool
-   pill stay centred where they were */
-.builderHud__toolRow {
+.builderRail__slot {
   position: relative;
 }
 
-.builderHud__brief {
-  top: 0;
-  left: calc(100% + 0.45rem);
+/* a slot whose list shows is pressed in, neutral: the accent is for what's live */
+.builderRail__slot.is-shown {
+  background: var(--builder-hover);
+  color: var(--foreground);
+  /* a bar along its foot, as a taskbar marks an open window */
+  background-image: linear-gradient(var(--foreground), var(--foreground));
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
 }
 
-/* a text button in an icon button's square */
-.builderBriefButton {
+/* an empty slot creates: dimmed until it's pointed at, a + where its count would be */
+.builderRail__slot.is-empty:not(.is-active) {
+  opacity: 0.45;
+}
+
+.builderRail__slot.is-empty:not(:disabled):hover,
+.builderRail__slot.is-empty:not(:disabled):focus-visible {
+  opacity: 1;
+}
+
+.builderRail__slot:disabled {
+  opacity: 0.3;
+}
+
+.builderRail__count {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 /* the brief: the parts panel's spot and size, so the beams and frames boxes
@@ -4625,22 +4476,15 @@ body[data-panel-gesture="se"] * {
   .builderHud__inspector {
     animation: none;
   }
+
+  .builderIconBtn {
+    transition: none;
+  }
 }
 
 /* Narrow screens: the parts panel spans the width, the inspector becomes a bottom sheet and
    the beams box rides above the bottom row. */
-/* the centred toolbar reaches the corner; touch has no Shift to explain */
-@media (max-width: 1100px), (pointer: coarse) {
-  .builderControlsHint {
-    display: none;
-  }
-}
-
 @media (max-width: 900px) {
-  .builderHud__lists {
-    bottom: 4.1rem;
-  }
-
   .builderStatus {
     bottom: 7.2rem;
   }
@@ -4662,35 +4506,14 @@ body[data-panel-gesture="se"] * {
 }
 
 @media (max-width: 640px) {
-  .builderMenu__title {
-    max-width: 6.5rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* the top centre moves to the right edge, clear of the + island: the Guide
-     pill tops the column, level with the file island, and the tool pill
-     drops to the + island's row */
-  .builderHud__center {
-    left: auto;
-    right: 0.9rem;
-    justify-items: end;
-    transform: none;
-  }
-
-  .builderHud__toolRow {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.5rem;
-  }
-
   /* too wide for one line here: the marker and the mode's name top its keys,
-     which wrap on a line of their own */
+     which wrap on a line of their own. It keeps between the + and the right
+     edge, so it never sits on the + */
   .builderModeBadge {
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 0.3rem 1.1rem;
-    max-width: calc(100vw - 1.8rem);
+    max-width: calc(100vw - 8.4rem);
     padding: 0.4rem 0.6rem;
     white-space: normal;
   }
@@ -4698,7 +4521,7 @@ body[data-panel-gesture="se"] * {
   .builderModeBadge__hints {
     flex-basis: 100%;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 0.3rem 0.7rem;
   }
 
@@ -4722,14 +4545,7 @@ body[data-panel-gesture="se"] * {
     width: auto;
   }
 
-  /* the .md island drops to a third row at the right edge, under the tool
-     pill: the brief opens below it, so its button stays in reach */
-  .builderHud__brief {
-    position: static;
-  }
-
   .builderBrief {
-    top: 11.4rem;
     bottom: 7.2rem;
   }
 
@@ -5503,19 +5319,16 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   border-radius: 0.2rem;
 }
 
-.fileFan__item:is(:hover, :focus-visible) {
+/* a fan's current petal and the Show wheel's lit segments are plates too;
+   their hovers stay neutral, like the rest of the HUD */
+:is(.cornerFan__item.is-on, .showWheel__segment.is-on) {
   color: var(--on-accent);
 }
 
-.fileFan__item:is(:hover, :focus-visible) .fileFan__wedge,
-.showWheel__segment.is-on .showWheel__wedge {
+:is(.cornerFan__item.is-on, .showWheel__segment.is-on) :is(.cornerFan__wedge, .showWheel__wedge) {
   fill: var(--accent);
 }
 
-.fileFan__item:is(:hover, :focus-visible) .fileFan__hint {
-  fill: rgb(255 255 255 / 0.78);
-}
-
-.showWheel__segment.is-on {
-  color: var(--on-accent);
+.cornerFan__item.is-on .cornerFan__name {
+  fill: currentColor;
 }

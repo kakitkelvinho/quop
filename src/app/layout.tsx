@@ -7,7 +7,7 @@ import { SITE_VERSION } from "@/components/site-version";
 
 import "./globals.css";
 
-// Both fonts live in ./fonts so the build never fetches from Google Fonts.
+// The fonts live in ./fonts so the build never fetches from Google Fonts.
 // Source Sans 3: Adobe's open-source sibling of Myriad, a signage-family sans.
 // One variable file covers every weight the site sets, 200 to 900.
 const sourceSans = localFont({
@@ -24,6 +24,14 @@ const ebGaramond = localFont({
   ],
   variable: "--font-eb-garamond",
   adjustFontFallback: "Times New Roman",
+});
+
+// The Tabletop HUD's grotesk, a 100–900 weight variable font cut to Latin. Only
+// the builder uses it, so it isn't preloaded on every page.
+const inter = localFont({
+  src: [{ path: "./fonts/inter-100-900-normal.woff2", weight: "100 900", style: "normal" }],
+  variable: "--font-inter",
+  preload: false,
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kakitkelvinho.github.io/quop";
@@ -74,7 +82,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${sourceSans.variable} ${ebGaramond.variable}`}
+      className={`${sourceSans.variable} ${ebGaramond.variable} ${inter.variable}`}
       lang="en"
       suppressHydrationWarning
     >
