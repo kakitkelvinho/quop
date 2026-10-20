@@ -10,9 +10,10 @@ colors:
   slate-muted: "#666666"
   hairline-border: "rgba(0, 0, 0, 0.12)"
   chalk-mark-day: "rgb(17 17 17)"
-  oxblood-ink: "#8b1e3f"
-  oxblood-ink-deep: "#61122b"
-  oxblood-ink-soft: "rgba(139, 30, 63, 0.1)"
+  station-blue: "#1a5fb4"
+  station-blue-deep: "#0f4690"
+  station-blue-soft: "rgba(26, 95, 180, 0.09)"
+  sign-lettering: "#ffffff"
   true-black: "#000000"
   ink-panel: "rgba(10, 10, 10, 0.92)"
   ink-panel-strong: "#111111"
@@ -20,32 +21,31 @@ colors:
   cool-gray-muted: "#a1a1a1"
   frost-border: "rgba(255, 255, 255, 0.14)"
   chalk-mark-night: "rgb(255 255 255)"
-  lamp-amber: "#f4b942"
-  lamp-amber-light: "#ffd67c"
-  lamp-amber-soft: "rgba(244, 185, 66, 0.14)"
+  station-ring-night: "#4f8dd6"
+  station-blue-soft-night: "rgba(26, 95, 180, 0.38)"
   ember-orange: "#ff9d5c"
   sky-blue: "#6da8ff"
   seafoam-teal: "#75d7c0"
   coral-pink: "#f06f86"
 typography:
   display:
-    fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "clamp(2.2rem, 5vw, 4.6rem)"
     fontWeight: 400
     lineHeight: 1.02
     letterSpacing: "-0.03em"
   headline:
-    fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "clamp(1.25rem, 2.4vw, 1.9rem)"
     fontWeight: 400
     lineHeight: 1.15
   body:
-    fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.6
   label:
-    fontFamily: "var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    fontFamily: "var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     fontSize: "0.8rem"
     fontWeight: 800
     letterSpacing: "0.08em"
@@ -69,7 +69,7 @@ spacing:
   lg: "1.3rem"
 components:
   button-primary:
-    backgroundColor: "{colors.oxblood-ink}"
+    backgroundColor: "{colors.station-blue}"
     textColor: "#fffaf1"
     rounded: "{rounded.sm}"
     padding: "0.72rem 1rem"
@@ -89,9 +89,9 @@ components:
     rounded: "{rounded.full}"
     padding: "0 0.75rem"
   nav-pill-active:
-    backgroundColor: "{colors.oxblood-ink-soft}"
-    textColor: "{colors.oxblood-ink-deep}"
-    rounded: "{rounded.full}"
+    backgroundColor: "{colors.station-blue}"
+    textColor: "{colors.sign-lettering}"
+    rounded: "0"
     padding: "0 0.75rem"
 ---
 
@@ -101,38 +101,47 @@ components:
 
 **Creative North Star: "The Working Board"**
 
-QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, oxblood annotations. By night it's the same room with the lights off and the board lit — true black, chalk-white marks, amber ink instead of oxblood, the FITS viewers glowing with green phosphor crosshairs and mono readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.
+QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, blue annotations. By night it's the same room with the lights off and the board lit — true black, chalk-white marks, the same station blue lit as fills and rings around white words, the FITS viewers glowing with green phosphor crosshairs and mono readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.
 
 The homepage states that literally: a board the visitor arrives at mid-session, with equations from four domains being written and wiped behind the welcome. The rest of the site is the notebook the board's results get copied into.
 
 The mood is inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Invitation shows up in the hand-drawn marks, the unhurried writing and erasing, and cards that respond rather than sitting inert. Credibility shows up underneath: exact values in monospace, uppercase kicker labels on every card ("CALCULATOR", "PLOTTER"), and instrument-grade FITS readouts that don't soften their numbers for anyone.
 
-Two color systems run in parallel and must not be confused: the oxblood-ink/lamp-amber pair is the notebook's *own* ink — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Builder, Notes, Plotters, Calculators) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink pair.
+Two color systems run in parallel and must not be confused: the station blue is the notebook's *own* ink, by day and by night — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Builder, Notes, Plotters, Calculators) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink.
 
 **Key Characteristics:**
-- White paper by day, black board by night — a full hue swap on the accent, not just a lightness shift
+- White paper by day, black board by night — one station-blue ink in both, worn as fills and rings at night while the words go white
+- Whatever is pressed, open or a tag is a station sign: a square blue plate with white lettering — see The Sign Rule
 - Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat
 - Uppercase, letter-spaced kicker labels mark structure and category; regular-case text is always actual content
 - FITS/data-instrument surfaces (crosshair readouts, colorbars) speak in mono type and green-phosphor/amber highlights, deliberately more "instrument" than the plain chrome around them
-- Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the oxblood/amber ink accent
+- Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the station-blue ink
 - Hand-drawn marks — wobbled card frames, textured chalk strokes, italic serif equations — belong to the homepage board and nowhere else; every other surface is precise
 
 ## Colors
 
-Two accents that trade places with the theme, a neutral scale that runs to pure white and pure black, and four categorical section colors that stay out of the ink pair's way.
+One station-blue accent in both themes, a neutral scale that runs to pure white and pure black, and four categorical section colors that stay out of the ink's way.
 
 ### Primary
-- **Oxblood Ink** (`#8b1e3f`, day) / **Lamp Amber** (`#f4b942`, night): the notebook's own accent — active nav pills, focus rings, kicker text, calculator result emphasis, the primary button fill. **The Day/Night Ink Rule.** The accent does not merely lighten between themes, it swaps hue entirely: burgundy ink by day, amber lamplight by night. Any future accent work must preserve this hue swap, not soften it into a shared mid-tone.
-- **Oxblood Ink Deep** (`#61122b`, day) / **Lamp Amber Light** (`#ffd67c`, night): the darker/lighter step of the ink pair, used for kicker labels and stronger emphasis text where the base accent would be too loud as a text color.
-- **Oxblood Ink Soft** (`rgba(139, 30, 63, 0.1)`, day) / **Lamp Amber Soft** (`rgba(244, 185, 66, 0.14)`, night): the wash behind an active nav pill or hovered link — never used as a fill for large areas.
+- **Station Blue** (`#1a5fb4`, `--accent`, day and night): the notebook's own and only accent, the blue of an Austrian station sign — every sign plate (active header tabs, kickers, tags, pressed controls), focus rings by day, calculator result emphasis, the primary button fill, the Tabletop's selection. White lettering on it is about 6:1.
+- **Station Blue Deep** (`#0f4690` by day, `--accent-strong`): the darker step, for emphasis text and links where the base ink would be too loud. At night it is white (`#ffffff`).
+- **Sign Lettering** (`#ffffff`, `--on-accent`): the words on a plate, in both themes.
+- **Station Ring** (about `#4f8dd6`, night, `--focus-ring`, mixed from `--accent` toward `#8fc4ff` so it follows it): the ink as a thin mark on black — focus rings, outlines, selection borders, ink-coloured icons, the 3D selection ring. About 6:1 on black. By day the ring is the ink itself.
+- **Station Blue Soft** (`rgba(26, 95, 180, 0.09)` day, `0.38` night, `--accent-soft`): the faint wash behind a hovered row or a readout — never used as a fill for large areas, and no longer the active state, which is a plate.
+
+**The Day/Night Ink Rule.** One hue in both themes. Fills are unchanged: a blue plate, button or badge is `#1a5fb4` day and night, with white lettering on it. Thin marks lift at night to the lighter Station Ring, where the plate's blue would sink into black. Words are never blue at night: where the ink marks text (a result, a link), the words go white (`--accent-text`, `--accent-strong`) and take their emphasis from size and weight, with the blue in the fill or ring around them. Links keep a 1px underline and turn into a plate on hover. By day, blue text stays.
+
+**The Sign Rule.** The identity is a station's wayfinding, with a nod to HITMAN's label plates in its own colour. Whatever is pressed, open, active or a tag — a header tab, the wordmark on hover, a kicker, a tool's sample tag, the beta badge, a pressed builder control, an open menu, a selected beam, a lit Show wheel segment, the file fan's wedge under the pointer — is a square plate in `--accent` with `--on-accent` lettering, the same by day and night. Plates are cut square (`0.2rem` at most); a pill is a badge, not a sign. The selectors live in one list at the end of `globals.css`, so the gesture stays one gesture. The Tabletop HUD plates only what's pressed or open; its hovers stay neutral.
+
+**The Tabletop reads the ink, never its own hex.** Every builder use of the accent goes through `--accent`, `--accent-strong`, `--accent-soft`, `--accent-text`, `--accent-hover` or `--focus-ring`, and the 3D scene reads `--focus-ring` from the page (`useScenePalette`) for its selection and hover rings. Changing `--accent` in `globals.css` recolours the HUD and the scene together. A part's own colour saved into a file (`DEFAULT_MOUNT_COLOR`) is data, not theme.
 
 ### Section Wayfinding Colors (categorical, not brand accent)
 - **Ember Orange** (`#ff9d5c`) — Calculators.
-- **Sky Blue** (`#6da8ff`) — Notes.
+- **Sky Blue** (`#6da8ff`) — Notes. It now sits close to the station-blue ink; revive it as a different hue, or not at all, or it breaks The Divider Rule.
 - **Seafoam Teal** (`#75d7c0`) — Plotters.
 - **Coral Pink** (`#f06f86`) — Builder.
 
-**The Divider Rule.** These four colors exist to answer "which section is this," nothing else. Do not promote one of them into a general UI accent, and do not let the ink pair (Oxblood/Amber) bleed into a wayfinding role — the two systems answer different questions and must stay visually separable.
+**The Divider Rule.** These four colors exist to answer "which section is this," nothing else. Do not promote one of them into a general UI accent, and do not let the station-blue ink bleed into a wayfinding role — the two systems answer different questions and must stay visually separable.
 
 **Status: currently dormant.** They survive as the `accent` field on `navSections`, but the only components that read it (`TransitionProvider`, `WavefunctionBanner`) are unwired dead code, so no wayfinding color is visible anywhere in the live app. They were last seen as the 3px top-edge stripe on the old 2×2 homepage hero tiles, which the chalkboard hero replaced. The system is documented here because it is the site's only categorical signal and is worth reviving deliberately — but until something renders it, treat it as a decision pending, not a live rule. The chalk section cards pointedly do not use it: on a board, everything is written in the same hand.
 
@@ -148,19 +157,19 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 
 ## Typography
 
-**Body & Display Font:** IBM Plex Sans (with `-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif`)
+**Body & Display Font:** Source Sans 3 (with `-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif`)
 **Readout Font:** `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace` — reserved for FITS/instrument readouts, inline code, mono data fields, and the route label on a chalk card.
 **Equation Font:** EB Garamond italic (`--font-serif`) — reserved for the equations on the homepage board, which are hand-set HTML rather than KaTeX. Nothing else on the site is set in serif.
 
-**Character:** IBM Plex Sans carries the interface alone — there's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is genuinely measured data, and Garamond italic where the content is a physicist's handwriting.
+**Character:** Source Sans 3, Adobe's open-source sibling of Myriad, carries the interface alone, in the humanist signage tradition of Frutiger and the station boards it echoes. It sets smaller than a grotesk, so the root font size is `106.25%`. One variable file (200–900) is self-hosted in `src/app/fonts`. There's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is genuinely measured data, and Garamond italic where the content is a physicist's handwriting.
 
 ### Hierarchy
 - **Display** (400, `clamp(2.2rem, 5vw, 4.6rem)`, line-height 1.02, letter-spacing -0.03em): page `h1`s — one per page, tight and large.
 - **Headline** (400, `clamp(1.25rem, 2.4vw, 1.9rem)`, line-height 1.15): `h2`s inside cards and sections.
 - **Body** (400, 1rem, line-height 1.6): running copy. Lead paragraphs step up to `1.08rem` in the muted color, capped at `44rem` measure.
-- **Label** (800, `0.75–0.84rem`, letter-spacing 0.08em, uppercase): kicker tags ("CALCULATOR", "PLOTTER"), nav pill text, button-cluster labels — always in the ink-deep accent color or muted, never body color.
+- **Label** (800, `0.75–0.84rem`, letter-spacing 0.08em, uppercase): kicker tags ("CALCULATOR", "PLOTTER"), nav pill text, button-cluster labels — kickers and cluster labels as white-on-blue plates (see The Sign Rule), nav text muted until it becomes one.
 - **Readout** (700, `0.72–0.78rem`, mono): FITS crosshair coordinates, colorbar labels, mono text inputs.
-- **Result** (800, `clamp(2rem, 5vw, 3.2rem)`, line-height 0.95, letter-spacing -0.04em): the one place numbers get genuinely large: every calculator's answer, through the shared `Readout` (`readout--primary`), with tabular figures, a few significant figures and an SI prefix (`1.00 mJ`, never `1.000000e-3 J`). Secondary answers beside it step down to `clamp(1.45rem, 3vw, 1.9rem)`. A tool page's own heading (`toolTitle`, `clamp(1.8rem, 3.4vw, 2.5rem)`) sits below Display, so the answer, not the tool's name, is the largest thing on it.
+- **Result** (800, `clamp(2rem, 5vw, 3.2rem)`, line-height 0.95, letter-spacing -0.04em): the one place numbers get genuinely large: every calculator's answer, through the shared `Readout` (`readout--primary`) or, on a converter, inside both linked fields, with tabular figures, a few significant figures and an SI prefix (`1.00 mJ`, never `1.000000e-3 J`). Secondary answers step down to one small muted line under it (`readoutAside`). A tool page's own heading (`toolTitle`, `clamp(1.8rem, 3.4vw, 2.5rem)`) sits below Display, so the answer, not the tool's name, is the largest thing on it.
 - **Equation** (400 italic serif, `1.5–1.8rem`): the board's drifting equations. Sized per equation rather than by a scale step, because the shorter ones need to be larger to hold the same visual weight.
 
 ### Named Rules
@@ -170,7 +179,7 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 
 The page is a single centered column: `max-w-6xl`, `px-4`/`sm:px-6`, `pt-8 pb-16`, sitting under a sticky, blurred nav bar (`backdrop-filter: blur(14px)`) that never scrolls away. The nav itself is a three-column grid (`1fr auto 1fr`) — left links, centered wordmark, right links — with hover-revealed dropdown panels beneath section labels.
 
-Content grids adapt per surface: `toolGrid` lists a section's tools on its index page (Calculators, Plotters), one column, two from 900px; `calculatorGrid` uses `repeat(auto-fit, minmax(250px, 1fr))` so calculator inputs reflow by available width; the pace calculator's dual-panel-with-swap layout (`1fr auto 1fr`) collapses to a single column under 900px. The homepage is the chalkboard hero (`min-height: clamp(400px, 66vh, 640px)`, centered welcome copy) followed by the four chalk section cards, which run `1fr` / `2×` / `4×` at 0 / 640px / 1000px.
+Content grids adapt per surface: `toolGrid` lists a section's tools on its index page (Calculators, Plotters), one column, two from 900px; a calculator page is one flat column (`calculatorSheet`, up to `36rem`) at every width: its fields, then, where a tool has a separate answer, a hairline (`--border`) and the result. There is no grid of direction cards and no pace dual panel: converters are two linked fields stacked (see Inputs / Fields). The homepage is the chalkboard hero (`min-height: clamp(400px, 66vh, 640px)`, centered welcome copy) followed by the four chalk section cards, which run `1fr` / `2×` / `4×` at 0 / 640px / 1000px.
 
 Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind's `sm:` (640px) on newer Tailwind-authored components — both idioms are currently live in the codebase; match whichever a given file already uses rather than introducing a third.
 
@@ -180,10 +189,12 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 
 **The one exception: the chalk card family.** The homepage's four section cards carry no shadow, no fill, and no border — they are a wobbled SVG frame drawn onto the page surface. A mark on a board has nothing to cast a shadow with, and giving these cards one would break the single idea the homepage is built on. The exception is scoped to `.chalkCard` and does not extend to any other card; a new card type defaults back to the Always-Lifted Rule unless it is literally drawn in chalk.
 
+**Calculator pages are flat: a calculator is a sheet of working, not a stack of cards.** The pages under `/calculators/` (`calculatorPage`, `calculatorSheet`) carry no card container: no frame, no shadow, no lift on hover. Fields and answers sit on the page in one column, with a hairline between the fields and the result where one is needed, and the `Readout` drops its wash box there. Fields keep their hairline-bordered `field__control` and the focus ring. The exception is scoped to calculator pages; `inputCard` and the other card classes are shared with the plotters, which stay lifted, and the tool index cards on `/calculators` still follow the rule.
+
 ### Shadow Vocabulary
 - **Card ambient** (`box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1)`, day / `0 28px 60px rgba(0, 0, 0, 0.35)`, night): the resting shadow under every `sectionCard`, `inputCard`, and `infoPanel`.
 - **Control ambient** (`box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14)`, deepens to `0 16px 28px rgba(91, 102, 117, 0.18)` on hover): the metallic plotter/action buttons (`buttonControl`).
-- **Focus ring** (`outline: 2px solid var(--focus-ring)`, the ink itself: Oxblood `#8b1e3f` by day, Lamp Amber `#f4b942` by night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Solid rather than a soft wash, because a focus indicator needs 3:1 against the page.
+- **Focus ring** (`outline: 2px solid var(--focus-ring)`, the ink as a thin mark: Station Blue `#1a5fb4` by day, Station Ring `#4f8dd6` by night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Solid rather than a soft wash, because a focus indicator needs 3:1 against the page.
 - **Lift** (`var(--shadow-lift)`): the deeper shadow a card rises into on hover, with `translateY(-2px)`.
 
 ## Shapes
@@ -196,25 +207,27 @@ Buttons, cards, and inputs are precise and instrument-like: numbers are exact, c
 
 ### Buttons
 - **Shape:** primary actions round to `0.8rem`; the plotter/calculator action grid (`buttonControl`) rounds to `1rem`.
-- **Primary** (`buttonLink`): solid Oxblood Ink / Lamp Amber fill, `#fffaf1` text (day) or `#1a1d26` (night), bold weight, `0.72rem 1rem` padding, no border. Lifts `translateY(-1px)` on hover with no color change.
+- **Primary** (`buttonLink`): solid Station Blue fill with white lettering, day and night, bold weight, `0.72rem 1rem` padding, no border. Lifts `translateY(-1px)` on hover with no color change.
 - **Action grid** (`buttonControl`): a distinct neutral-metal gradient fill (`linear-gradient(135deg, #d7dbe2, #bcc3cd)`) used for plotter/data-action buttons, not the ink accent — reads as hardware, not as a call-to-action. Its secondary variant swaps to the surface gradient with the standard hairline border.
-- **Header items** (`NavItem`, the wordmark, the theme toggle): square tabs the full height of the bar, transparent at rest, Oxblood/Amber-soft wash + ink-deep text when active or hovered. The theme toggle is the header's last item on every screen, not a floating button.
+- **Header items** (`NavItem`, the wordmark, the theme toggle): square tabs the full height of the bar, transparent at rest, a blue plate with white lettering when active or hovered. The theme toggle is the header's last item on every screen, not a floating button.
 
 ### Cards / Containers
 - **Corner Style:** `1.1rem` (`sectionCard`, `inputCard`, `infoPanel`).
 - **Background:** Paper Surface / Ink Panel (translucent), always paired with the Card ambient shadow.
 - **Border:** 1px hairline, Sepia/Frost.
 - **Internal Padding:** `1.3rem`, with `0.85rem` gap between internal stacked elements.
-- **The kicker:** an uppercase, letter-spaced tag (`sectionCard__kicker`) in Oxblood-Deep/Amber-Light may label a group of controls. It never sits above a heading: the heading carries its own weight.
+- **The kicker:** an uppercase, letter-spaced tag (`sectionCard__kicker`), set as a small white-on-blue plate in both themes, may label a group of controls. It never sits above a heading: the heading carries its own weight.
 - **Tool cards** (`toolCard`, on index pages) open instead on a mono line of what the tool gives (`550 nm → 2.2543 eV`) on the ink wash: on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing, and the result is the homepage chapters' language carried inward. The whole card is one link and lifts on hover; there is no per-card button.
 
 ### Inputs / Fields
 - **Style:** bordered outer container (`field__control`, `0.9rem` radius, Sepia/Frost border) housing a borderless inner `input`/`textarea` on Paper-Surface-Strong background; a unit label sits inline at the end in muted color.
 - **File input** (`FileDrop`): the one dashed-border treatment in the system (`1px dashed`), signaling "drop a file here" distinctly from typed fields. It names the file it was given, in mono, rather than the browser's "No file chosen".
 - **Focus:** the ink-accent Focus Ring (see Elevation & Depth), not a border-color change.
+- **Linked fields** (`LinkedFields`, on the energy ↔ wavelength, light travel and pace calculators): one field per quantity, stacked, linked as in a unit converter. The field typed in last is the source and is never reformatted; the other is worked out from it and written in (5 s.f. for energy/wavelength, 6 for light travel, pace to the second), or emptied to a muted `—` placeholder when the source isn't a value. Both numbers are set at the Result step inside the input, the label small and muted above, the unit (or one unit picker per field, in the ink colour, white at night) beside. Changing a unit keeps the physical quantity. A visually hidden polite live region announces the worked-out field once typing pauses. The pure logic is `linked-pair.ts`.
+- **Side answers** (`readoutAside`): smaller answers under a calculator's main `Readout` share one small muted line (`Pulse energy 1.00 mJ · Peak fluence 2E/(πw²) 0.0637 J/cm²`), values in body colour, formula labels kept.
 
 ### Navigation
-- Sticky, blurred, three-column pill nav; active section gets the Oxblood/Amber-soft pill treatment; hovering a section reveals its links in a rounded flyout panel (`1.1rem`-ish radius, same Paper Surface + border + shadow as any card).
+- Sticky, blurred, three-column pill nav; active section becomes a blue plate; hovering a section reveals its links in a rounded flyout panel (`1.1rem`-ish radius, same Paper Surface + border + shadow as any card).
 
 ### Chalkboard Hero (homepage)
 The board fills the top of the homepage and inherits the page background, so it is not a panel sitting on the page — it *is* the page, given a surface. Three layers stack under the welcome copy: a canvas of procedural grain (a faint radial falloff from `--background` to `--background-muted`, fine speckle, and long fibres); a canvas reserved for eraser ghosts, which is empty at a `BOARD_HISTORY` of 0 and fills with wipe arcs and illegible earlier working as it is raised; and the chalk layer where equations are written.
@@ -229,13 +242,14 @@ Everything the eye judges is a named constant at the top of `chalkboard-hero.tsx
 Four cards — Builder, Notes, Plotters, Calculators — each a hand-drawn frame around a glyph, a name, a one-line tag in muted text, and the route in mono at the foot. The frame is four wobbled SVG edges with a gap at each corner, seeded per card so no two are identical, drawn on with `stroke-dasharray` when the card scrolls into view; the glyph and text follow on a short stagger. Hover darkens the frame and turns the name to the ink accent. These cards are flat by design — see the Always-Lifted Rule's exception — and they carry the mono route instead of the uppercase kicker every other card opens with, because a route is a real value and the Case Rule applies.
 
 ### Signature Component — FITS Instrument Readout
-The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. Icon-button toolbars use amber highlighting (`rgba(230, 171, 88, 0.16)` background, `#8f5f12`/`#ffd99d` text) for active/open states rather than the primary Oxblood/Amber pair — this toolbar-amber is a separate, narrower accent scoped only to these instrument controls.
+The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. Icon-button toolbars use amber highlighting (`rgba(230, 171, 88, 0.16)` background, `#8f5f12`/`#ffd99d` text) for active/open states rather than the station-blue ink — this toolbar-amber is a separate, narrower accent scoped only to these instrument controls.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** preserve the full hue swap on the primary accent between themes (Oxblood Ink ↔ Lamp Amber) — see The Day/Night Ink Rule.
-- **Do** give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice, unless it is part of the chalk card family.
+- **Do** keep one station-blue ink in both themes: fills unchanged, thin marks lifted lighter, words white at night — see The Day/Night Ink Rule.
+- **Do** make whatever is pressed, open or a tag a square blue plate with white lettering, through the one list in `globals.css` — see The Sign Rule.
+- **Do** give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice, unless it is part of the chalk card family or sits on a calculator page.
 - **Do** keep hand-drawn texture on the homepage board and off everything else — the chalk filters, the wobbled frames, and the serif italic are one scoped gesture, not a site-wide style.
 - **Do** keep the four section wayfinding colors (ember-orange, sky-blue, seafoam-teal, coral-pink) purely categorical — section identification only, never a general accent.
 - **Do** reserve uppercase/letter-spaced type for structural labels (kickers, nav, cluster labels) and keep all real content sentence-case — see The Case Rule.
@@ -244,6 +258,6 @@ The FITS/CSV plotters depart deliberately from the notebook language into instru
 ### Don't:
 - **Don't** treat `TransitionProvider`, `NavTransitionLink`, `WavefunctionBanner`, or the `orbitalPhase` field on `navSections` as part of the live design system. They exist in source but are not wired into the app (no page imports `TransitionProvider` or `WavefunctionBanner`; `AppShell` uses a plain `Link`, not `NavTransitionLink`; `orbitalPhase` is never read). They're leftover from a prior orbital/atom hero and should be treated as dead code, not incumbent authority, until someone deliberately revives or removes them.
 - **Don't** raise `--chalk-alpha` until the marks read as confidently as interface text. They are meant to sit at the edge of legibility; an equation that competes with the welcome copy has been pushed too far.
-- **Don't** let the Oxblood/Amber ink pair and the section wayfinding colors trade places — they answer "what's emphasized" and "what section is this" respectively, and mixing them removes the only categorical signal the site has.
-- **Don't** flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule.
+- **Don't** let the station-blue ink and the section wayfinding colors trade places — they answer "what's emphasized" and "what section is this" respectively, and mixing them removes the only categorical signal the site has.
+- **Don't** flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule (the chalk cards and calculator pages are its scoped exceptions).
 - **Don't** mix the two live corner-radius idioms (Tailwind's `rounded-2xl`/`rounded-full` on newer components vs. the hand-set `0.8–1.1rem` scale on older CSS classes) within a single component; match whichever the surrounding file already uses.

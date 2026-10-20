@@ -58,7 +58,7 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="themeToggle inline-flex h-full min-w-11 items-center justify-center px-3 text-[var(--muted)] transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+      className="themeToggle inline-flex h-full min-w-11 items-center justify-center px-3 text-[var(--muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)]"
       type="button"
       onClick={handleToggle}
       aria-label="Toggle dark mode"

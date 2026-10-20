@@ -33,9 +33,9 @@ function NavItem({
   return (
     <div className="group relative flex h-full">
       <Link
-        className={`inline-flex h-full items-center justify-center px-4 text-xs font-bold uppercase tracking-[0.12em] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)] ${
+        className={`inline-flex h-full items-center justify-center px-4 text-xs font-bold uppercase tracking-[0.12em] no-underline transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)] ${
           active
-            ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+            ? "bg-[var(--accent)] text-[var(--on-accent)]"
             : "text-[var(--muted)]"
         }`}
         href={href}
@@ -48,7 +48,7 @@ function NavItem({
             // out of the Tab order: the section page lists every tool, so the
             // header is four stops for a keyboard, not fourteen
             <Link
-              className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+              className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)]"
               href={link.href}
               key={link.href}
               tabIndex={-1}
@@ -154,7 +154,7 @@ function MobileNav() {
                 <Link
                   className={`block px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] no-underline ${
                     active
-                      ? "bg-[var(--accent-soft)] text-[var(--accent-strong)]"
+                      ? "bg-[var(--accent)] text-[var(--on-accent)]"
                       : "text-[var(--foreground)]"
                   }`}
                   href={item.href}
@@ -166,7 +166,7 @@ function MobileNav() {
                   <Link
                     className={`block px-3 py-2 pl-6 text-sm font-semibold no-underline ${
                       pathname === link.href
-                        ? "text-[var(--accent-strong)]"
+                        ? "bg-[var(--accent)] text-[var(--on-accent)]"
                         : "text-[var(--muted)]"
                     }`}
                     href={link.href}
@@ -216,7 +216,7 @@ export function AppShell({
             </div>
 
             <Link
-              className="inline-flex h-full items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.2em] text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent-soft)] hover:text-[var(--accent-strong)]"
+              className="inline-flex h-full items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.2em] text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)]"
               href="/"
             >
               QUOP

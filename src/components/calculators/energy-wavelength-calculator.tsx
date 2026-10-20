@@ -2,81 +2,31 @@
 
 import { useState } from "react";
 
-import { DecimalNote } from "@/components/calculators/decimal-note";
-import { formatSignificant } from "@/components/calculators/format-quantity";
-import { parseFlexibleDecimal, readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
-import { Readout } from "@/components/calculators/readout";
+import { LinkedFields } from "@/components/calculators/linked-fields";
+import {
+  editField,
+  energyQuantity,
+  wavelengthQuantity,
+  type LinkedPair,
+} from "@/components/calculators/linked-pair";
 import { ToolIntro } from "@/components/tool-intro";
 
 export function EnergyWavelengthCalculator() {
-  const electronVolt = 1.602176634e-19;
-  const c = 299792458;
-  const h = 6.62607015e-34;
-
-  const [energyInput, setEnergyInput] = useState("1.2");
-  const [wavelengthInput, setWavelengthInput] = useState("550");
-  const energy = parseFlexibleDecimal(energyInput);
-  const wavelength = parseFlexibleDecimal(wavelengthInput);
-
-  const energyFromWavelength =
-    wavelength !== null && wavelength > 0
-      ? (h * c) / (wavelength * 1e-9 * electronVolt)
-      : Number.NaN;
-  const wavelengthFromEnergy =
-    energy !== null && energy > 0
-      ? (h * c) / (energy * electronVolt * 1e-9)
-      : Number.NaN;
+  const [pair, setPair] = useState<LinkedPair>(() => editField(0, "550"));
 
   return (
-    <section className="pageSection">
+    <section className="pageSection calculatorPage">
       <ToolIntro href="/calculators/energy-wavelength-calculator" />
 
-      <div className="calculatorGrid">
-        <div className="inputCard">
-          <h2>From eV to nm</h2>
-          <label className="field">
-            <span>Energy</span>
-            <div className="field__control">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={energyInput}
-                onChange={(event) => setEnergyInput(event.target.value)}
-              />
-              <span>eV</span>
-            </div>
-            <DecimalNote reading={readFlexibleDecimal(energyInput)} />
-          </label>
-          <Readout
-            primary
-            label="Wavelength"
-            value={Number.isNaN(wavelengthFromEnergy) ? null : formatSignificant(wavelengthFromEnergy, 5)}
-            unit="nm"
-          />
-        </div>
-
-        <div className="inputCard">
-          <h2>From nm to eV</h2>
-          <label className="field">
-            <span>Wavelength</span>
-            <div className="field__control">
-              <input
-                type="text"
-                inputMode="decimal"
-                value={wavelengthInput}
-                onChange={(event) => setWavelengthInput(event.target.value)}
-              />
-              <span>nm</span>
-            </div>
-            <DecimalNote reading={readFlexibleDecimal(wavelengthInput)} />
-          </label>
-          <Readout
-            primary
-            label="Photon energy"
-            value={Number.isNaN(energyFromWavelength) ? null : formatSignificant(energyFromWavelength, 5)}
-            unit="eV"
-          />
-        </div>
+      <div className="calculatorSheet">
+        <LinkedFields
+          pair={pair}
+          onEdit={(side, text) => setPair(editField(side, text))}
+          fields={[
+            { label: "Wavelength", quantity: wavelengthQuantity, unit: "nm" },
+            { label: "Energy", quantity: energyQuantity, unit: "eV" },
+          ]}
+        />
       </div>
     </section>
   );
