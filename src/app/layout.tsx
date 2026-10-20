@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 
 import { AppShell } from "@/components/app-shell";
+import { StationBluePrototype } from "@/components/station-blue.prototype";
 import { SiteFooter } from "@/components/site-footer";
 import { SITE_VERSION } from "@/components/site-version";
 
@@ -84,6 +85,7 @@ export default function RootLayout({
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <AppShell footer={<SiteFooter />}>{children}</AppShell>
+        <StationBluePrototype />
       </body>
     </html>
   );

@@ -1,0 +1,173 @@
+/* PROTOTYPE: station-blue identity, keyed on html[data-sign]. Not for main.
+   --plate is the sign's fill and stays deep in both themes so its lettering is
+   always white; --accent is what's drawn thin (rings, icons, the 3D selection)
+   and lifts at night, where navy on black would vanish. */
+
+html[data-sign="A"],
+html[data-sign="C"] {
+  --accent: #0b3d74;
+  --accent-strong: #072a52;
+  --accent-soft: rgb(11 61 116 / 0.09);
+  --plate: #0b3d74;
+  --plate-deep: #072a52;
+  --plate-ink: #ffffff;
+}
+
+html[data-sign="B"] {
+  --accent: #1a5fb4;
+  --accent-strong: #0f4690;
+  --accent-soft: rgb(26 95 180 / 0.09);
+  --plate: #1a5fb4;
+  --plate-deep: #0f4690;
+  --plate-ink: #ffffff;
+}
+
+html[data-theme="dark"][data-sign="A"],
+html[data-theme="dark"][data-sign="C"] {
+  --accent: #4f86d4;
+  --accent-strong: #9cc2f5;
+  --accent-soft: rgb(79 134 212 / 0.16);
+  --plate: #12498a;
+  --plate-deep: #0b3d74;
+}
+
+html[data-theme="dark"][data-sign="B"] {
+  --accent: #4d8fe0;
+  --accent-strong: #a5c8f7;
+  --accent-soft: rgb(77 143 224 / 0.16);
+  --plate: #1a5fb4;
+  --plate-deep: #0f4690;
+}
+
+/* ---- Signs: pressed, active and open things become a blue plate, white lettering ---- */
+
+html[data-sign] :is(
+    .navItem:hover,
+    .navItem[aria-current="page"],
+    .navWordmark:hover,
+    .navMenuLink:hover,
+    .mobileNavLink[aria-current="page"],
+    .themeToggle:hover,
+    .toolCard__sample,
+    .betaBadge,
+    .siteFooter a:hover,
+    .buttonLink--ghost:hover,
+    .fitsFullHeader__copy:hover,
+    .fitsImageFrame .interactiveChart__iconButton.is-active,
+    .fitsImageFrame .interactiveChart__iconButton.is-open,
+    .builderIconBtn.is-active,
+    .builderIconBtn:hover:not(:disabled),
+    .builderMenu__trigger:hover,
+    .builderMenu__trigger[aria-expanded="true"],
+    .builderMenu__list label:hover,
+    .builderBack:hover,
+    .builderSheetTab:hover,
+    .builderSheetTab[aria-expanded="true"],
+    .builderPart.is-active,
+    .builderBeamRow.is-selected,
+    .builderPanelBar__button:hover,
+    .builderHud__close:hover,
+    .builderGroupsMenu__item:focus-visible,
+    .builderButton[aria-pressed="true"],
+    .buttonLink,
+    .skipLink,
+    .builderGuideButton,
+    .builderButton--primary,
+    .builderLabel.is-selected,
+    .builderOrderBadge,
+    .builderAngleBadge
+  ) {
+  border-color: var(--plate);
+  background: var(--plate);
+  color: var(--plate-ink);
+}
+
+html[data-sign] :is(.builderGuideButton:hover, .buttonLink:hover) {
+  background: var(--plate-deep);
+}
+
+/* the part's icon and the minimised column were accent-coloured on a wash */
+html[data-sign] .builderPart.is-active .builderPart__icon,
+html[data-sign] .builderPart.is-active * {
+  color: inherit;
+}
+
+/* kickers and cluster labels: small sign plates, square like enamel */
+html[data-sign] :is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle) {
+  align-self: flex-start;
+  width: fit-content;
+  padding: 0.18rem 0.5rem 0.14rem;
+  background: var(--plate);
+  color: var(--plate-ink);
+  line-height: 1.3;
+}
+
+/* signs are cut square; the round pill was a badge, not a sign */
+html[data-sign] :is(.betaBadge, .toolCard__sample) {
+  border-radius: 0.2rem;
+}
+
+/* the fan's wedge under the pointer fills like a plate */
+html[data-sign] .fileFan__item:is(:hover, :focus-visible) {
+  color: var(--plate-ink);
+}
+
+html[data-sign] .fileFan__item:is(:hover, :focus-visible) .fileFan__wedge {
+  fill: var(--plate);
+}
+
+html[data-sign] .fileFan__item:is(:hover, :focus-visible) .fileFan__hint {
+  fill: rgb(255 255 255 / 0.78);
+}
+
+/* the eye's lit segments: a plate per wedge rather than a tint */
+html[data-sign] .showWheel__segment.is-on {
+  color: var(--plate-ink);
+}
+
+html[data-sign] .showWheel__segment.is-on .showWheel__wedge {
+  fill: var(--plate);
+}
+
+/* ---- C: enamel signs. A white rule inset from the plate's edge, and header
+   icons on permanent pictogram tiles ---- */
+
+html[data-sign="C"] :is(
+    .navItem:hover,
+    .navItem[aria-current="page"],
+    .navWordmark:hover,
+    .builderMenu__trigger[aria-expanded="true"],
+    .builderSheetTab[aria-expanded="true"],
+    .buttonLink,
+    .builderGuideButton,
+    .builderButton--primary
+  ) {
+  box-shadow:
+    inset 0 0 0 3px var(--plate),
+    inset 0 0 0 4px rgb(255 255 255 / 0.9);
+}
+
+html[data-sign="C"] :is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .toolCard__sample, .betaBadge) {
+  box-shadow:
+    inset 0 0 0 2px var(--plate),
+    inset 0 0 0 3px rgb(255 255 255 / 0.85);
+  padding-inline: 0.6rem;
+}
+
+/* pictograms: the glyph sits white on a blue square, as on a station's wayfinding panel */
+html[data-sign="C"] .themeToggle svg,
+html[data-sign="C"] .builderIconBtn.is-active svg {
+  box-sizing: content-box;
+  padding: 0.3rem;
+  background: var(--plate);
+  color: var(--plate-ink);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.85);
+}
+
+html[data-sign="C"] .themeToggle:hover {
+  background: transparent;
+}
+
+html[data-sign="C"] .themeToggle:hover svg {
+  background: var(--plate-deep);
+}

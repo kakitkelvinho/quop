@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import { useStationInk } from "@/components/station-blue.prototype";
 
 /**
  * The canvas can't read CSS custom properties, so the day/night swap has to be
@@ -140,5 +141,10 @@ function getServerSnapshot(): "light" | "dark" {
 
 export function useScenePalette(): ScenePalette {
   const mode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  return mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+  // PROTOTYPE (station-blue): the scene's selection takes the blue being tried
+  const ink = useStationInk();
+  return useMemo(() => {
+    const base = mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+    return ink ? { ...base, ...(mode === "dark" ? ink.night : ink.day) } : base;
+  }, [mode, ink]);
 }
