@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
-import { useStationInk } from "@/components/station-blue.prototype";
+import { Color } from "three";
 
 /**
  * The canvas can't read CSS custom properties, so the day/night swap has to be
- * mirrored here as literal colours.
+ * mirrored here as literal colours. The ink is the exception: it's read from
+ * the page's tokens (see `useScenePalette`), so the selection can't drift from
+ * the HUD's.
  *
  * The bench is lit like a 2001 interior photographed as a miniature: glossy
  * white enamel hardware under overhead ring lights, on a soft studio sweep
@@ -25,8 +27,12 @@ export type ScenePalette = {
    * still shades it
    */
   holeGrid: { plate: string; plateOpacity: number; hole: string; rim: string; row: string };
-  /** the ink accent — selection rings, the beam being drawn */
+  /**
+   * the ink accent — selection rings, the beam being drawn: the site's
+   * `--focus-ring`, the ink as a thin mark, lifted toward red at night
+   */
   accent: string;
+  /** the hover ring: the ink a third of the way back to the backdrop */
   hover: string;
   ambient: number;
   keyLight: number;
@@ -74,7 +80,10 @@ export type Lighting = {
 export const DEFAULT_LIGHTING: Lighting = { brightness: 1, shadows: true };
 export const BRIGHTNESS_RANGE: [number, number] = [0.25, 2];
 
-export const LIGHT_PALETTE: ScenePalette = {
+/** a palette without its ink, which comes from the page's tokens */
+type Inkless = Omit<ScenePalette, "accent" | "hover">;
+
+export const LIGHT_PALETTE: Inkless = {
   mode: "light",
   // ~8 L* below the enamel at the centre, so a white part keeps a silhouette
   backdrop: ["#e2dfd8", "#cfccc4", "#a8aaae"],
@@ -82,8 +91,6 @@ export const LIGHT_PALETTE: ScenePalette = {
   shadow: "#3a352c",
   shadowOpacity: 0.3,
   holeGrid: { plate: "#c9ccd1", plateOpacity: 0.85, hole: "#2a2c31", rim: "#f4f5f7", row: "#b2b6bd" },
-  accent: "#8b1e3f",
-  hover: "#b4506c",
   ambient: 0.2,
   keyLight: 1.6,
   // a white rim on white parts is a no-op; a faint cool one at least does work
@@ -99,14 +106,12 @@ export const LIGHT_PALETTE: ScenePalette = {
   stageSeam: "#b4bac3",
 };
 
-export const DARK_PALETTE: ScenePalette = {
+export const DARK_PALETTE: Inkless = {
   mode: "dark",
   backdrop: ["#2a2c33", "#101114", "#020203"],
   shadow: "#000000",
   shadowOpacity: 0.5,
   holeGrid: { plate: "#1d1f23", plateOpacity: 0.92, hole: "#050506", rim: "#4b4f57", row: "#30333a" },
-  accent: "#f4b942",
-  hover: "#ffd67c",
   ambient: 0.1,
   keyLight: 2.2,
   rimLight: 2.2,
@@ -126,25 +131,54 @@ function subscribe(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ["data-theme"],
+    attributeFilter: ["data-theme", "data-sign"], // PROTOTYPE (station-blue): data-sign
   });
   return () => observer.disconnect();
 }
 
-function getSnapshot(): "light" | "dark" {
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+/**
+ * The ring ink as `#rrggbb`. The token may be a `color-mix()`, which neither
+ * getComputedStyle nor three resolves, so a canvas paints it and reads it back.
+ */
+function readRing(root: HTMLElement): string {
+  const token = getComputedStyle(root).getPropertyValue("--focus-ring").trim();
+  const ctx = document.createElement("canvas").getContext("2d");
+  if (!token || !ctx) return "";
+  ctx.fillStyle = token;
+  ctx.fillRect(0, 0, 1, 1);
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
-function getServerSnapshot(): "light" | "dark" {
-  return "light";
+/**
+ * The theme and its ring ink as one string, so the snapshot stays a primitive.
+ * The token is read once per theme, not on every render.
+ */
+let cached: { theme: string | undefined; snapshot: string } | null = null;
+
+function getSnapshot(): string {
+  const root = document.documentElement;
+  // PROTOTYPE (station-blue): the variant being tried changes the ring too
+  const theme = `${root.dataset.theme} ${root.dataset.sign}`;
+  if (!cached || cached.theme !== theme) {
+    const mode = root.dataset.theme === "dark" ? "dark" : "light";
+    cached = { theme, snapshot: `${mode} ${readRing(root)}` };
+  }
+  return cached.snapshot;
+}
+
+function getServerSnapshot(): string {
+  return "light ";
 }
 
 export function useScenePalette(): ScenePalette {
-  const mode = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  // PROTOTYPE (station-blue): the scene's selection takes the blue being tried
-  const ink = useStationInk();
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return useMemo(() => {
+    const [mode, ring] = snapshot.split(" ");
     const base = mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
-    return ink ? { ...base, ...(mode === "dark" ? ink.night : ink.day) } : base;
-  }, [mode, ink]);
+    // before the tokens are read (the server render), a neutral the canvas never shows
+    const accent = new Color(ring || base.post);
+    const hover = accent.clone().lerp(new Color(base.backdrop[0]), 1 / 3);
+    return { ...base, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}` };
+  }, [snapshot]);
 }

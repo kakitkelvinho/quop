@@ -1,7 +1,8 @@
 /* PROTOTYPE: station-blue identity, keyed on html[data-sign]. Not for main.
-   --plate is the sign's fill and stays deep in both themes so its lettering is
-   always white; --accent is what's drawn thin (rings, icons, the 3D selection)
-   and lifts at night, where navy on black would vanish. */
+   Follows #262's model: --accent is the fill, --focus-ring what's drawn thin
+   (rings, the 3D selection), and at night words go white. --plate is the
+   sign's fill and stays deep in both themes so its lettering is always white;
+   the ring lifts at night, where navy on black would vanish. */
 
 html[data-sign="A"] {
   --accent: #0b3d74;
@@ -22,17 +23,19 @@ html[data-sign="B"] {
 }
 
 html[data-theme="dark"][data-sign="A"] {
-  --accent: #4f86d4;
-  --accent-strong: #9cc2f5;
-  --accent-soft: rgb(79 134 212 / 0.16);
+  --accent: #12498a;
+  --accent-strong: #ffffff;
+  --accent-soft: rgb(18 73 138 / 0.42);
+  --focus-ring: #4f86d4;
   --plate: #12498a;
   --plate-deep: #0b3d74;
 }
 
 html[data-theme="dark"][data-sign="B"] {
-  --accent: #4d8fe0;
-  --accent-strong: #a5c8f7;
-  --accent-soft: rgb(77 143 224 / 0.16);
+  --accent: #1a5fb4;
+  --accent-strong: #ffffff;
+  --accent-soft: rgb(26 95 180 / 0.38);
+  --focus-ring: #4d8fe0;
   --plate: #1a5fb4;
   --plate-deep: #0f4690;
 }
@@ -54,17 +57,11 @@ html[data-sign] :is(
     .fitsImageFrame .interactiveChart__iconButton.is-active,
     .fitsImageFrame .interactiveChart__iconButton.is-open,
     .builderIconBtn.is-active,
-    .builderIconBtn:hover:not(:disabled),
-    .builderMenu__trigger:hover,
     .builderMenu__trigger[aria-expanded="true"],
     .builderMenu__list label:hover,
-    .builderBack:hover,
-    .builderSheetTab:hover,
     .builderSheetTab[aria-expanded="true"],
     .builderPart.is-active,
     .builderBeamRow.is-selected,
-    .builderPanelBar__button:hover,
-    .builderHud__close:hover,
     .builderGroupsMenu__item:focus-visible,
     .builderButton[aria-pressed="true"],
     .buttonLink,

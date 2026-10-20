@@ -20,9 +20,8 @@ colors:
   cool-gray-muted: "#a1a1a1"
   frost-border: "rgba(255, 255, 255, 0.14)"
   chalk-mark-night: "rgb(255 255 255)"
-  lamp-amber: "#f4b942"
-  lamp-amber-light: "#ffd67c"
-  lamp-amber-soft: "rgba(244, 185, 66, 0.14)"
+  oxblood-ring-night: "#c23a48"
+  oxblood-ink-soft-night: "rgba(139, 30, 63, 0.38)"
   ember-orange: "#ff9d5c"
   sky-blue: "#6da8ff"
   seafoam-teal: "#75d7c0"
@@ -101,30 +100,35 @@ components:
 
 **Creative North Star: "The Working Board"**
 
-QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, oxblood annotations. By night it's the same room with the lights off and the board lit — true black, chalk-white marks, amber ink instead of oxblood, the FITS viewers glowing with green phosphor crosshairs and mono readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.
+QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, oxblood annotations. By night it's the same room with the lights off and the board lit — true black, chalk-white marks, the same oxblood ink lit as fills and rings around white words, the FITS viewers glowing with green phosphor crosshairs and mono readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.
 
 The homepage states that literally: a board the visitor arrives at mid-session, with equations from four domains being written and wiped behind the welcome. The rest of the site is the notebook the board's results get copied into.
 
 The mood is inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Invitation shows up in the hand-drawn marks, the unhurried writing and erasing, and cards that respond rather than sitting inert. Credibility shows up underneath: exact values in monospace, uppercase kicker labels on every card ("CALCULATOR", "PLOTTER"), and instrument-grade FITS readouts that don't soften their numbers for anyone.
 
-Two color systems run in parallel and must not be confused: the oxblood-ink/lamp-amber pair is the notebook's *own* ink — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Builder, Notes, Plotters, Calculators) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink pair.
+Two color systems run in parallel and must not be confused: the oxblood ink is the notebook's *own* ink, by day and by night — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections (Builder, Notes, Plotters, Calculators) something belongs to, though nothing currently renders them (see Status, below). They are tabs on a notebook's colored dividers, not brand accents; don't let them compete with the ink.
 
 **Key Characteristics:**
-- White paper by day, black board by night — a full hue swap on the accent, not just a lightness shift
-- Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat
+- White paper by day, black board by night — one oxblood ink in both, worn as fills and rings at night while the words go white
+- Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat, except the chalk cards and the Tabletop HUD (see Elevation & Depth)
 - Uppercase, letter-spaced kicker labels mark structure and category; regular-case text is always actual content
 - FITS/data-instrument surfaces (crosshair readouts, colorbars) speak in mono type and green-phosphor/amber highlights, deliberately more "instrument" than the plain chrome around them
-- Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the oxblood/amber ink accent
+- Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the oxblood ink accent
 - Hand-drawn marks — wobbled card frames, textured chalk strokes, italic serif equations — belong to the homepage board and nowhere else; every other surface is precise
 
 ## Colors
 
-Two accents that trade places with the theme, a neutral scale that runs to pure white and pure black, and four categorical section colors that stay out of the ink pair's way.
+One oxblood accent in both themes, a neutral scale that runs to pure white and pure black, and four categorical section colors that stay out of the ink's way.
 
 ### Primary
-- **Oxblood Ink** (`#8b1e3f`, day) / **Lamp Amber** (`#f4b942`, night): the notebook's own accent — active nav pills, focus rings, kicker text, calculator result emphasis, the primary button fill. **The Day/Night Ink Rule.** The accent does not merely lighten between themes, it swaps hue entirely: burgundy ink by day, amber lamplight by night. Any future accent work must preserve this hue swap, not soften it into a shared mid-tone.
-- **Oxblood Ink Deep** (`#61122b`, day) / **Lamp Amber Light** (`#ffd67c`, night): the darker/lighter step of the ink pair, used for kicker labels and stronger emphasis text where the base accent would be too loud as a text color.
-- **Oxblood Ink Soft** (`rgba(139, 30, 63, 0.1)`, day) / **Lamp Amber Soft** (`rgba(244, 185, 66, 0.14)`, night): the wash behind an active nav pill or hovered link — never used as a fill for large areas.
+- **Oxblood Ink** (`#8b1e3f`, `--accent`, day and night): the notebook's own and only accent — active nav pills, focus rings, kickers by day, calculator result emphasis, the primary button fill, the Tabletop's selection.
+- **Oxblood Ink Deep** (`#61122b` by day, `--accent-strong`): the darker step, for kicker labels and emphasis text where the base ink would be too loud. At night it is white (`#ffffff`).
+- **Oxblood Ring** (`#c23a48`, night, `--focus-ring`, mixed from `--accent` so it follows it): the ink as a thin mark on black — focus rings, outlines, selection borders, ink-coloured icons, the 3D selection ring. About 4:1 on black. By day the ring is the ink itself.
+- **Oxblood Ink Soft** (`rgba(139, 30, 63, 0.1)` day, `rgba(139, 30, 63, 0.38)` night, `--accent-soft`): the wash behind an active nav pill or hovered link — never used as a fill for large areas. Night needs the heavier wash: at 0.14 oxblood vanishes on black.
+
+**The Day/Night Ink Rule.** One hue in both themes. Fills are unchanged: an oxblood button or badge is `#8b1e3f` day and night, with light words (`#fffaf1`) on it. Thin marks lift at night to `#c23a48`, turning toward red as they lighten — a merely lighter oxblood reads as pink. Words are never oxblood at night: where the ink marks text (a result, an active nav label, a kicker), the words go white (`--accent-text`, `--accent-strong`) and take their emphasis from size and weight, with the oxblood in the fill or ring around them, as game HUDs do. Kickers step back to `--muted` at night, keeping their weight and tracking; links keep a 1px underline and wash oxblood on hover. By day, oxblood text stays.
+
+**The Tabletop reads the ink, never its own hex.** Every builder use of the accent goes through `--accent`, `--accent-strong`, `--accent-soft`, `--accent-text`, `--accent-hover` or `--focus-ring`, and the 3D scene reads `--focus-ring` from the page (`useScenePalette`) for its selection and hover rings. Changing `--accent` in `globals.css` recolours the HUD and the scene together. A part's own colour saved into a file (`DEFAULT_MOUNT_COLOR`) is data, not theme.
 
 ### Section Wayfinding Colors (categorical, not brand accent)
 - **Ember Orange** (`#ff9d5c`) — Calculators.
@@ -132,7 +136,7 @@ Two accents that trade places with the theme, a neutral scale that runs to pure 
 - **Seafoam Teal** (`#75d7c0`) — Plotters.
 - **Coral Pink** (`#f06f86`) — Builder.
 
-**The Divider Rule.** These four colors exist to answer "which section is this," nothing else. Do not promote one of them into a general UI accent, and do not let the ink pair (Oxblood/Amber) bleed into a wayfinding role — the two systems answer different questions and must stay visually separable.
+**The Divider Rule.** These four colors exist to answer "which section is this," nothing else. Do not promote one of them into a general UI accent, and do not let the oxblood ink bleed into a wayfinding role — the two systems answer different questions and must stay visually separable.
 
 **Status: currently dormant.** They survive as the `accent` field on `navSections`, but the only components that read it (`TransitionProvider`, `WavefunctionBanner`) are unwired dead code, so no wayfinding color is visible anywhere in the live app. They were last seen as the 3px top-edge stripe on the old 2×2 homepage hero tiles, which the chalkboard hero replaced. The system is documented here because it is the site's only categorical signal and is worth reviving deliberately — but until something renders it, treat it as a decision pending, not a live rule. The chalk section cards pointedly do not use it: on a board, everything is written in the same hand.
 
@@ -180,15 +184,19 @@ Two custom breakpoints recur throughout (900px, 640px/720px) alongside Tailwind'
 
 **The one exception: the chalk card family.** The homepage's four section cards carry no shadow, no fill, and no border — they are a wobbled SVG frame drawn onto the page surface. A mark on a board has nothing to cast a shadow with, and giving these cards one would break the single idea the homepage is built on. The exception is scoped to `.chalkCard` and does not extend to any other card; a new card type defaults back to the Always-Lifted Rule unless it is literally drawn in chalk.
 
+**The second exception: the Tabletop HUD.** The Tabletop HUD is drawn on the glass, not set on the table: flat, opaque, square, no shadow. Under it is a lit 3D scene with its own hard light and real cast shadows; a soft floating card on top of that read as generic, and a second, fake depth competed with the scene's. So every builder surface (islands, menus, the Show wheel and the file fan, panels and their bars, the cheat sheet tab, the Guide button, coach marks, labels, badges and the status toast) has no `box-shadow`, no `backdrop-filter` and no `drop-shadow` filter, and an opaque fill (`--surface-strong`, a solid near-black at night). What would have been the shadow's job, separating a plate from the scene, is done by a clear 1px hairline (`--builder-hairline`, `color-mix(in srgb, var(--foreground) 22%, transparent)`), which stays visible on the night void. The only inset rings left are state, not depth: the active part tile's and the active swatch's. The exception is scoped to the builder section of `globals.css`; it does not license flat cards elsewhere.
+
+Inside the HUD the accent is spent only on what is live: the active tool is a solid `--accent` fill with a white icon, the selection keeps its `--focus-ring` border, and the mode badge carries a small square `--accent` marker. Hovers are a neutral wash (`--builder-hover`, `color-mix(in srgb, var(--foreground) 8%, transparent)`), never `--accent-soft`, and the Guide button is a plate like the islands rather than an accent fill.
+
 ### Shadow Vocabulary
 - **Card ambient** (`box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1)`, day / `0 28px 60px rgba(0, 0, 0, 0.35)`, night): the resting shadow under every `sectionCard`, `inputCard`, and `infoPanel`.
 - **Control ambient** (`box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14)`, deepens to `0 16px 28px rgba(91, 102, 117, 0.18)` on hover): the metallic plotter/action buttons (`buttonControl`).
-- **Focus ring** (`outline: 2px solid var(--focus-ring)`, the ink itself: Oxblood `#8b1e3f` by day, Lamp Amber `#f4b942` by night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Solid rather than a soft wash, because a focus indicator needs 3:1 against the page.
+- **Focus ring** (`outline: 2px solid var(--focus-ring)`, the ink as a thin mark: Oxblood `#8b1e3f` by day, Oxblood Ring `#c23a48` by night): keyboard focus everywhere, from a zero-specificity `:where(:focus-visible)` default, so nothing falls back to the browser's blue; header items draw it inset. Solid rather than a soft wash, because a focus indicator needs 3:1 against the page.
 - **Lift** (`var(--shadow-lift)`): the deeper shadow a card rises into on hover, with `translateY(-2px)`.
 
 ## Shapes
 
-Corners are soft throughout but not uniform: primary buttons and small controls round to `0.8rem`, inputs and secondary surfaces to `0.9–0.95rem`, primary cards to the largest radius at `1.1rem`. Badges and the sidebar toggle go fully round (`999px`). The header is the exception: its items, the theme toggle among them, are square, full-height tabs in the bar. A 1px hairline border in the hairline/frost neutral appears on almost every container. The chalk section cards are the one departure: no radius and no border at all, because their edge is a drawn line rather than a box — see the Chalk Section Cards component.
+Corners are soft throughout but not uniform: primary buttons and small controls round to `0.8rem`, inputs and secondary surfaces to `0.9–0.95rem`, primary cards to the largest radius at `1.1rem`. Badges and the sidebar toggle go fully round (`999px`). The header is the exception: its items, the theme toggle among them, are square, full-height tabs in the bar. A 1px hairline border in the hairline/frost neutral appears on almost every container. The chalk section cards are the one departure: no radius and no border at all, because their edge is a drawn line rather than a box — see the Chalk Section Cards component. The Tabletop HUD is the other: one radius, `0`, everywhere — see the Tabletop HUD component.
 
 ## Components
 
@@ -196,16 +204,16 @@ Buttons, cards, and inputs are precise and instrument-like: numbers are exact, c
 
 ### Buttons
 - **Shape:** primary actions round to `0.8rem`; the plotter/calculator action grid (`buttonControl`) rounds to `1rem`.
-- **Primary** (`buttonLink`): solid Oxblood Ink / Lamp Amber fill, `#fffaf1` text (day) or `#1a1d26` (night), bold weight, `0.72rem 1rem` padding, no border. Lifts `translateY(-1px)` on hover with no color change.
+- **Primary** (`buttonLink`): solid Oxblood Ink fill with `#fffaf1` text, day and night, bold weight, `0.72rem 1rem` padding, no border. Lifts `translateY(-1px)` on hover with no color change.
 - **Action grid** (`buttonControl`): a distinct neutral-metal gradient fill (`linear-gradient(135deg, #d7dbe2, #bcc3cd)`) used for plotter/data-action buttons, not the ink accent — reads as hardware, not as a call-to-action. Its secondary variant swaps to the surface gradient with the standard hairline border.
-- **Header items** (`NavItem`, the wordmark, the theme toggle): square tabs the full height of the bar, transparent at rest, Oxblood/Amber-soft wash + ink-deep text when active or hovered. The theme toggle is the header's last item on every screen, not a floating button.
+- **Header items** (`NavItem`, the wordmark, the theme toggle): square tabs the full height of the bar, transparent at rest, Oxblood-soft wash + ink-deep text (white at night) when active or hovered. The theme toggle is the header's last item on every screen, not a floating button.
 
 ### Cards / Containers
 - **Corner Style:** `1.1rem` (`sectionCard`, `inputCard`, `infoPanel`).
 - **Background:** Paper Surface / Ink Panel (translucent), always paired with the Card ambient shadow.
 - **Border:** 1px hairline, Sepia/Frost.
 - **Internal Padding:** `1.3rem`, with `0.85rem` gap between internal stacked elements.
-- **The kicker:** an uppercase, letter-spaced tag (`sectionCard__kicker`) in Oxblood-Deep/Amber-Light may label a group of controls. It never sits above a heading: the heading carries its own weight.
+- **The kicker:** an uppercase, letter-spaced tag (`sectionCard__kicker`) in Oxblood-Deep (muted at night) may label a group of controls. It never sits above a heading: the heading carries its own weight.
 - **Tool cards** (`toolCard`, on index pages) open instead on a mono line of what the tool gives (`550 nm → 2.2543 eV`) on the ink wash: on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing, and the result is the homepage chapters' language carried inward. The whole card is one link and lifts on hover; there is no per-card button.
 
 ### Inputs / Fields
@@ -214,7 +222,7 @@ Buttons, cards, and inputs are precise and instrument-like: numbers are exact, c
 - **Focus:** the ink-accent Focus Ring (see Elevation & Depth), not a border-color change.
 
 ### Navigation
-- Sticky, blurred, three-column pill nav; active section gets the Oxblood/Amber-soft pill treatment; hovering a section reveals its links in a rounded flyout panel (`1.1rem`-ish radius, same Paper Surface + border + shadow as any card).
+- Sticky, blurred, three-column pill nav; active section gets the Oxblood-soft pill treatment; hovering a section reveals its links in a rounded flyout panel (`1.1rem`-ish radius, same Paper Surface + border + shadow as any card).
 
 ### Chalkboard Hero (homepage)
 The board fills the top of the homepage and inherits the page background, so it is not a panel sitting on the page — it *is* the page, given a surface. Three layers stack under the welcome copy: a canvas of procedural grain (a faint radial falloff from `--background` to `--background-muted`, fine speckle, and long fibres); a canvas reserved for eraser ghosts, which is empty at a `BOARD_HISTORY` of 0 and fills with wipe arcs and illegible earlier working as it is raised; and the chalk layer where equations are written.
@@ -229,13 +237,30 @@ Everything the eye judges is a named constant at the top of `chalkboard-hero.tsx
 Four cards — Builder, Notes, Plotters, Calculators — each a hand-drawn frame around a glyph, a name, a one-line tag in muted text, and the route in mono at the foot. The frame is four wobbled SVG edges with a gap at each corner, seeded per card so no two are identical, drawn on with `stroke-dasharray` when the card scrolls into view; the glyph and text follow on a short stagger. Hover darkens the frame and turns the name to the ink accent. These cards are flat by design — see the Always-Lifted Rule's exception — and they carry the mono route instead of the uppercase kicker every other card opens with, because a route is a real value and the Case Rule applies.
 
 ### Signature Component — FITS Instrument Readout
-The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. Icon-button toolbars use amber highlighting (`rgba(230, 171, 88, 0.16)` background, `#8f5f12`/`#ffd99d` text) for active/open states rather than the primary Oxblood/Amber pair — this toolbar-amber is a separate, narrower accent scoped only to these instrument controls.
+The FITS/CSV plotters depart deliberately from the notebook language into instrument-panel language: a checkerboard "transparency" background behind the rendered frame, a green-phosphor crosshair (`#9cff8f`) with a glowing box marker, a translucent dark mono-font coordinate readout badge (`rgba(12, 18, 14, 0.78)` background, `#b9ffb3` text), and a vertical colorbar strip. Icon-button toolbars use amber highlighting (`rgba(230, 171, 88, 0.16)` background, `#8f5f12`/`#ffd99d` text) for active/open states rather than the oxblood ink — this toolbar-amber is a separate, narrower accent scoped only to these instrument controls.
+
+### Tabletop HUD (the builder)
+The controls over the Tabletop's 3D scene are a compact, hard-edged instrument panel, flat by exception (see Elevation & Depth). They have their own scale, set in the builder section of `globals.css`.
+
+- **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
+- **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
+- **Type:** smaller than the rest of the site, because the scene is the content.
+  - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
+  - Titles `0.92rem` 700: the inspector's head, a panel's title.
+  - Rows `0.8–0.84rem` 600: a part's name, a beam or frame row, a group item, buttons.
+  - Small `0.72–0.75rem`: hints, panel bar titles, the cheat sheet, mono readouts (`0.75rem`).
+  - Labels `0.62–0.68rem` 600–800: field labels (sentence case); list and group titles uppercase, tracked `0.04–0.08em`.
+  - Key caps `0.6–0.62rem` mono 700.
+  - Metric values `0.95rem` mono 700.
+  - Mode badge: the name `1.1rem` 700, uppercase, tracked `0.18em` (BEAM, FRAME, GROUP), after a `0.6rem` square `--accent` marker; its key hints `0.75rem` in sentence case.
+  - Status toast `0.8rem` 600.
+- **Coach marks:** rings and leader lines in `--focus-ring`, so a thin mark clears 3:1 at night; tags on an `--accent` fill with light words; the card a flat dark plate with a white focus ring.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** preserve the full hue swap on the primary accent between themes (Oxblood Ink ↔ Lamp Amber) — see The Day/Night Ink Rule.
-- **Do** give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice, unless it is part of the chalk card family.
+- **Do** keep one oxblood ink in both themes: fills unchanged, thin marks lifted toward red, words white at night — see The Day/Night Ink Rule.
+- **Do** give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice, unless it is part of the chalk card family or the Tabletop HUD.
 - **Do** keep hand-drawn texture on the homepage board and off everything else — the chalk filters, the wobbled frames, and the serif italic are one scoped gesture, not a site-wide style.
 - **Do** keep the four section wayfinding colors (ember-orange, sky-blue, seafoam-teal, coral-pink) purely categorical — section identification only, never a general accent.
 - **Do** reserve uppercase/letter-spaced type for structural labels (kickers, nav, cluster labels) and keep all real content sentence-case — see The Case Rule.
@@ -244,6 +269,6 @@ The FITS/CSV plotters depart deliberately from the notebook language into instru
 ### Don't:
 - **Don't** treat `TransitionProvider`, `NavTransitionLink`, `WavefunctionBanner`, or the `orbitalPhase` field on `navSections` as part of the live design system. They exist in source but are not wired into the app (no page imports `TransitionProvider` or `WavefunctionBanner`; `AppShell` uses a plain `Link`, not `NavTransitionLink`; `orbitalPhase` is never read). They're leftover from a prior orbital/atom hero and should be treated as dead code, not incumbent authority, until someone deliberately revives or removes them.
 - **Don't** raise `--chalk-alpha` until the marks read as confidently as interface text. They are meant to sit at the edge of legibility; an equation that competes with the welcome copy has been pushed too far.
-- **Don't** let the Oxblood/Amber ink pair and the section wayfinding colors trade places — they answer "what's emphasized" and "what section is this" respectively, and mixing them removes the only categorical signal the site has.
-- **Don't** flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule.
+- **Don't** let the oxblood ink and the section wayfinding colors trade places — they answer "what's emphasized" and "what section is this" respectively, and mixing them removes the only categorical signal the site has.
+- **Don't** flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule. The Tabletop HUD is the reverse: don't give any of its surfaces a shadow, a blur or a rounded corner.
 - **Don't** mix the two live corner-radius idioms (Tailwind's `rounded-2xl`/`rounded-full` on newer components vs. the hand-set `0.8–1.1rem` scale on older CSS classes) within a single component; match whichever the surrounding file already uses.
