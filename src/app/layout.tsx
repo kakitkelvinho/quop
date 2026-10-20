@@ -8,14 +8,11 @@ import { SITE_VERSION } from "@/components/site-version";
 import "./globals.css";
 
 // The fonts live in ./fonts so the build never fetches from Google Fonts.
-const ibmPlexSans = localFont({
-  src: [
-    { path: "./fonts/ibm-plex-sans-400-normal.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/ibm-plex-sans-500-normal.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/ibm-plex-sans-600-normal.woff2", weight: "600", style: "normal" },
-    { path: "./fonts/ibm-plex-sans-700-normal.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-ibm-plex-sans",
+// Source Sans 3: Adobe's open-source sibling of Myriad, a signage-family sans.
+// One variable file covers every weight the site sets, 200 to 900.
+const sourceSans = localFont({
+  src: [{ path: "./fonts/source-sans-3-200-900-normal.woff2", weight: "200 900", style: "normal" }],
+  variable: "--font-source-sans",
 });
 
 // The home page's chapter diagrams set their labels in italic Garamond.
@@ -85,7 +82,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${ibmPlexSans.variable} ${ebGaramond.variable} ${inter.variable}`}
+      className={`${sourceSans.variable} ${ebGaramond.variable} ${inter.variable}`}
       lang="en"
       suppressHydrationWarning
     >
