@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { BetaMark } from "@/components/beta-badge";
 import type { NavLink } from "@/components/navigation";
+import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
 
 /**
  * What each tool turns out, as one line in the readout's mono: the index card
@@ -22,7 +23,10 @@ const SAMPLES: Record<string, string> = {
   "/builder/tabletop": "path 575 mm · flight 1.92 ns",
 };
 
-/** A section's tools as cards, each one link: its result, its name, what it does. */
+/**
+ * A section's tools as cards, each one link: its result, its name as a
+ * direction sign, what it does.
+ */
 export function ToolIndex({ links }: { links: NavLink[] }) {
   return (
     <div className="toolGrid">
@@ -30,13 +34,15 @@ export function ToolIndex({ links }: { links: NavLink[] }) {
         <Link className="toolCard" href={link.href} key={link.href}>
           {SAMPLES[link.href] ? <span className="toolCard__sample">{SAMPLES[link.href]}</span> : null}
           <h2>
-            {link.label}
+            <span className="toolCard__sign">
+              <SignIcon>
+                <ArrowRightIcon />
+              </SignIcon>
+              {link.label}
+            </span>
             <BetaMark tool={link} />
           </h2>
           <p>{link.description}</p>
-          <span className="toolCard__open">
-            Open <span aria-hidden="true">→</span>
-          </span>
         </Link>
       ))}
     </div>

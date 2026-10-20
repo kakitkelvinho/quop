@@ -4,6 +4,7 @@ import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
 import { HomeChapters } from "@/components/home-chapters";
 import { loadPowerTrace } from "@/components/home-trace";
 import { SectionCards } from "@/components/section-cards";
+import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
 
 export default function Home() {
   return (
@@ -18,14 +19,23 @@ export default function Home() {
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
         {/* the way straight to the tools, for whoever came to use one rather than read the story */}
         <nav aria-label="Tools" className="heroTools">
-          <Link className="buttonLink buttonLink--ghost" href="/builder/tabletop">
-            Tabletop <span aria-hidden="true">→</span>
+          <Link className="buttonLink" href="/builder/tabletop">
+            <SignIcon>
+              <ArrowRightIcon />
+            </SignIcon>
+            Tabletop
           </Link>
-          <Link className="buttonLink buttonLink--ghost" href="/plotters">
-            Plotters <span aria-hidden="true">→</span>
+          <Link className="buttonLink" href="/plotters">
+            <SignIcon>
+              <ArrowRightIcon />
+            </SignIcon>
+            Plotters
           </Link>
-          <Link className="buttonLink buttonLink--ghost" href="/calculators">
-            Calculators <span aria-hidden="true">→</span>
+          <Link className="buttonLink" href="/calculators">
+            <SignIcon>
+              <ArrowRightIcon />
+            </SignIcon>
+            Calculators
           </Link>
         </nav>
       </ChalkboardHero>

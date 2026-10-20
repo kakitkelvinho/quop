@@ -1,5 +1,7 @@
 "use client";
 
+import { SignIcon } from "@/components/sign-icon";
+
 type Theme = "light" | "dark";
 
 /** A choice matching the system isn't saved, so the site goes back to following it. */
@@ -21,34 +23,25 @@ export function getTheme(): Theme {
 
 function MoonIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[1.35rem] w-[1.35rem]">
-      <path
-        d="M15 2.8a9.8 9.8 0 1 0 6.2 17.4A8.6 8.6 0 0 1 15 2.8Z"
-        fill="currentColor"
-      />
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M15 2.8a9.8 9.8 0 1 0 6.2 17.4A8.6 8.6 0 0 1 15 2.8Z" />
     </svg>
   );
 }
 
 function SunIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[1.35rem] w-[1.35rem]">
-      <circle cx="12" cy="12" r="4.2" fill="currentColor" />
-      <g stroke="currentColor" strokeLinecap="round" strokeWidth="1.8">
-        <path d="M12 2.5v3" />
-        <path d="M12 18.5v3" />
-        <path d="M2.5 12h3" />
-        <path d="M18.5 12h3" />
-        <path d="m5.3 5.3 2.1 2.1" />
-        <path d="m16.6 16.6 2.1 2.1" />
-        <path d="m16.6 7.4 2.1-2.1" />
-        <path d="m5.3 18.7 2.1-2.1" />
-      </g>
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="4.5" />
+      <path d="M12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M17.7 6.3l2.1-2.1M4.2 19.8l2.1-2.1" />
     </svg>
   );
 }
 
-/** Day or night, as the header's last item: in the bar, not floating over the page. */
+/**
+ * Day or night, as the header's last item: in the bar, not floating over the
+ * page. Its sun or moon is a pictogram, squared when the item is lit.
+ */
 export function ThemeToggle() {
   const handleToggle = () => {
     const currentTheme = getTheme();
@@ -58,18 +51,20 @@ export function ThemeToggle() {
 
   return (
     <button
-      className="themeToggle inline-flex h-full min-w-11 items-center justify-center px-3 text-[var(--muted)] transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)]"
+      className="themeToggle navTab inline-flex h-full min-w-11 items-center justify-center px-3 text-[1.05rem]"
       type="button"
       onClick={handleToggle}
       aria-label="Toggle dark mode"
       title="Toggle dark mode"
     >
-      <span className="themeToggle__iconWrap themeToggle__iconWrap--moon">
-        <MoonIcon />
-      </span>
-      <span className="themeToggle__iconWrap themeToggle__iconWrap--sun">
-        <SunIcon />
-      </span>
+      <SignIcon>
+        <span className="themeToggle__iconWrap themeToggle__iconWrap--moon">
+          <MoonIcon />
+        </span>
+        <span className="themeToggle__iconWrap themeToggle__iconWrap--sun">
+          <SunIcon />
+        </span>
+      </SignIcon>
       <span className="sr-only">Toggle dark mode</span>
     </button>
   );

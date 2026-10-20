@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 
 import type { TraceSketch } from "@/components/home-trace";
+import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
 import { useChapterProgress } from "@/components/use-chapter-progress";
 
 /* ---------------------------------------------------------------------------
@@ -82,8 +83,11 @@ function Chapter({
           {status ? <p className="chapter__status">{status}</p> : null}
           {extra}
           {cta ? (
-            <Link {...fade([0.05, 0.2], "chapter__cta")} href={cta.href}>
-              {cta.label} <span aria-hidden="true">→</span>
+            <Link {...fade([0.05, 0.2], "chapter__cta buttonLink")} href={cta.href}>
+              <SignIcon>
+                <ArrowRightIcon />
+              </SignIcon>
+              {cta.label}
             </Link>
           ) : null}
         </div>

@@ -15,14 +15,18 @@
   --on-accent: #ffffff;
   /* words in the ink: blue by day; white at night, like a sign's lettering */
   --accent-text: var(--accent);
-  --shadow: 0 20px 50px rgb(31 41 51 / 0.1);
-  /* the deeper shadow a card lifts into on hover */
-  --shadow-lift: 0 26px 60px rgb(31 41 51 / 0.16);
+  /* The Square Rule: one radius, everywhere. Only things round by meaning
+     (a colour dot, a swatch, a ring) keep 999px */
+  --radius: 0;
   /* keyboard focus, in the ink itself: the 0.3 wash it once was fell under
      the 3:1 a focus indicator needs against the page */
   --focus-ring: var(--accent);
-  /* a hovered fill darkens the ink by one step, so it follows --accent */
-  --accent-hover: color-mix(in srgb, var(--accent) 70%, #000);
+  /* a hovered or pressed sign darkens the ink by one step: Station Blue Deep */
+  --accent-hover: #0f4690;
+  /* the white bar along a pressed sign's foot */
+  --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) bottom / 100% 3px no-repeat;
+  /* the neutral wash behind a hovered row */
+  --row-hover: color-mix(in srgb, var(--foreground) 5%, transparent);
   --mark: 17 17 17;
   --chalk-alpha: 0.26;
   --chalk-dust: 0.09;
@@ -44,8 +48,6 @@ html[data-theme="dark"] {
   --accent-strong: #ffffff;
   --accent-soft: rgb(26 95 180 / 0.38);
   --accent-text: var(--foreground);
-  --shadow: 0 28px 60px rgb(0 0 0 / 0.6);
-  --shadow-lift: 0 34px 72px rgb(0 0 0 / 0.7);
   /* the ring: the ink lifted to about #4f8dd6, 6:1 on black, where the
      plate's own blue would sink into the night */
   --focus-ring: color-mix(in srgb, var(--accent) 55%, #8fc4ff);
@@ -99,7 +101,7 @@ html[data-theme="dark"] {
 
   code {
     padding: 0.1rem 0.35rem;
-    border-radius: 0.35rem;
+    border-radius: var(--radius);
     background: var(--accent-soft);
     font-family: var(--font-mono);
     font-size: 0.92em;
@@ -145,10 +147,6 @@ html[data-theme="dark"] .themeToggle__iconWrap--sun {
   display: contents;
 }
 
-.buttonLink:hover {
-  transform: translateY(-1px);
-}
-
 .pageSection {
   display: grid;
   gap: 1.25rem;
@@ -166,8 +164,10 @@ h1 {
   letter-spacing: -0.03em;
 }
 
+/* bold: with the card frames gone, a heading is what tells one group from the next */
 h2 {
   font-size: clamp(1.25rem, 2.4vw, 1.9rem);
+  font-weight: 700;
   line-height: 1.15;
 }
 
@@ -175,6 +175,7 @@ h2 {
    and its answer, not its name, fill the first screen */
 .toolTitle {
   font-size: clamp(1.8rem, 3.4vw, 2.5rem);
+  font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.025em;
 }
@@ -200,13 +201,8 @@ h2 {
   color: var(--accent-strong);
   text-decoration: underline;
   text-underline-offset: 0.18em;
-  border-radius: 0.25rem;
+  border-radius: var(--radius);
   cursor: pointer;
-}
-
-/* the hovered-link wash from the ink */
-.siteFooter a:hover {
-  background: var(--accent-soft);
 }
 
 /* at night a link's words are white like the text round it, so it keeps a
@@ -217,7 +213,7 @@ html[data-theme="dark"] :is(.siteFooter a, .chapter__links a) {
   text-underline-offset: 0.18em;
 }
 
-html[data-theme="dark"] :is(.chapter__links a, .chapter__cta):hover {
+html[data-theme="dark"] .chapter__links a:hover {
   background: var(--accent-soft);
 }
 
@@ -234,50 +230,75 @@ html[data-theme="dark"] :is(.chapter__links a, .chapter__cta):hover {
   font-size: 0.84rem;
 }
 
-/* A section's tools: each card is one link, opening on what the tool gives. */
+/* A section's tools: each card is one link, opening on what the tool gives.
+   No frames: a hairline between rows, and one between the two columns. */
 .toolGrid {
   display: grid;
-  gap: 1rem;
   grid-template-columns: minmax(0, 1fr);
-}
-
-@media (min-width: 900px) {
-  .toolGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 .toolCard {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  padding: 1.3rem;
-  border: 1px solid var(--border);
-  border-radius: 1.1rem;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  padding: 1.3rem 0;
   color: var(--foreground);
   text-decoration: none;
-  transition:
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 180ms ease;
+  transition: background-color 160ms ease;
 }
 
+.toolCard + .toolCard {
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 900px) {
+  .toolGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .toolCard + .toolCard {
+    border-top: 0;
+  }
+
+  .toolCard:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+
+  .toolCard:nth-child(odd) {
+    padding-right: 1.3rem;
+  }
+
+  .toolCard:nth-child(even) {
+    padding-left: 1.3rem;
+    border-left: 1px solid var(--border);
+  }
+}
+
+/* the row takes the neutral wash; the sign in it deepens */
 a.toolCard:hover {
-  transform: translateY(-2px);
-  border-color: var(--focus-ring);
-  box-shadow: var(--shadow-lift);
+  background: var(--row-hover);
 }
 
 a.toolCard:focus-visible {
   outline: 2px solid var(--focus-ring);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 .toolCard h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.35rem;
   line-height: 1.2;
+}
+
+/* the tool's name is a direction sign, led by its arrow */
+.toolCard__sign {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.75em 0.3em 0.3em;
 }
 
 .toolCard p {
@@ -285,37 +306,18 @@ a.toolCard:focus-visible {
   line-height: 1.55;
 }
 
-/* the tool's result, in the readout's mono on the ink wash */
+/* the tool's result, in the readout's mono: a label, not a plate */
 .toolCard__sample {
-  align-self: flex-start;
   max-width: 100%;
-  padding: 0.35rem 0.6rem;
   overflow-wrap: anywhere;
-  border-radius: 0.5rem;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
   font-family: var(--font-mono);
   font-size: 0.8rem;
   font-weight: 700;
 }
 
-.toolCard__open {
-  margin-top: auto;
-  padding-top: 0.3rem;
-  color: var(--accent-strong);
-  font-weight: 700;
-}
-
-a.toolCard:hover .toolCard__open span {
-  display: inline-block;
-  transform: translateX(3px);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .toolCard,
-  a.toolCard:hover {
+  .toolCard {
     transition: none;
-    transform: none;
   }
 }
 
@@ -335,13 +337,6 @@ a.toolCard:hover .toolCard__open span {
   gap: 0.6rem;
   padding-top: 1.4rem;
   border-top: 1px solid var(--border);
-}
-
-.calculatorPage .readout {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
 }
 
 /* the smaller answers under the main one, as one muted line */
@@ -412,21 +407,17 @@ a.toolCard:hover .toolCard__open span {
 select.linkedField__unit {
   padding: 0.3rem 0.4rem;
   border: 1px solid var(--border);
-  border-radius: 0.6rem;
+  border-radius: var(--radius);
   background: var(--surface);
   cursor: pointer;
 }
 
-/* A calculator's answer: the Result step on the ink wash, the number the
-   largest thing on the page. The main answer is primary; the rest sit smaller. */
+/* A calculator's answer: the Result step, on the page like everything else,
+   the number the largest thing on it. The main answer is primary; the rest sit smaller. */
 .readout {
   display: grid;
   gap: 0.3rem;
   align-content: start;
-  padding: 0.9rem 1.05rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.9rem;
-  background: var(--accent-soft);
 }
 
 .readout__label {
@@ -468,14 +459,17 @@ select.linkedField__unit {
   font-weight: 600;
 }
 
+/* The Hairline Rule: a card is content grouped on the page, not a box. No
+   border, no shadow, no fill; one hairline between two cards, nothing above
+   the first or below the last. */
 .sectionCard,
 .inputCard,
 .infoPanel {
-  padding: 1.3rem;
-  border: 1px solid var(--border);
-  border-radius: 1.1rem;
-  background: var(--surface);
-  box-shadow: var(--shadow);
+  padding: 1.3rem 0;
+}
+
+:is(.sectionCard, .inputCard, .infoPanel) + :is(.sectionCard, .inputCard, .infoPanel) {
+  border-top: 1px solid var(--border);
 }
 
 .sectionCard,
@@ -491,29 +485,32 @@ select.linkedField__unit {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent-strong);
 }
 
-/* kickers and cluster labels are small station signs: a square blue plate
-   with white lettering, the same by day and night */
-:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle) {
+/* Labels can't be pressed, so they wear no plate: muted, uppercase and
+   tracked, behind a small square of the ink, as the builder's mode badge */
+:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .toolCard__sample, .chapter__status) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
   align-self: flex-start;
   width: fit-content;
-  padding: 0.18rem 0.5rem 0.14rem;
-  background: var(--accent);
-  color: var(--on-accent);
+  color: var(--muted);
   line-height: 1.3;
+}
+
+:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .toolCard__sample, .chapter__status)::before {
+  content: "";
+  flex: none;
+  width: 0.5em;
+  height: 0.5em;
+  background: var(--accent);
 }
 
 /* a tool that works but hasn't met the release checklist; sized in rem so it
    reads the same beside a page title, a card heading or the builder's menu */
 .betaBadge {
-  display: inline-block;
-  padding: 0.18rem 0.5rem;
-  border: 1px solid var(--focus-ring);
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  margin-left: 0.5rem;
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -523,32 +520,22 @@ select.linkedField__unit {
   white-space: nowrap;
 }
 
+/* a sign's parts: its pictogram leads, 0.5em before the words */
 .buttonLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5em;
   width: fit-content;
-  padding: 0.72rem 1rem;
-  border-radius: 0.8rem;
-  background: var(--accent);
-  color: #fffaf1;
-  font-weight: 700;
+  padding: 0.6rem 0.9rem;
+  font: inherit;
+  font-weight: 800;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.buttonLink--ghost {
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--foreground);
-}
-
-.buttonLink--ghost:hover {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
-
-html[data-theme="dark"] .buttonLink--ghost {
-  color: var(--foreground);
+.buttonLink:has(.signIcon) {
+  padding: 0.3em 0.9em 0.3em 0.3em;
 }
 
 .fieldStack,
@@ -569,7 +556,7 @@ html[data-theme="dark"] .buttonLink--ghost {
   gap: 0.75rem;
   padding: 0.8rem 0.9rem;
   border: 1px solid var(--border);
-  border-radius: 0.9rem;
+  border-radius: var(--radius);
   background: var(--surface-strong);
 }
 
@@ -616,10 +603,10 @@ html[data-theme="dark"] .buttonLink--ghost {
 .fileDrop {
   position: relative;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.5rem;
   padding: 0.85rem 0.95rem;
   border: 1px dashed var(--border);
-  border-radius: 0.9rem;
+  border-radius: var(--radius);
   background: var(--surface-strong);
   color: var(--muted);
   font-weight: 500;
@@ -649,9 +636,20 @@ html[data-theme="dark"] .buttonLink--ghost {
   cursor: pointer;
 }
 
-.fileDrop__prompt strong {
-  color: var(--accent-strong);
-  font-weight: 700;
+.fileDrop__prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+/* the picker's button is a sign; the whole zone presses it */
+.fileDrop__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  padding: 0.3em 0.75em 0.3em 0.3em;
+  font-weight: 800;
 }
 
 .fileDrop__name {
@@ -672,7 +670,6 @@ html[data-theme="dark"] .buttonLink--ghost {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--accent-strong);
 }
 
 .buttonRow {
@@ -681,29 +678,17 @@ html[data-theme="dark"] .buttonLink--ghost {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+/* the plotters' data actions: signs, with a line of what they give under the name */
 .buttonControl {
   display: grid;
   gap: 0.2rem;
   justify-items: start;
   min-height: 4.5rem;
   padding: 0.95rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: linear-gradient(135deg, #d7dbe2, #bcc3cd);
-  box-shadow: 0 12px 24px rgb(91 102 117 / 0.14);
-  color: var(--foreground);
   font: inherit;
-  font-weight: 700;
+  font-weight: 800;
+  text-align: left;
   cursor: pointer;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
-    border-color 160ms ease;
-}
-
-.buttonControl:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 28px rgb(91 102 117 / 0.18);
 }
 
 .buttonControl__title {
@@ -717,36 +702,9 @@ html[data-theme="dark"] .buttonLink--ghost {
   opacity: 0.9;
 }
 
-.buttonControl--secondary {
-  border-color: var(--border);
-  background: linear-gradient(135deg, var(--surface), var(--surface-strong));
-  box-shadow: 0 10px 20px rgb(91 102 117 / 0.08);
-  color: var(--foreground);
-}
-
-.buttonControl--secondary:hover {
-  box-shadow: 0 14px 24px rgb(91 102 117 / 0.14);
-}
-
-html[data-theme="dark"] .buttonControl {
-  color: #1a1d26;
-}
-
-html[data-theme="dark"] .buttonControl__meta {
-  color: rgb(26 29 38 / 0.8);
-}
-
-html[data-theme="dark"] .buttonControl--secondary {
-  color: var(--foreground);
-}
-
-html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
-  color: var(--muted);
-}
-
 .visualizerLayout {
   display: grid;
-  gap: 1rem;
+  gap: 1rem 1.3rem;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
 }
 
@@ -771,31 +729,12 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--foreground);
+  padding: 0.3em;
+  font-size: 1rem;
   cursor: pointer;
-  box-shadow: var(--shadow);
-  transition:
-    transform 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-}
-
-.sidebarCollapseToggle:hover {
-  transform: translateY(-1px);
-  border-color: var(--accent-strong);
-  color: var(--accent-strong);
 }
 
 .sidebarCollapseToggle svg {
-  width: 1.05rem;
-  height: 1.05rem;
   transition: transform 160ms ease;
 }
 
@@ -805,6 +744,13 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 
 .visualizerChartCard {
   min-height: 32rem;
+}
+
+/* two columns, one vertical hairline between them; stacked, one across */
+.visualizerLayout > .visualizerChartCard {
+  padding-left: 1.3rem;
+  border-top: 0;
+  border-left: 1px solid var(--border);
 }
 
 /* panel headings inside a tool name a part of it, so they sit well under the
@@ -828,9 +774,8 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   --interactive-chart-border: rgba(91, 102, 117, 0.2);
   --interactive-chart-button-bg: rgb(255 255 255 / 0.84);
   --interactive-chart-button-color: #243244;
-  --interactive-chart-active-border: rgba(230, 171, 88, 0.42);
-  --interactive-chart-active-bg: rgba(230, 171, 88, 0.16);
-  --interactive-chart-active-text: #8f5f12;
+  /* the opaque fill of a panel that opens over the chart */
+  --interactive-chart-panel-bg: var(--surface-strong);
   /* the paper, not a tint of its own: the chart sits on the page's surface */
   --interactive-chart-surface-bg: var(--surface-strong);
   /* the figure itself is plain white, like a matplotlib figure on paper */
@@ -848,7 +793,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   min-height: 20rem;
   padding: 0.65rem;
   border: 1px solid var(--interactive-chart-border);
-  border-radius: 1rem;
+  border-radius: var(--radius);
   background: var(--interactive-chart-surface-bg);
   color: var(--interactive-chart-text);
 }
@@ -857,7 +802,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   --interactive-chart-border: rgba(148, 163, 184, 0.24);
   --interactive-chart-button-bg: rgb(18 22 31 / 0.9);
   --interactive-chart-button-color: #ebf1f7;
-  --interactive-chart-active-text: #ffd99d;
+  --interactive-chart-panel-bg: rgb(18 22 31);
   /* the paper, not a tint of its own: the chart sits on the page's surface */
   --interactive-chart-surface-bg: var(--surface-strong);
   --interactive-chart-stage-bg: #11161f;
@@ -893,7 +838,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   min-height: 22rem;
   overflow: hidden;
   border: 1px solid var(--interactive-chart-stage-border);
-  border-radius: 0.9rem;
+  border-radius: var(--radius);
   background: var(--interactive-chart-stage-bg);
 }
 
@@ -911,44 +856,14 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   box-shadow: inset 0 0 0 1px rgb(241 148 68 / 0.18);
 }
 
+/* an icon-only sign: the pictogram square, padded 0.3em by the plate */
 .interactiveChart__iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.35rem;
-  height: 2.35rem;
-  padding: 0;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: 0.72rem;
-  background: var(--interactive-chart-button-bg);
-  color: var(--interactive-chart-button-color);
+  padding: 0.3em;
+  font-size: 1rem;
   cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition:
-    transform 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-}
-
-.interactiveChart__iconButton:hover {
-  transform: translateY(-1px);
-}
-
-.interactiveChart__iconButton svg {
-  width: 1.12rem;
-  height: 1.12rem;
-}
-
-.interactiveChart__iconButton.is-active,
-.interactiveChart__iconButton--theme.is-dark,
-.interactiveChart__iconButton--join.is-joined,
-.interactiveChart__iconButton--axis.is-open,
-.interactiveChart__iconButton--title.is-open,
-.interactiveChart__iconButton--save.is-open {
-  border-color: var(--interactive-chart-active-border);
-  background: var(--interactive-chart-active-bg);
-  color: var(--interactive-chart-active-text);
 }
 
 .interactiveChart__footer {
@@ -982,15 +897,8 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   padding: 0.7rem 0.85rem 0.8rem;
   overflow: hidden;
   border: 1px solid var(--interactive-chart-border);
-  border-radius: 0.9rem;
-  background: rgb(255 255 255 / 0.46);
-}
-
-.interactiveChart--dark .interactiveChart__gesturePanel,
-.interactiveChart--dark .interactiveChart__sliderBar,
-.interactiveChart--dark .interactiveChart__editorBar,
-.interactiveChart--dark .interactiveChart__customizeMenu {
-  background: rgb(18 22 31 / 0.42);
+  border-radius: var(--radius);
+  background: var(--interactive-chart-panel-bg);
 }
 
 .interactiveChart__customizeMenu {
@@ -1003,36 +911,12 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 .interactiveChart__customizeMenuItem {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: 999px;
-  background: var(--interactive-chart-button-bg);
-  color: var(--interactive-chart-button-color);
+  gap: 0.5em;
+  padding: 0.3em 0.75em 0.3em 0.3em;
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 800;
   cursor: pointer;
-  transition:
-    transform 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease;
-}
-
-.interactiveChart__customizeMenuItem:hover {
-  transform: translateY(-1px);
-}
-
-.interactiveChart__customizeMenuItem svg {
-  width: 1rem;
-  height: 1rem;
-}
-
-.interactiveChart__customizeMenuItem.is-active {
-  border-color: var(--interactive-chart-active-border);
-  background: var(--interactive-chart-active-bg);
-  color: var(--interactive-chart-active-text);
 }
 
 
@@ -1069,7 +953,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   width: 1.8rem;
   height: 1.8rem;
   border: 1px solid var(--interactive-chart-border);
-  border-radius: 0.65rem;
+  border-radius: var(--radius);
   background: rgb(255 255 255 / 0.68);
 }
 
@@ -1107,7 +991,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   height: 1.8rem;
   padding: 0 0.45rem;
   border: 1px solid var(--interactive-chart-border);
-  border-radius: 0.65rem;
+  border-radius: var(--radius);
   background: rgb(255 255 255 / 0.68);
   font-size: 0.75rem;
   font-weight: 800;
@@ -1156,7 +1040,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   min-width: 0;
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--interactive-chart-border);
-  border-radius: 0.7rem;
+  border-radius: var(--radius);
   background: rgb(255 255 255 / 0.82);
   color: inherit;
   font: inherit;
@@ -1171,7 +1055,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
   min-width: 0;
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--interactive-chart-border);
-  border-radius: 0.7rem;
+  border-radius: var(--radius);
   background: rgb(255 255 255 / 0.82);
   color: inherit;
 }
@@ -1202,17 +1086,9 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 .interactiveChart__applyButton {
   justify-self: start;
   padding: 0.5rem 0.9rem;
-  border: 1px solid rgba(73, 146, 69, 0.35);
-  border-radius: 0.7rem;
-  background: rgba(102, 191, 94, 0.18);
-  color: #21601c;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
-}
-
-.interactiveChart--dark .interactiveChart__applyButton {
-  color: #c9ffbf;
 }
 
 .visualizerEmptyState {
@@ -1227,7 +1103,7 @@ html[data-theme="dark"] .buttonControl--secondary .buttonControl__meta {
 .visualizerOverlayState {
   position: absolute;
   inset: 1rem;
-  border-radius: 0.85rem;
+  border-radius: var(--radius);
   background: rgb(247 241 230 / 0.82);
   backdrop-filter: blur(4px);
 }
@@ -1237,10 +1113,7 @@ html[data-theme="dark"] .visualizerOverlayState {
 }
 
 .resultCard {
-  padding: 0.95rem 1rem;
   overflow-wrap: anywhere;
-  border-radius: 0.9rem;
-  background: var(--accent-soft);
   color: var(--foreground);
   font-weight: 700;
 }
@@ -1267,7 +1140,6 @@ main:focus {
   outline: none;
 }
 
-.buttonLink:focus-visible,
 .siteFooter a:focus-visible,
 .field__control:focus-within {
   outline: 2px solid var(--focus-ring);
@@ -1281,10 +1153,7 @@ main:focus {
   left: 0.6rem;
   z-index: 60;
   padding: 0.6rem 0.9rem;
-  border-radius: 0.8rem;
-  background: var(--accent);
-  color: #fffaf1;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
   transform: translateY(-200%);
 }
@@ -1306,6 +1175,12 @@ main:focus {
 
   .visualizerChartCard {
     min-height: auto;
+  }
+
+  .visualizerLayout > .visualizerChartCard {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
   }
 }
 
@@ -1335,10 +1210,6 @@ main:focus {
 .fitsMetaCard {
   display: grid;
   gap: 0.2rem;
-  padding: 0.85rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 0.9rem;
-  background: var(--surface-strong);
 }
 
 .fitsMetaCard__label {
@@ -1365,7 +1236,7 @@ main:focus {
   max-width: 100%;
   padding: 0.3rem 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: var(--surface-strong);
   cursor: help;
 }
@@ -1396,13 +1267,11 @@ main:focus {
 
 .fitsFullHeader {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.95rem;
-  background: var(--surface-strong);
+  border-top: 1px solid var(--border);
 }
 
 .fitsFullHeader > summary {
-  padding: 0.8rem 1rem;
+  padding: 0.8rem 0;
   font-weight: 700;
   cursor: pointer;
 }
@@ -1417,7 +1286,7 @@ main:focus {
   display: grid;
   gap: 0.85rem;
   min-width: 0;
-  padding: 0 1rem 1rem;
+  padding: 0 0 1rem;
 }
 
 .fitsFullHeader__body > .fitsFullHeader__count:empty {
@@ -1507,32 +1376,11 @@ main:focus {
 
 .fitsFullHeader__copy {
   padding: 0.2rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--foreground);
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
-}
-
-.fitsFullHeader__copy:hover {
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
-
-.fitsFullHeader__copy:focus-visible,
-.fitsFullHeader > summary:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus-ring) 30%, transparent);
-  outline-offset: 2px;
-}
-
-/* a 0.3 wash of the ring vanishes on black: at night it's the ring itself */
-html[data-theme="dark"] .fitsFullHeader__copy:focus-visible,
-html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
-  outline-color: var(--focus-ring);
 }
 
 .fitsFullHeader__empty {
@@ -1613,7 +1461,7 @@ html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
   z-index: 6;
   padding: 0.3rem 0.55rem;
   border: 1px solid rgb(255 255 255 / 0.14);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background: rgb(12 18 14 / 0.78);
   color: #d4fbd0;
   font-size: 0.7rem;
@@ -1629,7 +1477,7 @@ html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
   object-fit: contain;
   image-rendering: pixelated;
   border: 1px solid var(--border);
-  border-radius: 0.9rem;
+  border-radius: var(--radius);
   background:
     linear-gradient(45deg, rgb(91 102 117 / 0.08) 25%, transparent 25%),
     linear-gradient(-45deg, rgb(91 102 117 / 0.08) 25%, transparent 25%),
@@ -1681,7 +1529,7 @@ html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
   width: 14px;
   height: 14px;
   border: 2px solid #9cff8f;
-  border-radius: 0.2rem;
+  border-radius: var(--radius);
   background: rgb(156 255 143 / 0.1);
   transform: translate(-50%, -50%);
   box-shadow: 0 0 16px rgb(156 255 143 / 0.38);
@@ -1697,7 +1545,7 @@ html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
   flex-wrap: wrap;
   padding: 0.5rem 0.7rem;
   border: 1px solid rgb(156 255 143 / 0.38);
-  border-radius: 0.65rem;
+  border-radius: var(--radius);
   background: rgb(12 18 14 / 0.78);
   color: #b9ffb3;
   font-family: var(--font-mono);
@@ -1719,7 +1567,7 @@ html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
   min-height: 18rem;
   height: min(28rem, 100%);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background-image: linear-gradient(to top, var(--colorbar-stops));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
 }
@@ -1754,7 +1602,7 @@ html[data-theme="dark"] .fitsFullHeader > summary:focus-visible {
   min-width: 0;
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border-radius: var(--radius);
   background: var(--surface-strong);
   color: var(--foreground);
   font: inherit;
@@ -1777,10 +1625,11 @@ html[data-theme="dark"] .fitsColorControl__select {
 
 .fitsInspectorCard,
 .fitsSlicePanel {
-  padding: 1rem 1.05rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  padding: 1.3rem 0;
+}
+
+.fitsInspectorGrid + .fitsSlicePanel {
+  border-top: 1px solid var(--border);
 }
 
 .fitsInspectorCard {
@@ -1826,10 +1675,6 @@ html[data-theme="dark"] .fitsColorControl__select {
 
 .fitsSlicePanel__chart {
   min-height: 16rem;
-  padding: 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 0.9rem;
-  background: var(--surface-strong);
 }
 
 
@@ -1909,7 +1754,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   cursor: crosshair;
   touch-action: none;
   border: 1px solid var(--border);
-  border-radius: 0.9rem;
+  border-radius: var(--radius);
   background:
     linear-gradient(45deg, rgb(91 102 117 / 0.08) 25%, transparent 25%),
     linear-gradient(-45deg, rgb(91 102 117 / 0.08) 25%, transparent 25%),
@@ -1928,7 +1773,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   width: 100%;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 0.9rem;
+  border-radius: var(--radius);
   background: color-mix(in srgb, var(--surface-strong) 70%, transparent);
 }
 
@@ -1970,7 +1815,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 
 .fitsImageViewport__selection {
   z-index: 5;
-  border-radius: 0.25rem;
+  border-radius: var(--radius);
 }
 
 .fitsSliceBand {
@@ -2005,7 +1850,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   min-height: 18rem;
   height: min(28rem, 100%);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius);
   background-image: linear-gradient(to top, var(--colorbar-stops));
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.18);
 }
@@ -2028,22 +1873,13 @@ html[data-theme="dark"] .fitsColorControl__select {
 .fitsImageFrame .interactiveChart__editorBar,
 .fitsImageFrame .interactiveChart__sliderBar,
 .fitsImageFrame .interactiveChart__gesturePanel {
-  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  background: var(--surface-strong);
 }
 
 .fitsImageFrame .interactiveChart__textInput,
 .fitsImageFrame .interactiveChart__select {
   background: var(--surface-strong);
   color: var(--foreground);
-}
-
-.fitsImageFrame .interactiveChart__iconButton.is-active,
-.fitsImageFrame .interactiveChart__iconButton--axis.is-open,
-.fitsImageFrame .interactiveChart__iconButton--save.is-open,
-.fitsImageFrame .interactiveChart__iconButton--title.is-open {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
-  background: color-mix(in srgb, var(--accent-soft) 88%, var(--surface));
-  color: var(--accent-strong);
 }
 
 .fitsImageCaption {
@@ -2056,6 +1892,12 @@ html[data-theme="dark"] .fitsColorControl__select {
   gap: 1rem;
   align-items: start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comparisonPanel + .comparisonPanel {
+  padding-left: 1.3rem;
+  border-top: 0;
+  border-left: 1px solid var(--border);
 }
 
 .comparisonPanel {
@@ -2095,6 +1937,12 @@ html[data-theme="dark"] .fitsColorControl__select {
 
   .comparisonPanel {
     min-height: auto;
+  }
+
+  .comparisonPanel + .comparisonPanel {
+    padding-left: 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
   }
 }
 
@@ -2223,12 +2071,6 @@ html[data-theme="dark"] .fitsColorControl__select {
   width: 6.5rem;
 }
 
-.fitsImageFrame .interactiveChart__iconButton--aspect.is-open {
-  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
-  background: color-mix(in srgb, var(--accent-soft) 88%, var(--surface));
-  color: var(--accent-strong);
-}
-
 .fitsSlicePanel__chart {
   padding: 0;
   overflow: hidden;
@@ -2242,10 +2084,6 @@ html[data-theme="dark"] .fitsColorControl__select {
 .csvRoleChooser {
   display: grid;
   gap: 0.75rem;
-  padding: 0.95rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--surface-strong);
 }
 
 .csvRoleChooser__header {
@@ -2258,10 +2096,11 @@ html[data-theme="dark"] .fitsColorControl__select {
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 0.85rem;
-  background: var(--surface);
+  padding: 0.7rem 0;
+}
+
+.csvRoleRow + .csvRoleRow {
+  border-top: 1px solid var(--border);
 }
 
 .csvRoleRow__name {
@@ -2301,7 +2140,7 @@ html[data-theme="dark"] .fitsColorControl__select {
    swatches, the wheels' ring geometry) keep their own. On :root because the
    coach marks are portalled out of the workspace. */
 :root {
-  --builder-radius: 0;
+  --builder-radius: var(--radius);
   --builder-hairline: color-mix(in srgb, var(--foreground) 22%, transparent);
   --builder-hover: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
@@ -3085,7 +2924,7 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
 
 .builderSheet__groupTitle {
   margin: 0 0 0.3rem;
-  color: var(--accent-strong);
+  color: var(--muted);
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -4832,12 +4671,6 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   margin-top: 0.5rem;
 }
 
-.heroTools .buttonLink {
-  gap: 0.4rem;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
 /* a real statement, so sentence case under the Case Rule, not a label */
 .chalkboard__credit {
   color: var(--muted);
@@ -5052,19 +4885,18 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 }
 
 .chapter__status {
-  padding: 0.1rem 0.45rem;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  color: var(--accent-text);
   font-style: normal;
-  letter-spacing: 0.06em;
-  border: 1px solid currentColor;
-  border-radius: 999px;
+  letter-spacing: 0.08em;
 }
 
+/* the homepage's chapters are the board's story, not a working sheet: light,
+   like its Display heading */
 .chapter__heading {
   font-size: clamp(1.9rem, 3.6vw, 3rem);
+  font-weight: 400;
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
@@ -5076,15 +4908,6 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 
 .chapter__cta {
   margin-top: 0.5rem;
-  padding-bottom: 0.15rem;
-  color: var(--accent-text);
-  font-weight: 700;
-  text-decoration: none;
-  border-bottom: 1.5px solid currentColor;
-}
-
-.chapter__cta:hover {
-  color: var(--accent-strong);
 }
 
 .chapter__links {
@@ -5271,20 +5094,172 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 /* ===========================================================================
-   The Sign Rule. Whatever is pressed, open, active or a tag is a station sign:
-   a square plate in the ink with white lettering, the same by day and night.
+   The Sign Rule. Whatever can be pressed is a station sign: a square plate in
+   the ink with white lettering, the same by day and night. It deepens under
+   the pointer, and a pressed, open or current sign keeps the deep plate and
+   gains a white bar along its foot. Nothing lifts and nothing casts a shadow.
    One list here rather than at each component, so the identity reads as one
-   gesture. The Tabletop HUD only plates what's pressed or open; its hovers
-   stay neutral.
+   gesture. Header items are plates only on hover or when current; the
+   Tabletop HUD only plates what's pressed or open, and its hovers stay
+   neutral. Labels, tags and badges are never plates: see the label list.
    =========================================================================== */
 :is(
-    .toolCard__sample,
-    .betaBadge,
-    .siteFooter a:hover,
-    .buttonLink--ghost:hover,
-    .fitsFullHeader__copy:hover,
-    .fitsImageFrame .interactiveChart__iconButton.is-active,
-    .fitsImageFrame .interactiveChart__iconButton.is-open,
+    .buttonLink,
+    .skipLink,
+    .buttonControl,
+    .interactiveChart__iconButton,
+    .interactiveChart__customizeMenuItem,
+    .interactiveChart__applyButton,
+    .fitsFullHeader__copy,
+    .sidebarCollapseToggle,
+    .fileDrop__button,
+    .toolCard__sign
+  ) {
+  border: 0;
+  border-radius: var(--radius);
+  background-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: none;
+  text-decoration: none;
+}
+
+/* header items and footer links are a sign only while pointed at */
+:is(.navTab, .navFlyout__link, .siteFooter a):hover {
+  color: var(--on-accent);
+  text-decoration: none;
+}
+
+/* under the pointer: one step deeper */
+:is(
+    .buttonLink,
+    .buttonControl,
+    .interactiveChart__iconButton,
+    .interactiveChart__customizeMenuItem,
+    .interactiveChart__applyButton,
+    .fitsFullHeader__copy,
+    .sidebarCollapseToggle,
+    .navTab,
+    .navFlyout__link,
+    .siteFooter a
+  ):hover:not(:disabled),
+.fileDrop:hover .fileDrop__button,
+.fileDrop.is-over .fileDrop__button,
+a.toolCard:hover .toolCard__sign {
+  background-color: var(--accent-hover);
+}
+
+/* pressed, open or current: deep, with the white bar along the foot. Only
+   the colour changes on hover, so the bar stays under the pointer. */
+:is(
+    .navTab.is-current,
+    .interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]),
+    .interactiveChart__customizeMenuItem.is-active
+  ) {
+  background: var(--sign-foot);
+  background-color: var(--accent-hover);
+  color: var(--on-accent);
+}
+
+/* can't be pressed right now: the same plate, faded, never gray */
+:is(
+    .buttonLink,
+    .buttonControl,
+    .interactiveChart__iconButton,
+    .interactiveChart__customizeMenuItem,
+    .interactiveChart__applyButton,
+    .fitsFullHeader__copy,
+    .sidebarCollapseToggle
+  ):disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* the ring sits on the page around the plate, not on blue it would vanish into */
+:is(
+    .buttonLink,
+    .buttonControl,
+    .interactiveChart__iconButton,
+    .interactiveChart__customizeMenuItem,
+    .interactiveChart__applyButton,
+    .fitsFullHeader__copy,
+    .sidebarCollapseToggle
+  ):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* The Pictogram Rule: an icon on a sign is a white outline in a white-bordered
+   square, 1.6em on a side, leading the words by 0.5em. The glyph keeps a
+   1.5px stroke whatever its viewBox, with square caps and mitred joins, inset
+   about 20% from the square. A filled icon becomes its outline. */
+.signIcon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border: 1.5px solid currentColor;
+  border-radius: var(--radius);
+}
+
+.signIcon svg {
+  width: 60%;
+  height: 60%;
+  overflow: visible;
+}
+
+.signIcon svg :is(path, circle, ellipse, rect, line, polyline, polygon, text) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+.signIcon svg rect {
+  rx: 0;
+}
+
+/* lettering drawn as an outline is finer than a line */
+.signIcon svg text {
+  stroke-width: 0.75px;
+}
+
+/* a header item's pictogram is a glyph at rest, and gets its square when the
+   item is lit */
+.navTab:not(:hover, .is-current) .signIcon {
+  border-color: transparent;
+}
+
+/* Header items: square tabs the full height of the bar, transparent at rest */
+.navTab {
+  color: var(--muted);
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+
+.navTab--wordmark {
+  color: var(--foreground);
+}
+
+/* the section menus float over the page: an opaque fill and a hairline */
+.navFlyout {
+  border: 1px solid var(--border);
+  background: var(--background);
+}
+
+.navFlyout__link {
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.navFlyout__link + .navFlyout__link {
+  border-top: 1px solid var(--border);
+}
+
+/* the Tabletop HUD: plates only for what's pressed, open or selected */
+:is(
     .builderIconBtn.is-active,
     .builderMenu__trigger[aria-expanded="true"],
     .builderMenu__list label:hover,
@@ -5293,8 +5268,6 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .builderBeamRow.is-selected,
     .builderGroupsMenu__item:focus-visible,
     .builderButton[aria-pressed="true"],
-    .buttonLink,
-    .skipLink,
     .builderGuideButton,
     .builderButton--primary,
     .builderLabel.is-selected,
@@ -5306,17 +5279,12 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   color: var(--on-accent);
 }
 
-:is(.builderGuideButton:hover, .buttonLink:hover) {
+.builderGuideButton:hover {
   background: var(--accent-hover);
 }
 
 .builderPart.is-active * {
   color: inherit;
-}
-
-/* a sign is cut square; the round pill was a badge */
-:is(.betaBadge, .toolCard__sample) {
-  border-radius: 0.2rem;
 }
 
 /* a fan's current petal and the Show wheel's lit segments are plates too;

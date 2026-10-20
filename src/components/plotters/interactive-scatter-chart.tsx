@@ -48,6 +48,7 @@ import {
 } from "@/components/plotters/matplotlib-skin";
 import { renderChartPdf } from "@/components/plotters/pdf-export";
 import { renderChartSvg } from "@/components/plotters/svg-export";
+import { SignIcon } from "@/components/sign-icon";
 
 ChartJS.register(
   LinearScale,
@@ -1932,7 +1933,9 @@ function InteractiveScatterChartInner({
           title="Reset zoom"
           type="button"
         >
-          <ResetZoomIcon />
+          <SignIcon>
+            <ResetZoomIcon />
+          </SignIcon>
         </button>
         <button
           aria-label="Zoom in"
@@ -1941,7 +1944,9 @@ function InteractiveScatterChartInner({
           title="Zoom in"
           type="button"
         >
-          <ZoomInIcon />
+          <SignIcon>
+            <ZoomInIcon />
+          </SignIcon>
         </button>
         <button
           aria-label="Zoom out"
@@ -1950,7 +1955,9 @@ function InteractiveScatterChartInner({
           title="Zoom out"
           type="button"
         >
-          <ZoomOutIcon />
+          <SignIcon>
+            <ZoomOutIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={
@@ -1962,7 +1969,9 @@ function InteractiveScatterChartInner({
           title={scrollZoomEnabled ? "Scroll zoom on" : "Scroll zoom off"}
           type="button"
         >
-          <ScrollIcon />
+          <SignIcon>
+            <ScrollIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={joinedPoints ? "Show points only" : "Join points"}
@@ -1972,7 +1981,9 @@ function InteractiveScatterChartInner({
           title={joinedPoints ? "Lines on" : "Lines off"}
           type="button"
         >
-          <JoinDotsIcon />
+          <SignIcon>
+            <JoinDotsIcon />
+          </SignIcon>
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <button
@@ -1985,7 +1996,9 @@ function InteractiveScatterChartInner({
           title="Customize"
           type="button"
         >
-          <CustomizeIcon />
+          <SignIcon>
+            <CustomizeIcon />
+          </SignIcon>
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         {/* one click flips every chart on the page between the two looks */}
@@ -2005,7 +2018,9 @@ function InteractiveScatterChartInner({
           }
           type="button"
         >
-          <StyleIcon />
+          <SignIcon>
+            <StyleIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={
@@ -2021,7 +2036,9 @@ function InteractiveScatterChartInner({
           title={colorMode === "dark" ? "Bright mode" : "Dark mode"}
           type="button"
         >
-          <ThemeIcon />
+          <SignIcon>
+            <ThemeIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={
@@ -2033,7 +2050,9 @@ function InteractiveScatterChartInner({
           title="Save"
           type="button"
         >
-          <SaveIcon />
+          <SignIcon>
+            <SaveIcon />
+          </SignIcon>
         </button>
       </div>
 
@@ -2045,7 +2064,9 @@ function InteractiveScatterChartInner({
             onClick={() => setPointSizeControlsOpen((current) => !current)}
             type="button"
           >
-            <PointSizeIcon />
+            <SignIcon>
+              <PointSizeIcon />
+            </SignIcon>
             <span>Point size</span>
           </button>
           <button
@@ -2054,7 +2075,9 @@ function InteractiveScatterChartInner({
             onClick={() => setFontControlsOpen((current) => !current)}
             type="button"
           >
-            <FontIcon />
+            <SignIcon>
+              <FontIcon />
+            </SignIcon>
             <span>Font</span>
           </button>
           <button
@@ -2063,7 +2086,9 @@ function InteractiveScatterChartInner({
             onClick={() => setTitleControlsOpen((current) => !current)}
             type="button"
           >
-            <TitleIcon />
+            <SignIcon>
+              <TitleIcon />
+            </SignIcon>
             <span>Title</span>
           </button>
           <button
@@ -2072,7 +2097,9 @@ function InteractiveScatterChartInner({
             onClick={() => setAxisControlsOpen((current) => !current)}
             type="button"
           >
-            <AxisLabelsIcon />
+            <SignIcon>
+              <AxisLabelsIcon />
+            </SignIcon>
             <span>Axis labels</span>
           </button>
           <button
@@ -2081,7 +2108,9 @@ function InteractiveScatterChartInner({
             onClick={() => setLegendControlsOpen((current) => !current)}
             type="button"
           >
-            <LegendIcon />
+            <SignIcon>
+              <LegendIcon />
+            </SignIcon>
             <span>Legend</span>
           </button>
           <button
@@ -2090,7 +2119,9 @@ function InteractiveScatterChartInner({
             onClick={() => setTickControlsOpen((current) => !current)}
             type="button"
           >
-            <TickAxesIcon />
+            <SignIcon>
+              <TickAxesIcon />
+            </SignIcon>
             <span>Ticks</span>
           </button>
         </div>
