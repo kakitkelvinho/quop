@@ -30,6 +30,12 @@ const ebGaramond = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
+// PROTOTYPE (station-blue): Source Sans 3, Adobe's open-source sibling of Myriad
+const sourceSans = localFont({
+  src: [{ path: "./fonts/source-sans-3-200-900-normal.prototype.woff2", weight: "200 900", style: "normal" }],
+  variable: "--font-source-sans",
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kakitkelvinho.github.io/quop";
 const description = "Quantum optics notes, calculators, theory, and plotters.";
 
@@ -78,7 +84,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${ibmPlexSans.variable} ${ebGaramond.variable}`}
+      className={`${ibmPlexSans.variable} ${ebGaramond.variable} ${sourceSans.variable}`}
       lang="en"
       suppressHydrationWarning
     >

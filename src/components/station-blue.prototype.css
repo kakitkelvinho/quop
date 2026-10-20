@@ -3,8 +3,7 @@
    always white; --accent is what's drawn thin (rings, icons, the 3D selection)
    and lifts at night, where navy on black would vanish. */
 
-html[data-sign="A"],
-html[data-sign="C"] {
+html[data-sign="A"] {
   --accent: #0b3d74;
   --accent-strong: #072a52;
   --accent-soft: rgb(11 61 116 / 0.09);
@@ -22,8 +21,7 @@ html[data-sign="B"] {
   --plate-ink: #ffffff;
 }
 
-html[data-theme="dark"][data-sign="A"],
-html[data-theme="dark"][data-sign="C"] {
+html[data-theme="dark"][data-sign="A"] {
   --accent: #4f86d4;
   --accent-strong: #9cc2f5;
   --accent-soft: rgb(79 134 212 / 0.16);
@@ -129,45 +127,10 @@ html[data-sign] .showWheel__segment.is-on .showWheel__wedge {
   fill: var(--plate);
 }
 
-/* ---- C: enamel signs. A white rule inset from the plate's edge, and header
-   icons on permanent pictogram tiles ---- */
+/* ---- AS / BS: Source Sans 3 in place of Plex. Its letters run smaller and
+   narrower at the same size, so it steps up a touch to hold the same measure ---- */
 
-html[data-sign="C"] :is(
-    .navItem:hover,
-    .navItem[aria-current="page"],
-    .navWordmark:hover,
-    .builderMenu__trigger[aria-expanded="true"],
-    .builderSheetTab[aria-expanded="true"],
-    .buttonLink,
-    .builderGuideButton,
-    .builderButton--primary
-  ) {
-  box-shadow:
-    inset 0 0 0 3px var(--plate),
-    inset 0 0 0 4px rgb(255 255 255 / 0.9);
-}
-
-html[data-sign="C"] :is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .toolCard__sample, .betaBadge) {
-  box-shadow:
-    inset 0 0 0 2px var(--plate),
-    inset 0 0 0 3px rgb(255 255 255 / 0.85);
-  padding-inline: 0.6rem;
-}
-
-/* pictograms: the glyph sits white on a blue square, as on a station's wayfinding panel */
-html[data-sign="C"] .themeToggle svg,
-html[data-sign="C"] .builderIconBtn.is-active svg {
-  box-sizing: content-box;
-  padding: 0.3rem;
-  background: var(--plate);
-  color: var(--plate-ink);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.85);
-}
-
-html[data-sign="C"] .themeToggle:hover {
-  background: transparent;
-}
-
-html[data-sign="C"] .themeToggle:hover svg {
-  background: var(--plate-deep);
+html[data-face="source"] {
+  --font-ibm-plex-sans: var(--font-source-sans);
+  font-size: 106.25%;
 }
