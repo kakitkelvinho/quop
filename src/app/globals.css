@@ -314,53 +314,102 @@ a.toolCard:hover .toolCard__open span {
   }
 }
 
-.calculatorGrid {
+/* A calculator page is a sheet of working, not a stack of cards: fields and
+   answers sit on the page in one column, with a hairline between the fields
+   and the result where a tool has both. No frame, no shadow, no lift. */
+.calculatorSheet {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  /* minmax(0, …): a large number must not push its field past a narrow screen */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  max-width: 36rem;
 }
 
-.calculatorGrid--single {
-  grid-template-columns: minmax(0, 720px);
-}
-
-.paceCalculator {
+.calculatorSheet__result {
   display: grid;
-  gap: 1rem;
-  align-items: stretch;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.6rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--border);
 }
 
-.paceCalculator__panel {
-  min-height: 100%;
+.calculatorPage .readout {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
 }
 
-.paceCalculator__panelHeader {
+/* the smaller answers under the main one, as one muted line */
+.readoutAside {
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* each answer keeps its words together; the line breaks between them */
+.readoutAside__item {
+  white-space: nowrap;
+}
+
+.readoutAside__value {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.readoutAside .readout__formula {
+  margin-left: 0;
+}
+
+/* Two linked fields, as in a unit converter: each number is the answer when
+   the other was typed, so both are set at the Result step, inside the input,
+   with the label small above and the unit beside. */
+.linkedFields,
+.linkedField {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.linkedFields {
   display: grid;
-  gap: 0.35rem;
+  gap: 1.25rem;
 }
 
-.paceCalculator__dualField {
-  display: grid;
-  gap: 0.9rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.linkedField > label {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
 }
 
-.paceCalculator__swapWrap {
-  display: grid;
-  align-items: center;
+.linkedField__control {
+  padding: 0.55rem 0.9rem 0.6rem 1rem;
 }
 
-.paceCalculator__swap {
-  justify-items: center;
-  min-width: 8.5rem;
-  min-height: 8.5rem;
-  text-align: center;
+.linkedField__control input {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
 }
 
-.paceCalculator__swapIcon {
-  font-size: 1.75rem;
-  line-height: 1;
+.linkedField__control input::placeholder {
+  color: var(--muted);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.field__control .linkedField__unit:last-child {
+  flex: none;
+  color: var(--accent-strong);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+select.linkedField__unit {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  cursor: pointer;
 }
 
 /* A calculator's answer: the Result step on the ink wash, the number the
@@ -412,16 +461,6 @@ a.toolCard:hover .toolCard__open span {
 .readout__empty {
   color: var(--muted);
   font-weight: 600;
-}
-
-.readoutGroup {
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.readoutGroup > .readout--primary {
-  grid-column: 1 / -1;
 }
 
 .sectionCard,
@@ -1253,14 +1292,6 @@ main:focus {
      stick out past the page */
   .sidebarCollapseToggle {
     right: 0.75rem;
-  }
-
-  .paceCalculator {
-    grid-template-columns: 1fr;
-  }
-
-  .paceCalculator__swap {
-    min-height: 5.5rem;
   }
 
   .visualizerChartCard {
