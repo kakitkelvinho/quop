@@ -8,10 +8,12 @@
   --foreground: #111111;
   --muted: #666666;
   --border: rgb(0 0 0 / 0.12);
-  --accent: #8b1e3f;
-  --accent-strong: #61122b;
-  --accent-soft: rgb(139 30 63 / 0.1);
-  /* words in the ink: oxblood by day; white at night, where oxblood text fails */
+  --accent: #1a5fb4;
+  --accent-strong: #0f4690;
+  --accent-soft: rgb(26 95 180 / 0.09);
+  /* lettering on a sign plate, in both themes */
+  --on-accent: #ffffff;
+  /* words in the ink: blue by day; white at night, like a sign's lettering */
   --accent-text: var(--accent);
   --shadow: 0 20px 50px rgb(31 41 51 / 0.1);
   /* the deeper shadow a card lifts into on hover */
@@ -35,18 +37,18 @@ html[data-theme="dark"] {
   --foreground: #ffffff;
   --muted: #a1a1a1;
   --border: rgb(255 255 255 / 0.14);
-  /* one ink, day and night: a fill keeps the day's oxblood (white on it is
-     about 9:1), thin marks lift toward red to clear 3:1 on black, and words
+  /* one ink, day and night: a fill keeps the day's station blue (white on it
+     is about 6:1), thin marks lift lighter to clear 3:1 on black, and words
      never take it: they go white and get their emphasis from size and weight */
-  --accent: #8b1e3f;
+  --accent: #1a5fb4;
   --accent-strong: #ffffff;
-  --accent-soft: rgb(139 30 63 / 0.38);
+  --accent-soft: rgb(26 95 180 / 0.38);
   --accent-text: var(--foreground);
   --shadow: 0 28px 60px rgb(0 0 0 / 0.6);
   --shadow-lift: 0 34px 72px rgb(0 0 0 / 0.7);
-  /* the ring: the ink lifted to #c23a48, about 4:1 on black, turning toward
-     red as it lightens (a merely lighter oxblood reads as pink) */
-  --focus-ring: color-mix(in srgb, var(--accent) 50%, #f95651);
+  /* the ring: the ink lifted to about #4f8dd6, 6:1 on black, where the
+     plate's own blue would sink into the night */
+  --focus-ring: color-mix(in srgb, var(--accent) 55%, #8fc4ff);
   --mark: 255 255 255;
   --chalk-alpha: 0.3;
   --chalk-dust: 0.15;
@@ -56,7 +58,7 @@ html[data-theme="dark"] {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-ibm-plex-sans), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: var(--font-source-sans), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --font-serif: var(--font-eb-garamond), Georgia, "Times New Roman", serif;
 }
@@ -70,6 +72,9 @@ html[data-theme="dark"] {
 
   html {
     min-height: 100%;
+    /* Source Sans sets smaller and narrower than a grotesk at the same size,
+       so the root steps up to keep the measure it was designed at */
+    font-size: 106.25%;
     background: var(--background);
   }
 
@@ -109,7 +114,7 @@ html[data-theme="dark"] {
     background: color-mix(in srgb, var(--accent) 28%, transparent);
   }
 
-  /* 28% of oxblood on black is barely there */
+  /* 28% of the blue on black is barely there */
   html[data-theme="dark"] ::selection {
     background: var(--accent-soft);
   }
@@ -450,10 +455,15 @@ a.toolCard:hover .toolCard__open span {
   color: var(--accent-strong);
 }
 
-/* at night the ink's words are white, so a kicker steps back to muted and
-   keeps its weight and tracking to stay distinct from content */
-html[data-theme="dark"] :is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle) {
-  color: var(--muted);
+/* kickers and cluster labels are small station signs: a square blue plate
+   with white lettering, the same by day and night */
+:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle) {
+  align-self: flex-start;
+  width: fit-content;
+  padding: 0.18rem 0.5rem 0.14rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  line-height: 1.3;
 }
 
 /* a tool that works but hasn't met the release checklist; sized in rem so it
@@ -2251,7 +2261,7 @@ html[data-theme="dark"] .fitsColorControl__select {
    Experiment Builder
    A full-window workspace: the canvas fills the viewport and a few small
    islands float over its edges, all in the notebook language (surface,
-   hairline border, lifted shadow, oxblood ink). Only the transient mode
+   hairline border, lifted shadow, blue ink). Only the transient mode
    badge borrows the instrument toolbar amber.
    =========================================================================== */
 
@@ -4932,7 +4942,7 @@ body[data-panel-gesture="se"] * {
   opacity: 0.86;
 }
 
-/* oxblood mixed with white chalk is pink: at night the chalk is the ring's red */
+/* the blue mixed with white chalk goes grey: at night the chalk is the ring's lighter blue */
 html[data-theme="dark"] .chalkEq__ink--accent {
   color: var(--focus-ring);
 }
@@ -5391,4 +5401,70 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   .chalkCard__route {
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ===========================================================================
+   The Sign Rule. Whatever is pressed, open, active or a tag is a station sign:
+   a square plate in the ink with white lettering, the same by day and night.
+   One list here rather than at each component, so the identity reads as one
+   gesture. The Tabletop HUD only plates what's pressed or open; its hovers
+   stay neutral.
+   =========================================================================== */
+:is(
+    .toolCard__sample,
+    .betaBadge,
+    .siteFooter a:hover,
+    .buttonLink--ghost:hover,
+    .fitsFullHeader__copy:hover,
+    .fitsImageFrame .interactiveChart__iconButton.is-active,
+    .fitsImageFrame .interactiveChart__iconButton.is-open,
+    .builderIconBtn.is-active,
+    .builderMenu__trigger[aria-expanded="true"],
+    .builderMenu__list label:hover,
+    .builderSheetTab[aria-expanded="true"],
+    .builderPart.is-active,
+    .builderBeamRow.is-selected,
+    .builderGroupsMenu__item:focus-visible,
+    .builderButton[aria-pressed="true"],
+    .buttonLink,
+    .skipLink,
+    .builderGuideButton,
+    .builderButton--primary,
+    .builderLabel.is-selected,
+    .builderOrderBadge,
+    .builderAngleBadge
+  ) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:is(.builderGuideButton:hover, .buttonLink:hover) {
+  background: var(--accent-hover);
+}
+
+.builderPart.is-active * {
+  color: inherit;
+}
+
+/* a sign is cut square; the round pill was a badge */
+:is(.betaBadge, .toolCard__sample) {
+  border-radius: 0.2rem;
+}
+
+.fileFan__item:is(:hover, :focus-visible) {
+  color: var(--on-accent);
+}
+
+.fileFan__item:is(:hover, :focus-visible) .fileFan__wedge,
+.showWheel__segment.is-on .showWheel__wedge {
+  fill: var(--accent);
+}
+
+.fileFan__item:is(:hover, :focus-visible) .fileFan__hint {
+  fill: rgb(255 255 255 / 0.78);
+}
+
+.showWheel__segment.is-on {
+  color: var(--on-accent);
 }
