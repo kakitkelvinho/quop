@@ -26,14 +26,6 @@ const ebGaramond = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
-// The Tabletop HUD's grotesk, a 100–900 weight variable font cut to Latin. Only
-// the builder uses it, so it isn't preloaded on every page.
-const inter = localFont({
-  src: [{ path: "./fonts/inter-100-900-normal.woff2", weight: "100 900", style: "normal" }],
-  variable: "--font-inter",
-  preload: false,
-});
-
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kakitkelvinho.github.io/quop";
 const description = "Quantum optics notes, calculators, theory, and plotters.";
 
@@ -82,7 +74,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${sourceSans.variable} ${ebGaramond.variable} ${inter.variable}`}
+      className={`${sourceSans.variable} ${ebGaramond.variable}`}
       lang="en"
       suppressHydrationWarning
     >

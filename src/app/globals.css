@@ -2162,8 +2162,6 @@ html[data-theme="dark"] .fitsColorControl__select {
   position: relative;
   height: 100%;
   overflow: hidden;
-  /* the HUD speaks a tighter grotesk than the notebook's Plex */
-  font-family: var(--font-inter), var(--font-sans);
   font-size: 0.82rem;
   line-height: 1.35;
 }
@@ -2980,8 +2978,6 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
    the card is a flat dark plate */
 .builderCoach {
   position: fixed;
-  /* portalled to the body, outside the workspace's font */
-  font-family: var(--font-inter), var(--font-sans);
   z-index: 100;
   inset: 0;
   background: rgb(17 17 17 / 0.42);
