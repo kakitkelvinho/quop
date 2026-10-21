@@ -800,8 +800,6 @@ select.linkedField__unit {
 
 .interactiveChart {
   --interactive-chart-border: rgba(91, 102, 117, 0.2);
-  --interactive-chart-button-bg: rgb(255 255 255 / 0.84);
-  --interactive-chart-button-color: #243244;
   /* the opaque fill of a panel that opens over the chart */
   --interactive-chart-panel-bg: var(--surface-strong);
   /* the figure itself is plain white, like a matplotlib figure on paper */
@@ -822,8 +820,6 @@ select.linkedField__unit {
 
 .interactiveChart--dark {
   --interactive-chart-border: rgba(148, 163, 184, 0.24);
-  --interactive-chart-button-bg: rgb(18 22 31 / 0.9);
-  --interactive-chart-button-color: #ebf1f7;
   --interactive-chart-panel-bg: rgb(18 22 31);
   --interactive-chart-stage-bg: #11161f;
   --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
@@ -876,14 +872,46 @@ select.linkedField__unit {
   box-shadow: inset 0 0 0 1px rgb(241 148 68 / 0.18);
 }
 
-/* an icon-only sign: the pictogram square, padded 0.3em by the plate */
+/* The Quiet Toolbar Rule: a viewer's tools are the Sign Rule's second
+   exception, after the Tabletop HUD. A row of blue plates beside a plot
+   outshouts the data, so a tool is its pictogram alone: a gray outline in a
+   gray square, no plate. Pointed at, it takes the neutral wash; on, open or
+   pressed, the line turns to the page's ink (black by day, white by night)
+   and thickens to 2px, so the state doesn't rest on a colour change alone. */
 .interactiveChart__iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.3em;
+  padding: 0.15em;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
   font-size: 1rem;
   cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.interactiveChart__iconButton:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
+  color: var(--foreground);
+}
+
+.interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]) {
+  color: var(--foreground);
+}
+
+.interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]) .signIcon {
+  border-width: 2px;
+}
+
+.interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"])
+  .signIcon
+  svg
+  :is(path, circle, ellipse, rect, line, polyline, polygon) {
+  stroke-width: 2px;
 }
 
 .interactiveChart__footer {
@@ -1702,8 +1730,6 @@ html[data-theme="dark"] .fitsColorControl__select {
 
 .fitsImageFrame {
   --interactive-chart-border: var(--border);
-  --interactive-chart-button-bg: var(--surface);
-  --interactive-chart-button-color: var(--foreground);
   --interactive-chart-text: var(--foreground);
   display: grid;
   gap: 0.85rem;
@@ -5190,7 +5216,6 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .buttonLink,
     .skipLink,
     .buttonControl,
-    .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
@@ -5216,7 +5241,6 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 :is(
     .buttonLink,
     .buttonControl,
-    .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
@@ -5233,10 +5257,7 @@ a.toolCard:hover .toolCard__sign {
 
 /* pressed, open or current: deep, with the white bar along the foot. Only
    the colour changes on hover, so the bar stays under the pointer. */
-:is(
-    .interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]),
-    .interactiveChart__customizeMenuItem.is-active
-  ) {
+.interactiveChart__customizeMenuItem.is-active {
   background: var(--sign-foot);
   background-color: var(--accent-hover);
   color: var(--on-accent);
