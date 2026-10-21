@@ -8,9 +8,9 @@
   --foreground: #111111;
   --muted: #666666;
   --border: rgb(0 0 0 / 0.12);
-  --accent: #1e057d;
-  --accent-strong: #15035a;
-  --accent-soft: rgb(30 5 125 / 0.09);
+  --accent: #1a5fb4;
+  --accent-strong: #0f4690;
+  --accent-soft: rgb(26 95 180 / 0.09);
   /* lettering on a sign plate, in both themes */
   --on-accent: #ffffff;
   /* words in the ink: blue by day; white at night, like a sign's lettering */
@@ -23,7 +23,13 @@
      the 3:1 a focus indicator needs against the page */
   --focus-ring: var(--accent);
   /* a hovered or pressed sign darkens the ink by one step: Station Blue Deep */
-  --accent-hover: #15035a;
+  --accent-hover: #0f4690;
+  /* Wayfinding Blue: ÖBB's Dark Blue for station wayfinding (NCS S4550 R70B,
+     RGB 30 0 125), on the signs that point somewhere (the tool index's
+     signs, the homepage's way to the tools) and nowhere else; controls keep
+     the working blue above. The same by day and night, as a sign is. */
+  --wayfinding: #1e007d;
+  --wayfinding-hover: #15005a;
   /* the white bar along a pressed sign's foot */
   --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) bottom / 100% 3px no-repeat;
   /* the neutral wash behind a hovered row */
@@ -45,9 +51,9 @@ html[data-theme="dark"] {
   /* one ink, day and night: a fill keeps the day's station blue (white on it
      is about 6:1), thin marks lift lighter to clear 3:1 on black, and words
      never take it: they go white and get their emphasis from size and weight */
-  --accent: #1e057d;
+  --accent: #1a5fb4;
   --accent-strong: #ffffff;
-  --accent-soft: rgb(30 5 125 / 0.38);
+  --accent-soft: rgb(26 95 180 / 0.38);
   --accent-text: var(--foreground);
   /* the ring: the ink lifted to about #4f8dd6, 6:1 on black, where the
      plate's own blue would sink into the night */
@@ -293,7 +299,7 @@ a.toolCard:focus-visible {
   letter-spacing: 0.01em;
 }
 
-/* the way on: orange on the blue (about 3:1), the same by day and night,
+/* the way on: orange on the Wayfinding Blue (about 6.5:1), the same by day and night,
    because the plate is */
 .toolCard__arrow {
   position: absolute;
@@ -5179,6 +5185,16 @@ a.toolCard:hover .toolCard__sign {
   background: var(--sign-foot);
   background-color: var(--accent-hover);
   color: var(--on-accent);
+}
+
+/* a sign that points somewhere is a wayfinding sign, in Wayfinding Blue */
+:is(.toolCard__sign, .heroTools .buttonLink) {
+  background-color: var(--wayfinding);
+}
+
+.heroTools .buttonLink:hover,
+a.toolCard:hover .toolCard__sign {
+  background-color: var(--wayfinding-hover);
 }
 
 /* can't be pressed right now: the same plate, faded, never gray */
