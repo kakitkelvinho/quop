@@ -4,7 +4,7 @@ import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
 import { HomeChapters } from "@/components/home-chapters";
 import { loadPowerTrace } from "@/components/home-trace";
 import { SectionCards } from "@/components/section-cards";
-import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
+import { ArrowRightIcon } from "@/components/sign-icon";
 
 export default function Home() {
   return (
@@ -17,26 +17,21 @@ export default function Home() {
           install, free for anyone to try.
         </p>
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
-        {/* the way straight to the tools, for whoever came to use one rather than read the story */}
+        {/* the way straight to the tools, for whoever came to use one rather than
+            read the story: one station sign, a row per destination */}
         <nav aria-label="Tools" className="heroTools">
-          <Link className="buttonLink" href="/builder/tabletop">
-            <SignIcon>
-              <ArrowRightIcon />
-            </SignIcon>
-            Tabletop
-          </Link>
-          <Link className="buttonLink" href="/plotters">
-            <SignIcon>
-              <ArrowRightIcon />
-            </SignIcon>
-            Plotters
-          </Link>
-          <Link className="buttonLink" href="/calculators">
-            <SignIcon>
-              <ArrowRightIcon />
-            </SignIcon>
-            Calculators
-          </Link>
+          {[
+            ["/builder/tabletop", "Tabletop"],
+            ["/plotters", "Plotters"],
+            ["/calculators", "Calculators"],
+          ].map(([href, label]) => (
+            <Link className="buttonLink" href={href} key={href}>
+              <span className="heroTools__arrow">
+                <ArrowRightIcon />
+              </span>
+              {label}
+            </Link>
+          ))}
         </nav>
       </ChalkboardHero>
       <HomeChapters trace={loadPowerTrace()} />

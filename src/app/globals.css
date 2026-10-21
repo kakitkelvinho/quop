@@ -4689,12 +4689,58 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   text-align: center;
 }
 
+/* the way to the tools as one station sign, after Vienna Hbf's: a single
+   Nachtblau panel with a row per destination, each led by an orange arrow,
+   the rows parted by a faint white rule */
 .heroTools {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-top: 0.5rem;
+  display: grid;
+  width: min(100%, 22rem);
+  margin: 0.5rem auto 0;
+}
+
+.heroTools .buttonLink {
+  justify-content: flex-start;
+  gap: 0.9em;
+  width: 100%;
+  padding: 0.8em 1.1em;
+  border-radius: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+}
+
+.heroTools .buttonLink:first-child {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.heroTools .buttonLink:last-child {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.heroTools .buttonLink + .buttonLink {
+  border-top: 1px solid color-mix(in srgb, var(--on-accent) 22%, transparent);
+}
+
+.heroTools__arrow {
+  display: grid;
+  flex: none;
+  width: 1em;
+  height: 1em;
+  color: #fb8c4a;
+}
+
+.heroTools__arrow svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.heroTools__arrow path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
 }
 
 /* a real statement, so sentence case under the Case Rule, not a label */
