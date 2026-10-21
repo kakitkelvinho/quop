@@ -231,28 +231,34 @@ html[data-theme="dark"] .chapter__links a:hover {
   font-size: 0.84rem;
 }
 
-/* A section's tools: each card is one link, its sign and its sentence. No
-   frames and no hairlines: the signs' own plates and the room between them
-   do the separating, as signs along a platform do. */
+/* A section's tools: a list of rows, as a platform's signs are read one
+   after another, not a grid of tiles. Each row is one link: its sign, then
+   its sentence beside it (under it on a narrow screen). No frames and no
+   hairlines: the plates and the room between them do the separating. */
 .toolGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.6rem 2.6rem;
+  gap: 0.4rem;
 }
 
 .toolCard {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  padding: 1.3rem 0;
+  gap: 0.7rem;
+  padding: 1rem 0;
   color: var(--foreground);
   text-decoration: none;
   transition: background-color 160ms ease;
 }
 
-@media (min-width: 900px) {
-  .toolGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 720px) {
+  .toolCard {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.8rem;
+  }
+
+  .toolCard h2 {
+    flex: 0 0 26rem;
   }
 }
 
@@ -276,10 +282,10 @@ a.toolCard:focus-visible {
 }
 
 /* the tool's name on a station sign, after ÖBB's platform signs: one long,
-   low plate in their 6:1 (99 × 16.5 cm), the same on every card, the name
-   centred across it and set a little above the middle, and an orange arrow
-   pointing on in the lower right corner. A name too long for one line grows
-   the plate rather than overflowing it. */
+   low plate in their 6:1 (99 × 16.5 cm), the same on every row, the name
+   centred across it and set a little above the middle, clear of the marks
+   in the lower right corner. A name too long for one line grows the plate
+   rather than overflowing it. */
 .toolCard__sign {
   position: relative;
   display: flex;
@@ -288,20 +294,30 @@ a.toolCard:focus-visible {
   flex: 0 1 26rem;
   max-width: 100%;
   aspect-ratio: 6 / 1;
-  padding: 0.3em 1.8em 0.75em;
+  padding: 0.2em 3.6em 0.65em;
   text-align: center;
   letter-spacing: 0.01em;
+}
+
+/* the sign's marks, in its lower right corner as on a platform sign: the
+   tool's pictogram in its white square, then the orange arrow pointing on,
+   as tall as the square */
+.toolCard__marks {
+  position: absolute;
+  right: 0.4em;
+  bottom: 0.35em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  font-size: 0.85em;
 }
 
 /* the way on: orange on the blue (about 3:1), the same by day and night,
    because the plate is */
 .toolCard__arrow {
-  position: absolute;
-  right: 0.7em;
-  bottom: 0.55em;
   display: grid;
-  width: 0.9em;
-  height: 0.9em;
+  width: 1.6em;
+  height: 1.6em;
   color: #fb8c4a;
 }
 
