@@ -24,12 +24,6 @@
   --focus-ring: var(--accent);
   /* a hovered or pressed sign darkens the ink by one step: Station Blue Deep */
   --accent-hover: #0f4690;
-  /* Wayfinding Blue: ÖBB's Dark Blue for station wayfinding (NCS S4550 R70B,
-     RGB 30 0 125), on the signs that point somewhere (the tool index's
-     signs, the homepage's way to the tools) and nowhere else; controls keep
-     the working blue above. The same by day and night, as a sign is. */
-  --wayfinding: #1e007d;
-  --wayfinding-hover: #15005a;
   /* the white bar along a pressed sign's foot */
   --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) bottom / 100% 3px no-repeat;
   /* the neutral wash behind a hovered row */
@@ -299,7 +293,7 @@ a.toolCard:focus-visible {
   letter-spacing: 0.01em;
 }
 
-/* the way on: orange on the Wayfinding Blue (about 6.5:1), the same by day and night,
+/* the way on: orange on the blue (about 3:1), the same by day and night,
    because the plate is */
 .toolCard__arrow {
   position: absolute;
@@ -4690,7 +4684,7 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 }
 
 /* the way to the tools as one station sign, after Vienna Hbf's: a single
-   Nachtblau panel with a row per destination, the rows parted by a faint
+   blue panel with a row per destination, the rows parted by a faint
    white rule, and each row's orange arrow in its lower right corner, where
    every sign keeps it */
 .heroTools {
@@ -5235,27 +5229,12 @@ a.toolCard:hover .toolCard__sign {
   color: var(--on-accent);
 }
 
-/* a sign that points somewhere is a wayfinding sign, in Wayfinding Blue */
-:is(.toolCard__sign, .heroTools .buttonLink) {
-  background-color: var(--wayfinding);
-}
-
-.heroTools .buttonLink:hover,
-a.toolCard:hover .toolCard__sign {
-  background-color: var(--wayfinding-hover);
-}
-
-/* the header is wayfinding too: its items light in Wayfinding Blue, and the
-   current section, instead of a foot bar, carries a small orange arrow in its
-   lower right corner, where a station sign keeps its arrow, pointing down to
-   the page under it */
-:is(.navTab, .navFlyout__link):hover:not(:disabled) {
-  background-color: var(--wayfinding-hover);
-}
-
+/* the current header section is a deep sign that, instead of a foot bar,
+   carries a small orange arrow in its lower right corner, where every sign
+   keeps it, pointing down to the page under it */
 .navTab.is-current {
   position: relative;
-  background-color: var(--wayfinding);
+  background-color: var(--accent-hover);
   color: var(--on-accent);
 }
 
