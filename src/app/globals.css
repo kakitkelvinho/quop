@@ -2297,11 +2297,12 @@ html[data-theme="dark"] .fitsColorControl__select {
    (the active tool, the selection, the mode badge's marker).
    =========================================================================== */
 
-/* one radius for the whole builder; things round by meaning (colour dots,
+/* one radius for the whole builder: a 2px edge break, square at a glance, like
+   the 1 mm a machinist eases off a plate. Things round by meaning (colour dots,
    swatches, the wheels' ring geometry) keep their own. On :root because the
    coach marks are portalled out of the workspace. */
 :root {
-  --builder-radius: 0;
+  --builder-radius: 2px;
   --builder-hairline: color-mix(in srgb, var(--foreground) 22%, transparent);
   --builder-hover: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
