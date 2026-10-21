@@ -294,27 +294,32 @@ a.toolCard:focus-visible {
   line-height: 1.2;
 }
 
-/* the tool's name is a direction sign, led by its arrow */
+/* the tool's name on a station sign: one wide plate, the same width on every
+   card so a section reads as a row of platform signs, the name set left in
+   white with a thin white rule inset from the edge, as on an enamel sign */
 .toolCard__sign {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.3em 0.75em 0.3em 0.3em;
+  flex: 0 1 22rem;
+  max-width: 100%;
+  min-height: 2.6em;
+  padding: 0.45em 0.9em;
+  letter-spacing: 0.01em;
+}
+
+.toolCard__sign::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1.5px solid var(--on-accent);
+  border-radius: var(--radius);
+  pointer-events: none;
 }
 
 .toolCard p {
   color: var(--muted);
   line-height: 1.55;
-}
-
-/* the tool's result, in the readout's mono: a label, not a plate */
-.toolCard__sample {
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  font-weight: 500;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -491,7 +496,7 @@ select.linkedField__unit {
 
 /* Labels can't be pressed, so they wear no plate: muted, uppercase and
    tracked, behind a small square of the ink, as the builder's mode badge */
-:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .toolCard__sample, .chapter__status) {
+:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .chapter__status) {
   display: inline-flex;
   align-items: center;
   gap: 0.5em;
@@ -501,7 +506,7 @@ select.linkedField__unit {
   line-height: 1.3;
 }
 
-:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .toolCard__sample, .chapter__status)::before {
+:is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .chapter__status)::before {
   content: "";
   flex: none;
   width: 0.5em;
