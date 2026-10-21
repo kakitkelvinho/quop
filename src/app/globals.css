@@ -8,9 +8,9 @@
   --foreground: #111111;
   --muted: #666666;
   --border: rgb(0 0 0 / 0.12);
-  --accent: #1a5fb4;
-  --accent-strong: #0f4690;
-  --accent-soft: rgb(26 95 180 / 0.09);
+  --accent: #1e057d;
+  --accent-strong: #15035a;
+  --accent-soft: rgb(30 5 125 / 0.09);
   /* lettering on a sign plate, in both themes */
   --on-accent: #ffffff;
   /* words in the ink: blue by day; white at night, like a sign's lettering */
@@ -23,7 +23,7 @@
      the 3:1 a focus indicator needs against the page */
   --focus-ring: var(--accent);
   /* a hovered or pressed sign darkens the ink by one step: Station Blue Deep */
-  --accent-hover: #0f4690;
+  --accent-hover: #15035a;
   /* the white bar along a pressed sign's foot */
   --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) bottom / 100% 3px no-repeat;
   /* the neutral wash behind a hovered row */
@@ -45,9 +45,9 @@ html[data-theme="dark"] {
   /* one ink, day and night: a fill keeps the day's station blue (white on it
      is about 6:1), thin marks lift lighter to clear 3:1 on black, and words
      never take it: they go white and get their emphasis from size and weight */
-  --accent: #1a5fb4;
+  --accent: #1e057d;
   --accent-strong: #ffffff;
-  --accent-soft: rgb(26 95 180 / 0.38);
+  --accent-soft: rgb(30 5 125 / 0.38);
   --accent-text: var(--foreground);
   /* the ring: the ink lifted to about #4f8dd6, 6:1 on black, where the
      plate's own blue would sink into the night */
