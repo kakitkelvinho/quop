@@ -1,261 +1,460 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-19T13:26:15Z",
+  "generatedAt": "2026-10-21T00:00:00Z",
   "title": "Design System: QUOP",
   "extensions": {
     "colorMeta": {
-      "oxblood-ink": {
+      "station-blue": {
         "role": "primary",
-        "displayName": "Oxblood Ink",
-        "canonical": "#8b1e3f",
-        "themePair": "lamp-amber",
-        "tonalRamp": ["#2a0a13", "#41101d", "#61122b", "#8b1e3f", "#a83a54", "#c46a7f", "#dea3b1", "#f3d8de"]
+        "displayName": "Station Blue",
+        "canonical": "#1a5fb4",
+        "cssVar": "--accent",
+        "purpose": "The only blue and the only accent, day and night: every sign plate, label markers, the focus ring by day, result emphasis, the Tabletop selection. White lettering on it is about 6:1."
       },
-      "oxblood-ink-deep": {
+      "station-blue-deep": {
         "role": "primary-strong",
-        "displayName": "Oxblood Ink Deep",
-        "canonical": "#61122b",
-        "themePair": "lamp-amber-light",
-        "tonalRamp": ["#1c0710", "#2d0b1a", "#61122b", "#7c1836", "#9a2c48", "#bb5a6f", "#dd94a2", "#f4cdd4"]
+        "displayName": "Station Blue Deep",
+        "canonical": "#0f4690",
+        "cssVar": "--accent-hover",
+        "purpose": "A sign under the pointer, pressed, open or current. Also --accent-strong by day (emphasis text, links); at night --accent-strong is white."
       },
-      "oxblood-ink-soft": {
+      "station-blue-soft": {
         "role": "primary-wash",
-        "displayName": "Oxblood Ink Soft",
-        "canonical": "rgba(139, 30, 63, 0.1)",
-        "themePair": "lamp-amber-soft"
+        "displayName": "Station Blue Soft",
+        "canonical": "rgba(26, 95, 180, 0.09)",
+        "cssVar": "--accent-soft",
+        "themePair": "station-blue-soft-night",
+        "purpose": "Faint wash behind a readout, inline code or a file drop under the pointer. Never a large fill, never the active state."
       },
-      "lamp-amber": {
-        "role": "primary",
-        "displayName": "Lamp Amber",
-        "canonical": "#f4b942",
-        "themePair": "oxblood-ink",
-        "tonalRamp": ["#3d2c05", "#5c4308", "#8a640c", "#b98811", "#d9a220", "#f4b942", "#f8cf7c", "#fbe6b8"]
-      },
-      "lamp-amber-light": {
-        "role": "primary-strong",
-        "displayName": "Lamp Amber Light",
-        "canonical": "#ffd67c",
-        "themePair": "oxblood-ink-deep",
-        "tonalRamp": ["#4a3a12", "#6e561a", "#a17f26", "#c9a137", "#e6bd52", "#ffd67c", "#ffe3a3", "#fff1d1"]
-      },
-      "lamp-amber-soft": {
+      "station-blue-soft-night": {
         "role": "primary-wash",
-        "displayName": "Lamp Amber Soft",
-        "canonical": "rgba(244, 185, 66, 0.14)",
-        "themePair": "oxblood-ink-soft"
+        "displayName": "Station Blue Soft (night)",
+        "canonical": "rgba(26, 95, 180, 0.38)",
+        "cssVar": "--accent-soft",
+        "themePair": "station-blue-soft"
       },
-      "ember-orange": {
-        "role": "wayfinding",
-        "displayName": "Ember Orange",
-        "canonical": "#ff9d5c",
-        "purpose": "Calculators section identifier"
+      "station-ring-night": {
+        "role": "focus",
+        "displayName": "Station Ring",
+        "canonical": "#4f8dd6",
+        "cssVar": "--focus-ring",
+        "derivation": "color-mix(in srgb, var(--accent) 55%, #8fc4ff)",
+        "themePair": "station-blue",
+        "purpose": "The ink as a thin mark on black: focus rings, outlines, selection borders, the 3D selection ring. About 6:1 on black. By day --focus-ring is Station Blue itself."
       },
-      "sky-blue": {
-        "role": "wayfinding",
-        "displayName": "Sky Blue",
-        "canonical": "#6da8ff",
-        "purpose": "Theory section identifier"
+      "sign-lettering": {
+        "role": "on-primary",
+        "displayName": "Sign Lettering",
+        "canonical": "#ffffff",
+        "cssVar": "--on-accent",
+        "purpose": "Words on a plate, a pictogram's outline and its square's border, the pressed sign's foot bar. Same in both themes."
       },
-      "seafoam-teal": {
-        "role": "wayfinding",
-        "displayName": "Seafoam Teal",
-        "canonical": "#75d7c0",
-        "purpose": "Plotters section identifier"
+      "sign-arrow-orange": {
+        "role": "signal",
+        "displayName": "Sign Arrow Orange",
+        "canonical": "#fb8c4a",
+        "purpose": "The direction arrow in a sign's lower right corner (.signArrow, .toolCard__arrow, the current nav tab's down arrow). About 3:1 on the blue: a mark to see, not words to read. Same day and night. Also the Tabletop's Clear wedge tint at night (#c2410c by day)."
       },
-      "coral-pink": {
-        "role": "wayfinding",
-        "displayName": "Coral Pink",
-        "canonical": "#f06f86",
-        "purpose": "Experiment section identifier"
-      },
-      "warm-parchment": {
+      "paper-white": {
         "role": "neutral-bg",
-        "displayName": "Warm Parchment",
-        "canonical": "#f7f1e6",
-        "themePair": "midnight-slate"
+        "displayName": "Paper White",
+        "canonical": "#ffffff",
+        "cssVar": "--background",
+        "themePair": "true-black"
       },
-      "midnight-slate": {
+      "true-black": {
         "role": "neutral-bg",
-        "displayName": "Midnight Slate",
-        "canonical": "#151821",
-        "themePair": "warm-parchment"
+        "displayName": "True Black",
+        "canonical": "#000000",
+        "cssVar": "--background",
+        "themePair": "paper-white",
+        "purpose": "Night page background, and --background-muted at night (identical by design)."
       },
-      "parchment-muted": {
+      "paper-muted": {
         "role": "neutral-bg-muted",
-        "displayName": "Parchment Muted",
-        "canonical": "#efe6d5",
-        "themePair": "midnight-slate-muted"
-      },
-      "midnight-slate-muted": {
-        "role": "neutral-bg-muted",
-        "displayName": "Midnight Slate Muted",
-        "canonical": "#1b2230",
-        "themePair": "parchment-muted"
+        "displayName": "Paper Muted",
+        "canonical": "#fafafa",
+        "cssVar": "--background-muted",
+        "themePair": "true-black",
+        "purpose": "The chalkboard's radial falloff and nested surfaces."
       },
       "paper-surface": {
         "role": "surface",
         "displayName": "Paper Surface",
-        "canonical": "rgba(255, 255, 255, 0.92)",
+        "canonical": "#ffffff",
+        "cssVar": "--surface",
         "themePair": "ink-panel"
       },
       "ink-panel": {
         "role": "surface",
         "displayName": "Ink Panel",
-        "canonical": "rgba(28, 34, 48, 0.92)",
-        "themePair": "paper-surface"
+        "canonical": "rgba(10, 10, 10, 0.92)",
+        "cssVar": "--surface",
+        "themePair": "paper-surface",
+        "purpose": "The nav bar and floating panels at night, with backdrop blur on the nav. Cards never take it."
       },
       "paper-surface-strong": {
         "role": "surface-strong",
         "displayName": "Paper Surface Strong",
-        "canonical": "#fffdf8",
+        "canonical": "#fafafa",
+        "cssVar": "--surface-strong",
         "themePair": "ink-panel-strong"
       },
       "ink-panel-strong": {
         "role": "surface-strong",
         "displayName": "Ink Panel Strong",
-        "canonical": "#222a3a",
-        "themePair": "paper-surface-strong"
+        "canonical": "#111111",
+        "cssVar": "--surface-strong",
+        "themePair": "paper-surface-strong",
+        "purpose": "Opaque fill for inputs, nested panels and every Tabletop HUD plate."
       },
       "ink-foreground": {
         "role": "text",
         "displayName": "Ink Foreground",
-        "canonical": "#1f2933",
+        "canonical": "#111111",
+        "cssVar": "--foreground",
         "themePair": "paper-foreground"
       },
       "paper-foreground": {
         "role": "text",
         "displayName": "Paper Foreground",
-        "canonical": "#f2f4f8",
+        "canonical": "#ffffff",
+        "cssVar": "--foreground",
         "themePair": "ink-foreground"
       },
       "slate-muted": {
         "role": "text-muted",
         "displayName": "Slate Muted",
-        "canonical": "#5b6675",
+        "canonical": "#666666",
+        "cssVar": "--muted",
         "themePair": "cool-gray-muted"
       },
       "cool-gray-muted": {
         "role": "text-muted",
         "displayName": "Cool Gray Muted",
-        "canonical": "#b1bac7",
+        "canonical": "#a1a1a1",
+        "cssVar": "--muted",
         "themePair": "slate-muted"
       },
-      "sepia-border": {
+      "hairline-border": {
         "role": "border",
-        "displayName": "Sepia Border",
-        "canonical": "rgba(102, 51, 0, 0.14)",
-        "themePair": "frost-border"
+        "displayName": "Hairline Border",
+        "canonical": "rgba(0, 0, 0, 0.12)",
+        "cssVar": "--border",
+        "themePair": "frost-border",
+        "purpose": "The one line a card gets: between two cards, under the nav, around inputs and floating panels."
       },
       "frost-border": {
         "role": "border",
         "displayName": "Frost Border",
-        "canonical": "rgba(255, 255, 255, 0.1)",
-        "themePair": "sepia-border"
+        "canonical": "rgba(255, 255, 255, 0.14)",
+        "cssVar": "--border",
+        "themePair": "hairline-border"
+      },
+      "chalk-mark-day": {
+        "role": "mark",
+        "displayName": "Chalk Mark (graphite)",
+        "canonical": "rgb(17 17 17)",
+        "cssVar": "--mark",
+        "themePair": "chalk-mark-night",
+        "purpose": "Triplet every homepage hand-drawn stroke is mixed from, capped by --chalk-alpha (0.26 day). Filter url(#quop-graphite)."
+      },
+      "chalk-mark-night": {
+        "role": "mark",
+        "displayName": "Chalk Mark (chalk)",
+        "canonical": "rgb(255 255 255)",
+        "cssVar": "--mark",
+        "themePair": "chalk-mark-day",
+        "purpose": "Night chalk, capped by --chalk-alpha (0.30). Filter url(#quop-chalk)."
       }
     },
     "typographyMeta": {
-      "display": { "displayName": "Display", "purpose": "Page h1s, one per page." },
-      "headline": { "displayName": "Headline", "purpose": "h2s inside cards and sections." },
-      "body": { "displayName": "Body", "purpose": "Running copy and lead paragraphs (lead steps to 1.08rem, muted color, 44rem measure)." },
-      "label": { "displayName": "Label", "purpose": "Uppercase kicker tags, nav pill text, cluster labels. Structure, never content." },
-      "readout": { "displayName": "Readout", "purpose": "FITS crosshair coordinates, colorbar labels, mono text inputs." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "One h1 per page on the homepage and section indexes, light (400) because at that size weight shouts. Homepage chapter headings stay light with it."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "h2s inside cards and sections, bold (700): with card frames gone the heading tells one group from the next. Tool pages set every heading 700; toolTitle is 700 clamp(1.8rem, 3.4vw, 2.5rem)."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running copy in Source Sans 3 (root 106.25%). Lead steps to 1.08rem, muted, 44rem measure."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Sign lettering, header tab text, and structural labels (kickers, cluster labels, beta badge) in --muted behind a 0.5em square --accent marker. Structure, never content (The Case Rule)."
+      },
+      "readout": {
+        "displayName": "Readout",
+        "purpose": "Source Sans with tabular figures at 500: FITS crosshair coordinates, colorbar labels, header values, the Tabletop's lengths and key caps. Not mono. Calculator answers step up to the Result scale (800, clamp(2rem, 5vw, 3.2rem))."
+      },
+      "code": {
+        "displayName": "Code",
+        "purpose": "System mono, not shipped: inline code, the Tabletop's JSON and AI brief, the plotters' typed-array inputs. Code only; measured values are Readout."
+      },
+      "equation": {
+        "displayName": "Equation",
+        "purpose": "EB Garamond italic, only for the hand-set equations on the homepage chalkboard. Nothing else is serif."
+      }
     },
     "shadows": [
-      { "name": "card-ambient-light", "value": "0 20px 50px rgba(31, 41, 51, 0.1)", "purpose": "Resting shadow under sectionCard/inputCard/infoPanel in light theme." },
-      { "name": "card-ambient-dark", "value": "0 28px 60px rgba(0, 0, 0, 0.35)", "purpose": "Resting shadow under sectionCard/inputCard/infoPanel in dark theme." },
-      { "name": "control-ambient", "value": "0 12px 24px rgba(91, 102, 117, 0.14)", "purpose": "Resting shadow under buttonControl (plotter/data action buttons)." },
-      { "name": "control-ambient-hover", "value": "0 16px 28px rgba(91, 102, 117, 0.18)", "purpose": "Deepened shadow on buttonControl hover, paired with translateY(-2px)." },
-      { "name": "focus-ring-light", "value": "0 0 0 3px rgba(139, 30, 63, 0.3)", "purpose": "Keyboard focus ring, light theme (outline-offset 3px)." },
-      { "name": "focus-ring-dark", "value": "0 0 0 3px rgba(244, 185, 66, 0.4)", "purpose": "Keyboard focus ring, dark theme (outline-offset 3px)." }
+      {
+        "name": "none",
+        "value": "none",
+        "purpose": "The Flat Sheet Rule: no card, button, input, panel or menu carries a box-shadow or hover lift. Depth belongs to the Tabletop's 3D scene."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid var(--focus-ring); outline-offset: 2px",
+        "purpose": "Keyboard focus everywhere via :where(:focus-visible). Station Blue #1a5fb4 by day, Station Ring #4f8dd6 by night. Header items draw it inset (outline-offset: -3px)."
+      },
+      {
+        "name": "hairline",
+        "value": "1px solid var(--border)",
+        "purpose": "Between two cards, under the nav, around inputs, flyouts and popovers. Never around a card."
+      },
+      {
+        "name": "builder-hairline",
+        "value": "1px solid color-mix(in srgb, var(--foreground) 22%, transparent)",
+        "purpose": "Separates an opaque Tabletop HUD plate from the 3D scene, visible on the night void."
+      },
+      {
+        "name": "sign-foot",
+        "value": "linear-gradient(var(--on-accent), var(--on-accent)) center bottom 2px / calc(100% - 4px) 3px no-repeat",
+        "purpose": "Not a shadow: the 3px white bar along a pressed, open or active sign's foot, inset 2px. Carried as --sign-foot."
+      },
+      {
+        "name": "phosphor-glow",
+        "value": "0 0 14px rgb(156 255 143 / 0.45)",
+        "purpose": "FITS crosshair glow only: instrument output, not chrome."
+      }
     ],
     "motion": [
-      { "name": "hover-lift", "value": "transform: translateY(-1px) to translateY(-2px); transition 160ms ease", "purpose": "Standard hover lift on buttons, cards, and the theme toggle." }
+      {
+        "name": "sign-hover",
+        "value": "background-color 120ms ease",
+        "purpose": "Header tab turning into a sign under the pointer. Plates change colour only; nothing lifts."
+      },
+      {
+        "name": "row-wash",
+        "value": "background-color 160ms ease",
+        "purpose": "Tool rows and the file drop taking their hover wash."
+      },
+      {
+        "name": "chalk-write",
+        "value": "clip-path 1.6s cubic-bezier(0.32, 0.12, 0.28, 1)",
+        "purpose": "A board equation written in from the left; holds 8-13s, then fades."
+      },
+      {
+        "name": "chalk-frame-draw",
+        "value": "stroke-dashoffset 0.9s cubic-bezier(0.3, 0.1, 0.25, 1)",
+        "purpose": "A chalk card's wobbled frame drawn on when it scrolls into view; glyph and text follow on a 0.45s stagger. Collapsed under prefers-reduced-motion."
+      }
     ],
     "breakpoints": [
-      { "name": "custom-md", "value": "900px", "purpose": "Custom breakpoint (not Tailwind default) collapsing dual-panel/visualizer layouts to single column." },
-      { "name": "custom-sm", "value": "640px", "purpose": "Custom breakpoint for field wrapping and role-row stacking." },
-      { "name": "custom-sm-alt", "value": "720px", "purpose": "Alternate small breakpoint used in FITS viewer figure/colorbar layout." },
-      { "name": "tailwind-sm", "value": "640px", "purpose": "Tailwind's sm: prefix, used on newer Tailwind-authored components (nav, hero) alongside the custom breakpoints above." }
+      {
+        "name": "custom-md",
+        "value": "900px",
+        "purpose": "Collapses the visualizer sidebar/plot layout to one column."
+      },
+      {
+        "name": "custom-sm-alt",
+        "value": "720px",
+        "purpose": "Tool rows set the sign and its sentence side by side; FITS viewer figure/colorbar layout."
+      },
+      {
+        "name": "custom-sm",
+        "value": "640px",
+        "purpose": "Field wrapping; chalk cards go to two columns."
+      },
+      {
+        "name": "chalk-cards-4",
+        "value": "1000px",
+        "purpose": "Chalk section cards run four across."
+      },
+      {
+        "name": "tailwind-sm",
+        "value": "640px",
+        "purpose": "Tailwind's sm: on newer Tailwind-authored components (nav, shell). Match whichever idiom a file already uses."
+      }
     ]
   },
   "components": [
     {
-      "name": "Primary Button",
+      "name": "Sign (buttonLink)",
       "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Solid-fill call-to-action link, e.g. \"Open calculator\".",
-      "html": "<a class=\"ds-btn-primary\" href=\"#\">Open calculator</a>",
-      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; width: fit-content; padding: 0.72rem 1rem; border-radius: 0.8rem; background: #8b1e3f; color: #fffaf1; font-weight: 700; text-decoration: none; transition: transform 160ms ease; } .ds-btn-primary:hover { transform: translateY(-1px); } .ds-btn-primary:focus-visible { outline: 3px solid rgba(139, 30, 63, 0.3); outline-offset: 3px; }"
+      "refersTo": "sign-button",
+      "description": "Whatever can be pressed is a station sign: a square Station Blue plate with white lettering, deepening on hover, the orange arrow in its lower right corner.",
+      "html": "<a class=\"ds-sign ds-sign--arrow\" href=\"#\">Open the Tabletop<span class=\"ds-sign-arrow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12h17M13 5l7 7-7 7\"/></svg></span></a>",
+      "css": ".ds-sign { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; width: fit-content; border: 0; border-radius: var(--radius, 2px); background-color: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; text-decoration: none; box-shadow: none; cursor: pointer; padding: 0.6rem 0.9rem; transition: background-color 120ms ease; } .ds-sign:hover { background-color: var(--accent-hover, #0f4690); } .ds-sign:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-sign:disabled, .ds-sign[aria-disabled=\"true\"] { opacity: 0.4; cursor: not-allowed; } .ds-sign--arrow { position: relative; padding-right: 2.2em; } .ds-sign-arrow { position: absolute; right: 0.7em; bottom: 0.55em; display: grid; width: 0.9em; height: 0.9em; color: #fb8c4a; } .ds-sign-arrow svg { width: 100%; height: 100%; overflow: visible; } .ds-sign-arrow path { fill: none; stroke: currentColor; stroke-width: 2.5px; stroke-linecap: square; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }"
     },
     {
-      "name": "Action Grid Button",
+      "name": "Pictogram Sign (SignIcon)",
       "kind": "button",
-      "refersTo": "button-control",
-      "description": "Metallic-gradient hardware-style button for plotter/calculator actions, distinct from the ink-accent primary button.",
-      "html": "<button class=\"ds-btn-control\">Load sample data</button>",
-      "css": ".ds-btn-control { display: grid; gap: 0.2rem; justify-items: start; min-height: 4.5rem; padding: 0.95rem 1rem; border: 1px solid rgba(102, 51, 0, 0.14); border-radius: 1rem; background: linear-gradient(135deg, #d7dbe2, #bcc3cd); box-shadow: 0 12px 24px rgba(91, 102, 117, 0.14); color: #1f2933; font-weight: 700; cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease; } .ds-btn-control:hover { transform: translateY(-2px); box-shadow: 0 16px 28px rgba(91, 102, 117, 0.18); }"
+      "refersTo": "sign-pictogram",
+      "description": "A sign with its icon as a station pictogram: a white outline glyph in a 1.6em white-bordered square leading the words; icon-only signs pad the square by 0.3em; pressed signs gain the white foot bar.",
+      "html": "<div style=\"display:flex;gap:0.75rem\"><button class=\"ds-sign ds-sign--icon\" type=\"button\"><span class=\"ds-sign-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 16V3M6 9l6-6 6 6M3 15v6h18v-6\"/></svg></span>Choose a file</button><button class=\"ds-sign ds-sign--icon-only\" type=\"button\" aria-label=\"Theme\"><span class=\"ds-sign-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3\"/></svg></span></button><button class=\"ds-sign ds-sign--icon-only is-pressed\" type=\"button\" aria-pressed=\"true\" aria-label=\"Spectrum\"><span class=\"ds-sign-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 12c2.5-6.5 5-6.5 7.5 0s5 6.5 7.5 0 3.5-4.5 5-3\"/></svg></span></button></div>",
+      "css": ".ds-sign { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; width: fit-content; border: 0; border-radius: var(--radius, 2px); background-color: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; text-decoration: none; box-shadow: none; cursor: pointer; } .ds-sign:hover { background-color: var(--accent-hover, #0f4690); } .ds-sign:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-sign--icon { padding: 0.3em 0.9em 0.3em 0.3em; } .ds-sign--icon-only { padding: 0.3em; } .ds-sign.is-pressed { background: linear-gradient(#ffffff, #ffffff) center bottom 2px / calc(100% - 4px) 3px no-repeat; background-color: var(--accent-hover, #0f4690); } .ds-sign-icon { display: inline-grid; flex: none; place-items: center; width: 1.6em; height: 1.6em; border: 1.5px solid currentColor; border-radius: var(--radius, 2px); } .ds-sign-icon svg { width: 60%; height: 60%; overflow: visible; } .ds-sign-icon svg :is(path, circle, rect) { fill: none; stroke: currentColor; stroke-width: 1.5px; stroke-linecap: square; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }"
     },
     {
-      "name": "Section Card",
+      "name": "Action Grid Sign (buttonControl)",
+      "kind": "button",
+      "refersTo": "sign-button",
+      "description": "Plotter and calculator data actions: signs with a name and a line of what they give. The metal gradient and secondary variant are retired.",
+      "html": "<button class=\"ds-action\" type=\"button\"><span class=\"ds-action-title\">Load sample data</span><span class=\"ds-action-meta\">A Gaussian beam profile</span></button>",
+      "css": ".ds-action { display: inline-flex; align-items: center; justify-content: center; gap: 0.5em; width: fit-content; border: 0; border-radius: var(--radius, 2px); background-color: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 800; text-decoration: none; box-shadow: none; cursor: pointer; display: grid; gap: 0.2rem; justify-items: start; min-height: 4.5rem; padding: 0.95rem 1rem; text-align: left; } .ds-action:hover { background-color: var(--accent-hover, #0f4690); } .ds-action:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-action:disabled { opacity: 0.4; cursor: not-allowed; } .ds-action-title { font-size: 1rem; line-height: 1.1; } .ds-action-meta { font-size: 0.75rem; font-weight: 600; opacity: 0.9; }"
+    },
+    {
+      "name": "Tool Row (toolCard)",
       "kind": "card",
-      "refersTo": "card-primary",
-      "description": "Kicker-labeled card used to list calculators/plotters, opening with an uppercase category tag before its heading.",
-      "html": "<article class=\"ds-card\"><p class=\"ds-card-kicker\">Calculator</p><h2 class=\"ds-card-title\">Energy-Wavelength</h2><p class=\"ds-card-body\">Convert between photon energy and wavelength.</p><a class=\"ds-btn-primary\" href=\"#\">Open calculator</a></article>",
-      "css": ".ds-card { display: grid; gap: 0.85rem; padding: 1.3rem; border: 1px solid rgba(102, 51, 0, 0.14); border-radius: 1.1rem; background: rgba(255, 255, 255, 0.92); box-shadow: 0 20px 50px rgba(31, 41, 51, 0.1); } .ds-card-kicker { font-size: 0.84rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #61122b; } .ds-card-title { font-size: clamp(1.25rem, 2.4vw, 1.9rem); line-height: 1.15; font-weight: 700; margin: 0; } .ds-card-body { color: #5b6675; margin: 0; }"
+      "refersTo": "card",
+      "description": "An index row after OeBB's platform signs: the tool's name on a 6:1 plate 26rem wide, its pictogram and orange arrow in the lower right corner, one muted sentence beside it. The whole row is one link with a neutral wash on hover; no hairlines.",
+      "html": "<a class=\"ds-tool\" href=\"#\"><span class=\"ds-tool-sign\">Energy and wavelength<span class=\"ds-tool-marks\"><span class=\"ds-sign-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 12c2.5-6.5 5-6.5 7.5 0s5 6.5 7.5 0 3.5-4.5 5-3\"/></svg></span><span class=\"ds-tool-arrow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12h17M13 5l7 7-7 7\"/></svg></span></span></span><span class=\"ds-tool-text\">Convert a photon's energy to its wavelength and back.</span></a>",
+      "css": ".ds-tool { display: flex; align-items: center; gap: 1.8rem; padding: 1rem 0; color: var(--foreground, #111111); text-decoration: none; font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; transition: background-color 160ms ease; } .ds-tool:hover { background: color-mix(in srgb, var(--foreground, #111111) 5%, transparent); } .ds-tool:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-tool-sign { position: relative; display: flex; align-items: center; justify-content: center; flex: 0 1 26rem; max-width: 100%; aspect-ratio: 6 / 1; padding: 0.2em 3.6em 0.65em; border-radius: var(--radius, 2px); background-color: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); font-size: 1.35rem; font-weight: 800; letter-spacing: 0.01em; text-align: center; transition: background-color 160ms ease; } .ds-tool:hover .ds-tool-sign { background-color: var(--accent-hover, #0f4690); } .ds-tool-marks { position: absolute; right: 0.4em; bottom: 0.35em; display: flex; align-items: center; gap: 0.25em; font-size: 0.85em; } .ds-tool-arrow { display: grid; width: 1.6em; height: 1.6em; color: #fb8c4a; } .ds-tool-arrow svg { width: 100%; height: 100%; overflow: visible; } .ds-tool-arrow path { fill: none; stroke: currentColor; stroke-width: 2.5px; stroke-linecap: square; stroke-linejoin: miter; vector-effect: non-scaling-stroke; } .ds-tool-text { color: var(--muted, #666666); } .ds-sign-icon { display: inline-grid; flex: none; place-items: center; width: 1.6em; height: 1.6em; border: 1.5px solid currentColor; border-radius: var(--radius, 2px); } .ds-sign-icon svg { width: 60%; height: 60%; overflow: visible; } .ds-sign-icon svg :is(path, circle, rect) { fill: none; stroke: currentColor; stroke-width: 1.5px; stroke-linecap: square; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }"
+    },
+    {
+      "name": "Hero Tools (heroTools)",
+      "kind": "nav",
+      "refersTo": "sign-button",
+      "description": "The homepage's way to the tools as one stacked station sign after Vienna Hbf: a single 22rem blue panel, a row per destination parted by a faint white rule, each row's orange arrow in its lower right corner. Only the outer corners take --radius; each row deepens on its own.",
+      "html": "<nav class=\"ds-hero-tools\"><a href=\"#\">Tabletop<span class=\"ds-sign-arrow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12h17M13 5l7 7-7 7\"/></svg></span></a><a href=\"#\">Plotters<span class=\"ds-sign-arrow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12h17M13 5l7 7-7 7\"/></svg></span></a><a href=\"#\">Calculators<span class=\"ds-sign-arrow\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M3 12h17M13 5l7 7-7 7\"/></svg></span></a></nav>",
+      "css": ".ds-hero-tools { display: grid; width: min(100%, 22rem); } .ds-hero-tools a { position: relative; display: flex; align-items: center; padding: 0.8em 2.4em 0.8em 1.1em; background-color: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 1.05rem; font-weight: 800; letter-spacing: 0.01em; text-decoration: none; transition: background-color 120ms ease; } .ds-hero-tools a:first-child { border-radius: var(--radius, 2px) var(--radius, 2px) 0 0; } .ds-hero-tools a:last-child { border-radius: 0 0 var(--radius, 2px) var(--radius, 2px); } .ds-hero-tools a + a { border-top: 1px solid color-mix(in srgb, #ffffff 22%, transparent); } .ds-hero-tools a:hover { background-color: var(--accent-hover, #0f4690); } .ds-hero-tools a:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-sign-arrow { position: absolute; right: 0.7em; bottom: 0.55em; display: grid; width: 0.9em; height: 0.9em; color: #fb8c4a; } .ds-sign-arrow svg { width: 100%; height: 100%; overflow: visible; } .ds-sign-arrow path { fill: none; stroke: currentColor; stroke-width: 2.5px; stroke-linecap: square; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }"
+    },
+    {
+      "name": "Header Nav Tab",
+      "kind": "nav",
+      "refersTo": "nav-tab",
+      "description": "Square, full-height header tabs, transparent and muted at rest, a sign on hover, and a deep sign with a small orange down arrow in the lower right corner when current. In the phone sheet the current row is the plate alone.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-tab ds-nav-tab--wordmark\" href=\"#\">Quop</a><a class=\"ds-nav-tab\" href=\"#\">Notes</a><a class=\"ds-nav-tab is-current\" href=\"#\" aria-current=\"page\">Calculators</a><a class=\"ds-nav-tab\" href=\"#\">Plotters</a></nav>",
+      "css": ".ds-nav { display: flex; height: 3.25rem; border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.12)); background: var(--surface, #ffffff); } .ds-nav-tab { position: relative; display: inline-flex; align-items: center; justify-content: center; height: 100%; padding: 0 1rem; color: var(--muted, #666666); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; transition: background-color 120ms ease; } .ds-nav-tab--wordmark { padding: 0 0.75rem; color: var(--foreground, #111111); font-size: 0.875rem; letter-spacing: 0.2em; } .ds-nav-tab:hover { background-color: var(--accent-hover, #0f4690); color: var(--on-accent, #ffffff); } .ds-nav-tab:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: -3px; } .ds-nav-tab.is-current { background-color: var(--accent-hover, #0f4690); color: var(--on-accent, #ffffff); } .ds-nav-tab.is-current::after { content: \"\"; position: absolute; right: 0.3rem; bottom: 0.3rem; width: 0.7rem; height: 0.7rem; background: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fb8c4a' stroke-width='3.5' stroke-linecap='square'%3E%3Cpath d='M12 3v16M5 13l7 7 7-7'/%3E%3C/svg%3E\") center / contain no-repeat; pointer-events: none; }"
+    },
+    {
+      "name": "Frameless Card (sectionCard)",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The Hairline Rule: a card is content grouped on the page with no border, fill, shadow or radius, padded top and bottom only; one hairline runs between two cards. A group may carry a muted uppercase label behind a small square accent marker, never a plate.",
+      "html": "<div><section class=\"ds-card\"><p class=\"ds-card-label\">Inputs</p><h2 class=\"ds-card-title\">Pulse energy</h2><p class=\"ds-card-body\">Average power divided by repetition rate.</p></section><section class=\"ds-card\"><h2 class=\"ds-card-title\">Peak fluence</h2><p class=\"ds-card-body\">2E over pi w squared, at the beam's centre.</p></section></div>",
+      "css": ".ds-card { display: grid; gap: 0.85rem; padding: 1.3rem 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--foreground, #111111); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; } .ds-card + .ds-card { border-top: 1px solid var(--border, rgba(0, 0, 0, 0.12)); } .ds-card-label { display: inline-flex; align-items: center; gap: 0.5em; width: fit-content; margin: 0; color: var(--muted, #666666); font-size: 0.84rem; font-weight: 800; letter-spacing: 0.08em; line-height: 1.3; text-transform: uppercase; } .ds-card-label::before { content: \"\"; flex: none; width: 0.5em; height: 0.5em; background: var(--accent, #1a5fb4); } .ds-card-title { margin: 0; font-size: clamp(1.25rem, 2.4vw, 1.9rem); font-weight: 700; line-height: 1.15; } .ds-card-body { margin: 0; color: var(--muted, #666666); }"
     },
     {
       "name": "Text Field",
       "kind": "input",
       "refersTo": "input-field",
-      "description": "Bordered outer container with a borderless inner input and an inline unit label.",
-      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Wavelength</span><div class=\"ds-field-control\"><input type=\"text\" inputmode=\"decimal\" value=\"980\" /><span class=\"ds-field-unit\">nm</span></div></label>",
-      "css": ".ds-field { display: grid; gap: 0.45rem; font-weight: 600; color: #1f2933; } .ds-field-control { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 0.9rem; border: 1px solid rgba(102, 51, 0, 0.14); border-radius: 0.9rem; background: #fffdf8; } .ds-field-control input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #1f2933; font: inherit; } .ds-field-control:focus-within { outline: 3px solid rgba(139, 30, 63, 0.3); outline-offset: 3px; } .ds-field-unit { color: #5b6675; font-weight: 700; }"
+      "description": "A square hairline-bordered control on Paper Surface Strong housing a borderless input and an inline muted unit. Focus is the ink ring, not a border change. Fields are where the user writes, not signs.",
+      "html": "<label class=\"ds-field\"><span>Wavelength</span><span class=\"ds-field-control\"><input type=\"text\" inputmode=\"decimal\" value=\"1030\" /><span class=\"ds-field-unit\">nm</span></span></label>",
+      "css": ".ds-field { display: grid; gap: 0.45rem; color: var(--foreground, #111111); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 600; } .ds-field-control { display: flex; align-items: center; gap: 0.75rem; padding: 0.8rem 0.9rem; border: 1px solid var(--border, rgba(0, 0, 0, 0.12)); border-radius: var(--radius, 2px); background: var(--surface-strong, #fafafa); } .ds-field-control:focus-within { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-field-control input { flex: 1; width: 100%; min-width: 0; border: 0; outline: none; background: transparent; color: var(--foreground, #111111); font: inherit; font-variant-numeric: tabular-nums; caret-color: var(--focus-ring, #1a5fb4); } .ds-field-unit { color: var(--muted, #666666); font-weight: 700; }"
     },
     {
-      "name": "Nav Pill",
-      "kind": "nav",
-      "refersTo": "nav-pill",
-      "description": "Uppercase, letter-spaced navigation link; fills with the ink-accent wash when active or hovered.",
-      "html": "<a class=\"ds-nav-pill ds-nav-pill--active\" href=\"#\">Calculators</a>",
-      "css": ".ds-nav-pill { display: inline-flex; align-items: center; justify-content: center; min-height: 2.65rem; padding: 0 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none; color: #1f2933; transition: background-color 160ms ease, color 160ms ease; } .ds-nav-pill:hover { background: rgba(139, 30, 63, 0.1); color: #61122b; } .ds-nav-pill--active { background: rgba(139, 30, 63, 0.1); color: #61122b; }"
+      "name": "File Drop",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "The one dashed edge in the system: a square drop zone whose 'choose a file' button is a sign with an upload pictogram; the whole zone presses it and it names the file it was given.",
+      "html": "<label class=\"ds-drop\"><span class=\"ds-drop-prompt\"><span class=\"ds-drop-button\"><span class=\"ds-sign-icon\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 16V3M6 9l6-6 6 6M3 15v6h18v-6\"/></svg></span>Choose a file</span>or drop a FITS file here</span><span class=\"ds-drop-name\">m31_r-band.fits</span></label>",
+      "css": ".ds-drop { position: relative; display: grid; gap: 0.5rem; padding: 0.85rem 0.95rem; border: 1px dashed var(--border, rgba(0, 0, 0, 0.12)); border-radius: var(--radius, 2px); background: var(--surface-strong, #fafafa); color: var(--muted, #666666); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 500; cursor: pointer; transition: border-color 160ms ease, background-color 160ms ease; } .ds-drop:hover { border-color: var(--focus-ring, #1a5fb4); background: var(--accent-soft, rgba(26, 95, 180, 0.09)); } .ds-drop:focus-within { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 3px; } .ds-drop-prompt { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; } .ds-drop-button { display: inline-flex; align-items: center; gap: 0.5em; padding: 0.3em 0.75em 0.3em 0.3em; border-radius: var(--radius, 2px); background-color: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); font-weight: 800; } .ds-drop:hover .ds-drop-button { background-color: var(--accent-hover, #0f4690); } .ds-drop-name { color: var(--foreground, #111111); font-size: 0.82rem; font-variant-numeric: tabular-nums; } .ds-sign-icon { display: inline-grid; flex: none; place-items: center; width: 1.6em; height: 1.6em; border: 1.5px solid currentColor; border-radius: var(--radius, 2px); } .ds-sign-icon svg { width: 60%; height: 60%; overflow: visible; } .ds-sign-icon svg :is(path, circle, rect) { fill: none; stroke: currentColor; stroke-width: 1.5px; stroke-linecap: square; stroke-linejoin: miter; vector-effect: non-scaling-stroke; }"
     },
     {
-      "name": "FITS Readout Badge",
+      "name": "Chalk Section Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Homepage only: a link drawn on the board as four wobbled, corner-gapped SVG edges in the --mark chalk, no fill and no box, with a glyph, name, muted tag and tabular route. Links, but deliberately not signs.",
+      "html": "<a class=\"ds-chalk\" href=\"#\"><svg class=\"ds-chalk-frame\" viewBox=\"0 0 200 120\" preserveAspectRatio=\"none\" aria-hidden=\"true\"><path d=\"M8 4 Q100 1 192 5\"/><path d=\"M196 10 Q198 60 195 110\"/><path d=\"M190 116 Q100 119 9 115\"/><path d=\"M4 108 Q2 60 5 11\"/></svg><span class=\"ds-chalk-name\">Calculators</span><span class=\"ds-chalk-tag\">Numbers for the bench.</span><span class=\"ds-chalk-route\">/calculators</span></a>",
+      "css": ".ds-chalk { position: relative; display: grid; gap: 0.5rem; align-content: start; min-height: 10.5rem; padding: 1.6rem 1.375rem 1.5rem; background: transparent; color: var(--foreground, #111111); font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; text-decoration: none; } .ds-chalk-frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; } .ds-chalk-frame path { fill: none; stroke: rgb(var(--mark, 17 17 17) / 0.42); stroke-width: 1.6; stroke-linecap: round; vector-effect: non-scaling-stroke; transition: stroke 160ms ease; } .ds-chalk:hover .ds-chalk-frame path { stroke: rgb(var(--mark, 17 17 17) / 0.7); } .ds-chalk:hover .ds-chalk-name { color: var(--accent-text, #1a5fb4); } .ds-chalk:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-chalk-name { font-size: 1.2rem; font-weight: 700; } .ds-chalk-tag { color: var(--muted, #666666); } .ds-chalk-route { color: var(--muted, #666666); font-size: 0.8rem; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Plotter Instrument Panel (FITS Readout)",
       "kind": "custom",
       "refersTo": "fits-readout",
-      "description": "Signature instrument-panel component: mono-font coordinate readout floating over the FITS image viewport, green-phosphor colored.",
-      "html": "<div class=\"ds-fits-readout\">x: 128&nbsp;&nbsp;y: 64&nbsp;&nbsp;value: 0.842</div>",
-      "css": ".ds-fits-readout { position: absolute; top: 0.8rem; left: 0.8rem; display: inline-flex; gap: 0.75rem; padding: 0.5rem 0.7rem; border: 1px solid rgba(156, 255, 143, 0.38); border-radius: 0.65rem; background: rgba(12, 18, 14, 0.78); color: #b9ffb3; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.78rem; font-weight: 600; backdrop-filter: blur(8px); }"
+      "description": "Signature instrument language for what the plotter shows: green-phosphor crosshair (#9cff8f) and glowing box marker, a translucent dark coordinate badge in #b9ffb3 Source Sans tabular figures. What the user presses around it follows the Sign Rule.",
+      "html": "<div class=\"ds-fits\"><span class=\"ds-fits-h\"></span><span class=\"ds-fits-v\"></span><span class=\"ds-fits-box\"></span><div class=\"ds-fits-readout\"><span>x 128</span><span>y 64</span><span>value 0.842</span></div></div>",
+      "css": ".ds-fits { position: relative; width: 100%; height: 12rem; border: 1px solid var(--border, rgba(0, 0, 0, 0.12)); border-radius: var(--radius, 2px); background: radial-gradient(circle at 60% 55%, #6b6b6b, #111111 60%); overflow: hidden; } .ds-fits-h, .ds-fits-v { position: absolute; background: #9cff8f; box-shadow: 0 0 14px rgb(156 255 143 / 0.45); } .ds-fits-h { left: 0; right: 0; top: 55%; height: 2px; } .ds-fits-v { top: 0; bottom: 0; left: 60%; width: 2px; } .ds-fits-box { position: absolute; left: 60%; top: 55%; width: 14px; height: 14px; border: 2px solid #9cff8f; border-radius: var(--radius, 2px); background: rgb(156 255 143 / 0.1); transform: translate(-50%, -50%); box-shadow: 0 0 16px rgb(156 255 143 / 0.38); } .ds-fits-readout { position: absolute; top: 0.8rem; left: 0.8rem; display: inline-flex; flex-wrap: wrap; gap: 0.75rem; padding: 0.5rem 0.7rem; border: 1px solid rgb(156 255 143 / 0.38); border-radius: var(--radius, 2px); background: rgb(12 18 14 / 0.78); color: #b9ffb3; font-family: var(--font-source-sans), -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 0.78rem; font-weight: 500; font-variant-numeric: tabular-nums; backdrop-filter: blur(8px); }"
+    },
+    {
+      "name": "Tabletop HUD Island",
+      "kind": "custom",
+      "refersTo": "sign-button",
+      "description": "The Sign Rule's scoped exception: HUD buttons are neutral opaque plates with a builder hairline at rest, a neutral wash on hover, and become Station Blue signs only when pressed, open or live. Flat, square, no shadow, no backdrop blur.",
+      "html": "<div class=\"ds-hud\"><button class=\"ds-hud-btn\" type=\"button\" aria-label=\"Undo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3\"/></svg></button><button class=\"ds-hud-btn is-active\" type=\"button\" aria-pressed=\"true\" aria-label=\"Show\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/></svg></button><button class=\"ds-hud-btn\" type=\"button\" aria-label=\"Redo\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3\"/></svg></button></div>",
+      "css": ".ds-hud { display: inline-flex; gap: 0.25rem; padding: 0.25rem; border: 1px solid color-mix(in srgb, var(--foreground, #111111) 22%, transparent); border-radius: var(--radius, 2px); background: var(--surface-strong, #fafafa); box-shadow: none; } .ds-hud-btn { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border: 1px solid transparent; border-radius: var(--radius, 2px); background: transparent; color: var(--foreground, #111111); cursor: pointer; } .ds-hud-btn svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.5px; stroke-linecap: square; stroke-linejoin: miter; } .ds-hud-btn:hover { background: color-mix(in srgb, var(--foreground, #111111) 8%, transparent); } .ds-hud-btn:focus-visible { outline: 2px solid var(--focus-ring, #1a5fb4); outline-offset: 2px; } .ds-hud-btn.is-active { border-color: var(--accent, #1a5fb4); background: var(--accent, #1a5fb4); color: var(--on-accent, #ffffff); }"
     }
   ],
   "narrative": {
-    "northStar": "The Lab Notebook",
-    "overview": "QUOP reads as a working physicist's notebook, not a software product. By day it's warm parchment and oxblood ink: cream backgrounds, hairline sepia borders, burgundy annotations. By night the same notebook sits open under a desk lamp — midnight-navy pages, amber ink instead of oxblood, the FITS viewers glowing with green phosphor crosshairs and mono-font readouts like an old instrument's readout dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a real object a physicist actually keeps at their desk.\n\nThe mood is warm and inviting first, credible second — the site has to work for a visitor who has never touched an optics bench, not only for the labmate who lives at one. Warmth shows up in the parchment palette, the soft radial glow behind the page, and cards that lift gently toward you on hover rather than sitting inert. Credibility shows up underneath that warmth: exact values in monospace, uppercase kicker labels on every card (\"CALCULATOR\", \"PLOTTER\"), and instrument-grade FITS readouts that don't soften their numbers for anyone.\n\nTwo color systems run in parallel and must not be confused: the oxblood-ink/lamp-amber pair is the notebook's own ink — used for interactive accents, focus rings, and emphasis text everywhere. The four section colors (ember-orange, sky-blue, seafoam-teal, coral-pink) are a separate, purely categorical wayfinding system — they mark which of the four site sections something belongs to, currently visible as the top-edge stripe on the homepage's four hero tiles. They are tabs on a notebook's colored dividers, not brand accents.",
+    "northStar": "The Working Board",
+    "overview": "QUOP reads as a physicist's own working surface, not a software product. By day it's white paper worked over in graphite: plain white ground, hairline borders, blue annotations. By night it's the same room with the lights off and the board lit: true black, chalk-white marks, the same station blue lit as fills and rings around white words, the FITS viewers glowing with green phosphor crosshairs and readouts like an old instrument dial. Nothing here is trying to look like a SaaS dashboard; it's trying to look like a surface someone actually works on.\n\nThe homepage states that literally: a board the visitor arrives at mid-session, with equations from four domains being written and wiped behind the welcome. The rest of the site is the notebook the board's results get copied into.\n\nThe mood is inviting first, credible second. Invitation shows up in the hand-drawn marks, the unhurried writing and erasing, and controls that read at a glance as the signs of a station: square Station Blue plates with white lettering and an orange arrow pointing the way on. Credibility shows up underneath: exact values in tabular figures, uppercase structural labels, and instrument-grade FITS readouts that don't soften their numbers for anyone.",
     "keyCharacteristics": [
-      "Warm parchment by day, midnight instrument-panel by night — a full hue swap on the accent, not just a lightness shift",
-      "Every interactive surface carries an ambient shadow at rest and lifts further on hover — nothing in this system sits flat",
-      "Uppercase, letter-spaced kicker labels mark structure and category; regular-case text is always actual content",
-      "FITS/data-instrument surfaces speak in mono type and green-phosphor/amber highlights, deliberately more \"instrument\" than the parchment chrome around them",
-      "Four categorical wayfinding colors (orange/blue/teal/pink) identify site sections; they never substitute for the oxblood/amber ink accent"
+      "White paper by day, black board by night: one Station Blue (#1a5fb4) ink in both, worn as fills and rings at night while the words go white",
+      "Every corner is square and hard: one radius, 2px (--radius), site-wide; 999px only for things round by meaning",
+      "Whatever can be pressed is a station sign: a square blue plate with white lettering, an orange arrow (#fb8c4a) in its lower right corner, and any icon a white-outlined pictogram in a white-bordered square",
+      "Cards have no frame: no border, no shadow, no fill; two cards are told apart by one thin gray hairline",
+      "The interface is flat; depth belongs to the Tabletop's 3D scene",
+      "Uppercase, letter-spaced labels mark structure and category, behind a small square accent marker; regular-case text is always content",
+      "FITS/data-instrument surfaces speak in tabular figures and green-phosphor highlights, deliberately more instrument than the chrome",
+      "Hand-drawn marks (wobbled frames, chalk strokes, italic serif equations) belong to the homepage board and nowhere else"
     ],
     "rules": [
-      { "name": "The Day/Night Ink Rule", "body": "The accent does not merely lighten between themes, it swaps hue entirely: burgundy ink by day, amber lamplight by night. Any future accent work must preserve this hue swap, not soften it into a shared mid-tone.", "section": "colors" },
-      { "name": "The Divider Rule", "body": "The four section wayfinding colors exist to answer \"which section is this,\" nothing else. Do not promote one into a general UI accent, and do not let the ink pair bleed into a wayfinding role.", "section": "colors" },
-      { "name": "The Case Rule", "body": "Uppercase + letter-spacing means \"this is structure/category,\" never body content. If it's something the user typed or a real physical quantity, it's sentence case and proportional type; if it's a label the interface itself is asserting, it's uppercase and tracked.", "section": "typography" },
-      { "name": "The Always-Lifted Rule", "body": "Nothing in this system sits perfectly flat. Every card, input, and button carries a soft ambient shadow at rest and deepens that shadow (plus a small translateY lift) on hover or focus.", "section": "elevation" }
+      {
+        "name": "The Day/Night Ink Rule",
+        "body": "One hue in both themes. Fills are unchanged: a plate is #1a5fb4 day and night with white lettering. Thin marks lift at night to Station Ring (~#4f8dd6, --focus-ring). Words are never blue at night: --accent-text and --accent-strong go white and take emphasis from size and weight. By day, blue text stays (--accent-strong #0f4690).",
+        "section": "colors"
+      },
+      {
+        "name": "The Sign Rule",
+        "body": "Whatever can be pressed is a sign: an --accent plate, no border, no shadow, radius --radius, --on-accent lettering at the Label step. Hover deepens to --accent-hover; pressed/open/active keeps the deep plate and gains the 3px white foot bar (--sign-foot); disabled drops to 40% opacity, never gray; focus is the 2px ring offset 2px. The orange arrow (#fb8c4a) always sits in the lower right corner and never leads the words. The selectors live in one list at the end of globals.css. Header tabs are plates only on hover or when current (current: deep plate plus a small orange down arrow); the Tabletop HUD and the chalk cards are the scoped exceptions.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pictogram Rule",
+        "body": "An icon on a sign is a white outline glyph (1.5px non-scaling stroke, square caps, mitred joins, never filled) inside a 1.6em white-bordered square (1.5px, radius --radius), leading the words by 0.5em. Icon-only signs pad the square by 0.3em. One component, SignIcon, whose .signIcon CSS strips fills; tool pictograms live in tool-pictograms.tsx.",
+        "section": "components"
+      },
+      {
+        "name": "The Case Rule",
+        "body": "Uppercase + letter-spacing means structure/category, never body content. Something the user typed or a real physical quantity is sentence case and proportional type; a label the interface asserts is uppercase and tracked.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "No card, button, input, panel or menu carries a box-shadow or a hover lift. Floating surfaces are separated by an opaque or blurred fill and a 1px hairline. Depth is reserved for the Tabletop's lit 3D scene.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "A card has no border, shadow, fill or radius and pads 1.3rem top and bottom only. One 1px --border hairline runs between two cards, never around one, nothing above the first or below the last. Tool rows are the exception: their signs separate themselves.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Rule",
+        "body": "One radius, 2px (--radius, which --builder-radius follows), for every button, sign, pictogram square, card, input, menu, popover, badge, tooltip, chart frame and toast. 999px only for things round by meaning: colour dots, swatches and pickers, radio dots, wheel and fan ring geometry, round 3D parts. Tailwind rounded-* utilities are a bug here.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Minimal HUD Rule",
+        "body": "The Tabletop HUD shows only what is needed at rest, eleven controls, with related controls behind one button each. Its buttons are neutral opaque plates at rest and become signs only when pressed, open or live; hovers are a neutral wash (--builder-hover), never --accent-soft.",
+        "section": "components"
+      },
+      {
+        "name": "The Quiet Centre Rule",
+        "body": "The chalk layer is masked by a radial gradient so marks dissolve before reaching the welcome text. New equation slots respect the mask; never solve an overlap by moving the welcome copy.",
+        "section": "components"
+      }
     ],
     "dos": [
-      "Do preserve the full hue swap on the primary accent between themes (Oxblood Ink ↔ Lamp Amber) — see The Day/Night Ink Rule.",
-      "Do give every interactive surface a resting shadow that deepens on hover/focus — see The Always-Lifted Rule. A flat card or button is a bug here, not a style choice.",
-      "Do keep the four section wayfinding colors purely categorical — section identification only, never a general accent.",
-      "Do reserve uppercase/letter-spaced type for structural labels and keep all real content sentence-case — see The Case Rule.",
-      "Do route FITS/data-instrument surfaces through mono type and the green-phosphor/toolbar-amber language, keeping them visibly distinct from the parchment chrome around them."
+      "Do keep one Station Blue ink in both themes: fills unchanged, thin marks lifted to the Station Ring, words white at night (The Day/Night Ink Rule).",
+      "Do cut every corner square: --radius (2px) everywhere, 999px only for things round by meaning (The Square Rule).",
+      "Do make whatever can be pressed a sign, through the one selector list in globals.css, with the orange arrow in the lower right corner and icons as SignIcon pictograms (The Sign Rule, The Pictogram Rule).",
+      "Do separate two cards with one thin gray hairline and nothing else (The Hairline Rule).",
+      "Do keep hand-drawn texture, chalk filters and the serif italic on the homepage board alone.",
+      "Do reserve uppercase, tracked type for structural labels behind the square accent marker, and keep real content sentence case (The Case Rule).",
+      "Do route FITS/data-instrument surfaces through tabular figures and the green-phosphor language, and keep mono for code alone."
     ],
     "donts": [
-      "Don't treat TransitionProvider, NavTransitionLink, WavefunctionBanner, or the orbitalPhase field on navSections as part of the live design system — they exist in source but are not wired into the app, and are leftover from a prior orbital/atom hero.",
-      "Don't let the Oxblood/Amber ink pair and the section wayfinding colors trade places — mixing them removes the only categorical signal the site has.",
-      "Don't flatten any card, button, or input to zero shadow at rest — see The Always-Lifted Rule.",
-      "Don't mix the two live corner-radius idioms (Tailwind's rounded-2xl/rounded-full on newer components vs. the hand-set 0.8–1.1rem scale on older CSS classes) within a single component; match whichever the surrounding file already uses."
+      "Don't treat TransitionProvider, NavTransitionLink, WavefunctionBanner, or the orbitalPhase and accent fields on navSections as part of the live design system: they are unwired dead code.",
+      "Don't introduce a second blue or any other accent hue; Station Blue and Station Blue Deep are the ink, and the orange is only ever the sign's arrow.",
+      "Don't give a card a border, fill, shadow or radius beyond --radius, or a button a shadow or a hover lift (The Flat Sheet Rule, The Hairline Rule).",
+      "Don't put a plate on anything that can't be pressed; a label, tag or badge wears the small square marker instead.",
+      "Don't fill a pictogram or round its square.",
+      "Don't use a gray or metal button; a control that can't be pressed right now is a blue sign at 40%.",
+      "Don't raise --chalk-alpha until the marks read as confidently as interface text."
     ]
   }
 }

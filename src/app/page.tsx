@@ -26,10 +26,10 @@ export default function Home() {
             ["/calculators", "Calculators"],
           ].map(([href, label]) => (
             <Link className="buttonLink" href={href} key={href}>
-              <span className="heroTools__arrow">
+              {label}
+              <span className="signArrow">
                 <ArrowRightIcon />
               </span>
-              {label}
             </Link>
           ))}
         </nav>

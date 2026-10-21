@@ -24,8 +24,9 @@
   --focus-ring: var(--accent);
   /* a hovered or pressed sign darkens the ink by one step: Station Blue Deep */
   --accent-hover: #0f4690;
-  /* the white bar along a pressed sign's foot */
-  --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) bottom / 100% 3px no-repeat;
+  /* the white bar along a pressed sign's foot, inset so the plate's blue
+     still edges it on a white page */
+  --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) center bottom 2px / calc(100% - 4px) 3px no-repeat;
   /* the neutral wash behind a hovered row */
   --row-hover: color-mix(in srgb, var(--foreground) 5%, transparent);
   --mark: 17 17 17;
@@ -803,8 +804,6 @@ select.linkedField__unit {
   --interactive-chart-button-color: #243244;
   /* the opaque fill of a panel that opens over the chart */
   --interactive-chart-panel-bg: var(--surface-strong);
-  /* the paper, not a tint of its own: the chart sits on the page's surface */
-  --interactive-chart-surface-bg: var(--surface-strong);
   /* the figure itself is plain white, like a matplotlib figure on paper */
   --interactive-chart-stage-bg: #ffffff;
   --interactive-chart-stage-border: rgba(91, 102, 117, 0.16);
@@ -818,10 +817,6 @@ select.linkedField__unit {
   min-width: 0;
   height: 100%;
   min-height: 20rem;
-  padding: 0.65rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: var(--radius);
-  background: var(--interactive-chart-surface-bg);
   color: var(--interactive-chart-text);
 }
 
@@ -830,8 +825,6 @@ select.linkedField__unit {
   --interactive-chart-button-bg: rgb(18 22 31 / 0.9);
   --interactive-chart-button-color: #ebf1f7;
   --interactive-chart-panel-bg: rgb(18 22 31);
-  /* the paper, not a tint of its own: the chart sits on the page's surface */
-  --interactive-chart-surface-bg: var(--surface-strong);
   --interactive-chart-stage-bg: #11161f;
   --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
   --interactive-chart-text: #ebf1f7;
@@ -949,7 +942,9 @@ select.linkedField__unit {
 
 .interactiveChart__gesturePanel {
   gap: 0.3rem;
-  padding: 0.55rem 0.72rem 0.6rem;
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
 }
 
 .interactiveChart__gestureRow {
@@ -966,11 +961,7 @@ select.linkedField__unit {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__gestureIcons {
-  color: #ffd99d;
+  color: var(--interactive-chart-text);
 }
 
 .interactiveChart__gestureIconWrap {
@@ -1904,8 +1895,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 .fitsImageFrame .interactiveChart__editorBar,
-.fitsImageFrame .interactiveChart__sliderBar,
-.fitsImageFrame .interactiveChart__gesturePanel {
+.fitsImageFrame .interactiveChart__sliderBar {
   background: var(--surface-strong);
 }
 
@@ -4701,8 +4691,8 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 
 /* the way to the tools as one station sign, after Vienna Hbf's: a single
    blue panel with a row per destination, the rows parted by a faint
-   white rule, and each row's orange arrow in its lower right corner, where
-   every sign keeps it */
+   white rule, and each row's orange arrow (.signArrow) in its lower right
+   corner */
 .heroTools {
   display: grid;
   width: min(100%, 22rem);
@@ -4731,7 +4721,14 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   border-top: 1px solid color-mix(in srgb, var(--on-accent) 22%, transparent);
 }
 
-.heroTools__arrow {
+/* a sign's orange arrow, in its lower right corner, where every sign keeps
+   it: the way on, never leading the words */
+.buttonLink:has(.signArrow) {
+  position: relative;
+  padding-right: 2.2em;
+}
+
+.signArrow {
   position: absolute;
   right: 0.7em;
   bottom: 0.55em;
@@ -4741,13 +4738,13 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   color: #fb8c4a;
 }
 
-.heroTools__arrow svg {
+.signArrow svg {
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.heroTools__arrow path {
+.signArrow path {
   fill: none;
   stroke: currentColor;
   stroke-width: 2.5px;

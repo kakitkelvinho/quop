@@ -150,7 +150,7 @@ One station-blue accent in both themes, a neutral scale that runs to pure white 
 
 - **Plate:** `--accent` fill, no border, no shadow, radius `--radius` (`2px`). Lettering is the Label step (800, uppercase where the Case Rule calls it structure, sentence case where it is a quantity or a name).
 - **Hover:** the plate darkens to `--accent-hover` (Station Blue Deep). Nothing lifts, nothing glows.
-- **Pressed, open, active:** the plate stays deep and gains a `3px` white bar along its foot (`--on-accent`), the platform-number underline of a sign that has been called. A selected item in a group of signs (a segment of a toggle) wears it (the header's current tab has its own mark, below); its unselected siblings are plain plates.
+- **Pressed, open, active:** the plate stays deep and gains a `3px` white bar along its foot (`--on-accent`), inset `2px` from the plate's bottom and sides so a blue edge keeps it from melting into a white page, the platform-number underline of a sign that has been called. A selected item in a group of signs (a segment of a toggle) wears it (the header's current tab has its own mark, below); its unselected siblings are plain plates.
 - **Disabled:** the plate keeps its shape and drops to 40 % opacity; the cursor says no. It never turns gray, because a gray plate reads as a different kind of sign.
 - **Focus:** the 2px Focus Ring drawn with a `2px` offset, so it sits on the page around the plate rather than on blue it would vanish into.
 
@@ -229,7 +229,7 @@ Inside the HUD the accent is spent only on what is live: the active tool is a so
 ### The Hairline Rule
 A card is content grouped on the page, not a box. It has no border, no shadow, no fill and no radius; its padding runs top and bottom only (`1.3rem 0`), so its text lines up with the page column. Where two cards meet, **one** thin gray hairline (`1px`, `--border`: Hairline Border by day, Frost Border by night) runs between them, edge to edge of the column. Nothing runs above the first card or below the last: the page's own edges and headings close the group. In a two-column grid the hairline runs between rows, and a vertical hairline between the columns, never a box around each cell. The tool index is the exception: its cards are signs, which separate themselves, so it has no hairlines.
 
-This is the calculator sheet (#261) made general: `sectionCard`, `inputCard`, `infoPanel`, `toolCard` and the plotters' panels all follow it. A card that needs to stand out does it with a heading or a sign, not a frame.
+This is the calculator sheet (#261) made general: `sectionCard`, `inputCard`, `infoPanel`, `toolCard` and the plotters' panels all follow it, the interactive chart included: the plot's own frame (`interactiveChart__stage`) is the only box, with no second border or fill around the plot, its toolbar and its key hints. The key hints are in the chart's text colour, not the retired toolbar amber. A card that needs to stand out does it with a heading or a sign, not a frame.
 
 ### Shadow Vocabulary
 There is none. What's left of the old vocabulary:
@@ -250,7 +250,7 @@ Buttons, cards, and inputs are precise and instrument-like: numbers are exact, c
 
 ### Buttons
 Every button is a sign (see The Sign Rule and The Pictogram Rule): a square `--accent` plate, white lettering, a white-outlined pictogram in a white-bordered square where it has an icon.
-- **Primary** (`buttonLink`): a sign, `0.6rem 0.9rem` padding, Label lettering. Hover deepens to `--accent-hover`; no lift. The homepage's tool links and its chapters' calls to action are these signs, led by the right-arrow pictogram. The ghost variant is retired with the metal one.
+- **Primary** (`buttonLink`): a sign, `0.6rem 0.9rem` padding, Label lettering. Hover deepens to `--accent-hover`; no lift. The homepage's chapters' calls to action are these signs, with the orange arrow (`.signArrow`) in the lower right corner like every sign, not a pictogram leading the words. The ghost variant is retired with the metal one.
 - **Action grid** (`buttonControl`, the plotters' and calculators' data actions): signs too. The neutral-metal gradient (`#d7dbe2 → #bcc3cd`) is retired: it read as hardware, but next to blue signs it read as a disabled one. Its secondary variant is gone with it; where an action is genuinely secondary it is a text link, not a paler button.
 - **Icon toolbars** (the FITS viewer's tools): icon-only signs, the pictogram square on a plate. A tool that is on wears the white foot bar. The old toolbar-amber active state is retired with them.
 - **Header items** (`NavItem`, the wordmark, the theme toggle): square tabs the full height of the bar, transparent at rest, a sign on hover (the flyout's links too), and a deep sign (`--accent-hover`) when they are the current section, which carries, in place of the foot bar, a small orange down arrow (`#fb8c4a`, `0.7rem`, `0.3rem` in from the lower right corner, where a station sign keeps its arrow) pointing to the page under it. In the phone's menu sheet the current row is the plate alone, with no arrow, because the page isn't under it there. They are the one control that is not a plate at rest, because a bar of six blue plates would be a departure board, not a header. The theme toggle is the header's last item on every screen, its sun or moon a pictogram once it is lit.
@@ -271,7 +271,7 @@ Every button is a sign (see The Sign Rule and The Pictogram Rule): a square `--a
 - **Side answers** (`readoutAside`): smaller answers under a calculator's main `Readout` share one small muted line (`Pulse energy 1.00 mJ · Peak fluence 2E/(πw²) 0.0637 J/cm²`), values in body colour, formula labels kept.
 
 ### Navigation
-- Sticky, blurred, three-column nav of square tabs; hovering a tab makes it a sign, and the current section is a sign with the white foot bar. Hovering a section reveals its links in a square flyout panel: Paper Surface, a 1px hairline, no shadow. The links inside are rows separated by hairlines, each a sign on hover.
+- Sticky, blurred, three-column nav of square tabs; hovering a tab makes it a sign, and the current section is a deep sign with the small orange down arrow (see Header items). Hovering a section reveals its links in a square flyout panel: Paper Surface, a 1px hairline, no shadow. The links inside are rows separated by hairlines, each a sign on hover.
 
 ### Chalkboard Hero (homepage)
 The board fills the top of the homepage and inherits the page background, so it is not a panel sitting on the page — it *is* the page, given a surface. Three layers stack under the welcome copy: a canvas of procedural grain (a faint radial falloff from `--background` to `--background-muted`, fine speckle, and long fibres); a canvas reserved for eraser ghosts, which is empty at a `BOARD_HISTORY` of 0 and fills with wipe arcs and illegible earlier working as it is raised; and the chalk layer where equations are written.
