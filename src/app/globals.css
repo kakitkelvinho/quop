@@ -5178,7 +5178,6 @@ a.toolCard:hover .toolCard__sign {
 /* pressed, open or current: deep, with the white bar along the foot. Only
    the colour changes on hover, so the bar stays under the pointer. */
 :is(
-    .navTab.is-current,
     .interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]),
     .interactiveChart__customizeMenuItem.is-active
   ) {
@@ -5195,6 +5194,37 @@ a.toolCard:hover .toolCard__sign {
 .heroTools .buttonLink:hover,
 a.toolCard:hover .toolCard__sign {
   background-color: var(--wayfinding-hover);
+}
+
+/* the header is wayfinding too: its items light in Wayfinding Blue, and the
+   current section, instead of a foot bar, carries a small orange arrow at its
+   foot pointing down, to the page under it */
+:is(.navTab, .navFlyout__link):hover:not(:disabled) {
+  background-color: var(--wayfinding-hover);
+}
+
+.navTab.is-current {
+  position: relative;
+  background-color: var(--wayfinding);
+  color: var(--on-accent);
+}
+
+.navTab.is-current::after {
+  content: "";
+  position: absolute;
+  bottom: 0.3rem;
+  left: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  transform: translateX(-50%);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fb8c4a' stroke-width='3.5' stroke-linecap='square'%3E%3Cpath d='M12 3v16M5 13l7 7 7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+
+/* in the phone's menu sheet the current row is a plate across the sheet;
+   the page isn't under it there, so it has no arrow */
+#mobile-nav-sheet .navTab.is-current::after {
+  content: none;
 }
 
 /* can't be pressed right now: the same plate, faded, never gray */
