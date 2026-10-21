@@ -276,9 +276,10 @@ a.toolCard:focus-visible {
 }
 
 /* the tool's name on a station sign, after ÖBB's platform signs: one long,
-   low plate, the same on every card, the name centred across it and set a
-   little above the middle, with room round it, and an orange arrow pointing
-   on in the lower right corner */
+   low plate in their 6:1 (99 × 16.5 cm), the same on every card, the name
+   centred across it and set a little above the middle, and an orange arrow
+   pointing on in the lower right corner. A name too long for one line grows
+   the plate rather than overflowing it. */
 .toolCard__sign {
   position: relative;
   display: flex;
@@ -286,8 +287,8 @@ a.toolCard:focus-visible {
   justify-content: center;
   flex: 0 1 26rem;
   max-width: 100%;
-  min-height: 3.3em;
-  padding: 0.5em 2.4em 0.95em;
+  aspect-ratio: 6 / 1;
+  padding: 0.3em 1.8em 0.75em;
   text-align: center;
   letter-spacing: 0.01em;
 }
