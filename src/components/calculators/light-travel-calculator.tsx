@@ -29,7 +29,7 @@ export function LightTravelCalculator() {
   const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>("um");
 
   return (
-    <section className="pageSection calculatorPage">
+    <section className="pageSection">
       <ToolIntro href="/calculators/light-travel-calculator" />
 
       <div className="calculatorSheet">

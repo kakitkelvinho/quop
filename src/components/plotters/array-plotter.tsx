@@ -226,7 +226,7 @@ export default function ArrayPlotter() {
         {usingCsvMode ? (
           <button
             type="button"
-            className="buttonLink buttonLink--ghost"
+            className="buttonLink"
             onClick={handleClearCsv}
           >
             Clear CSVs

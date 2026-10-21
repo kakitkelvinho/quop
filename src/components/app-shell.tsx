@@ -33,22 +33,21 @@ function NavItem({
   return (
     <div className="group relative flex h-full">
       <Link
-        className={`inline-flex h-full items-center justify-center px-4 text-xs font-bold uppercase tracking-[0.12em] no-underline transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)] ${
-          active
-            ? "bg-[var(--accent)] text-[var(--on-accent)]"
-            : "text-[var(--muted)]"
+        aria-current={active ? "page" : undefined}
+        className={`navTab inline-flex h-full items-center justify-center px-4 text-xs font-bold uppercase tracking-[0.12em]${
+          active ? " is-current" : ""
         }`}
         href={href}
       >
         {label}
       </Link>
       {links.length ? (
-        <div className={`pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 border border-[var(--border)] bg-[var(--surface)] p-1.5 opacity-0 shadow-[var(--shadow)] transition-all group-hover:pointer-events-auto group-hover:opacity-100`}>
+        <div className={`navFlyout pointer-events-none absolute ${align === "right" ? "right-0" : "left-0"} top-full z-10 grid min-w-44 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100`}>
           {links.map((link) => (
             // out of the Tab order: the section page lists every tool, so the
             // header is four stops for a keyboard, not fourteen
             <Link
-              className="block px-2.5 py-2 text-sm font-semibold text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)]"
+              className="navFlyout__link block px-3 py-2 text-sm font-semibold"
               href={link.href}
               key={link.href}
               tabIndex={-1}
@@ -76,7 +75,7 @@ const PRIMARY_NAV = [
 function MenuIcon({ open }: { open: boolean }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5">
-      <g stroke="currentColor" strokeLinecap="round" strokeWidth="1.8">
+      <g stroke="currentColor" strokeLinecap="square" strokeWidth="1.8">
         {open ? (
           <>
             <path d="m6 6 12 12" />
@@ -119,7 +118,7 @@ function MobileNav() {
     >
       <div className="flex h-14 items-stretch justify-between px-2">
         <Link
-          className="inline-flex h-full items-center px-3 text-sm font-bold uppercase tracking-[0.2em] text-[var(--foreground)] no-underline"
+          className="navTab navTab--wordmark inline-flex h-full items-center px-3 text-sm font-bold uppercase tracking-[0.2em]"
           href="/"
           onClick={() => setOpen(false)}
         >
@@ -128,7 +127,9 @@ function MobileNav() {
         <div className="flex items-stretch">
           <ThemeToggle />
           <button
-            className="inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em] text-[var(--muted)]"
+            className={`navTab inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em]${
+              open ? " is-current" : ""
+            }`}
             type="button"
             aria-expanded={open}
             aria-controls="mobile-nav-sheet"
@@ -142,7 +143,7 @@ function MobileNav() {
 
       {open ? (
         <div
-          className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-b border-[var(--border)] bg-[var(--background)] px-2 pb-3 shadow-[var(--shadow)]"
+          className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-b border-[var(--border)] bg-[var(--background)] px-2 pb-3"
           id="mobile-nav-sheet"
         >
           {PRIMARY_NAV.map((item) => {
@@ -152,10 +153,9 @@ function MobileNav() {
             return (
               <div className="border-t border-[var(--border)] py-1 first:border-t-0" key={item.href}>
                 <Link
-                  className={`block px-3 py-3 text-xs font-bold uppercase tracking-[0.12em] no-underline ${
-                    active
-                      ? "bg-[var(--accent)] text-[var(--on-accent)]"
-                      : "text-[var(--foreground)]"
+                  aria-current={active ? "page" : undefined}
+                  className={`navTab navTab--wordmark block px-3 py-3 text-xs font-bold uppercase tracking-[0.12em]${
+                    active ? " is-current" : ""
                   }`}
                   href={item.href}
                   onClick={() => setOpen(false)}
@@ -164,10 +164,9 @@ function MobileNav() {
                 </Link>
                 {links.map((link) => (
                   <Link
-                    className={`block px-3 py-2 pl-6 text-sm font-semibold no-underline ${
-                      pathname === link.href
-                        ? "bg-[var(--accent)] text-[var(--on-accent)]"
-                        : "text-[var(--muted)]"
+                    aria-current={pathname === link.href ? "page" : undefined}
+                    className={`navTab block px-3 py-2 pl-6 text-sm font-semibold${
+                      pathname === link.href ? " is-current" : ""
                     }`}
                     href={link.href}
                     key={link.href}
@@ -216,7 +215,7 @@ export function AppShell({
             </div>
 
             <Link
-              className="inline-flex h-full items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.2em] text-[var(--foreground)] no-underline transition-colors hover:bg-[var(--accent)] hover:text-[var(--on-accent)]"
+              className="navTab navTab--wordmark inline-flex h-full items-center justify-center px-4 text-sm font-bold uppercase tracking-[0.2em]"
               href="/"
             >
               QUOP

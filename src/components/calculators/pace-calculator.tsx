@@ -15,7 +15,7 @@ export function PaceCalculator() {
   const [pair, setPair] = useState<LinkedPair>(() => editField(0, "4:30"));
 
   return (
-    <section className="pageSection calculatorPage">
+    <section className="pageSection">
       <ToolIntro href="/calculators/pace" />
 
       <div className="calculatorSheet">

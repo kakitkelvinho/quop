@@ -2,9 +2,11 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 
+import { SignIcon, UploadIcon } from "@/components/sign-icon";
+
 /**
  * A plotter's file picker, in place of the browser's "Choose File / No file
- * chosen": a dashed drop zone that names the file it was given. A file
+ * chosen": a dashed drop zone, its button a sign, that names the file it was given. A file
  * dropped on it goes through the same `onChange` as one picked, by handing
  * the dropped files to the input and firing its change event.
  */
@@ -53,7 +55,13 @@ export function FileDrop({
         }}
       />
       <span className="fileDrop__prompt">
-        <strong>Choose {multiple ? `${kind}s` : `a ${kind}`}</strong> or drop {multiple ? "them" : "it"} here
+        <span className="fileDrop__button">
+          <SignIcon>
+            <UploadIcon />
+          </SignIcon>
+          Choose {multiple ? `${kind}s` : `a ${kind}`}
+        </span>
+        or drop {multiple ? "them" : "it"} here
       </span>
       {names.length ? <span className="fileDrop__name">{names.join(", ")}</span> : null}
     </div>
