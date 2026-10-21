@@ -270,7 +270,7 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
 - **List panels** (Beams, Frames, Groups) have no window chrome: no grip and no maximise, the title muted at 600, and one small minimise on the right of the bar; the rail brings a minimised list back. Row names are 500. A row's eye and bin show only on hover or focus (on a device that hovers), and a hidden row keeps its closed eye.
 
 - **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
-- **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
+- **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. One plate inverts to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the status toast. The mode badge has no plate at all: its words sit straight on the glass in `--foreground`, since a solid ink slab read as a white box glaring off the night void.
 - **Type:** set in **Inter** (`--font-inter`), a tighter grotesk than the notebook's Plex and closer to a game HUD's; numbers stay mono. Smaller than the rest of the site, because the scene is the content.
   - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
   - Titles `0.92rem` 700: the inspector's head, a panel's title.
