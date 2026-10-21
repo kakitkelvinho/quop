@@ -1992,8 +1992,9 @@ function movedToPorts(scene: BuilderSceneData): BuilderSceneData {
   return { ...scene, components };
 }
 
-export function serializeScene(scene: BuilderSceneData): string {
-  return JSON.stringify({ ...scene, version: SCENE_VERSION }, null, 2);
+/** A setup as its file's text; `minified` drops the indentation, as a share link does. */
+export function serializeScene(scene: BuilderSceneData, { minified = false } = {}): string {
+  return JSON.stringify({ ...scene, version: SCENE_VERSION }, null, minified ? undefined : 2);
 }
 
 export const EMPTY_SCENE: BuilderSceneData = {

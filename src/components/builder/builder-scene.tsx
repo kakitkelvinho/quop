@@ -32,7 +32,8 @@ import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-selec
 import { groupSubset, leftOutNotice, visibility } from "@/components/builder/groups";
 import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
-import { useBuilderScene } from "@/components/builder/use-builder-scene";
+import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
+import { hasWork, hashToScene, isShareHash, sceneToHash } from "@/components/builder/share-link";
 import { resetPanels } from "@/components/builder/panel-store";
 import { finishGroupMode } from "@/components/builder/group-mode";
 import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits";
@@ -269,8 +270,43 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+const SHARE_FAILED = "Couldn't open shared setup.";
+
+/** What a share link in the address brought when the page opened. */
+type Arrival = {
+  /** a setup the table opens with, as nothing on it would be lost */
+  open: BuilderSceneData | null;
+  /** a setup to ask about first, as the table holds work of its own */
+  ask: BuilderSceneData | null;
+  /** a share link that couldn't be read */
+  failed: boolean;
+};
+
+function arrive(): Arrival {
+  const hash = window.location.hash;
+  if (!isShareHash(hash)) return { open: null, ask: null, failed: false };
+  const shared = hashToScene(hash);
+  if (!shared) return { open: null, ask: null, failed: true };
+  const stored = readStoredScene();
+  return stored && hasWork(stored) ? { open: null, ask: shared, failed: false } : { open: shared, ask: null, failed: false };
+}
+
+/** Drop a share link from the address, so a reload keeps the table's own edits. */
+function clearShareHash() {
+  const { pathname, search } = window.location;
+  window.history.replaceState(null, "", pathname + search);
+}
+
+/** The address of this page with `scene` in its hash. */
+function shareUrl(scene: BuilderSceneData): string {
+  const { origin, pathname, search } = window.location;
+  return origin + pathname + search + sceneToHash(scene);
+}
+
 export default function BuilderScene() {
-  const api = useBuilderScene();
+  // the page renders only on the client, so the address can be read up front
+  const [arrival] = useState(arrive);
+  const api = useBuilderScene(arrival.open);
   const palette = useScenePalette();
   const { scene } = api;
 
@@ -1189,9 +1225,9 @@ export default function BuilderScene() {
     announce("Brief saved.");
   }, [announce]);
 
-  // a setup the JSON panel checked replaces the table, as one undo step
-  const handleApplyScene = useCallback(
-    (parsed: BuilderSceneData, summary: string) => {
+  // a setup the JSON panel checked, or a shared link, replaces the table, as one undo step
+  const applyScene = useCallback(
+    (parsed: BuilderSceneData, message: string) => {
       api.replaceScene(parsed);
       setFitToken((token) => token + 1);
       setSelection([]);
@@ -1201,10 +1237,66 @@ export default function BuilderScene() {
       cancelBeam();
       cancelConnect();
       cancelFrame();
-      announce(`Applied: ${summary}. ⌘Z undoes.`);
+      announce(message);
     },
     [announce, api, cancelBeam, cancelConnect, cancelFrame],
   );
+
+  const handleApplyScene = useCallback(
+    (parsed: BuilderSceneData, summary: string) => applyScene(parsed, `Applied: ${summary}. ⌘Z undoes.`),
+    [applyScene],
+  );
+
+  // ---- share links -----------------------------------------------------------
+
+  /** a shared setup waiting on whether to replace the work on the table */
+  const [pendingShare, setPendingShare] = useState<BuilderSceneData | null>(arrival.ask);
+
+  // the link has done its job once read: a reload keeps the table's own edits
+  useEffect(() => {
+    if (isShareHash(window.location.hash)) clearShareHash();
+    const message = arrival.failed ? SHARE_FAILED : arrival.open ? "Opened a shared setup." : null;
+    if (!message) return;
+    const timer = window.setTimeout(() => announce(message));
+    return () => window.clearTimeout(timer);
+  }, [announce, arrival]);
+
+  // a link pasted into the address of an open Tabletop opens too
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash;
+      if (!isShareHash(hash)) return;
+      clearShareHash();
+      const shared = hashToScene(hash);
+      if (!shared) announce(SHARE_FAILED);
+      else if (hasWork(sceneRef.current)) setPendingShare(shared);
+      else applyScene(shared, "Opened a shared setup. ⌘Z undoes.");
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, [announce, applyScene]);
+
+  const handleShareChoice = useCallback(
+    (open: boolean) => {
+      const shared = pendingShare;
+      setPendingShare(null);
+      if (!shared) return;
+      if (open) applyScene(shared, "Opened the shared setup. ⌘Z undoes.");
+      else announce("Kept your setup.");
+    },
+    [announce, applyScene, pendingShare],
+  );
+
+  const getShareUrl = useCallback(() => shareUrl(sceneRef.current), []);
+
+  const handleCopyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      announce("Link copied.");
+    } catch {
+      announce("Copy blocked. Use Download .json.");
+    }
+  }, [announce, getShareUrl]);
 
   const handleExportPng = useCallback(async () => {
     const canvas = canvasRef.current;
@@ -1750,6 +1842,10 @@ export default function BuilderScene() {
         onImport={handleImport}
         importChoice={pendingImport && { names: pendingImport.names }}
         onImportChoice={handleImportChoice}
+        shareChoice={pendingShare !== null}
+        onShareChoice={handleShareChoice}
+        getShareUrl={getShareUrl}
+        onCopyLink={handleCopyLink}
         onSetGroupMembership={handleSetGroupMembership}
         onToggleLabels={() => setShowLabels((current) => !current)}
         onToggleDistances={() => setShowDistances((current) => !current)}
