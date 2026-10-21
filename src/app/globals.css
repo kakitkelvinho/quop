@@ -231,47 +231,28 @@ html[data-theme="dark"] .chapter__links a:hover {
   font-size: 0.84rem;
 }
 
-/* A section's tools: each card is one link, opening on what the tool gives.
-   No frames: a hairline between rows, and one between the two columns. */
+/* A section's tools: each card is one link, its sign and its sentence. No
+   frames and no hairlines: the signs' own plates and the room between them
+   do the separating, as signs along a platform do. */
 .toolGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem 2.6rem;
 }
 
 .toolCard {
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.9rem;
   padding: 1.3rem 0;
   color: var(--foreground);
   text-decoration: none;
   transition: background-color 160ms ease;
 }
 
-.toolCard + .toolCard {
-  border-top: 1px solid var(--border);
-}
-
 @media (min-width: 900px) {
   .toolGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .toolCard + .toolCard {
-    border-top: 0;
-  }
-
-  .toolCard:nth-child(n + 3) {
-    border-top: 1px solid var(--border);
-  }
-
-  .toolCard:nth-child(odd) {
-    padding-right: 1.3rem;
-  }
-
-  .toolCard:nth-child(even) {
-    padding-left: 1.3rem;
-    border-left: 1px solid var(--border);
   }
 }
 
@@ -294,17 +275,20 @@ a.toolCard:focus-visible {
   line-height: 1.2;
 }
 
-/* the tool's name on a station sign: one wide plate, the same width on every
-   card so a section reads as a row of platform signs, the name set left in
-   white with a thin white rule inset from the edge, as on an enamel sign */
+/* the tool's name on a station sign, after ÖBB's platform signs: one wide
+   plate, the same on every card, the name centred with plenty of room round
+   it, a thin white rule inset from the edge as on an enamel sign, and an
+   orange arrow pointing on in the lower right corner */
 .toolCard__sign {
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex: 0 1 22rem;
   max-width: 100%;
-  min-height: 2.6em;
-  padding: 0.45em 0.9em;
+  min-height: 4.4em;
+  padding: 1.1em 2.4em;
+  text-align: center;
   letter-spacing: 0.01em;
 }
 
@@ -315,6 +299,33 @@ a.toolCard:focus-visible {
   border: 1.5px solid var(--on-accent);
   border-radius: var(--radius);
   pointer-events: none;
+}
+
+/* the way on: orange on the blue (about 3:1), the same by day and night,
+   because the plate is */
+.toolCard__arrow {
+  position: absolute;
+  right: 0.7em;
+  bottom: 0.55em;
+  display: grid;
+  width: 0.9em;
+  height: 0.9em;
+  color: #fb8c4a;
+}
+
+.toolCard__arrow svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.toolCard__arrow path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
 }
 
 .toolCard p {
