@@ -275,30 +275,21 @@ a.toolCard:focus-visible {
   line-height: 1.2;
 }
 
-/* the tool's name on a station sign, after ÖBB's platform signs: one wide
-   plate, the same on every card, the name centred with plenty of room round
-   it, a thin white rule inset from the edge as on an enamel sign, and an
-   orange arrow pointing on in the lower right corner */
+/* the tool's name on a station sign, after ÖBB's platform signs: one long,
+   low plate, the same on every card, the name centred across it and set a
+   little above the middle, with room round it, and an orange arrow pointing
+   on in the lower right corner */
 .toolCard__sign {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 1 22rem;
+  flex: 0 1 26rem;
   max-width: 100%;
-  min-height: 4.4em;
-  padding: 1.1em 2.4em;
+  min-height: 3.3em;
+  padding: 0.5em 2.4em 0.95em;
   text-align: center;
   letter-spacing: 0.01em;
-}
-
-.toolCard__sign::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  border: 1.5px solid var(--on-accent);
-  border-radius: var(--radius);
-  pointer-events: none;
 }
 
 /* the way on: orange on the blue (about 3:1), the same by day and night,
