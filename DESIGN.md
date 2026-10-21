@@ -65,6 +65,7 @@ typography:
     fontStyle: "italic"
 rounded:
   none: "0"
+  edge: "2px"
   meaning: "999px"
 spacing:
   sm: "0.65rem"
@@ -74,16 +75,16 @@ components:
   sign-button:
     backgroundColor: "{colors.station-blue}"
     textColor: "{colors.sign-lettering}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.edge}"
     padding: "0.6rem 0.9rem"
   sign-button-hover:
     backgroundColor: "{colors.station-blue-deep}"
     textColor: "{colors.sign-lettering}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.edge}"
   sign-pictogram:
     backgroundColor: "transparent"
     textColor: "{colors.sign-lettering}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.edge}"
     size: "1.6em"
   card:
     backgroundColor: "transparent"
@@ -93,17 +94,17 @@ components:
   input-field:
     backgroundColor: "{colors.paper-surface-strong}"
     textColor: "{colors.ink-foreground}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.edge}"
     padding: "0.8rem 0.9rem"
   nav-tab:
     backgroundColor: "transparent"
     textColor: "{colors.ink-foreground}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.edge}"
     padding: "0 0.75rem"
   nav-tab-active:
     backgroundColor: "{colors.station-blue}"
     textColor: "{colors.sign-lettering}"
-    rounded: "{rounded.none}"
+    rounded: "{rounded.edge}"
     padding: "0 0.75rem"
 ---
 
@@ -123,7 +124,7 @@ Two color systems run in parallel and must not be confused: the station blue is 
 
 **Key Characteristics:**
 - White paper by day, black board by night — one station-blue ink in both, worn as fills and rings at night while the words go white
-- Every corner is square and hard, as in the builder — one radius, `0`, site-wide; only things round by meaning stay round (see Shapes)
+- Every corner is square and hard, as in the builder — one radius, `2px` (an edge break), site-wide; only things round by meaning stay round (see Shapes)
 - Whatever can be pressed is a station sign: a square blue plate with white lettering, and any icon on it a white-outlined pictogram in a white-bordered square — see The Sign Rule
 - Cards have no frame: no border, no shadow, no fill. Two cards are told apart by one thin gray hairline between them — see The Hairline Rule
 - The interface is flat. Depth belongs to the Tabletop's 3D scene, not to the chrome (see Elevation & Depth)
@@ -147,14 +148,14 @@ One station-blue accent in both themes, a neutral scale that runs to pure white 
 
 **The Sign Rule.** The identity is a station's wayfinding: the blue direction signs over a platform, with a nod to HITMAN's label plates in the same colour. **Whatever can be pressed is a sign.** Every button, every control that toggles or opens something, the theme toggle, a file picker's button, a tool card's link, a plotter's action grid: a square plate in `--accent` with `--on-accent` lettering, day and night. The plate is the affordance, so it is there at rest, not only on hover.
 
-- **Plate:** `--accent` fill, no border, no shadow, radius `0`. Lettering is the Label step (800, uppercase where the Case Rule calls it structure, sentence case where it is a quantity or a name).
+- **Plate:** `--accent` fill, no border, no shadow, radius `--radius` (`2px`). Lettering is the Label step (800, uppercase where the Case Rule calls it structure, sentence case where it is a quantity or a name).
 - **Hover:** the plate darkens to `--accent-hover` (Station Blue Deep). Nothing lifts, nothing glows.
 - **Pressed, open, active:** the plate stays deep and gains a `3px` white bar along its foot (`--on-accent`), the platform-number underline of a sign that has been called. A selected item in a group of signs (a header tab, a segment of a toggle) wears it; its unselected siblings are plain plates.
 - **Disabled:** the plate keeps its shape and drops to 40 % opacity; the cursor says no. It never turns gray, because a gray plate reads as a different kind of sign.
 - **Focus:** the 2px Focus Ring drawn with a `2px` offset, so it sits on the page around the plate rather than on blue it would vanish into.
 
 **The Pictogram Rule.** An icon on a sign is a station pictogram: a white-outlined glyph inside a white-bordered square, the square sitting on the blue plate.
-- **The square:** `1.6em` on a side, `1.5px` `--on-accent` border, transparent inside (the plate's blue shows through), radius `0`. It sits at the leading edge of the plate with `0.5em` between it and the words, the way an arrow box leads a direction sign.
+- **The square:** `1.6em` on a side, `1.5px` `--on-accent` border, transparent inside (the plate's blue shows through), radius `--radius` (`2px`). It sits at the leading edge of the plate with `0.5em` between it and the words, the way an arrow box leads a direction sign.
 - **The glyph:** drawn as an outline in `--on-accent`, never filled: `1.5px` stroke (scaled to the square, not the viewBox), square line caps and mitred joins, inset about 20 % from the square's border. Lucide-style stroke icons fit it once their caps and joins are set square; a filled icon is redrawn, not inverted.
 - **Icon-only signs** (a toolbar button, the theme toggle) are the square alone on a plate that pads it by `0.3em` on every side, so the white border never touches the plate's edge.
 - **On a pressed sign** the pictogram does not change; the foot bar carries the state.
@@ -237,7 +238,7 @@ There is none. What's left of the old vocabulary:
 
 ## Shapes
 
-**The Square Rule.** Every corner is square and hard, as in the builder. One radius, `0` (`--radius`, which `--builder-radius` follows), for every button, sign, pictogram square, card, input, select, menu, flyout, popover, badge, tooltip, chart frame and toast, on every page. The old soft scale (`0.8rem` buttons, `0.95rem` inputs, `1.1rem` cards, `999px` pills) is retired, and so are Tailwind's `rounded-*` utilities on newer components: a component that uses them is a bug here.
+**The Square Rule.** Every corner is square and hard, as in the builder. One radius, `2px` (`--radius`, which `--builder-radius` follows), for every button, sign, pictogram square, card, input, select, menu, flyout, popover, badge, tooltip, chart frame and toast, on every page. The old soft scale (`0.8rem` buttons, `0.95rem` inputs, `1.1rem` cards, `999px` pills) is retired, and so are Tailwind's `rounded-*` utilities on newer components: a component that uses them is a bug here. The `2px` is an edge break, not a rounding: the 1 mm a machinist eases off a plate's corner so it doesn't cut. It reads as square at a glance and softens only up close; anything you'd notice as round is out.
 
 Only things round by meaning stay round (`999px`): a colour dot (a beam's, a group's), a colour swatch or picker, a radio button's dot, the Show wheel's and the corner fans' ring geometry, and a physical part that is round in the 3D scene. A frame's dot is square because a frame is. "Softer looks friendlier" is not a meaning.
 
@@ -262,7 +263,7 @@ Every button is a sign (see The Sign Rule and The Pictogram Rule): a square `--a
 - **Tool cards** (`toolCard`, on index pages) open on a line of figures of what the tool gives (`550 nm → 2.2543 eV`); on a page already titled Calculators, a repeated "CALCULATOR" tag says nothing. The whole card is one link; at rest its tool name is a sign led by a right-arrow pictogram, the way a direction sign points to a platform, and the row behind it takes the neutral wash on hover. There is no other per-card button.
 
 ### Inputs / Fields
-- **Style:** a square, hairline-bordered outer container (`field__control`, radius `0`, Hairline/Frost border) housing a borderless inner `input`/`textarea` on Paper-Surface-Strong background; a unit label sits inline at the end in muted color. A unit picker is a `select`, square, bordered like the field — a field's part, not a sign.
+- **Style:** a square, hairline-bordered outer container (`field__control`, radius `--radius`, Hairline/Frost border) housing a borderless inner `input`/`textarea` on Paper-Surface-Strong background; a unit label sits inline at the end in muted color. A unit picker is a `select`, square, bordered like the field — a field's part, not a sign.
 - **File input** (`FileDrop`): the one dashed-border treatment in the system (`1px dashed`, square), signaling "drop a file here" distinctly from typed fields. Its "choose a file" button is a sign with an upload pictogram. It names the file it was given rather than the browser's "No file chosen".
 - **Focus:** the ink-accent Focus Ring (see Elevation & Depth), not a border-color change.
 - **Linked fields** (`LinkedFields`, on the energy ↔ wavelength, light travel and pace calculators): one field per quantity, stacked, linked as in a unit converter. The field typed in last is the source and is never reformatted; the other is worked out from it and written in (5 s.f. for energy/wavelength, 6 for light travel, pace to the second), or emptied to a muted `—` placeholder when the source isn't a value. Both numbers are set at the Result step inside the input, the label small and muted above, the unit (or one unit picker per field, in the ink colour, white at night) beside. Changing a unit keeps the physical quantity. A visually hidden polite live region announces the worked-out field once typing pauses. The pure logic is `linked-pair.ts`.
@@ -307,8 +308,8 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
 - **Corner fans:** the one menu idiom. Every menu is a quarter fan from a workspace corner, flush with the screen edges, its hole clear of the islands in that corner (the QUOP and + fans lie on one ring). The band is about `150px` deep, thinning to a `64px` floor on a small screen. Wedges are petals: a `6px` gap at the hole that widens outward. Each holds a `24px` icon and one word at `13px` 700 (a file format in sentence case, `.json`), with no hints; the longer hint is the tooltip. Hover and focus are the neutral wash; Clear tints orange (`#c2410c` day, `#fb8c4a` night), never the accent; a disabled wedge drops to 35 %. One fan is open at a time.
 - **List panels** (Beams, Frames, Groups) have no window chrome: no grip and no maximise, the title muted at 600, and one small minimise on the right of the bar; the rail brings a minimised list back. Row names are 500. A row's eye and bin show only on hover or focus (on a device that hovers), and a hidden row keeps its closed eye.
 
-- **Radius:** one token, `--builder-radius: 0`, for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is.
-- **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. Two plates invert to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the mode badge and the status toast.
+- **Radius:** `--builder-radius`, which follows the site's `--radius` (`2px`, The Square Rule), for every island, button, input, menu, panel and its bar, label, badge, key cap, coach mark and the status toast. Only things round by meaning stay round (`999px`): a beam's or group's colour dot, the colour swatches and colour pickers, and the wheels' ring geometry. A frame's dot is square because a frame is. The corner fans' petals are drawn paths and keep their sharp tips.
+- **Plates:** opaque `--surface-strong` with a 1px `--builder-hairline` border. One plate inverts to the page's ink (`--foreground` fill, `--background` text: dark by day, light at night): the status toast. The mode badge has no plate at all: its words sit straight on the glass in `--foreground`, since a solid ink slab read as a white box glaring off the night void.
 - **Type:** set in the site's **Source Sans 3**, like every other page, so the Tabletop and the notebook speak one voice; numbers are its tabular figures at a lighter weight, and only the JSON and AI brief are mono, because they are code. Smaller than the rest of the site, because the scene is the content.
   - Base `0.82rem` / 1.35: the workspace, inputs, menu items.
   - Titles `0.92rem` 700: the inspector's head, a panel's title.
@@ -325,7 +326,7 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
 
 ### Do:
 - **Do** keep one station-blue ink in both themes: fills unchanged, thin marks lifted lighter, words white at night — see The Day/Night Ink Rule.
-- **Do** cut every corner square — radius `0` everywhere, `999px` only for things round by meaning — see The Square Rule.
+- **Do** cut every corner square — radius `2px` (`--radius`) everywhere, `999px` only for things round by meaning — see The Square Rule.
 - **Do** make whatever can be pressed a sign: a square blue plate with white lettering, its icon a white-outlined pictogram in a white-bordered square, through the one list in `globals.css` — see The Sign Rule and The Pictogram Rule. The Tabletop HUD and the homepage's chalk cards are the scoped exceptions.
 - **Do** separate two cards with one thin gray hairline and nothing else — see The Hairline Rule.
 - **Do** keep hand-drawn texture on the homepage board and off everything else — the chalk filters, the wobbled frames, and the serif italic are one scoped gesture, not a site-wide style.
@@ -337,7 +338,7 @@ The controls over the Tabletop's 3D scene are a compact, hard-edged instrument p
 - **Don't** treat `TransitionProvider`, `NavTransitionLink`, `WavefunctionBanner`, or the `orbitalPhase` field on `navSections` as part of the live design system. They exist in source but are not wired into the app (no page imports `TransitionProvider` or `WavefunctionBanner`; `AppShell` uses a plain `Link`, not `NavTransitionLink`; `orbitalPhase` is never read). They're leftover from a prior orbital/atom hero and should be treated as dead code, not incumbent authority, until someone deliberately revives or removes them.
 - **Don't** raise `--chalk-alpha` until the marks read as confidently as interface text. They are meant to sit at the edge of legibility; an equation that competes with the welcome copy has been pushed too far.
 - **Don't** let the station-blue ink and the section wayfinding colors trade places — they answer "what's emphasized" and "what section is this" respectively, and mixing them removes the only categorical signal the site has.
-- **Don't** give a card a border, a fill, a shadow or a radius, or a button a shadow or a hover lift — see The Flat Sheet Rule and The Hairline Rule.
+- **Don't** give a card a border, a fill, a shadow or a radius beyond `--radius`, or a button a shadow or a hover lift — see The Flat Sheet Rule and The Hairline Rule.
 - **Don't** put a plate on anything that can't be pressed. A blue plate promises a press; a label, a tag or a badge wears the small square marker instead.
 - **Don't** fill a pictogram or round its square. It is a white outline in a white-bordered square, the way a station draws it.
 - **Don't** use a gray or metal button. A control that can be pressed is blue; one that can't be pressed right now is a blue sign at 40 %.

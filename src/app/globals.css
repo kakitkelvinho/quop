@@ -15,9 +15,10 @@
   --on-accent: #ffffff;
   /* words in the ink: blue by day; white at night, like a sign's lettering */
   --accent-text: var(--accent);
-  /* The Square Rule: one radius, everywhere. Only things round by meaning
-     (a colour dot, a swatch, a ring) keep 999px */
-  --radius: 0;
+  /* The Square Rule: one radius, everywhere: a 2px edge break, square at a
+     glance, like the 1 mm a machinist eases off a plate. Only things round by
+     meaning (a colour dot, a swatch, a ring) keep 999px */
+  --radius: 2px;
   /* keyboard focus, in the ink itself: the 0.3 wash it once was fell under
      the 3:1 a focus indicator needs against the page */
   --focus-ring: var(--accent);
@@ -2145,9 +2146,9 @@ html[data-theme="dark"] .fitsColorControl__select {
    (the active tool, the selection, the mode badge's marker).
    =========================================================================== */
 
-/* one radius for the whole builder; things round by meaning (colour dots,
-   swatches, the wheels' ring geometry) keep their own. On :root because the
-   coach marks are portalled out of the workspace. */
+/* the builder follows the site's one radius (--radius); things round by
+   meaning (colour dots, swatches, the wheels' ring geometry) keep their own.
+   On :root because the coach marks are portalled out of the workspace. */
 :root {
   --builder-radius: var(--radius);
   --builder-hairline: color-mix(in srgb, var(--foreground) 22%, transparent);
@@ -2796,18 +2797,16 @@ html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
   font-weight: 600;
 }
 
-/* the mode is the headline while it lasts: a solid plate in the page's ink
-   (dark by day, light at night), its name in tracked capitals after a small
-   accent square, then the keys in sentence case */
+/* the mode is the headline while it lasts, set straight on the glass with no
+   plate (a solid one glared, a white slab on the night void): its name in
+   tracked capitals after a small accent square, then the keys in sentence case */
 .builderModeBadge {
   display: flex;
   align-items: center;
   gap: 1.1rem;
   margin: 0;
   padding: 0.55rem 0.9rem 0.55rem 0.8rem;
-  border-radius: var(--builder-radius);
-  background: var(--foreground);
-  color: var(--background);
+  color: var(--foreground);
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.18em;
@@ -2845,7 +2844,7 @@ html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
   border-bottom-width: 2px;
   border-radius: var(--builder-radius);
   background: transparent;
-  color: var(--background);
+  color: inherit;
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
   font-size: 0.62rem;
