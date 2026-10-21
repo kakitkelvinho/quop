@@ -4690,8 +4690,9 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 }
 
 /* the way to the tools as one station sign, after Vienna Hbf's: a single
-   Nachtblau panel with a row per destination, each led by an orange arrow,
-   the rows parted by a faint white rule */
+   Nachtblau panel with a row per destination, the rows parted by a faint
+   white rule, and each row's orange arrow in its lower right corner, where
+   every sign keeps it */
 .heroTools {
   display: grid;
   width: min(100%, 22rem);
@@ -4699,10 +4700,10 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 }
 
 .heroTools .buttonLink {
+  position: relative;
   justify-content: flex-start;
-  gap: 0.9em;
   width: 100%;
-  padding: 0.8em 1.1em;
+  padding: 0.8em 2.4em 0.8em 1.1em;
   border-radius: 0;
   font-size: 1.05rem;
   letter-spacing: 0.01em;
@@ -4721,10 +4722,12 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 }
 
 .heroTools__arrow {
+  position: absolute;
+  right: 0.7em;
+  bottom: 0.55em;
   display: grid;
-  flex: none;
-  width: 1em;
-  height: 1em;
+  width: 0.9em;
+  height: 0.9em;
   color: #fb8c4a;
 }
 
