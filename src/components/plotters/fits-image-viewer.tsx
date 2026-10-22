@@ -40,6 +40,7 @@ import {
   TRUE_PIXEL_ASPECT,
 } from "@/components/plotters/pixel-aspect";
 import { chooseSurfaceStep } from "@/components/plotters/surface-geometry";
+import { ChartInfo } from "@/components/plotters/chart-info";
 import { SignIcon } from "@/components/sign-icon";
 import { useNumberDraft } from "@/components/use-number-draft";
 
@@ -1290,6 +1291,26 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
             <SaveIcon />
           </SignIcon>
         </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        <ChartInfo
+          hints={
+            isSurface
+              ? [
+                  <><strong>Drag</strong> to turn the surface.</>,
+                  <><strong>Right-drag</strong> to move it.</>,
+                  <><strong>Scroll</strong> to zoom.</>,
+                ]
+              : [
+                  <><strong>Point</strong> at the image to read a pixel&rsquo;s value.</>,
+                  <><strong>Drag</strong> a box to zoom in on it.</>,
+                  <>
+                    <strong>Click</strong> a pixel to pick the{" "}
+                    {sliceAxis === "horizontal" ? "row" : "column"} the slice shows.
+                  </>,
+                  <><strong>Reset zoom</strong> to go back.</>,
+                ]
+          }
+        />
       </div>
 
       {isSurface ? (

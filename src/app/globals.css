@@ -922,8 +922,40 @@ select.linkedField__unit {
   column-gap: 0.4rem;
   row-gap: 0.2rem;
   justify-content: flex-start;
+  position: relative;
   min-width: 0;
   padding-top: 0;
+}
+
+/* the i's bubble: words for what the pointer does, opening above the
+   toolbar from its right edge, over the foot of the plot. Opaque, a
+   hairline, no shadow, like every surface that floats over content. */
+.chartInfo__bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  z-index: 5;
+  width: max-content;
+  max-width: min(22rem, 100%);
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.chartInfo__list {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chartInfo__list strong {
+  font-weight: 700;
 }
 
 .interactiveChart__footerDivider {
@@ -933,7 +965,6 @@ select.linkedField__unit {
   background: var(--interactive-chart-border);
 }
 
-.interactiveChart__gesturePanel,
 .interactiveChart__sliderBar,
 .interactiveChart__editorBar,
 .interactiveChart__customizeMenu {
@@ -967,89 +998,6 @@ select.linkedField__unit {
   cursor: pointer;
 }
 
-
-.interactiveChart__gesturePanel {
-  gap: 0.3rem;
-  padding: 0.2rem 0;
-  border: 0;
-  background: none;
-}
-
-.interactiveChart__gestureRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
-
-.interactiveChart__gestureIcons {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--interactive-chart-text);
-}
-
-.interactiveChart__gestureIconWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.68);
-}
-
-.interactiveChart__gestureIconWrap--frame {
-  width: 2.1rem;
-}
-
-.interactiveChart__gestureIconWrap svg {
-  width: 1.05rem;
-  height: 1.05rem;
-}
-
-.interactiveChart__gestureIconWrap--frame svg {
-  width: 1.35rem;
-  height: 1.1rem;
-}
-
-.interactiveChart__gestureArrow,
-.interactiveChart__gesturePlus {
-  font-size: 0.92rem;
-  line-height: 1;
-}
-
-.interactiveChart__gestureComma {
-  font-size: 0.92rem;
-  line-height: 1;
-  color: var(--interactive-chart-text);
-}
-
-.interactiveChart__gestureKey {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.2rem;
-  height: 1.8rem;
-  padding: 0 0.45rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.68);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-
-.interactiveChart--dark .interactiveChart__gestureIconWrap,
-.interactiveChart--dark .interactiveChart__gestureKey {
-  background: rgb(12 17 26 / 0.76);
-}
 
 .interactiveChart__fieldRow {
   display: grid;

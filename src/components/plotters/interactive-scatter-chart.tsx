@@ -48,6 +48,7 @@ import {
 } from "@/components/plotters/matplotlib-skin";
 import { renderChartPdf } from "@/components/plotters/pdf-export";
 import { renderChartSvg } from "@/components/plotters/svg-export";
+import { ChartInfo } from "@/components/plotters/chart-info";
 import { SignIcon } from "@/components/sign-icon";
 
 ChartJS.register(
@@ -924,120 +925,7 @@ function SaveIcon() {
   );
 }
 
-function MouseClickIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M12 3.4c-3 0-5.4 2.4-5.4 5.4v5.6c0 3.4 2.5 6.2 5.4 6.2s5.4-2.8 5.4-6.2V8.8c0-3-2.4-5.4-5.4-5.4Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-      <path
-        d="M12 3.9v5.2"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-      <path
-        d="M8 5.9h4"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.7"
-      />
-      <path
-        d="M8.1 6c0 1.8 1.3 3.1 3.9 3.1"
-        fill="currentColor"
-        opacity="0.22"
-      />
-    </svg>
-  );
-}
 
-function SelectionFrameIcon({ axis }: { axis: "x" | "y" }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 28 24">
-      <rect
-        x="10"
-        y="7"
-        width="8"
-        height="10"
-        rx="1.6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-      />
-      {axis === "x" ? (
-        <>
-          <path
-            d="M2.5 12h6"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="M25.5 12h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="m5.4 9.4-2.9 2.6 2.9 2.6"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="m22.6 9.4 2.9 2.6-2.9 2.6"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-        </>
-      ) : (
-        <>
-          <path
-            d="M14 2.5v3.5"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="M14 21.5V18"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="m11.4 5.4 2.6-2.9 2.6 2.9"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-          <path
-            d="m11.4 18.6 2.6 2.9 2.6-2.9"
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.7"
-          />
-        </>
-      )}
-    </svg>
-  );
-}
 
 function InteractiveScatterChartInner({
   data,
@@ -2054,6 +1942,15 @@ function InteractiveScatterChartInner({
             <SaveIcon />
           </SignIcon>
         </button>
+        <span aria-hidden="true" className="interactiveChart__footerDivider" />
+        <ChartInfo
+          hints={[
+            <><strong>Drag</strong> across the plot to zoom in on x.</>,
+            <><strong>Shift + drag</strong>, or drag along the y axis, to zoom in on y.</>,
+            <><strong>Scroll</strong> to zoom, once scroll zoom is on.</>,
+            <><strong>Reset zoom</strong> to go back.</>,
+          ]}
+        />
       </div>
 
       {customizeMenuOpen ? (
@@ -2126,41 +2023,6 @@ function InteractiveScatterChartInner({
           </button>
         </div>
       ) : null}
-
-      <div className="interactiveChart__gesturePanel">
-        <div className="interactiveChart__gestureRow">
-          <div className="interactiveChart__gestureIcons">
-            <span className="interactiveChart__gestureIconWrap">
-              <MouseClickIcon />
-            </span>
-            <span className="interactiveChart__gestureArrow" aria-hidden="true">
-              →
-            </span>
-            <span className="interactiveChart__gestureIconWrap interactiveChart__gestureIconWrap--frame">
-              <SelectionFrameIcon axis="x" />
-            </span>
-          </div>
-          <span className="interactiveChart__gestureComma" aria-hidden="true">
-            ,
-          </span>
-          <div className="interactiveChart__gestureIcons">
-            <span className="interactiveChart__gestureKey">Shift</span>
-            <span className="interactiveChart__gesturePlus" aria-hidden="true">
-              +
-            </span>
-            <span className="interactiveChart__gestureIconWrap">
-              <MouseClickIcon />
-            </span>
-            <span className="interactiveChart__gestureArrow" aria-hidden="true">
-              →
-            </span>
-            <span className="interactiveChart__gestureIconWrap interactiveChart__gestureIconWrap--frame">
-              <SelectionFrameIcon axis="y" />
-            </span>
-          </div>
-        </div>
-      </div>
-
 
       {pointSizeControlsOpen ? (
         <div className="interactiveChart__sliderBar">
