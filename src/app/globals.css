@@ -2308,10 +2308,43 @@ html[data-theme="dark"] .fitsColorControl__select {
   font-variant-numeric: tabular-nums;
 }
 
-/* top left: the QUOP mark, which is the file menu (home, .json, .png, example, clear) */
-.builderHud__file {
+/* top left: the QUOP mark, which is the file menu (home, .json, .png, example, clear),
+   and Share beside it */
+.builderHud__topLeft {
+  position: absolute;
   top: 0.9rem;
   left: 0.9rem;
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.builderHud__topLeft > .builderIsland {
+  position: relative;
+}
+
+/* Share: copy link first, then the share sheet, email and the .json file */
+.builderShare {
+  position: relative;
+  display: flex;
+}
+
+.builderShare__list {
+  width: 14rem;
+}
+
+.builderShare__list .builderShare__primary {
+  font-weight: 700;
+}
+
+.builderShare__note {
+  margin: 0.25rem 0 0;
+  padding: 0.45rem 0.6rem 0.2rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
 /* under it, on its own: the +, whose fan lies on the QUOP fan's ring */
