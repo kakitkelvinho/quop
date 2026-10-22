@@ -74,7 +74,7 @@ export function LidtCalculator() {
   const energy = formatPrefixed(pulseEnergy, "J");
 
   return (
-    <section className="pageSection calculatorPage">
+    <section className="pageSection">
       <ToolIntro href="/calculators/lidt-calculator" aside="Laser-induced damage threshold" />
 
       <div className="calculatorSheet">

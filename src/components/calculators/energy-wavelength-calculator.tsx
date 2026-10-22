@@ -15,7 +15,7 @@ export function EnergyWavelengthCalculator() {
   const [pair, setPair] = useState<LinkedPair>(() => editField(0, "550"));
 
   return (
-    <section className="pageSection calculatorPage">
+    <section className="pageSection">
       <ToolIntro href="/calculators/energy-wavelength-calculator" />
 
       <div className="calculatorSheet">

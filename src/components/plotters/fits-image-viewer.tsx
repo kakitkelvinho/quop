@@ -40,6 +40,7 @@ import {
   TRUE_PIXEL_ASPECT,
 } from "@/components/plotters/pixel-aspect";
 import { chooseSurfaceStep } from "@/components/plotters/surface-geometry";
+import { SignIcon } from "@/components/sign-icon";
 import { useNumberDraft } from "@/components/use-number-draft";
 
 // three.js loads only once someone opens the Surface view
@@ -1182,7 +1183,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           }
           type="button"
         >
-          <SurfaceIcon />
+          <SignIcon>
+            <SurfaceIcon />
+          </SignIcon>
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         {isSurface ? null : (
@@ -1197,7 +1200,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Reset zoom"
           type="button"
         >
-          <ResetZoomIcon />
+          <SignIcon>
+            <ResetZoomIcon />
+          </SignIcon>
         </button>
         <button
           aria-label="Zoom in"
@@ -1206,7 +1211,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Zoom in"
           type="button"
         >
-          <ZoomInIcon />
+          <SignIcon>
+            <ZoomInIcon />
+          </SignIcon>
         </button>
         <button
           aria-label="Zoom out"
@@ -1215,7 +1222,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Zoom out"
           type="button"
         >
-          <ZoomOutIcon />
+          <SignIcon>
+            <ZoomOutIcon />
+          </SignIcon>
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         </>
@@ -1228,7 +1237,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Title"
           type="button"
         >
-          <TitleIcon />
+          <SignIcon>
+            <TitleIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={axisControlsOpen ? "Hide axis label editor" : "Show axis label editor"}
@@ -1238,7 +1249,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Axis labels"
           type="button"
         >
-          <AxisLabelsIcon />
+          <SignIcon>
+            <AxisLabelsIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={aspectControlsOpen ? "Hide pixel aspect controls" : "Show pixel aspect controls"}
@@ -1248,7 +1261,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Pixel aspect"
           type="button"
         >
-          <AspectIcon />
+          <SignIcon>
+            <AspectIcon />
+          </SignIcon>
         </button>
         <button
           aria-label={sliceControlsOpen ? "Hide slice tools" : "Show slice tools"}
@@ -1258,7 +1273,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Slice tools"
           type="button"
         >
-          <SliceIcon />
+          <SignIcon>
+            <SliceIcon />
+          </SignIcon>
         </button>
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <button
@@ -1269,7 +1286,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           title="Save"
           type="button"
         >
-          <SaveIcon />
+          <SignIcon>
+            <SaveIcon />
+          </SignIcon>
         </button>
       </div>
 
@@ -1477,7 +1496,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
                 value={activeSliceIndex}
               />
               <button
-                className="buttonControl buttonControl--secondary fitsInspectorCard__button"
+                className="buttonControl fitsInspectorCard__button"
                 onClick={handleSaveSliceCsv}
                 type="button"
               >

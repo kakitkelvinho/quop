@@ -1,3 +1,5 @@
+import { SignIcon } from "@/components/sign-icon";
+
 type SidebarCollapseToggleProps = {
   collapsed: boolean;
   onToggle: () => void;
@@ -18,16 +20,11 @@ export default function SidebarCollapseToggle({
       title={collapsed ? `Show ${label}` : `Hide ${label}`}
       type="button"
     >
-      <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path
-          d="M14 6 8 12l6 6"
-          fill="none"
-          stroke="currentColor"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-        />
-      </svg>
+      <SignIcon>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d="M15 5 8 12l7 7" />
+        </svg>
+      </SignIcon>
     </button>
   );
 }
