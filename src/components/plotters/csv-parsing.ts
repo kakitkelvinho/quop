@@ -27,6 +27,11 @@ export type CsvLayout = "columns" | "rows";
 export type ParsedGenericCsv = {
   error: string | null;
   headers: string[];
+  /**
+   * The clock columns among the headers (HH:MM:SS), their values seconds
+   * from the first reading's midnight: offered as x, never as y.
+   */
+  clockColumns: number[];
   layout: CsvLayout;
   rowCount: number;
   skippedRowCount: number;
@@ -484,6 +489,7 @@ function parseWideLayout(
     return {
       error: null,
       headers: ["x", ...labels],
+      clockColumns: [],
       layout: "rows",
       rowCount: rows.length,
       skippedRowCount,
@@ -500,13 +506,65 @@ function parseWideLayout(
   return null;
 }
 
+const CLOCK_PATTERN = /^(\d{1,2})([:.])(\d{2})(?:\2(\d{2}(?:\.\d+)?))?$/;
+
+/**
+ * Reads a clock cell - HH:MM:SS, HH:MM or HH.MM.SS, with or without
+ * fractional seconds - as seconds of the day. HH.MM (11.48) is a number,
+ * not a time, and a full date-time isn't read: both are NaN.
+ */
+export function parseClockCell(cell: string | undefined): number {
+  const match = cell?.trim().match(CLOCK_PATTERN);
+
+  if (!match) {
+    return Number.NaN;
+  }
+
+  const [, hours, separator, minutes, seconds] = match;
+
+  if (separator === "." && seconds === undefined) {
+    return Number.NaN;
+  }
+
+  const h = Number(hours);
+  const m = Number(minutes);
+  const sec = seconds === undefined ? 0 : Number(seconds);
+
+  return h < 24 && m < 60 && sec < 60 ? h * 3600 + m * 60 + sec : Number.NaN;
+}
+
+const DAY_SECONDS = 24 * 3600;
+
+// A logger's clock readings as a running time: every step back in the clock
+// is a midnight passed, so a day is added from that reading on.
+function runClock(cells: (string | undefined)[]): number[] {
+  let day = 0;
+  let previous = Number.NaN;
+
+  return cells.map((cell) => {
+    const value = parseClockCell(cell);
+
+    if (!Number.isFinite(value)) {
+      return Number.NaN;
+    }
+
+    if (value < previous) {
+      day += 1;
+    }
+
+    previous = value;
+    return value + day * DAY_SECONDS;
+  });
+}
+
 // Reads the table the way a spreadsheet does, a column at a time. The data
 // starts at the first row of numbers or, failing that, the first row with a
 // number in it (a row led by a timestamp or a sample name), and the header
 // is the nearest line above it with as many cells. A column that is mostly
 // words is left out; a blank or unreadable cell is NaN, a gap in its own
-// column only.
-function readColumnTable(lines: CsvLine[]) {
+// column only. With `readClocks`, a column of clock times is read as a
+// running time instead of left out.
+function readColumnTable(lines: CsvLine[], readClocks: boolean) {
   let dataStartIndex = lines.findIndex((line) => line.isNumericRow);
 
   if (dataStartIndex === -1) {
@@ -559,13 +617,40 @@ function readColumnTable(lines: CsvLine[]) {
 
     return numbers > 0 && numbers * 2 >= filled.length;
   });
-  const plotted = names.map((_, column) => column).filter((column) => isNumericColumn[column]);
-  const textColumns = names.map((_, column) => column).filter((column) => !isNumericColumn[column]);
+  // practically every filled cell a clock reading
+  const isClockColumn = names.map((_, column) => {
+    if (!readClocks || isNumericColumn[column]) {
+      return false;
+    }
+
+    const filled = tableLines
+      .map((line) => line.fields[column])
+      .filter((cell) => !isBlankCell(cell));
+    const clocks = filled.filter((cell) => Number.isFinite(parseClockCell(cell))).length;
+
+    return clocks > 0 && clocks >= filled.length * 0.9;
+  });
+  const plotted = names
+    .map((_, column) => column)
+    .filter((column) => isNumericColumn[column] || isClockColumn[column]);
+  const textColumns = names
+    .map((_, column) => column)
+    .filter((column) => !isNumericColumn[column] && !isClockColumn[column]);
+  const clockValues = new Map(
+    plotted
+      .filter((column) => isClockColumn[column])
+      .map((column) => [column, runClock(tableLines.map((line) => line.fields[column]))]),
+  );
 
   return {
     headers: plotted.map((column) => names[column]),
-    rows: tableLines.map((line) =>
-      plotted.map((column) => parseNumericCell(line.fields[column])),
+    clockColumns: plotted
+      .map((column, index) => (isClockColumn[column] ? index : -1))
+      .filter((index) => index !== -1),
+    rows: tableLines.map((line, row) =>
+      plotted.map(
+        (column) => clockValues.get(column)?.[row] ?? parseNumericCell(line.fields[column]),
+      ),
     ),
     // a row's first word cell (a sample name, a timestamp) names it when
     // the table is read by rows
@@ -596,6 +681,7 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
     return {
       error: "Provide a header row and at least one data row.",
       headers: [],
+      clockColumns: [],
       layout: layout ?? "columns",
       rowCount: 0,
       skippedRowCount: 0,
@@ -617,12 +703,14 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
   }
 
   const resolvedLayout = layout ?? "columns";
-  const table = readColumnTable(lines);
+  // clock columns are x; read by rows, a row's clock reading names it
+  const table = readColumnTable(lines, resolvedLayout === "columns");
 
   if (!table) {
     return {
       error: "Couldn't find any numeric data rows in this file.",
       headers: [],
+      clockColumns: [],
       layout: resolvedLayout,
       rowCount: 0,
       skippedRowCount: 0,
@@ -643,6 +731,7 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
     return {
       error: null,
       headers: table.headers,
+      clockColumns: table.clockColumns,
       layout: "columns",
       rowCount: table.rows.length,
       skippedRowCount: table.skippedRowCount,
@@ -662,6 +751,7 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
       isHeaderX ? "x" : "column",
       ...table.rows.map((_, index) => table.rowLabels[index] || `row ${index + 1}`),
     ],
+    clockColumns: [],
     layout: "rows",
     rowCount: table.headers.length,
     skippedRowCount: table.skippedRowCount,

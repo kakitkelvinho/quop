@@ -16,6 +16,11 @@ describe("resolveY", () => {
     assert.deepEqual(resolveY([0, 2, 9], yCandidates(4, 0)), [2]);
   });
 
+  it("never offers a clock column as Y", () => {
+    assert.deepEqual(yCandidates(4, 0, [1]), [2, 3]);
+    assert.deepEqual(yCandidates(4, 1, [1]), [0, 2, 3]);
+  });
+
   it("offers every column as Y when X is Row number", () => {
     assert.deepEqual(yCandidates(3, ROW_NUMBER), [0, 1, 2]);
   });
@@ -32,6 +37,10 @@ describe("swapX", () => {
 
   it("puts a column back when X becomes Row number", () => {
     assert.deepEqual(swapX([2], 1, ROW_NUMBER), [1, 2]);
+  });
+
+  it("does not put a clock column back into the Ys", () => {
+    assert.deepEqual(swapX([2, 3], 1, 0, [1]), [2, 3]);
   });
 
   it("leaves a choice not made yet unmade", () => {

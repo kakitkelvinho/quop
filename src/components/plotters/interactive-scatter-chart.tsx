@@ -927,14 +927,19 @@ function SaveIcon() {
 
 
 
+type XTickFormat = (value: number, ticks: { value: number }[]) => string;
+
 function InteractiveScatterChartInner({
   data,
   options,
   sourceLabel,
+  formatXTick,
 }: {
   data: ChartData<"scatter">;
   options: ChartOptions<"scatter">;
   sourceLabel?: string;
+  /** writes the x ticks in place of the number format (a clock axis) */
+  formatXTick?: XTickFormat;
 }) {
   const chartRef = useRef<ChartJS<"scatter"> | null>(null);
   const [dragSelection, setDragSelection] = useState<DragSelection | null>(
@@ -1732,7 +1737,9 @@ function InteractiveScatterChartInner({
           ...options.scales?.x?.ticks,
           ...xSkin.ticks,
           callback: (value, _index, ticks) =>
-            formatTickValue(value, xTickMultiplier, xTickDecimalPlaces, ticks),
+            formatXTick
+              ? formatXTick(Number(value), ticks)
+              : formatTickValue(value, xTickMultiplier, xTickDecimalPlaces, ticks),
           color: chartTextColor,
           font: {
             ...options.scales?.x?.ticks?.font,
@@ -2316,6 +2323,7 @@ export default function InteractiveScatterChart(props: {
   data: ChartData<"scatter">;
   options: ChartOptions<"scatter">;
   sourceLabel?: string;
+  formatXTick?: XTickFormat;
 }) {
   const chartKey = useMemo(() => buildDataSignature(props.data), [props.data]);
 

@@ -14,6 +14,7 @@ import {
   type ChartOptions,
 } from "chart.js";
 
+import { clockTicks, formatClock, hasSeconds } from "@/components/plotters/clock-axis";
 import {
   parseGenericCsv,
   type CsvLayout,
@@ -57,6 +58,11 @@ function createGenericDemoCsv() {
   return rows.join("\n");
 }
 
+// a clock axis's tick, with seconds when the ticks are less than a minute apart
+function formatClockTick(value: number, ticks: { value: number }[]) {
+  return formatClock(value, ticks.length > 1 && ticks[1].value - ticks[0].value < 60);
+}
+
 export default function GenericCsvPlotter() {
   const [csvInput, setCsvInput] = useState(createGenericDemoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-generic-columns.csv");
@@ -64,16 +70,18 @@ export default function GenericCsvPlotter() {
   // undefined: the parser picks (columns, unless the file is a wide export)
   const [layout, setLayout] = useState<CsvLayout | undefined>(undefined);
   const parsed = useMemo(() => parseGenericCsv(csvInput, layout), [csvInput, layout]);
-  const [xColumnIndex, setXColumnIndex] = useState(0);
+  // null: the file's clock column if it has one, else its first column
+  const [xColumnIndex, setXColumnIndex] = useState<number | null>(null);
   const [ySelection, setYSelection] = useState<YSelection>(null);
 
+  const chosenXColumnIndex = xColumnIndex ?? parsed.clockColumns[0] ?? 0;
   const resolvedXColumnIndex =
-    parsed.headers.length < 2 || xColumnIndex === ROW_NUMBER
+    parsed.headers.length < 2 || chosenXColumnIndex === ROW_NUMBER
       ? ROW_NUMBER
-      : Math.min(xColumnIndex, parsed.headers.length - 1);
+      : Math.min(chosenXColumnIndex, parsed.headers.length - 1);
   const yCandidateIndexes = useMemo(
-    () => yCandidates(parsed.headers.length, resolvedXColumnIndex),
-    [parsed.headers.length, resolvedXColumnIndex],
+    () => yCandidates(parsed.headers.length, resolvedXColumnIndex, parsed.clockColumns),
+    [parsed.headers.length, parsed.clockColumns, resolvedXColumnIndex],
   );
   const resolvedYColumnIndexes = useMemo(
     () => resolveY(ySelection, yCandidateIndexes),
@@ -84,6 +92,10 @@ export default function GenericCsvPlotter() {
     resolvedXColumnIndex === ROW_NUMBER
       ? "row number"
       : (parsed.headers[resolvedXColumnIndex] ?? "x");
+  const isClockX = parsed.clockColumns.includes(resolvedXColumnIndex);
+  // the tooltip shows seconds when the readings are finer than a minute
+  const clockSeconds =
+    isClockX && hasSeconds(parsed.rows.map((row) => row[resolvedXColumnIndex]));
 
   const chartData: ChartData<"scatter"> = {
     datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex) => {
@@ -117,13 +129,29 @@ export default function GenericCsvPlotter() {
         },
       },
       title: { display: false },
-      tooltip: { enabled: true },
+      tooltip: isClockX
+        ? {
+            enabled: true,
+            callbacks: {
+              label: (context) =>
+                `${context.dataset.label}: (${formatClock(context.parsed.x ?? Number.NaN, clockSeconds)}, ${context.parsed.y?.toLocaleString()})`,
+            },
+          }
+        : { enabled: true },
     },
     scales: {
       x: {
         type: "linear",
         title: { display: true, text: xLabel },
         grid: { color: "rgba(91, 102, 117, 0.18)" },
+        // a clock axis ticks on whole minutes, hours, ...
+        ...(isClockX
+          ? {
+              afterBuildTicks: (axis) => {
+                axis.ticks = clockTicks(axis.min, axis.max).map((value) => ({ value }));
+              },
+            }
+          : {}),
       },
       y: {
         title: { display: true, text: "selected columns" },
@@ -147,7 +175,7 @@ export default function GenericCsvPlotter() {
     setCsvInput(nextCsv);
     setSourceLabel(file.name);
     setLayout(undefined);
-    setXColumnIndex(0);
+    setXColumnIndex(null);
     setYSelection(null);
     event.target.value = "";
   }
@@ -155,13 +183,15 @@ export default function GenericCsvPlotter() {
   // the columns mean something else once the table is turned
   function handleLayoutChange(nextLayout: CsvLayout) {
     setLayout(nextLayout);
-    setXColumnIndex(0);
+    setXColumnIndex(null);
     setYSelection(null);
   }
 
   function handleXColumnChange(nextIndex: number) {
     setXColumnIndex(nextIndex);
-    setYSelection((current) => swapX(current, resolvedXColumnIndex, nextIndex));
+    setYSelection((current) =>
+      swapX(current, resolvedXColumnIndex, nextIndex, parsed.clockColumns),
+    );
   }
 
   const canRenderChart = !parsed.error && resolvedYColumnIndexes.length > 0 && parsed.rows.length > 0;
@@ -276,6 +306,7 @@ export default function GenericCsvPlotter() {
         <div className="visualizerChartSurface">
           {canRenderChart ? (
             <InteractiveScatterChart
+              formatXTick={isClockX ? formatClockTick : undefined}
               data={chartData}
               options={chartOptions}
               sourceLabel={sourceLabel}

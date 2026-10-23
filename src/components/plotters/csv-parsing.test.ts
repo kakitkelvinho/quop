@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   detectSeparator,
   parseArrayCsv,
+  parseClockCell,
   parseCsvRow,
   parseGenericCsv,
   parseNumericCell,
@@ -213,13 +214,59 @@ describe("parseGenericCsv", () => {
     assert.equal(parsed.error, null);
     assert.equal(parsed.layout, "columns");
     assert.equal(parsed.rowCount, 50);
-    assert.equal(parsed.headers.length, 7);
+    // every column but the garbled one, the clock among them
+    assert.equal(parsed.headers.length, 8);
+    assert.deepEqual(parsed.clockColumns, [1]);
   });
 
   it("still reports no numeric data when nothing looks wide either", () => {
     const parsed = parseGenericCsv("name,unit\nfoo,bar");
 
     assert.equal(parsed.error, "Couldn't find any numeric data rows in this file.");
+  });
+});
+
+describe("clock columns", () => {
+  it("reads HH.MM.SS, HH:MM:SS, HH:MM and fractional seconds", () => {
+    assert.equal(parseClockCell("11.48.35"), 11 * 3600 + 48 * 60 + 35);
+    assert.equal(parseClockCell("11:48:35"), 11 * 3600 + 48 * 60 + 35);
+    assert.equal(parseClockCell("11:48"), 11 * 3600 + 48 * 60);
+    assert.equal(parseClockCell("11:48:35.250"), 11 * 3600 + 48 * 60 + 35.25);
+    assert.equal(parseClockCell("0:00:00"), 0);
+  });
+
+  it("does not read 11.48, a date-time, or an impossible time", () => {
+    assert.ok(Number.isNaN(parseClockCell("11.48")));
+    assert.ok(Number.isNaN(parseClockCell("2026-10-01T10:00:00")));
+    assert.ok(Number.isNaN(parseClockCell("2026-10-23 12:00")));
+    assert.ok(Number.isNaN(parseClockCell("25:00")));
+    assert.ok(Number.isNaN(parseClockCell("12:61:00")));
+  });
+
+  it("reads a clock column as x, in seconds, instead of leaving it out", () => {
+    const parsed = parseGenericCsv("n,time,t\n1,11:48:35,21.3\n2,11:48:45,21.4");
+
+    assert.deepEqual(parsed.headers, ["n", "time", "t"]);
+    assert.deepEqual(parsed.clockColumns, [1]);
+    assert.deepEqual(parsed.rows.map((row) => row[1]), [42515, 42525]);
+    assert.doesNotMatch(parsed.extraInfo, /Not plotted/);
+  });
+
+  it("runs on past midnight", () => {
+    const parsed = parseGenericCsv(
+      ["1,23.59.50,1", "2,23.59.55,2", "3,00.00.00,3", "4,00.00.05,4"].join("\n"),
+    );
+    const times = parsed.rows.map((row) => row[1]);
+
+    assert.deepEqual(parsed.clockColumns, [1]);
+    assert.deepEqual(times, [86390, 86395, 86400, 86405]);
+  });
+
+  it("leaves the clock as a row's name when read by rows", () => {
+    const parsed = parseGenericCsv("time,a,b\n11:48,1,2\n11:49,3,4", "rows");
+
+    assert.deepEqual(parsed.clockColumns, []);
+    assert.deepEqual(parsed.headers, ["column", "11:48", "11:49"]);
   });
 });
 

@@ -14,10 +14,11 @@ function byIndex(a: number, b: number) {
   return a - b;
 }
 
-// The columns that can be Y: every one but X.
-export function yCandidates(columnCount: number, x: number): number[] {
+// The columns that can be Y: every one but X and those only X can be (a
+// clock column).
+export function yCandidates(columnCount: number, x: number, xOnly: number[] = []): number[] {
   return Array.from({ length: columnCount }, (_, index) => index).filter(
-    (index) => index !== x,
+    (index) => index !== x && !xOnly.includes(index),
   );
 }
 
@@ -34,17 +35,28 @@ export function resolveY(selection: YSelection, candidates: number[]): number[] 
 
 /**
  * The Ys after X moves from `previousX` to `nextX`: the new X leaves the
- * Ys, the old X comes back into them (unless it was Row number), and the
- * other choices stay. Nothing chosen yet stays that way.
+ * Ys, the old X comes back into them (unless it was Row number or a column
+ * only X can be), and the other choices stay. Nothing chosen yet stays
+ * that way.
  */
-export function swapX(selection: YSelection, previousX: number, nextX: number): YSelection {
+export function swapX(
+  selection: YSelection,
+  previousX: number,
+  nextX: number,
+  xOnly: number[] = [],
+): YSelection {
   if (selection === null) {
     return null;
   }
 
   const next = selection.filter((index) => index !== nextX);
 
-  if (previousX !== ROW_NUMBER && previousX !== nextX && !next.includes(previousX)) {
+  if (
+    previousX !== ROW_NUMBER &&
+    previousX !== nextX &&
+    !xOnly.includes(previousX) &&
+    !next.includes(previousX)
+  ) {
     next.push(previousX);
   }
 
