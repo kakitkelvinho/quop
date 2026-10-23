@@ -379,7 +379,7 @@
     },
     {
       "name": "Quiet Toolbar (interactiveChart__iconButton)",
-      "description": "Every viewer's icon toolbar (CSV, Array and CSV + FITS charts, FITS image viewer): the Sign Rule's second exception. A tool is its pictogram alone, no plate: outline glyph in an outlined 1.6em square, both --muted. Hover: neutral wash (--foreground at 8%) and the line turns --foreground. On/open/pressed: the line is --foreground and 1.5px thickens to 2px. Disabled 40%; focus is the 2px ring offset 2px. No toolbar amber, no foot bar. The last tool is an i (ChartInfo) that opens a bubble above the toolbar's right edge saying in words what the pointer does on the plot: --surface-strong, 1px hairline, --radius, no shadow, 0.84rem with the gesture in 700; closes on Esc, outside click or the i. It replaces the old row of gesture glyphs."
+      "description": "Every viewer's icon toolbar (CSV, Array and CSV + FITS charts, FITS image viewer): the Sign Rule's second exception. A tool is its pictogram alone, no plate: outline glyph in an outlined 1.6em square, both --muted. Hover: neutral wash (--foreground at 8%) and the line turns --foreground. On/open/pressed: the line is --foreground and 1.5px thickens to 2px. Disabled 40%; focus is the 2px ring offset 2px. No toolbar amber, no foot bar. The last tool is an i (ChartInfo) that opens a bubble above the toolbar's right edge saying what the pointer does on the plot, a line per gesture led by its pictogram in a --muted square: --surface-strong, 1px hairline, --radius, no shadow, 0.84rem with the gesture in 700; closes on Esc, outside click or the i. It replaces the old row of gesture glyphs."
     }
   ],
   "narrative": {

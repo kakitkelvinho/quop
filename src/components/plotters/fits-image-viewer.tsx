@@ -1296,18 +1296,26 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
           hints={
             isSurface
               ? [
-                  <><strong>Drag</strong> to turn the surface.</>,
-                  <><strong>Right-drag</strong> to move it.</>,
-                  <><strong>Scroll</strong> to zoom.</>,
+                  { gesture: "turn", text: <><strong>Drag</strong> to turn the surface.</> },
+                  { gesture: "move", text: <><strong>Right-drag</strong> to move it.</> },
+                  { gesture: "scroll", text: <><strong>Scroll</strong> to zoom.</> },
                 ]
               : [
-                  <><strong>Point</strong> at the image to read a pixel&rsquo;s value.</>,
-                  <><strong>Drag</strong> a box to zoom in on it.</>,
-                  <>
-                    <strong>Click</strong> a pixel to pick the{" "}
-                    {sliceAxis === "horizontal" ? "row" : "column"} the slice shows.
-                  </>,
-                  <><strong>Reset zoom</strong> to go back.</>,
+                  {
+                    gesture: "point",
+                    text: <><strong>Point</strong> at the image to read a pixel&rsquo;s value.</>,
+                  },
+                  { gesture: "box", text: <><strong>Drag</strong> a box to zoom in on it.</> },
+                  {
+                    gesture: "click",
+                    text: (
+                      <>
+                        <strong>Click</strong> a pixel to pick the{" "}
+                        {sliceAxis === "horizontal" ? "row" : "column"} the slice shows.
+                      </>
+                    ),
+                  },
+                  { gesture: "reset", text: <><strong>Reset zoom</strong> to go back.</> },
                 ]
           }
         />

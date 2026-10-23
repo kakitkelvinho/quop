@@ -948,10 +948,22 @@ select.linkedField__unit {
 
 .chartInfo__list {
   display: grid;
-  gap: 0.3rem;
+  gap: 0.45rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* each line leads with its gesture's pictogram, in the toolbar's gray */
+.chartInfo__hint {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.chartInfo__hint .signIcon {
+  color: var(--muted);
 }
 
 .chartInfo__list strong {

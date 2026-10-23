@@ -1945,10 +1945,13 @@ function InteractiveScatterChartInner({
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <ChartInfo
           hints={[
-            <><strong>Drag</strong> across the plot to zoom in on x.</>,
-            <><strong>Shift + drag</strong>, or drag along the y axis, to zoom in on y.</>,
-            <><strong>Scroll</strong> to zoom, once scroll zoom is on.</>,
-            <><strong>Reset zoom</strong> to go back.</>,
+            { gesture: "zoom-x", text: <><strong>Drag</strong> across the plot to zoom in on x.</> },
+            {
+              gesture: "zoom-y",
+              text: <><strong>Shift + drag</strong>, or drag along the y axis, to zoom in on y.</>,
+            },
+            { gesture: "scroll", text: <><strong>Scroll</strong> to zoom, once scroll zoom is on.</> },
+            { gesture: "reset", text: <><strong>Reset zoom</strong> to go back.</> },
           ]}
         />
       </div>
