@@ -14,13 +14,22 @@ import {
   type ChartOptions,
 } from "chart.js";
 
+import { clockTicks, formatClock, hasSeconds } from "@/components/plotters/clock-axis";
 import {
   parseGenericCsv,
   type CsvLayout,
   type DataPoint,
 } from "@/components/plotters/csv-parsing";
-import { FileDrop } from "@/components/plotters/file-drop";
+import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import { XYPicker } from "@/components/plotters/xy-picker";
+import {
+  ROW_NUMBER,
+  resolveY,
+  swapX,
+  yCandidates,
+  type YSelection,
+} from "@/components/plotters/xy-selection";
 import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(
@@ -49,8 +58,15 @@ function createGenericDemoCsv() {
   return rows.join("\n");
 }
 
-// the x choice that is no column: a value's place in its column (1, 2, ...)
-const ROW_NUMBER = -1;
+// past this many points or series the chart is drawn without animating
+// them in: setting up the animations alone takes seconds
+const LARGE_PLOT_POINTS = 20000;
+const LARGE_PLOT_SERIES = 50;
+
+// a clock axis's tick, with seconds when the ticks are less than a minute apart
+function formatClockTick(value: number, ticks: { value: number }[]) {
+  return formatClock(value, ticks.length > 1 && ticks[1].value - ticks[0].value < 60);
+}
 
 export default function GenericCsvPlotter() {
   const [csvInput, setCsvInput] = useState(createGenericDemoCsv);
@@ -59,84 +75,112 @@ export default function GenericCsvPlotter() {
   // undefined: the parser picks (columns, unless the file is a wide export)
   const [layout, setLayout] = useState<CsvLayout | undefined>(undefined);
   const parsed = useMemo(() => parseGenericCsv(csvInput, layout), [csvInput, layout]);
-  const [xColumnIndex, setXColumnIndex] = useState(0);
-  const [yColumnIndexes, setYColumnIndexes] = useState<number[]>([]);
+  // null: the file's clock column if it has one, else its first column
+  const [xColumnIndex, setXColumnIndex] = useState<number | null>(null);
+  const [ySelection, setYSelection] = useState<YSelection>(null);
 
+  const chosenXColumnIndex = xColumnIndex ?? parsed.clockColumns[0] ?? 0;
   const resolvedXColumnIndex =
-    parsed.headers.length < 2 || xColumnIndex === ROW_NUMBER
+    parsed.headers.length < 2 || chosenXColumnIndex === ROW_NUMBER
       ? ROW_NUMBER
-      : Math.min(xColumnIndex, parsed.headers.length - 1);
-  const resolvedYColumnIndexes = useMemo(() => {
-    if (!parsed.headers.length) {
-      return [];
-    }
-
-    const filtered = yColumnIndexes.filter(
-      (index) => index < parsed.headers.length && index !== resolvedXColumnIndex,
-    );
-
-    return filtered.length
-      ? filtered
-      : parsed.headers
-          .map((_, index) => index)
-          .filter((index) => index !== resolvedXColumnIndex);
-  }, [parsed.headers, resolvedXColumnIndex, yColumnIndexes]);
+      : Math.min(chosenXColumnIndex, parsed.headers.length - 1);
+  const yCandidateIndexes = useMemo(
+    () => yCandidates(parsed.headers.length, resolvedXColumnIndex, parsed.clockColumns),
+    [parsed.headers.length, parsed.clockColumns, resolvedXColumnIndex],
+  );
+  const resolvedYColumnIndexes = useMemo(
+    () => resolveY(ySelection, yCandidateIndexes),
+    [ySelection, yCandidateIndexes],
+  );
 
   const xLabel =
     resolvedXColumnIndex === ROW_NUMBER
       ? "row number"
       : (parsed.headers[resolvedXColumnIndex] ?? "x");
+  const isClockX = parsed.clockColumns.includes(resolvedXColumnIndex);
 
-  const chartData: ChartData<"scatter"> = {
-    datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex) => {
-      return {
-        label: parsed.headers[columnIndex],
-        // a blank cell is a gap in its own series only
-        data: parsed.rows
-          .map((row, rowIndex) => ({
-            x: resolvedXColumnIndex === ROW_NUMBER ? rowIndex + 1 : row[resolvedXColumnIndex],
-            y: row[columnIndex],
-          }))
-          .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
-        showLine: true,
-        borderWidth: 2,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      };
+  // rebuilt only when the table or the X / Y choice changes: folding the
+  // sidebar or typing elsewhere must not redraw thousands of points
+  const chartData = useMemo<ChartData<"scatter">>(
+    () => ({
+      datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>(
+        (columnIndex) => ({
+          label: parsed.headers[columnIndex],
+          // a blank cell is a gap in its own series only
+          data: parsed.rows
+            .map((row, rowIndex) => ({
+              x: resolvedXColumnIndex === ROW_NUMBER ? rowIndex + 1 : row[resolvedXColumnIndex],
+              y: row[columnIndex],
+            }))
+            .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
+          showLine: true,
+          borderWidth: 2,
+          pointRadius: 1.5,
+          pointHoverRadius: 3,
+        }),
+      ),
     }),
-  };
+    [parsed, resolvedXColumnIndex, resolvedYColumnIndexes],
+  );
 
-  const chartOptions: ChartOptions<"scatter"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: "top",
-        labels: {
-          usePointStyle: true,
-          boxWidth: 10,
+  const pointCount = chartData.datasets.reduce((sum, dataset) => sum + dataset.data.length, 0);
+  const isLargePlot =
+    pointCount > LARGE_PLOT_POINTS || chartData.datasets.length > LARGE_PLOT_SERIES;
+
+  const chartOptions = useMemo<ChartOptions<"scatter">>(() => {
+    // the tooltip shows seconds when the readings are finer than a minute
+    const clockSeconds =
+      isClockX && hasSeconds(parsed.rows.map((row) => row[resolvedXColumnIndex]));
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: isLargePlot ? false : undefined,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            boxWidth: 10,
+          },
+        },
+        title: { display: false },
+        tooltip: isClockX
+          ? {
+              enabled: true,
+              callbacks: {
+                label: (context) =>
+                  `${context.dataset.label}: (${formatClock(context.parsed.x ?? Number.NaN, clockSeconds)}, ${context.parsed.y?.toLocaleString()})`,
+              },
+            }
+          : { enabled: true },
+      },
+      scales: {
+        x: {
+          type: "linear",
+          title: { display: true, text: xLabel },
+          grid: { color: "rgba(91, 102, 117, 0.18)" },
+          // a clock axis ticks on whole minutes, hours, ...
+          ...(isClockX
+            ? {
+                afterBuildTicks: (axis) => {
+                  axis.ticks = clockTicks(axis.min, axis.max).map((value) => ({ value }));
+                },
+              }
+            : {}),
+        },
+        y: {
+          title: { display: true, text: "selected columns" },
+          grid: { color: "rgba(91, 102, 117, 0.18)" },
         },
       },
-      title: { display: false },
-      tooltip: { enabled: true },
-    },
-    scales: {
-      x: {
-        type: "linear",
-        title: { display: true, text: xLabel },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
+      elements: {
+        point: { radius: 1.5, hoverRadius: 3 },
+        line: { tension: 0 },
       },
-      y: {
-        title: { display: true, text: "selected columns" },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
-      },
-    },
-    elements: {
-      point: { radius: 1.5, hoverRadius: 3 },
-      line: { tension: 0 },
-    },
-  };
+    };
+  }, [isClockX, isLargePlot, parsed.rows, resolvedXColumnIndex, xLabel]);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -149,35 +193,23 @@ export default function GenericCsvPlotter() {
     setCsvInput(nextCsv);
     setSourceLabel(file.name);
     setLayout(undefined);
+    setXColumnIndex(null);
+    setYSelection(null);
     event.target.value = "";
   }
 
   // the columns mean something else once the table is turned
   function handleLayoutChange(nextLayout: CsvLayout) {
     setLayout(nextLayout);
-    setXColumnIndex(0);
-    setYColumnIndexes([]);
+    setXColumnIndex(null);
+    setYSelection(null);
   }
 
   function handleXColumnChange(nextIndex: number) {
     setXColumnIndex(nextIndex);
-    setYColumnIndexes((current) => {
-      const filtered = current.filter((index) => index !== nextIndex);
-
-      return filtered.length
-        ? filtered
-        : parsed.headers.map((_, index) => index).filter((index) => index !== nextIndex);
-    });
-  }
-
-  function handleYColumnToggle(columnIndex: number, checked: boolean) {
-    setYColumnIndexes((current) => {
-      if (checked) {
-        return current.includes(columnIndex) ? current : [...current, columnIndex].sort((a, b) => a - b);
-      }
-
-      return current.filter((index) => index !== columnIndex);
-    });
+    setYSelection((current) =>
+      swapX(current, resolvedXColumnIndex, nextIndex, parsed.clockColumns),
+    );
   }
 
   const canRenderChart = !parsed.error && resolvedYColumnIndexes.length > 0 && parsed.rows.length > 0;
@@ -201,10 +233,10 @@ export default function GenericCsvPlotter() {
           <h2>Data</h2>
 
           <label className="field">
-            <span>CSV file</span>
+            <span>CSV, TSV or TXT file</span>
             <FileDrop
-              kind="CSV file"
-              accept=".csv,text/csv"
+              kind="CSV, TSV or TXT file"
+              accept={TABLE_FILE_ACCEPT}
               onChange={(event) => {
                 void handleFileUpload(event);
               }}
@@ -269,51 +301,17 @@ export default function GenericCsvPlotter() {
                   {parsed.layout === "columns" ? "Columns" : "Series"}
                 </p>
               </div>
-              {/* plots each value against its place in the column, as a
-                  spreadsheet does when it is given only y */}
-              <div className="csvRoleRow">
-                <span className="csvRoleRow__name">Row number</span>
-                <label className="csvRoleToggle">
-                  <input
-                    checked={resolvedXColumnIndex === ROW_NUMBER}
-                    name="generic-csv-x-column"
-                    onChange={() => handleXColumnChange(ROW_NUMBER)}
-                    type="radio"
-                  />
-                  <span>X</span>
-                </label>
-                <span aria-hidden="true" />
-              </div>
-              {parsed.headers.map((header, index) => {
-                const isX = index === resolvedXColumnIndex;
-                const isY = resolvedYColumnIndexes.includes(index);
-
-                return (
-                  <div className="csvRoleRow" key={`${header}-${index}`}>
-                    <span className="csvRoleRow__name">{header}</span>
-                    <label className="csvRoleToggle">
-                      <input
-                        checked={index === resolvedXColumnIndex}
-                        name="generic-csv-x-column"
-                        onChange={() => handleXColumnChange(index)}
-                        type="radio"
-                      />
-                      <span>X</span>
-                    </label>
-                    <label className="csvRoleToggle">
-                      <input
-                        checked={isY}
-                        disabled={isX}
-                        onChange={(event) =>
-                          handleYColumnToggle(index, event.target.checked)
-                        }
-                        type="checkbox"
-                      />
-                      <span>Y</span>
-                    </label>
-                  </div>
-                );
-              })}
+              <XYPicker
+                // a new table starts with an empty filter
+                key={`${sourceLabel}-${parsed.layout}`}
+                candidates={yCandidateIndexes}
+                headers={parsed.headers}
+                noun={parsed.layout === "columns" ? "columns" : "series"}
+                onX={handleXColumnChange}
+                onY={setYSelection}
+                plotted={resolvedYColumnIndexes}
+                x={resolvedXColumnIndex}
+              />
             </div>
           ) : null}
 
@@ -326,6 +324,7 @@ export default function GenericCsvPlotter() {
         <div className="visualizerChartSurface">
           {canRenderChart ? (
             <InteractiveScatterChart
+              formatXTick={isClockX ? formatClockTick : undefined}
               data={chartData}
               options={chartOptions}
               sourceLabel={sourceLabel}
