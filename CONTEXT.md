@@ -122,3 +122,15 @@ _Avoid_: aspect ratio (ambiguous: the frame's or the pixel's), footprint, stretc
 **Full header**:
 Every card of a FITS header, in file order, with its keyword, value and comment.
 _Avoid_: metadata, raw header
+
+**CSV**:
+A text table, one record per line, its cells separated by commas or by tabs, whatever the file is called (`.csv`, `.tsv`, `.txt`). The CSV plotters keep the name for all of them.
+_Avoid_: TSV or text file as a separate kind, delimited file
+
+**Series in**:
+Which way a CSV's series run: down its columns (each column is a series, as in a spreadsheet) or along its rows (each row is a series, as in a wide spectrometer export). The plotter guesses when a file is opened; the user can turn it.
+_Avoid_: layout, orientation, transpose
+
+**Clock column**:
+A CSV column of times of day (`11:48:35`, `11.48.35`), read as time running on from the first reading, past midnight into the next day. It is what the other columns are plotted against, never plotted itself.
+_Avoid_: timestamp (that has a date), time column (the Time CSV plotter's numeric time)
