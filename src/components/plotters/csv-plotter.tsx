@@ -17,7 +17,7 @@ import {
 import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
 import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
+import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(
   LinearScale,
@@ -171,9 +171,8 @@ export default function CsvPlotter() {
       className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
     >
       <div className="visualizerSidebar">
-        <SidebarCollapseToggle
+        <SidebarFold
           collapsed={sidebarCollapsed}
-          label="input panel"
           onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
         <div className="inputCard fieldStack">

@@ -24,8 +24,9 @@
   --focus-ring: var(--accent);
   /* a hovered or pressed sign darkens the ink by one step: Station Blue Deep */
   --accent-hover: #0f4690;
-  /* the white bar along a pressed sign's foot */
-  --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) bottom / 100% 3px no-repeat;
+  /* the white bar along a pressed sign's foot, inset so the plate's blue
+     still edges it on a white page */
+  --sign-foot: linear-gradient(var(--on-accent), var(--on-accent)) center bottom 2px / calc(100% - 4px) 3px no-repeat;
   /* the neutral wash behind a hovered row */
   --row-hover: color-mix(in srgb, var(--foreground) 5%, transparent);
   --mark: 17 17 17;
@@ -624,8 +625,10 @@ select.linkedField__unit {
   line-height: 1.5;
 }
 
-/* The one dashed edge in the system: "drop a file here". The input fills it,
-   unseen, so a click anywhere picks a file and the ring shows on focus. */
+/* A file picker: the one dashed edge in the system, "drop a file here",
+   round one flat box, "Choose file", with "or drop it here" beside it. The
+   input fills the box, unseen, so a click anywhere picks a file, and the
+   ring shows on focus. Pointed at or held over, the dashes turn to ink. */
 .fileDrop {
   position: relative;
   display: grid;
@@ -637,15 +640,12 @@ select.linkedField__unit {
   color: var(--muted);
   font-weight: 500;
   cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
+  transition: border-color 160ms ease;
 }
 
 .fileDrop:hover,
 .fileDrop.is-over {
-  border-color: var(--focus-ring);
-  background: var(--accent-soft);
+  border-color: var(--foreground);
 }
 
 .fileDrop:focus-within {
@@ -669,13 +669,23 @@ select.linkedField__unit {
   gap: 0.4rem 0.75rem;
 }
 
-/* the picker's button is a sign; the whole zone presses it */
+/* the picker's button is flat, like the viewers' tools: an ink line and
+   ink words, black by day and white by night, no plate. Pointed at (the
+   whole row presses it), it takes the neutral wash. */
 .fileDrop__button {
   display: inline-flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.3em 0.75em 0.3em 0.3em;
-  font-weight: 800;
+  padding: 0.4em 0.9em;
+  border: 1.5px solid var(--foreground);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  font-weight: 700;
+  transition: background-color 160ms ease;
+}
+
+.fileDrop:hover .fileDrop__button,
+.fileDrop.is-over .fileDrop__button {
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
 .fileDrop__name {
@@ -736,7 +746,7 @@ select.linkedField__unit {
 }
 
 .visualizerLayout--sidebarCollapsed {
-  grid-template-columns: 2.75rem minmax(0, 1fr);
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .visualizerSidebar {
@@ -744,30 +754,96 @@ select.linkedField__unit {
   min-width: 0;
 }
 
+/* folded, the sidebar is gone to the hairline; only its fold is left */
 .visualizerLayout--sidebarCollapsed .visualizerSidebar .inputCard {
   display: none;
 }
 
-.sidebarCollapseToggle {
+/* The sidebar's fold (SidebarFold): the hairline between the sidebar and the
+   plot is the button. An unseen strip lies along the line, a little wider
+   than it; pointed at, a tab grows out of the line where the pointer is, a
+   hairline rectangle on the page's ground with the arrow inside, and a click
+   anywhere on the strip folds the sidebar. Folded, the tab stays out: the way
+   back. */
+.sidebarFold {
   position: absolute;
-  top: 1rem;
-  right: -1.15rem;
+  top: 0;
+  bottom: 0;
+  /* centred on the plot's left border, one column gap past the sidebar */
+  right: calc(-1.3rem - 0.75rem);
   z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.3em;
-  font-size: 1rem;
+  width: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
 }
 
-.sidebarCollapseToggle svg {
+.sidebarFold__tab {
+  position: absolute;
+  top: var(--fold-tab-y, 2.4rem);
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 2.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease;
+}
+
+.sidebarFold:hover .sidebarFold__tab,
+.sidebarFold:focus-visible .sidebarFold__tab,
+.sidebarFold.is-collapsed .sidebarFold__tab {
+  opacity: 1;
+}
+
+.sidebarFold:hover .sidebarFold__tab {
+  border-color: var(--foreground);
+}
+
+.sidebarFold:focus-visible {
+  outline: none;
+}
+
+.sidebarFold:focus-visible .sidebarFold__tab {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.sidebarFold__tab svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  overflow: visible;
   transition: transform 160ms ease;
 }
 
-.sidebarCollapseToggle.is-collapsed svg {
+.sidebarFold__tab path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+.sidebarFold.is-collapsed .sidebarFold__tab svg {
   transform: rotate(180deg);
 }
+
+/* with no pointer to hover, the tab is always out */
+@media (hover: none) {
+  .sidebarFold__tab {
+    opacity: 1;
+  }
+}
+
 
 .visualizerChartCard {
   min-height: 32rem;
@@ -799,12 +875,8 @@ select.linkedField__unit {
 
 .interactiveChart {
   --interactive-chart-border: rgba(91, 102, 117, 0.2);
-  --interactive-chart-button-bg: rgb(255 255 255 / 0.84);
-  --interactive-chart-button-color: #243244;
   /* the opaque fill of a panel that opens over the chart */
   --interactive-chart-panel-bg: var(--surface-strong);
-  /* the paper, not a tint of its own: the chart sits on the page's surface */
-  --interactive-chart-surface-bg: var(--surface-strong);
   /* the figure itself is plain white, like a matplotlib figure on paper */
   --interactive-chart-stage-bg: #ffffff;
   --interactive-chart-stage-border: rgba(91, 102, 117, 0.16);
@@ -818,20 +890,12 @@ select.linkedField__unit {
   min-width: 0;
   height: 100%;
   min-height: 20rem;
-  padding: 0.65rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: var(--radius);
-  background: var(--interactive-chart-surface-bg);
   color: var(--interactive-chart-text);
 }
 
 .interactiveChart--dark {
   --interactive-chart-border: rgba(148, 163, 184, 0.24);
-  --interactive-chart-button-bg: rgb(18 22 31 / 0.9);
-  --interactive-chart-button-color: #ebf1f7;
   --interactive-chart-panel-bg: rgb(18 22 31);
-  /* the paper, not a tint of its own: the chart sits on the page's surface */
-  --interactive-chart-surface-bg: var(--surface-strong);
   --interactive-chart-stage-bg: #11161f;
   --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
   --interactive-chart-text: #ebf1f7;
@@ -883,14 +947,46 @@ select.linkedField__unit {
   box-shadow: inset 0 0 0 1px rgb(241 148 68 / 0.18);
 }
 
-/* an icon-only sign: the pictogram square, padded 0.3em by the plate */
+/* The Quiet Toolbar Rule: a viewer's tools are the Sign Rule's second
+   exception, after the Tabletop HUD. A row of blue plates beside a plot
+   outshouts the data, so a tool is its pictogram alone: a gray outline in a
+   gray square, no plate. Pointed at, it takes the neutral wash; on, open or
+   pressed, the line turns to the page's ink (black by day, white by night)
+   and thickens to 2px, so the state doesn't rest on a colour change alone. */
 .interactiveChart__iconButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.3em;
+  padding: 0.15em;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
   font-size: 1rem;
   cursor: pointer;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.interactiveChart__iconButton:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
+  color: var(--foreground);
+}
+
+.interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]) {
+  color: var(--foreground);
+}
+
+.interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]) .signIcon {
+  border-width: 2px;
+}
+
+.interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"])
+  .signIcon
+  svg
+  :is(path, circle, ellipse, rect, line, polyline, polygon) {
+  stroke-width: 2px;
 }
 
 .interactiveChart__footer {
@@ -901,8 +997,118 @@ select.linkedField__unit {
   column-gap: 0.4rem;
   row-gap: 0.2rem;
   justify-content: flex-start;
+  position: relative;
   min-width: 0;
   padding-top: 0;
+}
+
+/* the i's bubble: words for what the pointer does, opening above the
+   toolbar from its right edge, over the foot of the plot. Opaque, a
+   hairline, no shadow, like every surface that floats over content. */
+.chartInfo__bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
+  z-index: 5;
+  width: max-content;
+  max-width: min(22rem, 100%);
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+/* the bubble's subheader, a label like a section kicker */
+.chartInfo__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* a line per gesture: its picture, where it has one, in a column of its
+   own so the words line up */
+.chartInfo__list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chartInfo__list:has(.chartInfo__gesture:not(:empty)) {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.chartInfo__hint {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.chartInfo__hint > :last-child {
+  grid-column: -2;
+}
+
+.chartInfo__gesture {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.chartInfo__gesture:empty {
+  display: none;
+}
+
+/* the old gesture row's mouse and window glyphs, each in a hairline square */
+.chartInfo__glyph,
+.chartInfo__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+}
+
+.chartInfo__glyph {
+  width: 1.8rem;
+}
+
+.chartInfo__glyph--frame {
+  width: 2.1rem;
+}
+
+.chartInfo__glyph svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.chartInfo__glyph--frame svg {
+  width: 1.35rem;
+  height: 1.1rem;
+}
+
+.chartInfo__key {
+  min-width: 2.2rem;
+  padding: 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.chartInfo__list strong {
+  font-weight: 700;
 }
 
 .interactiveChart__footerDivider {
@@ -912,7 +1118,6 @@ select.linkedField__unit {
   background: var(--interactive-chart-border);
 }
 
-.interactiveChart__gesturePanel,
 .interactiveChart__sliderBar,
 .interactiveChart__editorBar,
 .interactiveChart__customizeMenu {
@@ -946,91 +1151,6 @@ select.linkedField__unit {
   cursor: pointer;
 }
 
-
-.interactiveChart__gesturePanel {
-  gap: 0.3rem;
-  padding: 0.55rem 0.72rem 0.6rem;
-}
-
-.interactiveChart__gestureRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.84rem;
-  font-weight: 700;
-}
-
-.interactiveChart__gestureIcons {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-  color: #8f5f12;
-}
-
-.interactiveChart--dark .interactiveChart__gestureIcons {
-  color: #ffd99d;
-}
-
-.interactiveChart__gestureIconWrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.68);
-}
-
-.interactiveChart__gestureIconWrap--frame {
-  width: 2.1rem;
-}
-
-.interactiveChart__gestureIconWrap svg {
-  width: 1.05rem;
-  height: 1.05rem;
-}
-
-.interactiveChart__gestureIconWrap--frame svg {
-  width: 1.35rem;
-  height: 1.1rem;
-}
-
-.interactiveChart__gestureArrow,
-.interactiveChart__gesturePlus {
-  font-size: 0.92rem;
-  line-height: 1;
-}
-
-.interactiveChart__gestureComma {
-  font-size: 0.92rem;
-  line-height: 1;
-  color: var(--interactive-chart-text);
-}
-
-.interactiveChart__gestureKey {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.2rem;
-  height: 1.8rem;
-  padding: 0 0.45rem;
-  border: 1px solid var(--interactive-chart-border);
-  border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.68);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-
-.interactiveChart--dark .interactiveChart__gestureIconWrap,
-.interactiveChart--dark .interactiveChart__gestureKey {
-  background: rgb(12 17 26 / 0.76);
-}
 
 .interactiveChart__fieldRow {
   display: grid;
@@ -1194,10 +1314,29 @@ main:focus {
     grid-template-columns: 1fr;
   }
 
-  /* the sidebar is full width here, so a toggle hung over its edge would
-     stick out past the page */
-  .sidebarCollapseToggle {
-    right: 0.75rem;
+  /* stacked, the hairline runs across, above the plot, so the fold lies
+     along it and folds the sidebar up; its tab sits at the line's middle */
+  .sidebarFold {
+    top: auto;
+    right: 0;
+    bottom: calc(-1rem - 0.75rem);
+    left: 0;
+    width: auto;
+    height: 1.5rem;
+  }
+
+  .sidebarFold__tab {
+    top: 50%;
+    width: 2.6rem;
+    height: 1.25rem;
+  }
+
+  .sidebarFold__tab svg {
+    transform: rotate(90deg);
+  }
+
+  .sidebarFold.is-collapsed .sidebarFold__tab svg {
+    transform: rotate(-90deg);
   }
 
   .visualizerChartCard {
@@ -1711,8 +1850,6 @@ html[data-theme="dark"] .fitsColorControl__select {
 
 .fitsImageFrame {
   --interactive-chart-border: var(--border);
-  --interactive-chart-button-bg: var(--surface);
-  --interactive-chart-button-color: var(--foreground);
   --interactive-chart-text: var(--foreground);
   display: grid;
   gap: 0.85rem;
@@ -1904,8 +2041,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 .fitsImageFrame .interactiveChart__editorBar,
-.fitsImageFrame .interactiveChart__sliderBar,
-.fitsImageFrame .interactiveChart__gesturePanel {
+.fitsImageFrame .interactiveChart__sliderBar {
   background: var(--surface-strong);
 }
 
@@ -4734,8 +4870,8 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 
 /* the way to the tools as one station sign, after Vienna Hbf's: a single
    blue panel with a row per destination, the rows parted by a faint
-   white rule, and each row's orange arrow in its lower right corner, where
-   every sign keeps it */
+   white rule, and each row's orange arrow (.signArrow) in its lower right
+   corner */
 .heroTools {
   display: grid;
   width: min(100%, 22rem);
@@ -4764,7 +4900,14 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   border-top: 1px solid color-mix(in srgb, var(--on-accent) 22%, transparent);
 }
 
-.heroTools__arrow {
+/* a sign's orange arrow, in its lower right corner, where every sign keeps
+   it: the way on, never leading the words */
+.buttonLink:has(.signArrow) {
+  position: relative;
+  padding-right: 2.2em;
+}
+
+.signArrow {
   position: absolute;
   right: 0.7em;
   bottom: 0.55em;
@@ -4774,13 +4917,13 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   color: #fb8c4a;
 }
 
-.heroTools__arrow svg {
+.signArrow svg {
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.heroTools__arrow path {
+.signArrow path {
   fill: none;
   stroke: currentColor;
   stroke-width: 2.5px;
@@ -5226,12 +5369,9 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .buttonLink,
     .skipLink,
     .buttonControl,
-    .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
-    .sidebarCollapseToggle,
-    .fileDrop__button,
     .toolCard__sign
   ) {
   border: 0;
@@ -5252,27 +5392,20 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 :is(
     .buttonLink,
     .buttonControl,
-    .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
-    .sidebarCollapseToggle,
     .navTab,
     .navFlyout__link,
     .siteFooter a
   ):hover:not(:disabled),
-.fileDrop:hover .fileDrop__button,
-.fileDrop.is-over .fileDrop__button,
 a.toolCard:hover .toolCard__sign {
   background-color: var(--accent-hover);
 }
 
 /* pressed, open or current: deep, with the white bar along the foot. Only
    the colour changes on hover, so the bar stays under the pointer. */
-:is(
-    .interactiveChart__iconButton:is(.is-active, .is-open, .is-joined, .is-dark, [aria-pressed="true"]),
-    .interactiveChart__customizeMenuItem.is-active
-  ) {
+.interactiveChart__customizeMenuItem.is-active {
   background: var(--sign-foot);
   background-color: var(--accent-hover);
   color: var(--on-accent);
@@ -5311,8 +5444,7 @@ a.toolCard:hover .toolCard__sign {
     .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
-    .fitsFullHeader__copy,
-    .sidebarCollapseToggle
+    .fitsFullHeader__copy
   ):disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -5325,8 +5457,7 @@ a.toolCard:hover .toolCard__sign {
     .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
-    .fitsFullHeader__copy,
-    .sidebarCollapseToggle
+    .fitsFullHeader__copy
   ):focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

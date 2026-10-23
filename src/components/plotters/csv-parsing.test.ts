@@ -46,23 +46,93 @@ describe("parseNumericCell", () => {
 });
 
 describe("parseGenericCsv", () => {
-  it("skips and counts a row with a blank cell", () => {
+  it("keeps a row with a blank cell, as a gap in that column only", () => {
     const parsed = parseGenericCsv("x,a,b\n1,10,20\n2,,21\n3,12,0");
 
     assert.equal(parsed.error, null);
+    assert.equal(parsed.layout, "columns");
     assert.deepEqual(parsed.rows, [
       [1, 10, 20],
+      [2, Number.NaN, 21],
       [3, 12, 0],
     ]);
-    assert.equal(parsed.rowCount, 2);
-    assert.equal(parsed.skippedRowCount, 1);
+    assert.equal(parsed.rowCount, 3);
+    assert.equal(parsed.skippedRowCount, 0);
   });
 
-  it("skips a whitespace-only cell too", () => {
+  it("reads a whitespace-only cell as a gap too", () => {
     const parsed = parseGenericCsv("x,a\n1,10\n2,   \n3,12");
 
+    assert.equal(parsed.rowCount, 3);
+    assert.ok(Number.isNaN(parsed.rows[1][1]));
+  });
+
+  it("reads columns of different lengths, as a spreadsheet export has", () => {
+    const parsed = parseGenericCsv("a,b\n1,10\n2,20\n3,\n4,");
+
+    assert.deepEqual(parsed.rows.map((row) => row[0]), [1, 2, 3, 4]);
+    assert.deepEqual(parsed.rows.map((row) => row[1]), [10, 20, Number.NaN, Number.NaN]);
+  });
+
+  it("plots each column of a table led by sample names, leaving the names out", () => {
+    const parsed = parseGenericCsv("sample,a,b\ns1,1,2\ns2,3,4\ns3,5,6");
+
+    assert.equal(parsed.error, null);
+    assert.equal(parsed.layout, "columns");
+    assert.deepEqual(parsed.headers, ["a", "b"]);
+    assert.deepEqual(parsed.rows, [
+      [1, 2],
+      [3, 4],
+      [5, 6],
+    ]);
+    assert.match(parsed.extraInfo, /Not plotted \(words, not numbers\): sample/);
+  });
+
+  it("plots each column of a table led by timestamps", () => {
+    const parsed = parseGenericCsv(
+      "time,a,b\n2026-10-23 12:00,1,2\n2026-10-23 12:01,3,4",
+    );
+
+    assert.deepEqual(parsed.headers, ["a", "b"]);
     assert.equal(parsed.rowCount, 2);
-    assert.equal(parsed.skippedRowCount, 1);
+  });
+
+  it("reads a single column", () => {
+    const parsed = parseGenericCsv("signal\n1\n2\n3");
+
+    assert.equal(parsed.error, null);
+    assert.deepEqual(parsed.headers, ["signal"]);
+    assert.deepEqual(parsed.rows, [[1], [2], [3]]);
+  });
+
+  it("reads a table by rows when asked, naming each row by its word cell", () => {
+    const parsed = parseGenericCsv("sample,a,b\ns1,1,2\ns2,3,4", "rows");
+
+    assert.equal(parsed.layout, "rows");
+    assert.deepEqual(parsed.headers, ["column", "s1", "s2"]);
+    assert.deepEqual(parsed.rows, [
+      [1, 1, 3],
+      [2, 2, 4],
+    ]);
+  });
+
+  it("takes x from a first row of numbers when read by rows", () => {
+    const parsed = parseGenericCsv("10,20,30\n1,2,3\n4,5,6", "rows");
+
+    assert.deepEqual(parsed.headers, ["x", "row 1", "row 2"]);
+    assert.deepEqual(parsed.rows[0], [10, 1, 4]);
+  });
+
+  it("reads a wide export by columns when asked", () => {
+    const parsed = parseGenericCsv(
+      ["label,1,2,3", "a,10,20,30", "b,11,,31"].join("\n"),
+      "columns",
+    );
+
+    // its header of numbers reads as one more row of data
+    assert.equal(parsed.layout, "columns");
+    assert.deepEqual(parsed.headers, ["column_2", "column_3", "column_4"]);
+    assert.deepEqual(parsed.rows.map((row) => row[0]), [1, 10, 11]);
   });
 
   it("leaves a valid file alone", () => {

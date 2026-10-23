@@ -23,12 +23,3 @@ export function ArrowRightIcon() {
     </svg>
   );
 }
-
-/** A file picker's arrow up out of a tray. */
-export function UploadIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 16V3M6 9l6-6 6 6M3 15v6h18v-6" />
-    </svg>
-  );
-}
