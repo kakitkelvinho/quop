@@ -318,11 +318,26 @@ function hasNumericCell(fields: string[]): boolean {
   return fields.some((field) => Number.isFinite(parseNumericCell(field)));
 }
 
+// True when the cells, read as numbers, strictly rise or strictly fall:
+// wavelengths (or 1, 2, 3) rise, FTIR wavenumbers (4000 ... 400) fall.
+function isSteadyRun(cells: string[]): boolean {
+  const values = cells.map((cell) => parseNumericCell(cell));
+  const rising = values.every((value, index) => index === 0 || value > values[index - 1]);
+  const falling = values.every((value, index) => index === 0 || value < values[index - 1]);
+
+  return rising || falling;
+}
+
 // Some spectrometer exports (e.g. Avantes/Astrella) are wide: a few metadata
 // columns, then one column per wavelength, with each spectrum on a single
 // row. The header's trailing numeric cells become x, and each row's matching
 // cells become one y series. Returns null when the file isn't shaped that way.
-function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
+// With `steadyHeaderOnly`, a header counts only when its numbers run
+// steadily; a row of readings (46,70.3,48.6,58) is not a header.
+function parseWideLayout(
+  lines: CsvLine[],
+  steadyHeaderOnly = false,
+): ParsedGenericCsv | null {
   const isNumericOrBlank = (cell: string) =>
     isBlankCell(cell) || Number.isFinite(parseNumericCell(cell));
 
@@ -335,6 +350,11 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
     }
 
     if (header.length - xStart < 2) {
+      continue;
+    }
+
+    // checked first: the scans below are O(n) per candidate line
+    if (steadyHeaderOnly && !isSteadyRun(header.slice(xStart))) {
       continue;
     }
 
@@ -503,7 +523,8 @@ function readColumnTable(lines: CsvLine[]) {
  * Reads a numeric CSV into an x column and y columns. With `layout`
  * "columns" each column is a series, as in a spreadsheet; with "rows" each
  * row is. Left out, a file is read by columns unless it is a wide export
- * (a header of numbers, one row per spectrum), which is read by rows.
+ * (a header of steadily rising or falling numbers, one row per spectrum),
+ * which is read by rows.
  */
 export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericCsv {
   const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
@@ -524,7 +545,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
   const isPlainTable = lines.some((line) => line.isNumericRow);
 
   if (layout === "rows" || (layout === undefined && !isPlainTable)) {
-    const wide = parseWideLayout(lines);
+    // auto-detect reads by rows only under a steady header of numbers
+    const wide = parseWideLayout(lines, layout === undefined);
 
     if (wide) {
       return wide;

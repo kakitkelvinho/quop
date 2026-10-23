@@ -175,6 +175,45 @@ describe("parseGenericCsv", () => {
     assert.match(parsed.extraInfo, /row 2 · label: b/);
   });
 
+  it("reads a wide export with a falling header (wavenumbers) by rows", () => {
+    const parsed = parseGenericCsv(
+      ["label,4000,3000,2000", "a,1,2,3", "b,4,5,6"].join("\n"),
+    );
+
+    assert.equal(parsed.layout, "rows");
+    assert.deepEqual(parsed.headers, ["x", "row 1", "row 2"]);
+    assert.deepEqual(parsed.rows, [
+      [4000, 1, 4],
+      [3000, 2, 5],
+      [2000, 3, 6],
+    ]);
+  });
+
+  it("reads a headerless logger file by columns, though no row is all numbers", () => {
+    // a look-alike of the lab's humidity log: a clock cell and a garbled
+    // cell on every row, and readings that go up and down
+    const lines = Array.from({ length: 50 }, (_, index) => {
+      const minute = String(index % 60).padStart(2, "0");
+      return [
+        index + 1,
+        `11.${minute}.35`,
+        (21 + (index % 3) * 0.1).toFixed(1),
+        (12 + (index % 4) * 0.1).toFixed(1),
+        '"1.,4"',
+        46 + (index % 5),
+        70.3 - (index % 2),
+        48.6 + (index % 3),
+        58 - (index % 4),
+      ].join(",");
+    });
+    const parsed = parseGenericCsv(lines.join("\n"));
+
+    assert.equal(parsed.error, null);
+    assert.equal(parsed.layout, "columns");
+    assert.equal(parsed.rowCount, 50);
+    assert.equal(parsed.headers.length, 7);
+  });
+
   it("still reports no numeric data when nothing looks wide either", () => {
     const parsed = parseGenericCsv("name,unit\nfoo,bar");
 
