@@ -4,11 +4,12 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { SignIcon } from "@/components/sign-icon";
 
-/** A lower-case i: what the viewer's gestures do. */
+/** A lower-case i in a circle: what the viewer's gestures do. */
 function InfoIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 11.5V18M12 5.5v1" />
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 10.5V17.5M12 6.5v1" />
     </svg>
   );
 }
