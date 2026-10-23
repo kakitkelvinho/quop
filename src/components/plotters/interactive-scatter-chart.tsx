@@ -643,6 +643,32 @@ function ScrollIcon() {
   );
 }
 
+/** A window stretching along y: what a drag opens with vertical windowing on. */
+function VerticalWindowIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect
+        x="5"
+        y="8"
+        width="14"
+        height="8"
+        rx="1.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M12 2.5V5.5M12 21.5v-3M9.4 5.1 12 2.5l2.6 2.6M9.4 18.9l2.6 2.6 2.6-2.6"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
+
 function ThemeIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -946,6 +972,9 @@ function InteractiveScatterChartInner({
     null,
   );
   const [scrollZoomEnabled, setScrollZoomEnabled] = useState(false);
+  // a drag in the plot windows y instead of x; Shift flips it either way,
+  // and on a touch screen, where there is no Shift, this is the only way
+  const [verticalWindowing, setVerticalWindowing] = useState(false);
   const [colorMode, setColorMode] = useState<"light" | "dark">("light");
   const chartStyle = useChartStyle();
   const isMatplotlib = chartStyle === "matplotlib";
@@ -1183,7 +1212,7 @@ function InteractiveScatterChartInner({
       return;
     }
 
-    if (event.shiftKey && isWithinPlot) {
+    if (verticalWindowing !== event.shiftKey && isWithinPlot) {
       setDragSelection({
         axis: "y",
         chartAreaLeft: chartArea.left,
@@ -1796,7 +1825,7 @@ function InteractiveScatterChartInner({
       className={`interactiveChart interactiveChart--${colorMode} interactiveChart--${chartStyle}`}
     >
       <div
-        className="interactiveChart__stage"
+        className={`interactiveChart__stage${verticalWindowing ? " is-windowingY" : ""}`}
         onPointerDown={handlePointerDown}
         onPointerLeave={clearDragSelection}
         onPointerMove={handlePointerMove}
@@ -1852,6 +1881,22 @@ function InteractiveScatterChartInner({
         >
           <SignIcon>
             <ZoomOutIcon />
+          </SignIcon>
+        </button>
+        <button
+          aria-label={
+            verticalWindowing
+              ? "Drag to window horizontally"
+              : "Drag to window vertically"
+          }
+          aria-pressed={verticalWindowing}
+          className={`interactiveChart__iconButton ${verticalWindowing ? "is-active" : ""}`}
+          onClick={() => setVerticalWindowing((current) => !current)}
+          title={verticalWindowing ? "Vertical windowing on" : "Vertical windowing off"}
+          type="button"
+        >
+          <SignIcon>
+            <VerticalWindowIcon />
           </SignIcon>
         </button>
         <button
@@ -1959,6 +2004,14 @@ function InteractiveScatterChartInner({
             {
               gesture: <DragGesture axis="y" shift />,
               text: <><strong>Shift + drag</strong>: vertical windowing.</>,
+            },
+            {
+              gesture: (
+                <ToolGesture>
+                  <VerticalWindowIcon />
+                </ToolGesture>
+              ),
+              text: <><strong>Vertical windowing</strong> on: a drag windows y, Shift + drag x. For touch screens.</>,
             },
             {
               gesture: (

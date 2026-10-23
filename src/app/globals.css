@@ -931,6 +931,13 @@ select.linkedField__unit {
   border: 1px solid var(--interactive-chart-stage-border);
   border-radius: var(--radius);
   background: var(--interactive-chart-stage-bg);
+  /* a sideways touch drag windows x; an up-and-down one scrolls the page */
+  touch-action: pan-y pinch-zoom;
+}
+
+/* with vertical windowing on, an up-and-down touch drag windows y instead */
+.interactiveChart__stage.is-windowingY {
+  touch-action: pinch-zoom;
 }
 
 .interactiveChart__selection {
