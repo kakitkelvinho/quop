@@ -21,7 +21,16 @@ import {
 } from "@/components/plotters/csv-parsing";
 import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import {
+  PrototypeSamples,
+  XYPicker,
+  XY_PICKER_VARIANTS,
+} from "@/components/plotters/xy-picker.prototype";
+import { PrototypeSwitcher, usePrototypeVariant } from "@/components/prototype-switcher";
 import { SidebarFold } from "@/components/sidebar-fold";
+
+// PROTOTYPE (#282): ?variant=A|B|C swaps the picker, dev builds only
+const XY_PICKER_KEYS = XY_PICKER_VARIANTS.map((variant) => variant.key);
 
 ChartJS.register(
   LinearScale,
@@ -60,7 +69,9 @@ export default function GenericCsvPlotter() {
   const [layout, setLayout] = useState<CsvLayout | undefined>(undefined);
   const parsed = useMemo(() => parseGenericCsv(csvInput, layout), [csvInput, layout]);
   const [xColumnIndex, setXColumnIndex] = useState(0);
-  const [yColumnIndexes, setYColumnIndexes] = useState<number[]>([]);
+  // null: not chosen yet, so every column but x is plotted
+  const [yColumnIndexes, setYColumnIndexes] = useState<number[] | null>(null);
+  const pickerVariant = usePrototypeVariant(XY_PICKER_KEYS);
 
   const resolvedXColumnIndex =
     parsed.headers.length < 2 || xColumnIndex === ROW_NUMBER
@@ -71,15 +82,15 @@ export default function GenericCsvPlotter() {
       return [];
     }
 
-    const filtered = yColumnIndexes.filter(
+    if (yColumnIndexes === null) {
+      return parsed.headers
+        .map((_, index) => index)
+        .filter((index) => index !== resolvedXColumnIndex);
+    }
+
+    return yColumnIndexes.filter(
       (index) => index < parsed.headers.length && index !== resolvedXColumnIndex,
     );
-
-    return filtered.length
-      ? filtered
-      : parsed.headers
-          .map((_, index) => index)
-          .filter((index) => index !== resolvedXColumnIndex);
   }, [parsed.headers, resolvedXColumnIndex, yColumnIndexes]);
 
   const xLabel =
@@ -156,22 +167,25 @@ export default function GenericCsvPlotter() {
   function handleLayoutChange(nextLayout: CsvLayout) {
     setLayout(nextLayout);
     setXColumnIndex(0);
-    setYColumnIndexes([]);
+    setYColumnIndexes(null);
   }
 
+  // the old x becomes a y, as it was before it was x
   function handleXColumnChange(nextIndex: number) {
     setXColumnIndex(nextIndex);
     setYColumnIndexes((current) => {
-      const filtered = current.filter((index) => index !== nextIndex);
-
-      return filtered.length
-        ? filtered
-        : parsed.headers.map((_, index) => index).filter((index) => index !== nextIndex);
+      if (current === null) return null;
+      const next = current.filter((index) => index !== nextIndex);
+      if (resolvedXColumnIndex !== ROW_NUMBER && !next.includes(resolvedXColumnIndex)) {
+        next.push(resolvedXColumnIndex);
+      }
+      return next.sort((a, b) => a - b);
     });
   }
 
   function handleYColumnToggle(columnIndex: number, checked: boolean) {
-    setYColumnIndexes((current) => {
+    setYColumnIndexes((stored) => {
+      const current = stored ?? resolvedYColumnIndexes;
       if (checked) {
         return current.includes(columnIndex) ? current : [...current, columnIndex].sort((a, b) => a - b);
       }
@@ -262,7 +276,37 @@ export default function GenericCsvPlotter() {
             </div>
           </div>
 
-          {parsed.headers.length ? (
+          {pickerVariant ? (
+            <PrototypeSamples
+              onPick={(csv, file) => {
+                setCsvInput(csv);
+                setSourceLabel(file);
+                setLayout(undefined);
+                setXColumnIndex(0);
+                setYColumnIndexes(null);
+              }}
+            />
+          ) : null}
+
+          {pickerVariant && parsed.headers.length ? (
+            <div className="csvRoleChooser">
+              <div className="csvRoleChooser__header">
+                <p className="sectionCard__kicker">
+                  {parsed.layout === "columns" ? "Columns" : "Series"}
+                </p>
+              </div>
+              <XYPicker
+                headers={parsed.headers}
+                layout={parsed.layout}
+                onX={handleXColumnChange}
+                onYSet={setYColumnIndexes}
+                onYToggle={handleYColumnToggle}
+                variant={pickerVariant}
+                xIndex={resolvedXColumnIndex}
+                yIndexes={resolvedYColumnIndexes}
+              />
+            </div>
+          ) : parsed.headers.length ? (
             <div className="csvRoleChooser">
               <div className="csvRoleChooser__header">
                 <p className="sectionCard__kicker">
@@ -340,6 +384,9 @@ export default function GenericCsvPlotter() {
           ) : null}
         </div>
       </div>
+      {pickerVariant ? (
+        <PrototypeSwitcher current={pickerVariant} variants={XY_PICKER_VARIANTS} />
+      ) : null}
     </div>
   );
 }
