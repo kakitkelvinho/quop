@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  detectSeparator,
   parseArrayCsv,
+  parseClockCell,
+  parseCsvRow,
   parseGenericCsv,
   parseNumericCell,
   parseTimeSeriesCsv,
@@ -175,9 +178,152 @@ describe("parseGenericCsv", () => {
     assert.match(parsed.extraInfo, /row 2 · label: b/);
   });
 
+  it("reads a wide export with a falling header (wavenumbers) by rows", () => {
+    const parsed = parseGenericCsv(
+      ["label,4000,3000,2000", "a,1,2,3", "b,4,5,6"].join("\n"),
+    );
+
+    assert.equal(parsed.layout, "rows");
+    assert.deepEqual(parsed.headers, ["x", "row 1", "row 2"]);
+    assert.deepEqual(parsed.rows, [
+      [4000, 1, 4],
+      [3000, 2, 5],
+      [2000, 3, 6],
+    ]);
+  });
+
+  it("reads a headerless logger file by columns, though no row is all numbers", () => {
+    // a look-alike of the lab's humidity log: a clock cell and a garbled
+    // cell on every row, and readings that go up and down
+    const lines = Array.from({ length: 50 }, (_, index) => {
+      const minute = String(index % 60).padStart(2, "0");
+      return [
+        index + 1,
+        `11.${minute}.35`,
+        (21 + (index % 3) * 0.1).toFixed(1),
+        (12 + (index % 4) * 0.1).toFixed(1),
+        '"1.,4"',
+        46 + (index % 5),
+        70.3 - (index % 2),
+        48.6 + (index % 3),
+        58 - (index % 4),
+      ].join(",");
+    });
+    const parsed = parseGenericCsv(lines.join("\n"));
+
+    assert.equal(parsed.error, null);
+    assert.equal(parsed.layout, "columns");
+    assert.equal(parsed.rowCount, 50);
+    // every column but the garbled one, the clock among them
+    assert.equal(parsed.headers.length, 8);
+    assert.deepEqual(parsed.clockColumns, [1]);
+  });
+
   it("still reports no numeric data when nothing looks wide either", () => {
     const parsed = parseGenericCsv("name,unit\nfoo,bar");
 
+    assert.equal(parsed.error, "Couldn't find any numeric data rows in this file.");
+  });
+});
+
+describe("clock columns", () => {
+  it("reads HH.MM.SS, HH:MM:SS, HH:MM and fractional seconds", () => {
+    assert.equal(parseClockCell("11.48.35"), 11 * 3600 + 48 * 60 + 35);
+    assert.equal(parseClockCell("11:48:35"), 11 * 3600 + 48 * 60 + 35);
+    assert.equal(parseClockCell("11:48"), 11 * 3600 + 48 * 60);
+    assert.equal(parseClockCell("11:48:35.250"), 11 * 3600 + 48 * 60 + 35.25);
+    assert.equal(parseClockCell("0:00:00"), 0);
+  });
+
+  it("does not read 11.48, a date-time, or an impossible time", () => {
+    assert.ok(Number.isNaN(parseClockCell("11.48")));
+    assert.ok(Number.isNaN(parseClockCell("2026-10-01T10:00:00")));
+    assert.ok(Number.isNaN(parseClockCell("2026-10-23 12:00")));
+    assert.ok(Number.isNaN(parseClockCell("25:00")));
+    assert.ok(Number.isNaN(parseClockCell("12:61:00")));
+  });
+
+  it("reads a clock column as x, in seconds, instead of leaving it out", () => {
+    const parsed = parseGenericCsv("n,time,t\n1,11:48:35,21.3\n2,11:48:45,21.4");
+
+    assert.deepEqual(parsed.headers, ["n", "time", "t"]);
+    assert.deepEqual(parsed.clockColumns, [1]);
+    assert.deepEqual(parsed.rows.map((row) => row[1]), [42515, 42525]);
+    assert.doesNotMatch(parsed.extraInfo, /Not plotted/);
+  });
+
+  it("runs on past midnight", () => {
+    const parsed = parseGenericCsv(
+      ["1,23.59.50,1", "2,23.59.55,2", "3,00.00.00,3", "4,00.00.05,4"].join("\n"),
+    );
+    const times = parsed.rows.map((row) => row[1]);
+
+    assert.deepEqual(parsed.clockColumns, [1]);
+    assert.deepEqual(times, [86390, 86395, 86400, 86405]);
+  });
+
+  it("leaves the clock as a row's name when read by rows", () => {
+    const parsed = parseGenericCsv("time,a,b\n11:48,1,2\n11:49,3,4", "rows");
+
+    assert.deepEqual(parsed.clockColumns, []);
+    assert.deepEqual(parsed.headers, ["column", "11:48", "11:49"]);
+  });
+});
+
+describe("tab-separated files", () => {
+  const commaTable = ["time,a,b", "0,1,2", "1,3,4", "2,5,6"].join("\n");
+  // a logger's export: CRLF line endings and a tab at the end of each line
+  const tabTable = ["time\ta\tb\t", "0\t1\t2\t", "1\t3\t4\t", "2\t5\t6\t"].join("\r\n");
+
+  it("picks tabs when the lines split on them steadily, commas otherwise", () => {
+    assert.equal(detectSeparator(tabTable.split("\r\n")), "\t");
+    assert.equal(detectSeparator(commaTable.split("\n")), ",");
+  });
+
+  it("reads a tab table with a trailing tab like its comma version", () => {
+    const fromTabs = parseGenericCsv(tabTable);
+    const fromCommas = parseGenericCsv(commaTable);
+
+    assert.equal(fromTabs.error, null);
+    assert.deepEqual(fromTabs.headers, fromCommas.headers);
+    assert.deepEqual(fromTabs.rows, fromCommas.rows);
+    assert.equal(fromTabs.extraInfo, "");
+  });
+
+  it("drops a column left empty by a trailing comma, without listing it", () => {
+    const parsed = parseGenericCsv(["time,a,", "0,1,", "1,3,"].join("\n"));
+
+    assert.deepEqual(parsed.headers, ["time", "a"]);
+    assert.doesNotMatch(parsed.extraInfo, /Not plotted/);
+  });
+
+  it("reads a tab table in the Time CSV and Array plotters too", () => {
+    const series = parseTimeSeriesCsv(tabTable);
+
+    assert.equal(series.error, null);
+    assert.deepEqual(series.channelLabels, ["a", "b"]);
+    assert.deepEqual(series.series[1].points[2], { x: 2, y: 6 });
+
+    const array = parseArrayCsv(tabTable, "data.txt");
+
+    assert.equal(array.error, null);
+    assert.deepEqual(array.datasets[0].points[1], { x: 1, y: 3 });
+  });
+
+  it("keeps a quoted cell with a comma in it as one cell, with either separator", () => {
+    assert.deepEqual(parseCsvRow('1,"1.,4",2'), ["1", "1.,4", "2"]);
+    assert.deepEqual(parseCsvRow('1\t"1.,4"\t2', "\t"), ["1", "1.,4", "2"]);
+
+    const parsed = parseGenericCsv(['a\tb\tc', '1\t"1.,4"\t2', '3\t"1.,4"\t4'].join("\n"));
+
+    assert.deepEqual(parsed.headers, ["a", "c"]);
+    assert.match(parsed.extraInfo, /Not plotted \(words, not numbers\): b/);
+  });
+
+  it("does not split on semicolons", () => {
+    const parsed = parseGenericCsv("a;b\n1;2\n3;4");
+
+    // as before: one cell per line, none of them a number
     assert.equal(parsed.error, "Couldn't find any numeric data rows in this file.");
   });
 });

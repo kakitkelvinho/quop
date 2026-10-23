@@ -2,6 +2,10 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 
+// what a CSV plotter takes: any comma- or tab-separated text table
+export const TABLE_FILE_ACCEPT =
+  ".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain";
+
 /**
  * A plotter's file picker, in place of the browser's "Choose File / No file
  * chosen": one flat outlined box, "Choose file", with "or drop it here"

@@ -27,6 +27,11 @@ export type CsvLayout = "columns" | "rows";
 export type ParsedGenericCsv = {
   error: string | null;
   headers: string[];
+  /**
+   * The clock columns among the headers (HH:MM:SS), their values seconds
+   * from the first reading's midnight: offered as x, never as y.
+   */
+  clockColumns: number[];
   layout: CsvLayout;
   rowCount: number;
   skippedRowCount: number;
@@ -61,7 +66,10 @@ export function parseNumericCell(cell: string | undefined): number {
   return isBlankCell(cell) ? Number.NaN : Number(cell);
 }
 
-export function parseCsvRow(row: string): string[] {
+// A table's cells are split by commas or by tabs.
+export type CsvSeparator = "," | "\t";
+
+export function parseCsvRow(row: string, separator: CsvSeparator = ","): string[] {
   const values: string[] = [];
   let current = "";
   let insideQuotes = false;
@@ -81,7 +89,7 @@ export function parseCsvRow(row: string): string[] {
       continue;
     }
 
-    if (character === "," && !insideQuotes) {
+    if (character === separator && !insideQuotes) {
       values.push(current.trim());
       current = "";
       continue;
@@ -92,6 +100,52 @@ export function parseCsvRow(row: string): string[] {
 
   values.push(current.trim());
   return values;
+}
+
+function isCommentLine(line: string): boolean {
+  return COMMENT_PREFIXES.some((prefix) => line.startsWith(prefix));
+}
+
+// Splits a file into its non-blank lines, trimming spaces but not tabs, so a
+// tab-separated line keeps a leading or trailing empty cell in its place.
+function splitLines(csv: string): string[] {
+  return csv
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^ +| +$/g, ""))
+    .filter((line) => line.trim() !== "");
+}
+
+const SEPARATOR_SAMPLE_LINES = 20;
+
+/**
+ * Reads a file as tab-separated when its first lines split on tabs into a
+ * steady number of cells (at least 2) - the count most of them share - and
+ * as comma-separated otherwise. Semicolons are never a separator: they come
+ * with decimal commas (1,6;2,3), which aren't read.
+ */
+export function detectSeparator(lines: string[]): CsvSeparator {
+  const sample = lines
+    .map((line) => line.trim())
+    .filter((line) => line && !isCommentLine(line))
+    .slice(0, SEPARATOR_SAMPLE_LINES);
+  const counts = new Map<number, number>();
+
+  for (const line of sample) {
+    const width = parseCsvRow(line, "\t").length;
+    counts.set(width, (counts.get(width) ?? 0) + 1);
+  }
+
+  let commonWidth = 0;
+  let commonCount = 0;
+
+  for (const [width, count] of counts) {
+    if (count > commonCount) {
+      commonWidth = width;
+      commonCount = count;
+    }
+  }
+
+  return commonWidth >= 2 && commonCount * 2 > sample.length ? "\t" : ",";
 }
 
 function stripCommentPrefix(line: string): string {
@@ -121,11 +175,25 @@ function findTimeColumn(headers: string[]) {
 // starts and which line above it is the header.
 // Strips any comment marker up front so a commented header row (e.g. a
 // Moku export's "% Time (s), Channel A ...") is treated the same as a plain
-// one, and pre-computes each line's fields once.
+// one, and pre-computes each line's fields once. A column that is blank on
+// every line (a separator at the end of each line, as a logger writes it)
+// is dropped.
 function readLines(rawLines: string[]) {
-  return rawLines.map((line) => {
-    const text = stripCommentPrefix(line);
-    const fields = text ? parseCsvRow(text) : [];
+  const separator = detectSeparator(rawLines);
+  const fieldLines = rawLines.map((line) => {
+    const text = stripCommentPrefix(line.trim());
+    return { text, fields: text ? parseCsvRow(stripCommentPrefix(line), separator) : [] };
+  });
+  const width = Math.max(0, ...fieldLines.map((line) => line.fields.length));
+  const isEmptyColumn = Array.from({ length: width }, (_, column) =>
+    fieldLines.every((line) => isBlankCell(line.fields[column])),
+  );
+  const hasEmptyColumn = isEmptyColumn.some(Boolean);
+
+  return fieldLines.map(({ text, fields: allFields }) => {
+    const fields = hasEmptyColumn
+      ? allFields.filter((_, column) => !isEmptyColumn[column])
+      : allFields;
     return { text, fields, isNumericRow: isFullyNumericRow(fields) };
   });
 }
@@ -163,7 +231,7 @@ function locateHeaderAndData(rawLines: string[]) {
 }
 
 export function parseTimeSeriesCsv(csv: string): ParsedCsv {
-  const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const rawLines = splitLines(csv);
 
   if (rawLines.length < 2) {
     return {
@@ -318,11 +386,26 @@ function hasNumericCell(fields: string[]): boolean {
   return fields.some((field) => Number.isFinite(parseNumericCell(field)));
 }
 
+// True when the cells, read as numbers, strictly rise or strictly fall:
+// wavelengths (or 1, 2, 3) rise, FTIR wavenumbers (4000 ... 400) fall.
+function isSteadyRun(cells: string[]): boolean {
+  const values = cells.map((cell) => parseNumericCell(cell));
+  const rising = values.every((value, index) => index === 0 || value > values[index - 1]);
+  const falling = values.every((value, index) => index === 0 || value < values[index - 1]);
+
+  return rising || falling;
+}
+
 // Some spectrometer exports (e.g. Avantes/Astrella) are wide: a few metadata
 // columns, then one column per wavelength, with each spectrum on a single
 // row. The header's trailing numeric cells become x, and each row's matching
 // cells become one y series. Returns null when the file isn't shaped that way.
-function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
+// With `steadyHeaderOnly`, a header counts only when its numbers run
+// steadily; a row of readings (46,70.3,48.6,58) is not a header.
+function parseWideLayout(
+  lines: CsvLine[],
+  steadyHeaderOnly = false,
+): ParsedGenericCsv | null {
   const isNumericOrBlank = (cell: string) =>
     isBlankCell(cell) || Number.isFinite(parseNumericCell(cell));
 
@@ -335,6 +418,11 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
     }
 
     if (header.length - xStart < 2) {
+      continue;
+    }
+
+    // checked first: the scans below are O(n) per candidate line
+    if (steadyHeaderOnly && !isSteadyRun(header.slice(xStart))) {
       continue;
     }
 
@@ -401,6 +489,7 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
     return {
       error: null,
       headers: ["x", ...labels],
+      clockColumns: [],
       layout: "rows",
       rowCount: rows.length,
       skippedRowCount,
@@ -417,13 +506,65 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
   return null;
 }
 
+const CLOCK_PATTERN = /^(\d{1,2})([:.])(\d{2})(?:\2(\d{2}(?:\.\d+)?))?$/;
+
+/**
+ * Reads a clock cell - HH:MM:SS, HH:MM or HH.MM.SS, with or without
+ * fractional seconds - as seconds of the day. HH.MM (11.48) is a number,
+ * not a time, and a full date-time isn't read: both are NaN.
+ */
+export function parseClockCell(cell: string | undefined): number {
+  const match = cell?.trim().match(CLOCK_PATTERN);
+
+  if (!match) {
+    return Number.NaN;
+  }
+
+  const [, hours, separator, minutes, seconds] = match;
+
+  if (separator === "." && seconds === undefined) {
+    return Number.NaN;
+  }
+
+  const h = Number(hours);
+  const m = Number(minutes);
+  const sec = seconds === undefined ? 0 : Number(seconds);
+
+  return h < 24 && m < 60 && sec < 60 ? h * 3600 + m * 60 + sec : Number.NaN;
+}
+
+const DAY_SECONDS = 24 * 3600;
+
+// A logger's clock readings as a running time: every step back in the clock
+// is a midnight passed, so a day is added from that reading on.
+function runClock(cells: (string | undefined)[]): number[] {
+  let day = 0;
+  let previous = Number.NaN;
+
+  return cells.map((cell) => {
+    const value = parseClockCell(cell);
+
+    if (!Number.isFinite(value)) {
+      return Number.NaN;
+    }
+
+    if (value < previous) {
+      day += 1;
+    }
+
+    previous = value;
+    return value + day * DAY_SECONDS;
+  });
+}
+
 // Reads the table the way a spreadsheet does, a column at a time. The data
 // starts at the first row of numbers or, failing that, the first row with a
 // number in it (a row led by a timestamp or a sample name), and the header
 // is the nearest line above it with as many cells. A column that is mostly
 // words is left out; a blank or unreadable cell is NaN, a gap in its own
-// column only.
-function readColumnTable(lines: CsvLine[]) {
+// column only. With `readClocks`, a column of clock times is read as a
+// running time instead of left out.
+function readColumnTable(lines: CsvLine[], readClocks: boolean) {
   let dataStartIndex = lines.findIndex((line) => line.isNumericRow);
 
   if (dataStartIndex === -1) {
@@ -476,13 +617,40 @@ function readColumnTable(lines: CsvLine[]) {
 
     return numbers > 0 && numbers * 2 >= filled.length;
   });
-  const plotted = names.map((_, column) => column).filter((column) => isNumericColumn[column]);
-  const textColumns = names.map((_, column) => column).filter((column) => !isNumericColumn[column]);
+  // practically every filled cell a clock reading
+  const isClockColumn = names.map((_, column) => {
+    if (!readClocks || isNumericColumn[column]) {
+      return false;
+    }
+
+    const filled = tableLines
+      .map((line) => line.fields[column])
+      .filter((cell) => !isBlankCell(cell));
+    const clocks = filled.filter((cell) => Number.isFinite(parseClockCell(cell))).length;
+
+    return clocks > 0 && clocks >= filled.length * 0.9;
+  });
+  const plotted = names
+    .map((_, column) => column)
+    .filter((column) => isNumericColumn[column] || isClockColumn[column]);
+  const textColumns = names
+    .map((_, column) => column)
+    .filter((column) => !isNumericColumn[column] && !isClockColumn[column]);
+  const clockValues = new Map(
+    plotted
+      .filter((column) => isClockColumn[column])
+      .map((column) => [column, runClock(tableLines.map((line) => line.fields[column]))]),
+  );
 
   return {
     headers: plotted.map((column) => names[column]),
-    rows: tableLines.map((line) =>
-      plotted.map((column) => parseNumericCell(line.fields[column])),
+    clockColumns: plotted
+      .map((column, index) => (isClockColumn[column] ? index : -1))
+      .filter((index) => index !== -1),
+    rows: tableLines.map((line, row) =>
+      plotted.map(
+        (column) => clockValues.get(column)?.[row] ?? parseNumericCell(line.fields[column]),
+      ),
     ),
     // a row's first word cell (a sample name, a timestamp) names it when
     // the table is read by rows
@@ -503,15 +671,17 @@ function readColumnTable(lines: CsvLine[]) {
  * Reads a numeric CSV into an x column and y columns. With `layout`
  * "columns" each column is a series, as in a spreadsheet; with "rows" each
  * row is. Left out, a file is read by columns unless it is a wide export
- * (a header of numbers, one row per spectrum), which is read by rows.
+ * (a header of steadily rising or falling numbers, one row per spectrum),
+ * which is read by rows.
  */
 export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericCsv {
-  const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const rawLines = splitLines(csv);
 
   if (rawLines.length < 2) {
     return {
       error: "Provide a header row and at least one data row.",
       headers: [],
+      clockColumns: [],
       layout: layout ?? "columns",
       rowCount: 0,
       skippedRowCount: 0,
@@ -524,7 +694,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
   const isPlainTable = lines.some((line) => line.isNumericRow);
 
   if (layout === "rows" || (layout === undefined && !isPlainTable)) {
-    const wide = parseWideLayout(lines);
+    // auto-detect reads by rows only under a steady header of numbers
+    const wide = parseWideLayout(lines, layout === undefined);
 
     if (wide) {
       return wide;
@@ -532,12 +703,14 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
   }
 
   const resolvedLayout = layout ?? "columns";
-  const table = readColumnTable(lines);
+  // clock columns are x; read by rows, a row's clock reading names it
+  const table = readColumnTable(lines, resolvedLayout === "columns");
 
   if (!table) {
     return {
       error: "Couldn't find any numeric data rows in this file.",
       headers: [],
+      clockColumns: [],
       layout: resolvedLayout,
       rowCount: 0,
       skippedRowCount: 0,
@@ -558,6 +731,7 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
     return {
       error: null,
       headers: table.headers,
+      clockColumns: table.clockColumns,
       layout: "columns",
       rowCount: table.rows.length,
       skippedRowCount: table.skippedRowCount,
@@ -577,6 +751,7 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
       isHeaderX ? "x" : "column",
       ...table.rows.map((_, index) => table.rowLabels[index] || `row ${index + 1}`),
     ],
+    clockColumns: [],
     layout: "rows",
     rowCount: table.headers.length,
     skippedRowCount: table.skippedRowCount,
@@ -590,11 +765,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
 
 // The Array plotter's CSV upload: the first two columns are x and y.
 export function parseArrayCsv(contents: string, label: string): CsvParseResult {
-  const lines = contents
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => !line.startsWith("%"));
+  const lines = splitLines(contents).filter((line) => !line.trim().startsWith("%"));
+  const separator = detectSeparator(lines);
 
   if (!lines.length) {
     return {
@@ -606,7 +778,7 @@ export function parseArrayCsv(contents: string, label: string): CsvParseResult {
   }
 
   const dataStartIndex = lines.findIndex((line) => {
-    const columns = parseCsvRow(line);
+    const columns = parseCsvRow(line, separator);
 
     if (columns.length < 2) {
       return false;
@@ -630,7 +802,7 @@ export function parseArrayCsv(contents: string, label: string): CsvParseResult {
   let skippedRowCount = 0;
 
   for (let index = dataStartIndex; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index]);
+    const columns = parseCsvRow(lines[index], separator);
 
     if (columns.length < 2) {
       return {
