@@ -48,7 +48,7 @@ import {
 } from "@/components/plotters/matplotlib-skin";
 import { renderChartPdf } from "@/components/plotters/pdf-export";
 import { renderChartSvg } from "@/components/plotters/svg-export";
-import { ChartInfo } from "@/components/plotters/chart-info";
+import { ChartInfo, DragGesture, ToolGesture } from "@/components/plotters/chart-info";
 import { SignIcon } from "@/components/sign-icon";
 
 ChartJS.register(
@@ -1945,14 +1945,24 @@ function InteractiveScatterChartInner({
         <span aria-hidden="true" className="interactiveChart__footerDivider" />
         <ChartInfo
           hints={[
-            { gesture: "zoom-x", text: <><strong>Drag</strong> across the plot to zoom in on x.</> },
             {
-              gesture: "zoom-y",
-              text: <><strong>Shift + drag</strong>, or drag along the y axis, to zoom in on y.</>,
+              gesture: <DragGesture axis="x" />,
+              text: <><strong>Drag</strong>: horizontal windowing.</>,
             },
-            { gesture: "scroll", text: <><strong>Scroll</strong> to zoom, once scroll zoom is on.</> },
-            { gesture: "reset", text: <><strong>Reset zoom</strong> to go back.</> },
+            {
+              gesture: <DragGesture axis="y" shift />,
+              text: <><strong>Shift + drag</strong>: vertical windowing.</>,
+            },
+            {
+              gesture: (
+                <ToolGesture>
+                  <ResetZoomIcon />
+                </ToolGesture>
+              ),
+              text: <><strong>Reset zoom</strong> to go back.</>,
+            },
           ]}
+          title="Windowing"
         />
       </div>
 

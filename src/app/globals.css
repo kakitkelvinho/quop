@@ -625,28 +625,24 @@ select.linkedField__unit {
   line-height: 1.5;
 }
 
-/* The one dashed edge in the system: "drop a file here". The input fills it,
-   unseen, so a click anywhere picks a file and the ring shows on focus. */
+/* A file picker: one flat box, "Choose file", and "or drop it here" beside
+   it. The input fills the row, unseen, so a click anywhere picks a file, a
+   file can be dropped anywhere on it, and the ring shows on focus. The one
+   dashed edge in the system rings the row only while a file is held over
+   it. */
 .fileDrop {
   position: relative;
   display: grid;
   gap: 0.5rem;
-  padding: 0.85rem 0.95rem;
-  border: 1px dashed var(--border);
   border-radius: var(--radius);
-  background: var(--surface-strong);
   color: var(--muted);
   font-weight: 500;
   cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
 }
 
-.fileDrop:hover,
 .fileDrop.is-over {
-  border-color: var(--focus-ring);
-  background: var(--accent-soft);
+  outline: 1px dashed var(--foreground);
+  outline-offset: 0.35rem;
 }
 
 .fileDrop:focus-within {
@@ -670,13 +666,23 @@ select.linkedField__unit {
   gap: 0.4rem 0.75rem;
 }
 
-/* the picker's button is a sign; the whole zone presses it */
+/* the picker's button is flat, like the viewers' tools: an ink line and
+   ink words, black by day and white by night, no plate. Pointed at (the
+   whole row presses it), it takes the neutral wash. */
 .fileDrop__button {
   display: inline-flex;
   align-items: center;
-  gap: 0.5em;
-  padding: 0.3em 0.75em 0.3em 0.3em;
-  font-weight: 800;
+  padding: 0.4em 0.9em;
+  border: 1.5px solid var(--foreground);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  font-weight: 700;
+  transition: background-color 160ms ease;
+}
+
+.fileDrop:hover .fileDrop__button,
+.fileDrop.is-over .fileDrop__button {
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
 .fileDrop__name {
@@ -745,30 +751,102 @@ select.linkedField__unit {
   min-width: 0;
 }
 
-.visualizerLayout--sidebarCollapsed .visualizerSidebar .inputCard {
+/* folded, the sidebar keeps only its sign, a strip down the page's edge */
+.visualizerLayout--sidebarCollapsed .visualizerSidebar .inputCard > :not(.panelSign) {
   display: none;
 }
 
-.sidebarCollapseToggle {
-  position: absolute;
-  top: 1rem;
-  right: -1.15rem;
-  z-index: 5;
-  display: inline-flex;
+/* A panel's name as a station sign (PanelSign): a blue plate with white
+   lettering. Its orange arrow, in the lower right corner where every sign
+   keeps it, folds the panel away; under the pointer the plate deepens. */
+.panelSign {
+  position: relative;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.3em;
-  font-size: 1rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 2.6rem 0.55rem 0.85rem;
+  transition: background-color 160ms ease;
+}
+
+.panelSign:not(:has(.panelSign__toggle)) {
+  padding-right: 0.85rem;
+}
+
+.panelSign:has(.panelSign__toggle:hover) {
+  background-color: var(--accent-hover);
+}
+
+.panelSign .panelSign__title {
+  margin: 0;
+  color: inherit;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.panelSign__toggle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-items: end;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 0.6rem 0.55rem 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: #fb8c4a;
   cursor: pointer;
 }
 
-.sidebarCollapseToggle svg {
+.panelSign__toggle svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  overflow: visible;
   transition: transform 160ms ease;
 }
 
-.sidebarCollapseToggle.is-collapsed svg {
+.panelSign__toggle path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+/* the ring goes inside the plate, in its white, where the page's blue ring
+   would vanish */
+.panelSign__toggle:focus-visible {
+  outline: 2px solid var(--on-accent);
+  outline-offset: -3px;
+}
+
+/* folded: the plate is the strip, all of it the button, its arrow pointing
+   back out */
+.panelSign.is-collapsed {
+  padding: 0;
+}
+
+.panelSign.is-collapsed .panelSign__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.panelSign.is-collapsed .panelSign__toggle {
+  width: 100%;
+  height: 100%;
+}
+
+.panelSign.is-collapsed .panelSign__toggle svg {
   transform: rotate(180deg);
 }
+
 
 .visualizerChartCard {
   min-height: 32rem;
@@ -946,24 +1024,90 @@ select.linkedField__unit {
   line-height: 1.45;
 }
 
+/* the bubble's subheader, a label like a section kicker */
+.chartInfo__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* a line per gesture: its picture, where it has one, in a column of its
+   own so the words line up */
 .chartInfo__list {
   display: grid;
-  gap: 0.45rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* each line leads with its gesture's pictogram, in the toolbar's gray */
-.chartInfo__hint {
-  display: grid;
+.chartInfo__list:has(.chartInfo__gesture:not(:empty)) {
   grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.6rem;
 }
 
-.chartInfo__hint .signIcon {
+.chartInfo__hint {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+.chartInfo__hint > :last-child {
+  grid-column: -2;
+}
+
+.chartInfo__gesture {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--muted);
+  font-weight: 700;
+}
+
+.chartInfo__gesture:empty {
+  display: none;
+}
+
+/* the old gesture row's mouse and window glyphs, each in a hairline square */
+.chartInfo__glyph,
+.chartInfo__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+}
+
+.chartInfo__glyph {
+  width: 1.8rem;
+}
+
+.chartInfo__glyph--frame {
+  width: 2.1rem;
+}
+
+.chartInfo__glyph svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.chartInfo__glyph--frame svg {
+  width: 1.35rem;
+  height: 1.1rem;
+}
+
+.chartInfo__key {
+  min-width: 2.2rem;
+  padding: 0 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .chartInfo__list strong {
@@ -1173,10 +1317,32 @@ main:focus {
     grid-template-columns: 1fr;
   }
 
-  /* the sidebar is full width here, so a toggle hung over its edge would
-     stick out past the page */
-  .sidebarCollapseToggle {
-    right: 0.75rem;
+  /* stacked, the sidebar folds up under its sign rather than off to the
+     side: the sign keeps its name, and its arrow points up, or down to
+     open it again */
+  .panelSign__toggle svg {
+    transform: rotate(90deg);
+  }
+
+  .panelSign.is-collapsed {
+    padding: 0.55rem 2.6rem 0.55rem 0.85rem;
+  }
+
+  .panelSign.is-collapsed .panelSign__title {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .panelSign.is-collapsed .panelSign__toggle {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .panelSign.is-collapsed .panelSign__toggle svg {
+    transform: rotate(-90deg);
   }
 
   .visualizerChartCard {
@@ -5212,8 +5378,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
-    .sidebarCollapseToggle,
-    .fileDrop__button,
+    .panelSign,
     .toolCard__sign
   ) {
   border: 0;
@@ -5237,13 +5402,10 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
-    .sidebarCollapseToggle,
     .navTab,
     .navFlyout__link,
     .siteFooter a
   ):hover:not(:disabled),
-.fileDrop:hover .fileDrop__button,
-.fileDrop.is-over .fileDrop__button,
 a.toolCard:hover .toolCard__sign {
   background-color: var(--accent-hover);
 }
@@ -5289,8 +5451,7 @@ a.toolCard:hover .toolCard__sign {
     .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
-    .fitsFullHeader__copy,
-    .sidebarCollapseToggle
+    .fitsFullHeader__copy
   ):disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -5303,8 +5464,7 @@ a.toolCard:hover .toolCard__sign {
     .interactiveChart__iconButton,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
-    .fitsFullHeader__copy,
-    .sidebarCollapseToggle
+    .fitsFullHeader__copy
   ):focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

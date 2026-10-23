@@ -21,7 +21,7 @@ import {
 } from "@/components/plotters/csv-parsing";
 import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
+import { PanelSign } from "@/components/panel-sign";
 
 ChartJS.register(
   LinearScale,
@@ -193,13 +193,12 @@ export default function GenericCsvPlotter() {
       className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
     >
       <div className="visualizerSidebar">
-        <SidebarCollapseToggle
-          collapsed={sidebarCollapsed}
-          label="input panel"
-          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-        />
         <div className="inputCard fieldStack">
-          <h2>Data</h2>
+          <PanelSign
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            title="Data"
+          />
 
           <label className="field">
             <span>CSV file</span>

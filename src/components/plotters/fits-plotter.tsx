@@ -18,7 +18,7 @@ import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file
 import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
+import { PanelSign } from "@/components/panel-sign";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -162,13 +162,12 @@ export default function FitsPlotter() {
       className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
     >
       <div className="visualizerSidebar">
-        <SidebarCollapseToggle
-          collapsed={sidebarCollapsed}
-          label="input panel"
-          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-        />
         <div className="inputCard fieldStack">
-          <h2>Data</h2>
+          <PanelSign
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+            title="Data"
+          />
 
           <label className="field">
             <span>FITS file</span>
