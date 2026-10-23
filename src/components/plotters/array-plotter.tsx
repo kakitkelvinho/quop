@@ -17,7 +17,7 @@ import {
 import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
 import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import { PanelSign } from "@/components/panel-sign";
+import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -213,12 +213,12 @@ export default function ArrayPlotter() {
       className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
     >
       <div className="visualizerSidebar">
+        <SidebarFold
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        />
         <div className="inputCard fieldStack">
-          <PanelSign
-            collapsed={sidebarCollapsed}
-            onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-            title="Data"
-          />
+          <h2>Data</h2>
 
           <label className="field">
             <span>CSV files</span>

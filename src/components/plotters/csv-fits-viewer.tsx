@@ -21,7 +21,6 @@ import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file
 import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import { PanelSign } from "@/components/panel-sign";
 
 ChartJS.register(
   LinearScale,
@@ -171,7 +170,7 @@ function CsvCompactPanel() {
   return (
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
-        <PanelSign title="CSV" />
+        <h2>CSV</h2>
 
         <label className="field">
           <span>CSV file</span>
@@ -317,7 +316,7 @@ function FitsCompactPanel() {
   return (
     <article className="comparisonPanel sectionCard">
       <div className="comparisonPanel__top fieldStack">
-        <PanelSign title="FITS" />
+        <h2>FITS</h2>
 
         <label className="field">
           <span>FITS file</span>

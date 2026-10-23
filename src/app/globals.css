@@ -625,24 +625,27 @@ select.linkedField__unit {
   line-height: 1.5;
 }
 
-/* A file picker: one flat box, "Choose file", and "or drop it here" beside
-   it. The input fills the row, unseen, so a click anywhere picks a file, a
-   file can be dropped anywhere on it, and the ring shows on focus. The one
-   dashed edge in the system rings the row only while a file is held over
-   it. */
+/* A file picker: the one dashed edge in the system, "drop a file here",
+   round one flat box, "Choose file", with "or drop it here" beside it. The
+   input fills the box, unseen, so a click anywhere picks a file, and the
+   ring shows on focus. Pointed at or held over, the dashes turn to ink. */
 .fileDrop {
   position: relative;
   display: grid;
   gap: 0.5rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px dashed var(--border);
   border-radius: var(--radius);
+  background: var(--surface-strong);
   color: var(--muted);
   font-weight: 500;
   cursor: pointer;
+  transition: border-color 160ms ease;
 }
 
+.fileDrop:hover,
 .fileDrop.is-over {
-  outline: 1px dashed var(--foreground);
-  outline-offset: 0.35rem;
+  border-color: var(--foreground);
 }
 
 .fileDrop:focus-within {
@@ -743,7 +746,7 @@ select.linkedField__unit {
 }
 
 .visualizerLayout--sidebarCollapsed {
-  grid-template-columns: 2.75rem minmax(0, 1fr);
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .visualizerSidebar {
@@ -751,100 +754,94 @@ select.linkedField__unit {
   min-width: 0;
 }
 
-/* folded, the sidebar keeps only its sign, a strip down the page's edge */
-.visualizerLayout--sidebarCollapsed .visualizerSidebar .inputCard > :not(.panelSign) {
+/* folded, the sidebar is gone to the hairline; only its fold is left */
+.visualizerLayout--sidebarCollapsed .visualizerSidebar .inputCard {
   display: none;
 }
 
-/* A panel's name as a station sign (PanelSign): a blue plate with white
-   lettering. Its orange arrow, in the lower right corner where every sign
-   keeps it, folds the panel away; under the pointer the plate deepens. */
-.panelSign {
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding: 0.55rem 2.6rem 0.55rem 0.85rem;
-  transition: background-color 160ms ease;
-}
-
-.panelSign:not(:has(.panelSign__toggle)) {
-  padding-right: 0.85rem;
-}
-
-.panelSign:has(.panelSign__toggle:hover) {
-  background-color: var(--accent-hover);
-}
-
-.panelSign .panelSign__title {
-  margin: 0;
-  color: inherit;
-  font-size: 1.1rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.panelSign__toggle {
+/* The sidebar's fold (SidebarFold): the hairline between the sidebar and the
+   plot is the button. An unseen strip lies along the line, a little wider
+   than it; pointed at, a tab grows out of the line where the pointer is, a
+   hairline rectangle on the page's ground with the arrow inside, and a click
+   anywhere on the strip folds the sidebar. Folded, the tab stays out: the way
+   back. */
+.sidebarFold {
   position: absolute;
-  right: 0;
+  top: 0;
   bottom: 0;
-  display: grid;
-  place-items: end;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0 0.6rem 0.55rem 0;
+  /* centred on the plot's left border, one column gap past the sidebar */
+  right: calc(-1.3rem - 0.75rem);
+  z-index: 5;
+  width: 1.5rem;
+  padding: 0;
   border: 0;
-  border-radius: var(--radius);
   background: none;
-  color: #fb8c4a;
   cursor: pointer;
 }
 
-.panelSign__toggle svg {
-  width: 0.95rem;
-  height: 0.95rem;
+.sidebarFold__tab {
+  position: absolute;
+  top: var(--fold-tab-y, 2.4rem);
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 2.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity 120ms ease,
+    border-color 120ms ease;
+}
+
+.sidebarFold:hover .sidebarFold__tab,
+.sidebarFold:focus-visible .sidebarFold__tab,
+.sidebarFold.is-collapsed .sidebarFold__tab {
+  opacity: 1;
+}
+
+.sidebarFold:hover .sidebarFold__tab {
+  border-color: var(--foreground);
+}
+
+.sidebarFold:focus-visible {
+  outline: none;
+}
+
+.sidebarFold:focus-visible .sidebarFold__tab {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.sidebarFold__tab svg {
+  width: 0.9rem;
+  height: 0.9rem;
   overflow: visible;
   transition: transform 160ms ease;
 }
 
-.panelSign__toggle path {
+.sidebarFold__tab path {
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.5px;
+  stroke-width: 1.5px;
   stroke-linecap: square;
   stroke-linejoin: miter;
   vector-effect: non-scaling-stroke;
 }
 
-/* the ring goes inside the plate, in its white, where the page's blue ring
-   would vanish */
-.panelSign__toggle:focus-visible {
-  outline: 2px solid var(--on-accent);
-  outline-offset: -3px;
-}
-
-/* folded: the plate is the strip, all of it the button, its arrow pointing
-   back out */
-.panelSign.is-collapsed {
-  padding: 0;
-}
-
-.panelSign.is-collapsed .panelSign__title {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.panelSign.is-collapsed .panelSign__toggle {
-  width: 100%;
-  height: 100%;
-}
-
-.panelSign.is-collapsed .panelSign__toggle svg {
+.sidebarFold.is-collapsed .sidebarFold__tab svg {
   transform: rotate(180deg);
+}
+
+/* with no pointer to hover, the tab is always out */
+@media (hover: none) {
+  .sidebarFold__tab {
+    opacity: 1;
+  }
 }
 
 
@@ -1317,31 +1314,28 @@ main:focus {
     grid-template-columns: 1fr;
   }
 
-  /* stacked, the sidebar folds up under its sign rather than off to the
-     side: the sign keeps its name, and its arrow points up, or down to
-     open it again */
-  .panelSign__toggle svg {
+  /* stacked, the hairline runs across, above the plot, so the fold lies
+     along it and folds the sidebar up; its tab sits at the line's middle */
+  .sidebarFold {
+    top: auto;
+    right: 0;
+    bottom: calc(-1rem - 0.75rem);
+    left: 0;
+    width: auto;
+    height: 1.5rem;
+  }
+
+  .sidebarFold__tab {
+    top: 50%;
+    width: 2.6rem;
+    height: 1.25rem;
+  }
+
+  .sidebarFold__tab svg {
     transform: rotate(90deg);
   }
 
-  .panelSign.is-collapsed {
-    padding: 0.55rem 2.6rem 0.55rem 0.85rem;
-  }
-
-  .panelSign.is-collapsed .panelSign__title {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
-  }
-
-  .panelSign.is-collapsed .panelSign__toggle {
-    width: 2.5rem;
-    height: 2.5rem;
-  }
-
-  .panelSign.is-collapsed .panelSign__toggle svg {
+  .sidebarFold.is-collapsed .sidebarFold__tab svg {
     transform: rotate(-90deg);
   }
 
@@ -5378,7 +5372,6 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
     .fitsFullHeader__copy,
-    .panelSign,
     .toolCard__sign
   ) {
   border: 0;
