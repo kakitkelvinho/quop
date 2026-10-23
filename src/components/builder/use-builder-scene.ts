@@ -129,26 +129,27 @@ function reducer(state: HistoryState, action: Action): HistoryState {
 }
 
 /**
- * The builder only ever renders on the client (the page loads it with
- * `ssr: false`), so the autosaved table can be read straight into the initial
- * state — no hydration mismatch, no flash of the example layout.
+ * The autosaved table, or null for none. The builder only ever renders on the
+ * client (the page loads it with `ssr: false`), so it can be read straight
+ * into the initial state — no hydration mismatch, no flash of the example layout.
  */
-function initialState(): HistoryState {
-  let scene = DEFAULT_SCENE;
+export function readStoredScene(): BuilderSceneData | null {
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = parseScene(JSON.parse(stored));
-      if (parsed) scene = parsed;
-    }
+    if (stored) return parseScene(JSON.parse(stored));
   } catch {
     // A corrupt autosave should never block the page — fall back to the example.
   }
-  return { scene, past: [], future: [] };
+  return null;
 }
 
-export function useBuilderScene() {
-  const [state, dispatch] = useReducer(reducer, null, initialState);
+function initialState(opening: BuilderSceneData | null): HistoryState {
+  return { scene: opening ?? readStoredScene() ?? DEFAULT_SCENE, past: [], future: [] };
+}
+
+/** `opening` is a setup the table opens with in place of the autosaved one, such as a shared link's. */
+export function useBuilderScene(opening: BuilderSceneData | null = null) {
+  const [state, dispatch] = useReducer(reducer, opening, initialState);
   const { scene } = state;
 
   // A drag previews a new scene on every pointer move; serialising each one

@@ -689,6 +689,38 @@ print — posters, slides and paper figures are mostly white pages.
 The render-style exploration that led here is kept on the
 `prototype/builder-shading` branch.
 
+## Sharing
+
+**Share**, the icon beside the QUOP mark, sends a setup on as a link instead
+of a `.json` file. Its popover offers **Copy link** first (confirmed in the
+status line), **Share…** where the browser has a system share sheet, **Email**
+(a `mailto:` with the link in its body) and **Download .json**.
+
+The link is the page's address with the whole setup in its hash:
+`/builder/tabletop/#s=<blob>`, where the blob is the setup's file text,
+minified (the same `serializeScene` the JSON panel saves, `version`
+included) and compressed with lz-string's `compressToEncodedURIComponent`.
+A browser never sends the hash to a server, so the static site needs no
+backend and the setup never leaves the two people's browsers. Opening a link
+reads it back through the same check as a pasted or opened file
+(`checkSceneText`, then `parseScene`); `share-link.ts` holds both directions.
+
+A link opens straight onto an empty table or the untouched example; a table
+holding anything else asks first, and opening is one undo step. A link pasted
+into an open Tabletop's address opens the same way. Once read, the hash is
+dropped from the address, so a reload keeps the table's own edits. A link
+that can't be read says "Couldn't open shared setup." and leaves the table as
+it was.
+
+A large setup makes a long link: past about 8000 characters the popover still
+copies it but notes that some mail and chat apps may cut it short, and that
+Download .json is safer.
+
+Links carry the scene's `version`, and a link made today may be opened years
+later. Bumping the schema version must keep every older version importable,
+exactly as for files (ADR 0001 and `setup-fixtures/`): a link is a setup
+file in another wrapping.
+
 ## Files
 
 | File | What it holds |
@@ -705,6 +737,8 @@ The render-style exploration that led here is kept on the
 | `src/components/builder/builder-hud.tsx` | The floating islands: the QUOP and + fans, the dock, the ? fan, mode badge, lists, the panel rail, the camera, the setup brief and JSON panels |
 | `src/components/builder/corner-fan.tsx` | The corner fan: a quarter ring of petal wedges from a workspace corner, a keyboard menu |
 | `src/components/builder/file-fan.tsx` | The QUOP mark's file fan |
+| `src/components/builder/share-link.ts` | A setup to and from a share link's `#s=` hash |
+| `src/components/builder/share-menu.tsx` | The Share button and its popover |
 | `src/components/builder/panel-rail.tsx` | The panel rail's slots; what a press does is `rail-slots.ts`, group mode `group-mode.ts` |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |

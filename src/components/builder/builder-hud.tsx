@@ -17,6 +17,7 @@ import { keepPanelsInside, panelState, setPanelView } from "@/components/builder
 import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
 import { FileFan, TOP_LEFT_ISLANDS } from "@/components/builder/file-fan";
+import { ShareMenu } from "@/components/builder/share-menu";
 import { PanelRail, type RailSlot } from "@/components/builder/panel-rail";
 import { toggleListPanel } from "@/components/builder/rail-slots";
 import { groupModeHints, groupSlotLabel, type ModeHint } from "@/components/builder/group-mode";
@@ -169,6 +170,13 @@ export type BuilderHudProps = {
   /** set while an import waits on what to do with a group the table already has */
   importChoice: { names: string[] } | null;
   onImportChoice: (choice: "replace" | "copy" | null) => void;
+  /** set while a shared link waits on whether to replace the work on the table */
+  shareChoice: boolean;
+  /** true opens the shared setup, false keeps the table */
+  onShareChoice: (open: boolean) => void;
+  /** the page's address with the setup in its hash */
+  getShareUrl: () => string;
+  onCopyLink: () => void;
   /** several ids join or leave as one undo step */
   onSetGroupMembership: (groupId: string, ids: string[], isMember: boolean) => void;
   onToggleLabels: () => void;
@@ -728,6 +736,40 @@ function ImportChoiceDialog({
           </button>
           <button type="button" className="builderButton" onClick={() => onChoose(null)}>
             Cancel
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Asked when a shared link arrives while the table holds work of its own:
+ * open the shared setup in its place (one undo step), or keep the table. Esc keeps it.
+ */
+function ShareChoiceDialog({ onChoose }: { onChoose: (open: boolean) => void }) {
+  useEscapeCloses(useCallback(() => onChoose(false), [onChoose]));
+  return (
+    <div className="builderImportChoice__backdrop">
+      <section
+        className="builderIsland builderImportChoice"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="builderShareChoiceTitle"
+        aria-describedby="builderShareChoiceText"
+      >
+        <h2 id="builderShareChoiceTitle" className="builderAbout__title">
+          Open the shared setup?
+        </h2>
+        <p id="builderShareChoiceText" className="builderAbout__description">
+          It replaces what is on your table. ⌘Z brings yours back.
+        </p>
+        <div className="builderBrief__actions">
+          <button type="button" className="builderButton builderButton--primary" autoFocus onClick={() => onChoose(true)}>
+            Open shared setup
+          </button>
+          <button type="button" className="builderButton" onClick={() => onChoose(false)}>
+            Keep mine
           </button>
         </div>
       </section>
@@ -1498,14 +1540,20 @@ export default function BuilderHud(props: BuilderHudProps) {
 
   return (
     <>
-      {/* top left: the QUOP mark is the file menu, and the + under it adds; their fans share one ring */}
-      <div className="builderIsland builderHud__file">
-        <FileFan
-          onShowJson={showJson}
-          onExportPng={props.onExportPng}
-          onResetExample={props.onResetExample}
-          onClear={props.onClear}
-        />
+      {/* top left: the QUOP mark is the file menu, and the + under it adds; their fans share one ring.
+          Share sits beside the mark, outside the ring. */}
+      <div className="builderHud__topLeft">
+        <div className="builderIsland builderHud__file">
+          <FileFan
+            onShowJson={showJson}
+            onExportPng={props.onExportPng}
+            onResetExample={props.onResetExample}
+            onClear={props.onClear}
+          />
+        </div>
+        <div className="builderIsland builderHud__share">
+          <ShareMenu getShareUrl={props.getShareUrl} onCopyLink={props.onCopyLink} onDownload={props.onSave} />
+        </div>
       </div>
 
       {panelsMove ? null : aboutPanels}
@@ -1649,6 +1697,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         ) : null}
       </div>
 
+      {props.shareChoice ? <ShareChoiceDialog onChoose={props.onShareChoice} /> : null}
       {props.importChoice ? (
         <ImportChoiceDialog names={props.importChoice.names} onChoose={props.onImportChoice} />
       ) : null}
