@@ -21,9 +21,13 @@ export type ParsedCsv = {
   extraInfo: string;
 };
 
+// Which way a CSV's series run: down its columns, or along its rows.
+export type CsvLayout = "columns" | "rows";
+
 export type ParsedGenericCsv = {
   error: string | null;
   headers: string[];
+  layout: CsvLayout;
   rowCount: number;
   skippedRowCount: number;
   rows: number[][];
@@ -115,15 +119,19 @@ function findTimeColumn(headers: string[]) {
 
 // Splits a file into comment-stripped lines and finds where the numeric data
 // starts and which line above it is the header.
-function locateHeaderAndData(rawLines: string[]) {
-  // Strip any comment marker up front so a commented header row (e.g. a
-  // Moku export's "% Time (s), Channel A ...") is treated the same as a
-  // plain one, and pre-compute each line's fields once.
-  const lines = rawLines.map((line) => {
+// Strips any comment marker up front so a commented header row (e.g. a
+// Moku export's "% Time (s), Channel A ...") is treated the same as a plain
+// one, and pre-computes each line's fields once.
+function readLines(rawLines: string[]) {
+  return rawLines.map((line) => {
     const text = stripCommentPrefix(line);
     const fields = text ? parseCsvRow(text) : [];
     return { text, fields, isNumericRow: isFullyNumericRow(fields) };
   });
+}
+
+function locateHeaderAndData(rawLines: string[]) {
+  const lines = readLines(rawLines);
 
   const dataStartIndex = lines.findIndex((line) => line.isNumericRow);
 
@@ -304,7 +312,11 @@ export function parseTimeSeriesCsv(csv: string): ParsedCsv {
   };
 }
 
-type CsvLine = ReturnType<typeof locateHeaderAndData>["lines"][number];
+type CsvLine = ReturnType<typeof readLines>[number];
+
+function hasNumericCell(fields: string[]): boolean {
+  return fields.some((field) => Number.isFinite(parseNumericCell(field)));
+}
 
 // Some spectrometer exports (e.g. Avantes/Astrella) are wide: a few metadata
 // columns, then one column per wavelength, with each spectrum on a single
@@ -323,6 +335,18 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
     }
 
     if (header.length - xStart < 2) {
+      continue;
+    }
+
+    // A row under a header of words as wide as itself is a data row, not
+    // the header of a wide export ("s1,1,2" under "sample,a,b").
+    const isUnderWordHeader = lines
+      .slice(0, headerIndex)
+      .some(
+        (line) => line.fields.length === header.length && !hasNumericCell(line.fields),
+      );
+
+    if (isUnderWordHeader) {
       continue;
     }
 
@@ -377,6 +401,7 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
     return {
       error: null,
       headers: ["x", ...labels],
+      layout: "rows",
       rowCount: rows.length,
       skippedRowCount,
       rows,
@@ -392,13 +417,102 @@ function parseWideLayout(lines: CsvLine[]): ParsedGenericCsv | null {
   return null;
 }
 
-export function parseGenericCsv(csv: string): ParsedGenericCsv {
+// Reads the table the way a spreadsheet does, a column at a time. The data
+// starts at the first row of numbers or, failing that, the first row with a
+// number in it (a row led by a timestamp or a sample name), and the header
+// is the nearest line above it with as many cells. A column that is mostly
+// words is left out; a blank or unreadable cell is NaN, a gap in its own
+// column only.
+function readColumnTable(lines: CsvLine[]) {
+  let dataStartIndex = lines.findIndex((line) => line.isNumericRow);
+
+  if (dataStartIndex === -1) {
+    dataStartIndex = lines.findIndex((line) => hasNumericCell(line.fields));
+  }
+
+  if (dataStartIndex === -1) {
+    return null;
+  }
+
+  const width = lines[dataStartIndex].fields.length;
+  let headerIndex = -1;
+
+  for (let index = dataStartIndex - 1; index >= 0; index -= 1) {
+    const candidate = lines[index];
+
+    if (!candidate.isNumericRow && candidate.fields.length === width) {
+      headerIndex = index;
+      break;
+    }
+  }
+
+  const names =
+    headerIndex === -1
+      ? Array.from({ length: width }, (_, index) => `column_${index + 1}`)
+      : lines[headerIndex].fields.map(
+          (header, index) => header || `column_${index + 1}`,
+        );
+
+  const tableLines: CsvLine[] = [];
+  const trailingInfo: string[] = [];
+  let skippedRowCount = 0;
+
+  for (const line of lines.slice(dataStartIndex)) {
+    if (line.fields.length === width && hasNumericCell(line.fields)) {
+      tableLines.push(line);
+    } else {
+      skippedRowCount += 1;
+      if (line.text) trailingInfo.push(line.text);
+    }
+  }
+
+  const isNumericColumn = names.map((_, column) => {
+    const filled = tableLines
+      .map((line) => line.fields[column])
+      .filter((cell) => !isBlankCell(cell));
+    const numbers = filled.filter((cell) =>
+      Number.isFinite(parseNumericCell(cell)),
+    ).length;
+
+    return numbers > 0 && numbers * 2 >= filled.length;
+  });
+  const plotted = names.map((_, column) => column).filter((column) => isNumericColumn[column]);
+  const textColumns = names.map((_, column) => column).filter((column) => !isNumericColumn[column]);
+
+  return {
+    headers: plotted.map((column) => names[column]),
+    rows: tableLines.map((line) =>
+      plotted.map((column) => parseNumericCell(line.fields[column])),
+    ),
+    // a row's first word cell (a sample name, a timestamp) names it when
+    // the table is read by rows
+    rowLabels: tableLines.map((line) =>
+      textColumns.length ? line.fields[textColumns[0]] : "",
+    ),
+    textColumns: textColumns.map((column) => names[column]),
+    skippedRowCount,
+    leadingInfo: lines
+      .slice(0, headerIndex === -1 ? dataStartIndex : headerIndex)
+      .map((line) => line.text)
+      .filter(Boolean),
+    trailingInfo,
+  };
+}
+
+/**
+ * Reads a numeric CSV into an x column and y columns. With `layout`
+ * "columns" each column is a series, as in a spreadsheet; with "rows" each
+ * row is. Left out, a file is read by columns unless it is a wide export
+ * (a header of numbers, one row per spectrum), which is read by rows.
+ */
+export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericCsv {
   const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
   if (rawLines.length < 2) {
     return {
       error: "Provide a header row and at least one data row.",
       headers: [],
+      layout: layout ?? "columns",
       rowCount: 0,
       skippedRowCount: 0,
       rows: [],
@@ -406,19 +520,25 @@ export function parseGenericCsv(csv: string): ParsedGenericCsv {
     };
   }
 
-  const { lines, dataStartIndex, headerIndex, leadingInfo } =
-    locateHeaderAndData(rawLines);
+  const lines = readLines(rawLines);
+  const isPlainTable = lines.some((line) => line.isNumericRow);
 
-  if (dataStartIndex === -1) {
+  if (layout === "rows" || (layout === undefined && !isPlainTable)) {
     const wide = parseWideLayout(lines);
 
     if (wide) {
       return wide;
     }
+  }
 
+  const resolvedLayout = layout ?? "columns";
+  const table = readColumnTable(lines);
+
+  if (!table) {
     return {
       error: "Couldn't find any numeric data rows in this file.",
       headers: [],
+      layout: resolvedLayout,
       rowCount: 0,
       skippedRowCount: 0,
       rows: [],
@@ -426,66 +546,45 @@ export function parseGenericCsv(csv: string): ParsedGenericCsv {
     };
   }
 
-  const dataColumnCount = lines[dataStartIndex].fields.length;
-  const headers =
-    headerIndex === -1
-      ? Array.from({ length: dataColumnCount }, (_, index) => `column_${index + 1}`)
-      : lines[headerIndex].fields.map(
-          (header, index) => header || `column_${index + 1}`,
-        );
+  const extraInfo = [
+    ...table.leadingInfo,
+    ...(table.textColumns.length
+      ? [`Not plotted (words, not numbers): ${table.textColumns.join(", ")}`]
+      : []),
+    ...table.trailingInfo,
+  ].join("\n");
 
-  if (headers.length < 2) {
+  if (resolvedLayout === "columns") {
     return {
-      error: "CSV input must contain at least two numeric columns.",
-      headers,
-      rowCount: 0,
-      skippedRowCount: 0,
-      rows: [],
-      extraInfo: leadingInfo.join("\n"),
+      error: null,
+      headers: table.headers,
+      layout: "columns",
+      rowCount: table.rows.length,
+      skippedRowCount: table.skippedRowCount,
+      rows: table.rows,
+      extraInfo,
     };
   }
 
-  const rows: number[][] = [];
-  let skippedRowCount = 0;
-  const trailingInfo: string[] = [];
-
-  for (let index = dataStartIndex; index < lines.length; index += 1) {
-    const row = lines[index];
-
-    if (row.fields.length !== headers.length) {
-      skippedRowCount += 1;
-      if (row.text) trailingInfo.push(row.text);
-      continue;
-    }
-
-    const numericRow = row.fields.map((field) => parseNumericCell(field));
-
-    if (numericRow.some((value) => !Number.isFinite(value))) {
-      skippedRowCount += 1;
-      continue;
-    }
-
-    rows.push(numericRow);
-  }
-
-  if (rows.length === 0) {
-    return {
-      error: "No valid numeric data rows were found under the header row.",
-      headers,
-      rowCount: 0,
-      skippedRowCount,
-      rows: [],
-      extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
-    };
-  }
+  // By rows: each row is a series over the columns, at the header's values
+  // when they are all numbers and at the column's place (1, 2, ...) if not.
+  const headerValues = table.headers.map((header) => parseNumericCell(header));
+  const isHeaderX = headerValues.every((value) => Number.isFinite(value));
 
   return {
     error: null,
-    headers,
-    rowCount: rows.length,
-    skippedRowCount,
-    rows,
-    extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
+    headers: [
+      isHeaderX ? "x" : "column",
+      ...table.rows.map((_, index) => table.rowLabels[index] || `row ${index + 1}`),
+    ],
+    layout: "rows",
+    rowCount: table.headers.length,
+    skippedRowCount: table.skippedRowCount,
+    rows: table.headers.map((_, column) => [
+      isHeaderX ? headerValues[column] : column + 1,
+      ...table.rows.map((row) => row[column]),
+    ]),
+    extraInfo,
   };
 }
 

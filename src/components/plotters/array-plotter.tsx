@@ -17,6 +17,7 @@ import {
 import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
 import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -126,6 +127,7 @@ const chartOptions: ChartOptions<"scatter"> = {
 };
 
 export default function ArrayPlotter() {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [xInput, setXInput] = useState(defaultX);
   const [yInput, setYInput] = useState(defaultY);
   const [csvDatasets, setCsvDatasets] = useState<CsvDataset[]>([]);
@@ -207,57 +209,65 @@ export default function ArrayPlotter() {
   const activeError = usingCsvMode ? csvError : series.error;
 
   return (
-    <div className="visualizerLayout">
-      <div className="inputCard fieldStack">
-        <h2>Data</h2>
+    <div
+      className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
+    >
+      <div className="visualizerSidebar">
+        <SidebarFold
+          collapsed={sidebarCollapsed}
+          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
+        />
+        <div className="inputCard fieldStack">
+          <h2>Data</h2>
 
-        <label className="field">
-          <span>CSV files</span>
-          <FileDrop
-            kind="CSV file"
-            accept=".csv,text/csv"
-            multiple
-            onChange={(event) => {
-              void handleCsvUpload(event);
-            }}
-          />
-        </label>
-
-        {usingCsvMode ? (
-          <button
-            type="button"
-            className="buttonLink"
-            onClick={handleClearCsv}
-          >
-            Clear CSVs
-          </button>
-        ) : null}
-
-        <label className="field">
-          <span>x values</span>
-          <div className="field__control field__control--textarea">
-            <textarea
-              value={xInput}
-              onChange={(event) => setXInput(event.target.value)}
-              spellCheck={false}
-              aria-label="x array input"
+          <label className="field">
+            <span>CSV files</span>
+            <FileDrop
+              kind="CSV file"
+              accept=".csv,text/csv"
+              multiple
+              onChange={(event) => {
+                void handleCsvUpload(event);
+              }}
             />
-          </div>
-        </label>
+          </label>
 
-        <label className="field">
-          <span>y values</span>
-          <div className="field__control field__control--textarea">
-            <textarea
-              value={yInput}
-              onChange={(event) => setYInput(event.target.value)}
-              spellCheck={false}
-              aria-label="y array input"
-            />
-          </div>
-        </label>
+          {usingCsvMode ? (
+            <button
+              type="button"
+              className="buttonLink"
+              onClick={handleClearCsv}
+            >
+              Clear CSVs
+            </button>
+          ) : null}
 
-        <p className="resultCard">{csvError ?? statusMessage}</p>
+          <label className="field">
+            <span>x values</span>
+            <div className="field__control field__control--textarea">
+              <textarea
+                value={xInput}
+                onChange={(event) => setXInput(event.target.value)}
+                spellCheck={false}
+                aria-label="x array input"
+              />
+            </div>
+          </label>
+
+          <label className="field">
+            <span>y values</span>
+            <div className="field__control field__control--textarea">
+              <textarea
+                value={yInput}
+                onChange={(event) => setYInput(event.target.value)}
+                spellCheck={false}
+                aria-label="y array input"
+              />
+            </div>
+          </label>
+
+          <p className="resultCard">{csvError ?? statusMessage}</p>
+        </div>
       </div>
 
       <div className="sectionCard visualizerChartCard">

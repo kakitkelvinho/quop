@@ -14,10 +14,14 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { parseGenericCsv, type DataPoint } from "@/components/plotters/csv-parsing";
+import {
+  parseGenericCsv,
+  type CsvLayout,
+  type DataPoint,
+} from "@/components/plotters/csv-parsing";
 import { FileDrop } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import SidebarCollapseToggle from "@/components/sidebar-collapse-toggle";
+import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(
   LinearScale,
@@ -45,17 +49,23 @@ function createGenericDemoCsv() {
   return rows.join("\n");
 }
 
+// the x choice that is no column: a value's place in its column (1, 2, ...)
+const ROW_NUMBER = -1;
+
 export default function GenericCsvPlotter() {
   const [csvInput, setCsvInput] = useState(createGenericDemoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-generic-columns.csv");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const parsed = useMemo(() => parseGenericCsv(csvInput), [csvInput]);
+  // undefined: the parser picks (columns, unless the file is a wide export)
+  const [layout, setLayout] = useState<CsvLayout | undefined>(undefined);
+  const parsed = useMemo(() => parseGenericCsv(csvInput, layout), [csvInput, layout]);
   const [xColumnIndex, setXColumnIndex] = useState(0);
   const [yColumnIndexes, setYColumnIndexes] = useState<number[]>([]);
 
-  const resolvedXColumnIndex = parsed.headers.length
-    ? Math.min(xColumnIndex, parsed.headers.length - 1)
-    : 0;
+  const resolvedXColumnIndex =
+    parsed.headers.length < 2 || xColumnIndex === ROW_NUMBER
+      ? ROW_NUMBER
+      : Math.min(xColumnIndex, parsed.headers.length - 1);
   const resolvedYColumnIndexes = useMemo(() => {
     if (!parsed.headers.length) {
       return [];
@@ -72,16 +82,22 @@ export default function GenericCsvPlotter() {
           .filter((index) => index !== resolvedXColumnIndex);
   }, [parsed.headers, resolvedXColumnIndex, yColumnIndexes]);
 
-  const xLabel = parsed.headers[resolvedXColumnIndex] ?? "x";
+  const xLabel =
+    resolvedXColumnIndex === ROW_NUMBER
+      ? "row number"
+      : (parsed.headers[resolvedXColumnIndex] ?? "x");
 
   const chartData: ChartData<"scatter"> = {
     datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex) => {
       return {
         label: parsed.headers[columnIndex],
-        data: parsed.rows.map((row) => ({
-          x: row[resolvedXColumnIndex],
-          y: row[columnIndex],
-        })),
+        // a blank cell is a gap in its own series only
+        data: parsed.rows
+          .map((row, rowIndex) => ({
+            x: resolvedXColumnIndex === ROW_NUMBER ? rowIndex + 1 : row[resolvedXColumnIndex],
+            y: row[columnIndex],
+          }))
+          .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
         showLine: true,
         borderWidth: 2,
         pointRadius: 1.5,
@@ -132,7 +148,15 @@ export default function GenericCsvPlotter() {
     const nextCsv = await file.text();
     setCsvInput(nextCsv);
     setSourceLabel(file.name);
+    setLayout(undefined);
     event.target.value = "";
+  }
+
+  // the columns mean something else once the table is turned
+  function handleLayoutChange(nextLayout: CsvLayout) {
+    setLayout(nextLayout);
+    setXColumnIndex(0);
+    setYColumnIndexes([]);
   }
 
   function handleXColumnChange(nextIndex: number) {
@@ -169,9 +193,8 @@ export default function GenericCsvPlotter() {
       className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
     >
       <div className="visualizerSidebar">
-        <SidebarCollapseToggle
+        <SidebarFold
           collapsed={sidebarCollapsed}
-          label="input panel"
           onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
         />
         <div className="inputCard fieldStack">
@@ -217,10 +240,49 @@ export default function GenericCsvPlotter() {
             </label>
           ) : null}
 
+          <div className="csvRoleChooser">
+            <div className="csvRoleChooser__header">
+              <p className="sectionCard__kicker">Series in</p>
+            </div>
+            <div className="csvRoleRow" role="radiogroup" aria-label="Series in">
+              <span className="csvRoleRow__name">
+                {parsed.layout === "columns" ? "Each column is a series" : "Each row is a series"}
+              </span>
+              {(["columns", "rows"] as const).map((option) => (
+                <label className="csvRoleToggle" key={option}>
+                  <input
+                    checked={parsed.layout === option}
+                    name="generic-csv-layout"
+                    onChange={() => handleLayoutChange(option)}
+                    type="radio"
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {parsed.headers.length ? (
             <div className="csvRoleChooser">
               <div className="csvRoleChooser__header">
-                <p className="sectionCard__kicker">Columns</p>
+                <p className="sectionCard__kicker">
+                  {parsed.layout === "columns" ? "Columns" : "Series"}
+                </p>
+              </div>
+              {/* plots each value against its place in the column, as a
+                  spreadsheet does when it is given only y */}
+              <div className="csvRoleRow">
+                <span className="csvRoleRow__name">Row number</span>
+                <label className="csvRoleToggle">
+                  <input
+                    checked={resolvedXColumnIndex === ROW_NUMBER}
+                    name="generic-csv-x-column"
+                    onChange={() => handleXColumnChange(ROW_NUMBER)}
+                    type="radio"
+                  />
+                  <span>X</span>
+                </label>
+                <span aria-hidden="true" />
               </div>
               {parsed.headers.map((header, index) => {
                 const isX = index === resolvedXColumnIndex;
