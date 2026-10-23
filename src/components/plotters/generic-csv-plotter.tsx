@@ -21,6 +21,14 @@ import {
 } from "@/components/plotters/csv-parsing";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
+import { XYPicker } from "@/components/plotters/xy-picker";
+import {
+  ROW_NUMBER,
+  resolveY,
+  swapX,
+  yCandidates,
+  type YSelection,
+} from "@/components/plotters/xy-selection";
 import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(
@@ -49,9 +57,6 @@ function createGenericDemoCsv() {
   return rows.join("\n");
 }
 
-// the x choice that is no column: a value's place in its column (1, 2, ...)
-const ROW_NUMBER = -1;
-
 export default function GenericCsvPlotter() {
   const [csvInput, setCsvInput] = useState(createGenericDemoCsv);
   const [sourceLabel, setSourceLabel] = useState("demo-generic-columns.csv");
@@ -60,27 +65,20 @@ export default function GenericCsvPlotter() {
   const [layout, setLayout] = useState<CsvLayout | undefined>(undefined);
   const parsed = useMemo(() => parseGenericCsv(csvInput, layout), [csvInput, layout]);
   const [xColumnIndex, setXColumnIndex] = useState(0);
-  const [yColumnIndexes, setYColumnIndexes] = useState<number[]>([]);
+  const [ySelection, setYSelection] = useState<YSelection>(null);
 
   const resolvedXColumnIndex =
     parsed.headers.length < 2 || xColumnIndex === ROW_NUMBER
       ? ROW_NUMBER
       : Math.min(xColumnIndex, parsed.headers.length - 1);
-  const resolvedYColumnIndexes = useMemo(() => {
-    if (!parsed.headers.length) {
-      return [];
-    }
-
-    const filtered = yColumnIndexes.filter(
-      (index) => index < parsed.headers.length && index !== resolvedXColumnIndex,
-    );
-
-    return filtered.length
-      ? filtered
-      : parsed.headers
-          .map((_, index) => index)
-          .filter((index) => index !== resolvedXColumnIndex);
-  }, [parsed.headers, resolvedXColumnIndex, yColumnIndexes]);
+  const yCandidateIndexes = useMemo(
+    () => yCandidates(parsed.headers.length, resolvedXColumnIndex),
+    [parsed.headers.length, resolvedXColumnIndex],
+  );
+  const resolvedYColumnIndexes = useMemo(
+    () => resolveY(ySelection, yCandidateIndexes),
+    [ySelection, yCandidateIndexes],
+  );
 
   const xLabel =
     resolvedXColumnIndex === ROW_NUMBER
@@ -149,6 +147,8 @@ export default function GenericCsvPlotter() {
     setCsvInput(nextCsv);
     setSourceLabel(file.name);
     setLayout(undefined);
+    setXColumnIndex(0);
+    setYSelection(null);
     event.target.value = "";
   }
 
@@ -156,28 +156,12 @@ export default function GenericCsvPlotter() {
   function handleLayoutChange(nextLayout: CsvLayout) {
     setLayout(nextLayout);
     setXColumnIndex(0);
-    setYColumnIndexes([]);
+    setYSelection(null);
   }
 
   function handleXColumnChange(nextIndex: number) {
     setXColumnIndex(nextIndex);
-    setYColumnIndexes((current) => {
-      const filtered = current.filter((index) => index !== nextIndex);
-
-      return filtered.length
-        ? filtered
-        : parsed.headers.map((_, index) => index).filter((index) => index !== nextIndex);
-    });
-  }
-
-  function handleYColumnToggle(columnIndex: number, checked: boolean) {
-    setYColumnIndexes((current) => {
-      if (checked) {
-        return current.includes(columnIndex) ? current : [...current, columnIndex].sort((a, b) => a - b);
-      }
-
-      return current.filter((index) => index !== columnIndex);
-    });
+    setYSelection((current) => swapX(current, resolvedXColumnIndex, nextIndex));
   }
 
   const canRenderChart = !parsed.error && resolvedYColumnIndexes.length > 0 && parsed.rows.length > 0;
@@ -269,51 +253,17 @@ export default function GenericCsvPlotter() {
                   {parsed.layout === "columns" ? "Columns" : "Series"}
                 </p>
               </div>
-              {/* plots each value against its place in the column, as a
-                  spreadsheet does when it is given only y */}
-              <div className="csvRoleRow">
-                <span className="csvRoleRow__name">Row number</span>
-                <label className="csvRoleToggle">
-                  <input
-                    checked={resolvedXColumnIndex === ROW_NUMBER}
-                    name="generic-csv-x-column"
-                    onChange={() => handleXColumnChange(ROW_NUMBER)}
-                    type="radio"
-                  />
-                  <span>X</span>
-                </label>
-                <span aria-hidden="true" />
-              </div>
-              {parsed.headers.map((header, index) => {
-                const isX = index === resolvedXColumnIndex;
-                const isY = resolvedYColumnIndexes.includes(index);
-
-                return (
-                  <div className="csvRoleRow" key={`${header}-${index}`}>
-                    <span className="csvRoleRow__name">{header}</span>
-                    <label className="csvRoleToggle">
-                      <input
-                        checked={index === resolvedXColumnIndex}
-                        name="generic-csv-x-column"
-                        onChange={() => handleXColumnChange(index)}
-                        type="radio"
-                      />
-                      <span>X</span>
-                    </label>
-                    <label className="csvRoleToggle">
-                      <input
-                        checked={isY}
-                        disabled={isX}
-                        onChange={(event) =>
-                          handleYColumnToggle(index, event.target.checked)
-                        }
-                        type="checkbox"
-                      />
-                      <span>Y</span>
-                    </label>
-                  </div>
-                );
-              })}
+              <XYPicker
+                // a new table starts with an empty filter
+                key={`${sourceLabel}-${parsed.layout}`}
+                candidates={yCandidateIndexes}
+                headers={parsed.headers}
+                noun={parsed.layout === "columns" ? "columns" : "series"}
+                onX={handleXColumnChange}
+                onY={setYSelection}
+                plotted={resolvedYColumnIndexes}
+                x={resolvedXColumnIndex}
+              />
             </div>
           ) : null}
 
