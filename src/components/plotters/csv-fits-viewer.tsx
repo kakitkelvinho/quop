@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 
 import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
-import { FileDrop } from "@/components/plotters/file-drop";
+import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import { describeFitsError } from "@/components/plotters/fits-errors";
 import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file";
 import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
@@ -173,10 +173,10 @@ function CsvCompactPanel() {
         <h2>CSV</h2>
 
         <label className="field">
-          <span>CSV file</span>
+          <span>CSV, TSV or TXT file</span>
           <FileDrop
-            kind="CSV file"
-            accept=".csv,text/csv"
+            kind="CSV, TSV or TXT file"
+            accept={TABLE_FILE_ACCEPT}
             onChange={(event) => {
               void handleFileUpload(event);
             }}

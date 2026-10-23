@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 
 import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
-import { FileDrop } from "@/components/plotters/file-drop";
+import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { SidebarFold } from "@/components/sidebar-fold";
 
@@ -221,10 +221,10 @@ export default function ArrayPlotter() {
           <h2>Data</h2>
 
           <label className="field">
-            <span>CSV files</span>
+            <span>CSV, TSV or TXT files</span>
             <FileDrop
-              kind="CSV file"
-              accept=".csv,text/csv"
+              kind="CSV, TSV or TXT file"
+              accept={TABLE_FILE_ACCEPT}
               multiple
               onChange={(event) => {
                 void handleCsvUpload(event);

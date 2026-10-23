@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 
 import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
-import { FileDrop } from "@/components/plotters/file-drop";
+import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { SidebarFold } from "@/components/sidebar-fold";
 
@@ -179,10 +179,10 @@ export default function CsvPlotter() {
           <h2>Data</h2>
 
           <label className="field">
-            <span>CSV file</span>
+            <span>CSV, TSV or TXT file</span>
             <FileDrop
-              kind="CSV file"
-              accept=".csv,text/csv"
+              kind="CSV, TSV or TXT file"
+              accept={TABLE_FILE_ACCEPT}
               onChange={(event) => {
                 void handleFileUpload(event);
               }}

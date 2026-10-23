@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  detectSeparator,
   parseArrayCsv,
+  parseCsvRow,
   parseGenericCsv,
   parseNumericCell,
   parseTimeSeriesCsv,
@@ -217,6 +219,64 @@ describe("parseGenericCsv", () => {
   it("still reports no numeric data when nothing looks wide either", () => {
     const parsed = parseGenericCsv("name,unit\nfoo,bar");
 
+    assert.equal(parsed.error, "Couldn't find any numeric data rows in this file.");
+  });
+});
+
+describe("tab-separated files", () => {
+  const commaTable = ["time,a,b", "0,1,2", "1,3,4", "2,5,6"].join("\n");
+  // a logger's export: CRLF line endings and a tab at the end of each line
+  const tabTable = ["time\ta\tb\t", "0\t1\t2\t", "1\t3\t4\t", "2\t5\t6\t"].join("\r\n");
+
+  it("picks tabs when the lines split on them steadily, commas otherwise", () => {
+    assert.equal(detectSeparator(tabTable.split("\r\n")), "\t");
+    assert.equal(detectSeparator(commaTable.split("\n")), ",");
+  });
+
+  it("reads a tab table with a trailing tab like its comma version", () => {
+    const fromTabs = parseGenericCsv(tabTable);
+    const fromCommas = parseGenericCsv(commaTable);
+
+    assert.equal(fromTabs.error, null);
+    assert.deepEqual(fromTabs.headers, fromCommas.headers);
+    assert.deepEqual(fromTabs.rows, fromCommas.rows);
+    assert.equal(fromTabs.extraInfo, "");
+  });
+
+  it("drops a column left empty by a trailing comma, without listing it", () => {
+    const parsed = parseGenericCsv(["time,a,", "0,1,", "1,3,"].join("\n"));
+
+    assert.deepEqual(parsed.headers, ["time", "a"]);
+    assert.doesNotMatch(parsed.extraInfo, /Not plotted/);
+  });
+
+  it("reads a tab table in the Time CSV and Array plotters too", () => {
+    const series = parseTimeSeriesCsv(tabTable);
+
+    assert.equal(series.error, null);
+    assert.deepEqual(series.channelLabels, ["a", "b"]);
+    assert.deepEqual(series.series[1].points[2], { x: 2, y: 6 });
+
+    const array = parseArrayCsv(tabTable, "data.txt");
+
+    assert.equal(array.error, null);
+    assert.deepEqual(array.datasets[0].points[1], { x: 1, y: 3 });
+  });
+
+  it("keeps a quoted cell with a comma in it as one cell, with either separator", () => {
+    assert.deepEqual(parseCsvRow('1,"1.,4",2'), ["1", "1.,4", "2"]);
+    assert.deepEqual(parseCsvRow('1\t"1.,4"\t2', "\t"), ["1", "1.,4", "2"]);
+
+    const parsed = parseGenericCsv(['a\tb\tc', '1\t"1.,4"\t2', '3\t"1.,4"\t4'].join("\n"));
+
+    assert.deepEqual(parsed.headers, ["a", "c"]);
+    assert.match(parsed.extraInfo, /Not plotted \(words, not numbers\): b/);
+  });
+
+  it("does not split on semicolons", () => {
+    const parsed = parseGenericCsv("a;b\n1;2\n3;4");
+
+    // as before: one cell per line, none of them a number
     assert.equal(parsed.error, "Couldn't find any numeric data rows in this file.");
   });
 });

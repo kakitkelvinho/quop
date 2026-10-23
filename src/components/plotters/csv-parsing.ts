@@ -61,7 +61,10 @@ export function parseNumericCell(cell: string | undefined): number {
   return isBlankCell(cell) ? Number.NaN : Number(cell);
 }
 
-export function parseCsvRow(row: string): string[] {
+// A table's cells are split by commas or by tabs.
+export type CsvSeparator = "," | "\t";
+
+export function parseCsvRow(row: string, separator: CsvSeparator = ","): string[] {
   const values: string[] = [];
   let current = "";
   let insideQuotes = false;
@@ -81,7 +84,7 @@ export function parseCsvRow(row: string): string[] {
       continue;
     }
 
-    if (character === "," && !insideQuotes) {
+    if (character === separator && !insideQuotes) {
       values.push(current.trim());
       current = "";
       continue;
@@ -92,6 +95,52 @@ export function parseCsvRow(row: string): string[] {
 
   values.push(current.trim());
   return values;
+}
+
+function isCommentLine(line: string): boolean {
+  return COMMENT_PREFIXES.some((prefix) => line.startsWith(prefix));
+}
+
+// Splits a file into its non-blank lines, trimming spaces but not tabs, so a
+// tab-separated line keeps a leading or trailing empty cell in its place.
+function splitLines(csv: string): string[] {
+  return csv
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^ +| +$/g, ""))
+    .filter((line) => line.trim() !== "");
+}
+
+const SEPARATOR_SAMPLE_LINES = 20;
+
+/**
+ * Reads a file as tab-separated when its first lines split on tabs into a
+ * steady number of cells (at least 2) - the count most of them share - and
+ * as comma-separated otherwise. Semicolons are never a separator: they come
+ * with decimal commas (1,6;2,3), which aren't read.
+ */
+export function detectSeparator(lines: string[]): CsvSeparator {
+  const sample = lines
+    .map((line) => line.trim())
+    .filter((line) => line && !isCommentLine(line))
+    .slice(0, SEPARATOR_SAMPLE_LINES);
+  const counts = new Map<number, number>();
+
+  for (const line of sample) {
+    const width = parseCsvRow(line, "\t").length;
+    counts.set(width, (counts.get(width) ?? 0) + 1);
+  }
+
+  let commonWidth = 0;
+  let commonCount = 0;
+
+  for (const [width, count] of counts) {
+    if (count > commonCount) {
+      commonWidth = width;
+      commonCount = count;
+    }
+  }
+
+  return commonWidth >= 2 && commonCount * 2 > sample.length ? "\t" : ",";
 }
 
 function stripCommentPrefix(line: string): string {
@@ -121,11 +170,25 @@ function findTimeColumn(headers: string[]) {
 // starts and which line above it is the header.
 // Strips any comment marker up front so a commented header row (e.g. a
 // Moku export's "% Time (s), Channel A ...") is treated the same as a plain
-// one, and pre-computes each line's fields once.
+// one, and pre-computes each line's fields once. A column that is blank on
+// every line (a separator at the end of each line, as a logger writes it)
+// is dropped.
 function readLines(rawLines: string[]) {
-  return rawLines.map((line) => {
-    const text = stripCommentPrefix(line);
-    const fields = text ? parseCsvRow(text) : [];
+  const separator = detectSeparator(rawLines);
+  const fieldLines = rawLines.map((line) => {
+    const text = stripCommentPrefix(line.trim());
+    return { text, fields: text ? parseCsvRow(stripCommentPrefix(line), separator) : [] };
+  });
+  const width = Math.max(0, ...fieldLines.map((line) => line.fields.length));
+  const isEmptyColumn = Array.from({ length: width }, (_, column) =>
+    fieldLines.every((line) => isBlankCell(line.fields[column])),
+  );
+  const hasEmptyColumn = isEmptyColumn.some(Boolean);
+
+  return fieldLines.map(({ text, fields: allFields }) => {
+    const fields = hasEmptyColumn
+      ? allFields.filter((_, column) => !isEmptyColumn[column])
+      : allFields;
     return { text, fields, isNumericRow: isFullyNumericRow(fields) };
   });
 }
@@ -163,7 +226,7 @@ function locateHeaderAndData(rawLines: string[]) {
 }
 
 export function parseTimeSeriesCsv(csv: string): ParsedCsv {
-  const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const rawLines = splitLines(csv);
 
   if (rawLines.length < 2) {
     return {
@@ -527,7 +590,7 @@ function readColumnTable(lines: CsvLine[]) {
  * which is read by rows.
  */
 export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericCsv {
-  const rawLines = csv.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const rawLines = splitLines(csv);
 
   if (rawLines.length < 2) {
     return {
@@ -612,11 +675,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
 
 // The Array plotter's CSV upload: the first two columns are x and y.
 export function parseArrayCsv(contents: string, label: string): CsvParseResult {
-  const lines = contents
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .filter((line) => !line.startsWith("%"));
+  const lines = splitLines(contents).filter((line) => !line.trim().startsWith("%"));
+  const separator = detectSeparator(lines);
 
   if (!lines.length) {
     return {
@@ -628,7 +688,7 @@ export function parseArrayCsv(contents: string, label: string): CsvParseResult {
   }
 
   const dataStartIndex = lines.findIndex((line) => {
-    const columns = parseCsvRow(line);
+    const columns = parseCsvRow(line, separator);
 
     if (columns.length < 2) {
       return false;
@@ -652,7 +712,7 @@ export function parseArrayCsv(contents: string, label: string): CsvParseResult {
   let skippedRowCount = 0;
 
   for (let index = dataStartIndex; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index]);
+    const columns = parseCsvRow(lines[index], separator);
 
     if (columns.length < 2) {
       return {
