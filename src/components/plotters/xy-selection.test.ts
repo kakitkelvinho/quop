@@ -1,11 +1,27 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { ROW_NUMBER, addY, resolveY, swapX, toggleY, yCandidates } from "./xy-selection.ts";
+import {
+  PLOTTED_LIMIT,
+  ROW_NUMBER,
+  addY,
+  limitY,
+  resolveY,
+  swapX,
+  toggleY,
+  yCandidates,
+} from "./xy-selection.ts";
 
 describe("resolveY", () => {
-  it("plots every candidate before the user chooses", () => {
+  it("plots every candidate before the user chooses, when there are few", () => {
     assert.deepEqual(resolveY(null, yCandidates(4, 0)), [1, 2, 3]);
+    assert.equal(resolveY(null, yCandidates(7, 0)).length, 6);
+  });
+
+  it("starts a 17 088-series read with the first 10 plotted, skipping X", () => {
+    const plotted = resolveY(null, yCandidates(17089, 0));
+
+    assert.deepEqual(plotted, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
   it("plots nothing once the user has unticked every Y", () => {
@@ -61,5 +77,28 @@ describe("toggleY and addY", () => {
 
   it("adds the shown Ys to the ticked ones", () => {
     assert.deepEqual(addY([5, 1], [3, 1]), [1, 3, 5]);
+  });
+});
+
+describe("limitY", () => {
+  it("lets a choice under the limit through", () => {
+    assert.deepEqual(limitY([1], [1, 2]), { plotted: [1, 2], limited: false });
+  });
+
+  it("ticks up to 500 when All is pressed on 17 088 series", () => {
+    const candidates = yCandidates(17089, 0);
+    const current = resolveY(null, candidates);
+    const { plotted, limited } = limitY(current, addY(current, candidates));
+
+    assert.equal(plotted.length, PLOTTED_LIMIT);
+    assert.equal(limited, true);
+    assert.deepEqual(plotted.slice(0, 10), current);
+  });
+
+  it("refuses a tick past the limit", () => {
+    const full = Array.from({ length: 3 }, (_, index) => index * 2);
+    const result = limitY(full, toggleY(full, 1, true), 3);
+
+    assert.deepEqual(result, { plotted: [0, 2, 4], limited: true });
   });
 });

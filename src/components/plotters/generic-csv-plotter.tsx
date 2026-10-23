@@ -58,6 +58,11 @@ function createGenericDemoCsv() {
   return rows.join("\n");
 }
 
+// past this many points or series the chart is drawn without animating
+// them in: setting up the animations alone takes seconds
+const LARGE_PLOT_POINTS = 20000;
+const LARGE_PLOT_SERIES = 50;
+
 // a clock axis's tick, with seconds when the ticks are less than a minute apart
 function formatClockTick(value: number, ticks: { value: number }[]) {
   return formatClock(value, ticks.length > 1 && ticks[1].value - ticks[0].value < 60);
@@ -93,76 +98,89 @@ export default function GenericCsvPlotter() {
       ? "row number"
       : (parsed.headers[resolvedXColumnIndex] ?? "x");
   const isClockX = parsed.clockColumns.includes(resolvedXColumnIndex);
-  // the tooltip shows seconds when the readings are finer than a minute
-  const clockSeconds =
-    isClockX && hasSeconds(parsed.rows.map((row) => row[resolvedXColumnIndex]));
 
-  const chartData: ChartData<"scatter"> = {
-    datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>((columnIndex) => {
-      return {
-        label: parsed.headers[columnIndex],
-        // a blank cell is a gap in its own series only
-        data: parsed.rows
-          .map((row, rowIndex) => ({
-            x: resolvedXColumnIndex === ROW_NUMBER ? rowIndex + 1 : row[resolvedXColumnIndex],
-            y: row[columnIndex],
-          }))
-          .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
-        showLine: true,
-        borderWidth: 2,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      };
+  // rebuilt only when the table or the X / Y choice changes: folding the
+  // sidebar or typing elsewhere must not redraw thousands of points
+  const chartData = useMemo<ChartData<"scatter">>(
+    () => ({
+      datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>(
+        (columnIndex) => ({
+          label: parsed.headers[columnIndex],
+          // a blank cell is a gap in its own series only
+          data: parsed.rows
+            .map((row, rowIndex) => ({
+              x: resolvedXColumnIndex === ROW_NUMBER ? rowIndex + 1 : row[resolvedXColumnIndex],
+              y: row[columnIndex],
+            }))
+            .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
+          showLine: true,
+          borderWidth: 2,
+          pointRadius: 1.5,
+          pointHoverRadius: 3,
+        }),
+      ),
     }),
-  };
+    [parsed, resolvedXColumnIndex, resolvedYColumnIndexes],
+  );
 
-  const chartOptions: ChartOptions<"scatter"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: "top",
-        labels: {
-          usePointStyle: true,
-          boxWidth: 10,
+  const pointCount = chartData.datasets.reduce((sum, dataset) => sum + dataset.data.length, 0);
+  const isLargePlot =
+    pointCount > LARGE_PLOT_POINTS || chartData.datasets.length > LARGE_PLOT_SERIES;
+
+  const chartOptions = useMemo<ChartOptions<"scatter">>(() => {
+    // the tooltip shows seconds when the readings are finer than a minute
+    const clockSeconds =
+      isClockX && hasSeconds(parsed.rows.map((row) => row[resolvedXColumnIndex]));
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: isLargePlot ? false : undefined,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            usePointStyle: true,
+            boxWidth: 10,
+          },
         },
-      },
-      title: { display: false },
-      tooltip: isClockX
-        ? {
-            enabled: true,
-            callbacks: {
-              label: (context) =>
-                `${context.dataset.label}: (${formatClock(context.parsed.x ?? Number.NaN, clockSeconds)}, ${context.parsed.y?.toLocaleString()})`,
-            },
-          }
-        : { enabled: true },
-    },
-    scales: {
-      x: {
-        type: "linear",
-        title: { display: true, text: xLabel },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
-        // a clock axis ticks on whole minutes, hours, ...
-        ...(isClockX
+        title: { display: false },
+        tooltip: isClockX
           ? {
-              afterBuildTicks: (axis) => {
-                axis.ticks = clockTicks(axis.min, axis.max).map((value) => ({ value }));
+              enabled: true,
+              callbacks: {
+                label: (context) =>
+                  `${context.dataset.label}: (${formatClock(context.parsed.x ?? Number.NaN, clockSeconds)}, ${context.parsed.y?.toLocaleString()})`,
               },
             }
-          : {}),
+          : { enabled: true },
       },
-      y: {
-        title: { display: true, text: "selected columns" },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
+      scales: {
+        x: {
+          type: "linear",
+          title: { display: true, text: xLabel },
+          grid: { color: "rgba(91, 102, 117, 0.18)" },
+          // a clock axis ticks on whole minutes, hours, ...
+          ...(isClockX
+            ? {
+                afterBuildTicks: (axis) => {
+                  axis.ticks = clockTicks(axis.min, axis.max).map((value) => ({ value }));
+                },
+              }
+            : {}),
+        },
+        y: {
+          title: { display: true, text: "selected columns" },
+          grid: { color: "rgba(91, 102, 117, 0.18)" },
+        },
       },
-    },
-    elements: {
-      point: { radius: 1.5, hoverRadius: 3 },
-      line: { tension: 0 },
-    },
-  };
+      elements: {
+        point: { radius: 1.5, hoverRadius: 3 },
+        line: { tension: 0 },
+      },
+    };
+  }, [isClockX, isLargePlot, parsed.rows, resolvedXColumnIndex, xLabel]);
 
   async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
