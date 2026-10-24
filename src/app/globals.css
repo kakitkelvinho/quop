@@ -5011,22 +5011,31 @@ html[data-theme="dark"] .chalkEq__ink--accent {
 
 /* PROTOTYPE (#279): the way to the tools as a row of three outlined signs,
    chalk-coloured on the board; the one under the pointer becomes a station
-   sign, blue with its orange arrow (.signArrow) in the lower right corner */
+   sign, blue with its orange arrow (.signArrow) in the lower right corner.
+   Each is ÖBB's 6:1 plate, like the tool index's: the name centred across
+   it, set a little above the middle (0.2em above, 0.65em below), and 2.4em
+   either side, clear of the arrow. A 6:1 plate tall enough for the name is
+   13rem long, so the row is wider than the welcome text and breaks out of
+   it, centred, wrapping on a narrow board. */
 .heroTools {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 1rem;
-  margin: 0.75rem auto 0;
+  width: min(calc(100vw - 2.5rem), 42rem);
+  margin: 0.75rem 0 0;
 }
 
-.heroTools .buttonLink {
-  min-width: 9rem;
-  padding: 0.7em 2.2em 0.7em 1.2em;
+.heroTools .buttonLink:has(.signArrow) {
+  flex: 0 0 13rem;
+  aspect-ratio: 6 / 1;
+  padding: 0.2em 2.4em 0.65em;
   border: 1.5px solid var(--foreground);
   background-color: transparent;
   color: var(--foreground);
   font-size: 1.05rem;
+  line-height: 1.1;
+  text-align: center;
   letter-spacing: 0.01em;
 }
 
