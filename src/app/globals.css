@@ -5716,3 +5716,131 @@ a.toolCard:hover .toolCard__sign {
 .cornerFan__item.is-on .cornerFan__name {
   fill: currentColor;
 }
+
+/* ---------------------------------------------------------------------------
+ * PROTOTYPE (#279): a light that follows the cursor across the chalkboard.
+ * The board carries --lx/--ly (the light, in board px), --lr (its reach) and
+ * --lit (0 off, 1 on). Throwaway branch, not for main.
+ * ------------------------------------------------------------------------- */
+
+.chalkboard {
+  /* parked far off the board, so nothing is lit before the cursor arrives */
+  --lx: -9999px;
+  --ly: -9999px;
+  --lr: 220px;
+  --lit: 0;
+}
+
+.chalkEq {
+  --ex: 0px;
+  --ey: 0px;
+}
+
+.chalkboard__rake,
+.chalkHidden,
+.chalkLight {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--lit);
+}
+
+.chalkboard__rake {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* the light on the slate itself; on white paper a light shows as nothing, so day has none */
+.chalkLight {
+  display: none;
+}
+
+html[data-theme="dark"] .chalkboard[class*="has-light-"] .chalkLight {
+  display: block;
+  background: radial-gradient(
+    circle var(--lr) at var(--lx) var(--ly),
+    rgb(var(--mark) / 0.055),
+    rgb(var(--mark) / 0.02) 45%,
+    transparent 100%
+  );
+}
+
+/* A · brighten: a brighter copy of each written equation, masked to the light */
+.chalkEq__ink--lit {
+  position: absolute;
+  top: 0.4rem;
+  left: 0.7rem;
+  color: rgb(var(--mark) / 0.9);
+  opacity: var(--lit);
+  -webkit-mask-image: radial-gradient(
+    circle var(--lr) at calc(var(--lx) - var(--ex) - 0.7rem) calc(var(--ly) - var(--ey) - 0.4rem),
+    #000 0,
+    rgb(0 0 0 / 0.55) 40%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--lr) at calc(var(--lx) - var(--ex) - 0.7rem) calc(var(--ly) - var(--ey) - 0.4rem),
+    #000 0,
+    rgb(0 0 0 / 0.55) 40%,
+    transparent 100%
+  );
+}
+
+.chalkEq__ink--lit svg {
+  filter: drop-shadow(0 0 8px rgb(var(--mark) / 0.3));
+}
+
+.chalkEq__ink--accent.chalkEq__ink--lit {
+  color: var(--accent);
+  opacity: var(--lit);
+}
+
+html[data-theme="dark"] .chalkEq__ink--accent.chalkEq__ink--lit {
+  color: color-mix(in srgb, var(--focus-ring) 60%, #ffffff);
+}
+
+/* B · reveal: older working under the board, only where the light falls, and
+   faded out round the welcome text the same way the written layer is */
+.chalkHidden {
+  --eq-size: clamp(1.45rem, 0.85rem + 1.45vw, 2.35rem);
+  -webkit-mask-image:
+    radial-gradient(circle var(--lr) at var(--lx) var(--ly), #000 0, rgb(0 0 0 / 0.5) 45%, transparent 100%),
+    radial-gradient(ellipse 42% 34% at 50% 47%, transparent 46%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    radial-gradient(circle var(--lr) at var(--lx) var(--ly), #000 0, rgb(0 0 0 / 0.5) 45%, transparent 100%),
+    radial-gradient(ellipse 42% 34% at 50% 47%, transparent 46%, #000 100%);
+  mask-composite: intersect;
+}
+
+.chalkHidden__eq {
+  position: absolute;
+  line-height: 0;
+  white-space: nowrap;
+  color: rgb(var(--mark) / calc(var(--chalk-alpha) * 0.85));
+  filter: var(--chalk-filter);
+  transform: translate(-50%, -50%);
+}
+
+.chalkHidden__eq svg {
+  display: block;
+  overflow: visible;
+}
+
+/* C · rake: the grain picked out under the light; the chalk is left alone */
+.chalkboard__rake {
+  -webkit-mask-image: radial-gradient(
+    circle var(--lr) at var(--lx) var(--ly),
+    #000 0,
+    rgb(0 0 0 / 0.45) 45%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--lr) at var(--lx) var(--ly),
+    #000 0,
+    rgb(0 0 0 / 0.45) 45%,
+    transparent 100%
+  );
+}

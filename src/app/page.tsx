@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
+import { ChalkFilters } from "@/components/chalkboard-hero";
+import { ChalkLightPrototype } from "@/components/chalk-light.prototype";
 import { HomeChapters } from "@/components/home-chapters";
 import { loadPowerTrace } from "@/components/home-trace";
 import { SectionCards } from "@/components/section-cards";
@@ -10,7 +11,8 @@ export default function Home() {
   return (
     <>
       <ChalkFilters />
-      <ChalkboardHero>
+      {/* PROTOTYPE (#279): the cursor light swaps per ?variant= */}
+      <ChalkLightPrototype>
         <h1>Quantum optics, in the browser.</h1>
         <p className="lead">
           Plot lab data, run quick optics calculations and lay out an optical table. Nothing to
@@ -33,7 +35,7 @@ export default function Home() {
             </Link>
           ))}
         </nav>
-      </ChalkboardHero>
+      </ChalkLightPrototype>
       <HomeChapters trace={loadPowerTrace()} />
       <nav aria-labelledby="home-index" className="homeIndex">
         <h2 className="homeIndex__label" id="home-index">
