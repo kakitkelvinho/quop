@@ -1,0 +1,160 @@
+/* PROTOTYPE (#280): chapter CTA variants, keyed on html[data-cta]. Not for main.
+   The CTA carries every variant's parts (pictogram, label, chalk arrow, orange
+   arrow); each variant shows the ones it uses. */
+
+.ctaProto__chalk,
+.ctaProto__icon {
+  display: none;
+}
+
+/* ---- current: today's blue plate, arrow inside -------------------------- */
+html[data-cta="current"] .chapter__cta {
+  padding: 0.6rem 2.2em 0.6rem 0.9rem;
+}
+
+/* ---- A: the hero's sign — outlined 6:1, name centred; blue with the
+   pictogram and the orange arrow only under the pointer ------------------ */
+html[data-cta="A"] .chapter__cta {
+  aspect-ratio: 6 / 1;
+  width: 18rem;
+  max-width: 100%;
+  padding: 0 3.6em;
+  border: 1.5px solid var(--foreground);
+  background-color: transparent;
+  color: var(--foreground);
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+html[data-cta="A"] .chapter__cta:hover,
+html[data-cta="A"] .chapter__cta:focus-visible {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+html[data-cta="A"] .chapter__cta .ctaProto__icon {
+  position: absolute;
+  right: 2.3em;
+  bottom: 0.35em;
+  display: grid;
+  font-size: 0.85em;
+  opacity: 0;
+}
+
+html[data-cta="A"] .chapter__cta .signArrow {
+  right: 0.55em;
+  bottom: 0.5em;
+  width: 1.2em;
+  height: 1.2em;
+  opacity: 0;
+}
+
+html[data-cta="A"] .chapter__cta:is(:hover, :focus-visible) :is(.ctaProto__icon, .signArrow) {
+  opacity: 1;
+}
+
+/* ---- B: no plate; the CTA is written on the board in the physicist's hand,
+   a chalk arrow after it. Under the pointer the hand turns station blue --- */
+html[data-cta="B"] .chapter__cta {
+  padding: 0.2rem 0;
+  background-color: transparent;
+  color: rgb(var(--mark) / 0.8);
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-style: italic;
+  font-weight: 400;
+  filter: var(--chalk-filter);
+}
+
+html[data-cta="B"] .chapter__cta .signArrow {
+  display: none;
+}
+
+html[data-cta="B"] .chapter__cta .ctaProto__chalk {
+  display: block;
+  width: 2.4em;
+  height: 1em;
+  overflow: visible;
+  transition: translate 160ms ease-out;
+}
+
+html[data-cta="B"] .ctaProto__chalk path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+html[data-cta="B"] .chapter__cta:is(:hover, :focus-visible) {
+  background-color: transparent;
+  color: color-mix(in srgb, var(--accent) 80%, rgb(var(--mark)));
+}
+
+html[data-theme="dark"][data-cta="B"] .chapter__cta:is(:hover, :focus-visible) {
+  color: var(--focus-ring);
+}
+
+html[data-cta="B"] .chapter__cta:is(:hover, :focus-visible) .ctaProto__chalk {
+  translate: 0.3em 0;
+}
+
+/* ---- C: a platform strip as wide as the text column, outlined, name on the
+   left, the orange arrow always in its lower right; blue under the pointer */
+html[data-cta="C"] .chapter__cta {
+  justify-content: flex-start;
+  justify-self: stretch;
+  width: auto;
+  padding: 0.85rem 3em 0.85rem 1rem;
+  border: 1.5px solid var(--foreground);
+  background-color: transparent;
+  color: var(--foreground);
+  font-size: 1.05rem;
+}
+
+html[data-cta="C"] .chapter__cta .signArrow {
+  right: 0.6em;
+  bottom: 0.5em;
+  width: 1.2em;
+  height: 1.2em;
+}
+
+html[data-cta="C"] .chapter__cta:is(:hover, :focus-visible) {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---- D: the words stay words; the press is a small outlined square holding
+   only the orange arrow in its lower right. Both go blue under the pointer */
+html[data-cta="D"] .chapter__cta {
+  gap: 0.75em;
+  padding: 0;
+  background-color: transparent;
+  color: var(--foreground);
+  font-size: 1.05rem;
+}
+
+html[data-cta="D"] .chapter__cta .signArrow {
+  position: relative;
+  right: auto;
+  bottom: auto;
+  order: 2;
+  box-sizing: content-box;
+  width: 1em;
+  height: 1em;
+  padding: 0.75em 0.3em 0.3em 0.75em;
+  border: 1.5px solid var(--foreground);
+  border-radius: var(--radius);
+}
+
+html[data-cta="D"] .chapter__cta:is(:hover, :focus-visible) {
+  background-color: transparent;
+  color: var(--accent-strong);
+}
+
+html[data-cta="D"] .chapter__cta:is(:hover, :focus-visible) .signArrow {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}

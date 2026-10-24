@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useCallback, useRef, type CSSProperties, type ReactNode } from "react";
 
 import type { TraceSketch } from "@/components/home-trace";
-import { ArrowRightIcon } from "@/components/sign-icon";
+import { CtaPrototype } from "@/components/chapter-cta.prototype";
+import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
 import { useChapterProgress } from "@/components/use-chapter-progress";
 
 /* ---------------------------------------------------------------------------
@@ -37,7 +38,7 @@ const within = (p: number, [from, to]: Span) => Math.min(1, Math.max(0, (p - fro
 type ChapterProps = {
   body: ReactNode;
   children: ReactNode;
-  cta?: { href: string; label: string };
+  cta?: { href: string; label: string; pictogram: ReactNode };
   extra?: ReactNode;
   flip?: boolean;
   heading: string;
@@ -83,8 +84,20 @@ function Chapter({
           {status ? <p className="chapter__status">{status}</p> : null}
           {extra}
           {cta ? (
+            /* PROTOTYPE (#280): every variant's parts are here; ?variant= shows
+               the ones it uses (chapter-cta.prototype.css) */
             <Link {...fade([0.05, 0.2], "chapter__cta buttonLink")} href={cta.href}>
-              {cta.label}
+              <span className="ctaProto__icon">
+                <SignIcon>
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    {cta.pictogram}
+                  </svg>
+                </SignIcon>
+              </span>
+              <span className="ctaProto__label">{cta.label}</span>
+              <svg aria-hidden="true" className="ctaProto__chalk" viewBox="0 0 60 24">
+                <path d="M3 13 C18 11.5, 34 12.5, 52 12 M42 4 C46 7, 50 10, 53 12 C49 14.5, 45 17, 41 21" />
+              </svg>
               <span className="signArrow">
                 <ArrowRightIcon />
               </span>
@@ -113,7 +126,7 @@ function PlotterChapter({ trace }: { trace: TraceSketch }) {
   return (
     <Chapter
       body="Drop in a CSV trace or a FITS frame straight off the lab's instruments and see it plotted in the browser. The line being drawn here is a real laser pulse, recorded on a photodiode in the lab."
-      cta={{ href: "/plotters", label: "Open the plotters" }}
+      cta={{ href: "/plotters", label: "Open the plotters", pictogram: <path d="M3 3v18h18M6 16l4-7 3 4 5-8" /> }}
       heading="Drop in a file, get a plot."
       index={3}
       length={1.6}
@@ -178,7 +191,11 @@ function BuilderChapter() {
   return (
     <Chapter
       body="Place lasers, mirrors and lenses on a millimetre grid, draw where the beam is meant to go, and read off its path length and time of flight before touching the real bench."
-      cta={{ href: "/builder/tabletop", label: "Open the tabletop" }}
+      cta={{
+        href: "/builder/tabletop",
+        label: "Open the tabletop",
+        pictogram: <path d="M2 12h20M12 4c2.6 3.5 2.6 12.5 0 16M12 4c-2.6 3.5-2.6 12.5 0 16" />,
+      }}
       heading="Lay out an optical table."
       index={1}
       length={1.6}
@@ -268,7 +285,11 @@ function CalculatorChapter() {
   return (
     <Chapter
       body="Photon energy from wavelength, laser damage thresholds, how far light gets in a given delay: the small sums that come up mid-experiment, answered as you type."
-      cta={{ href: "/calculators", label: "Open the calculators" }}
+      cta={{
+        href: "/calculators",
+        label: "Open the calculators",
+        pictogram: <path d="M5 3h14v18H5zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2" />,
+      }}
       extra={
         <ul {...fade([0.1, 0.25], "chapter__links")}>
           <li>
@@ -343,6 +364,7 @@ function TheoryChapter() {
 export function HomeChapters({ trace }: { trace: TraceSketch }) {
   return (
     <div className="chapters">
+      <CtaPrototype />
       {/* the sections' order everywhere: builder, notes, plotters, calculators */}
       <BuilderChapter />
       <TheoryChapter />
