@@ -1,0 +1,223 @@
+/* PROTOTYPE (#301): throwaway styles for the note-layout variants. Not for main. */
+
+.nl-prose {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 42rem;
+  font-size: 1.12rem;
+  line-height: 1.6;
+}
+
+.nl-eq {
+  overflow-x: auto;
+  padding: 0.25rem 0;
+  font-size: 1.2rem;
+}
+
+.nl-chart {
+  position: relative;
+  width: 100%;
+}
+
+.nl-readout {
+  font: 500 0.8rem/1 var(--font-mono);
+  color: var(--muted);
+}
+
+.nl-stepper button,
+.nl-deck__bar button,
+.nl-toggle__bar button {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+:is(.nl-stepper, .nl-toggle__bar) button.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* A */
+.nl-article {
+  display: grid;
+  gap: 2.5rem;
+}
+
+.nl-figure {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.nl-figure figcaption {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.nl-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nl-stepper input {
+  flex: 1 1 8rem;
+}
+
+/* B */
+.nl-scrolly {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.nl-scrolly__figure {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.4rem;
+  height: 38vh;
+  padding: 0.75rem 0;
+  background: var(--background);
+}
+
+.nl-scrolly__steps {
+  display: grid;
+}
+
+.nl-scrolly__step {
+  min-height: 75vh;
+  align-content: center;
+  opacity: 0.35;
+  transition: opacity 300ms;
+}
+
+.nl-scrolly__step.is-active {
+  opacity: 1;
+}
+
+@media (min-width: 900px) {
+  .nl-scrolly {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    gap: 3rem;
+  }
+
+  .nl-scrolly__steps {
+    grid-row: 1;
+    grid-column: 1;
+  }
+
+  .nl-scrolly__figure {
+    grid-row: 1;
+    grid-column: 2;
+    top: 15vh;
+    height: 70vh;
+  }
+}
+
+/* C */
+.nl-deck {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 1rem;
+  height: calc(100svh - 9rem);
+  min-height: 26rem;
+  background: var(--background);
+}
+
+.nl-deck:fullscreen {
+  height: 100vh;
+  padding: 3vh 4vw;
+}
+
+.nl-slide {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-rows: auto minmax(12rem, 1fr);
+  min-height: 0;
+  animation: nl-in 300ms ease-out;
+}
+
+.nl-slide--title {
+  grid-template-rows: 1fr;
+  align-content: center;
+}
+
+.nl-slide__figure {
+  min-height: 0;
+}
+
+@media (min-width: 900px) {
+  .nl-slide {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-rows: 1fr;
+    align-items: center;
+  }
+
+  .nl-slide__figure {
+    height: 100%;
+  }
+}
+
+@keyframes nl-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.nl-deck__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding-bottom: 3.5rem; /* clear the prototype switcher */
+}
+
+.nl-deck__bar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.nl-deck__dots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.nl-deck__dots button {
+  width: 0.7rem;
+  height: 0.7rem;
+  padding: 0;
+  border-radius: 999px;
+}
+
+.nl-deck__dots button.is-on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* D */
+.nl-toggle {
+  display: grid;
+  gap: 1rem;
+}
+
+.nl-toggle__bar {
+  display: flex;
+  justify-self: end;
+  gap: 0;
+}
+
+.nl-toggle__bar button + button {
+  margin-left: -1px;
+}
