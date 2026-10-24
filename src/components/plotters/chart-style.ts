@@ -9,11 +9,10 @@ import { MATPLOTLIB_FONT_FAMILY, TAB10 } from "@/components/plotters/matplotlib-
 export type ChartStyle = "matplotlib" | "chartjs";
 
 /**
- * The look a chart takes until someone picks one: Chart.js, since most plots
- * here are for looking at data; the matplotlib look is one click away for a
- * figure meant for a paper.
+ * The look a chart takes until someone picks one: matplotlib, whose plain
+ * boxed figure suits the page; Chart.js is one click away.
  */
-export const DEFAULT_CHART_STYLE: ChartStyle = "chartjs";
+export const DEFAULT_CHART_STYLE: ChartStyle = "matplotlib";
 
 export const CHART_STYLE_LABELS: Record<ChartStyle, string> = {
   matplotlib: "matplotlib",

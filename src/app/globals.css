@@ -895,15 +895,17 @@ select.linkedField__unit {
   color: var(--interactive-chart-text);
 }
 
+/* by night the figure sits on the page's own black, so the plot reads as part
+   of the page rather than a tinted card on it */
 .interactiveChart--dark {
-  --interactive-chart-border: rgba(148, 163, 184, 0.24);
-  --interactive-chart-panel-bg: rgb(18 22 31);
-  --interactive-chart-stage-bg: #11161f;
-  --interactive-chart-stage-border: rgba(148, 163, 184, 0.2);
+  --interactive-chart-border: var(--border);
+  --interactive-chart-panel-bg: var(--surface-strong);
+  --interactive-chart-stage-bg: var(--background);
+  --interactive-chart-stage-border: var(--border);
   --interactive-chart-text: #ebf1f7;
 }
 
-/* the Chart.js style keeps the warm stage gradient it had before the matplotlib skin */
+/* the Chart.js style keeps the warm stage gradient it had before the matplotlib skin (by day) */
 .interactiveChart--chartjs {
   --interactive-chart-stage-bg: linear-gradient(
     180deg,
@@ -913,11 +915,7 @@ select.linkedField__unit {
 }
 
 .interactiveChart--dark.interactiveChart--chartjs {
-  --interactive-chart-stage-bg: linear-gradient(
-    180deg,
-    rgb(17 23 33 / 0.96),
-    rgb(10 14 22 / 0.98)
-  );
+  --interactive-chart-stage-bg: var(--background);
 }
 
 .interactiveChart__toolbar {
