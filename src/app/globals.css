@@ -263,7 +263,7 @@ html[data-theme="dark"] .chapter__links a:hover {
   }
 }
 
-/* the row takes the neutral wash; the sign in it deepens */
+/* the row takes the neutral wash; the sign in it turns station blue */
 a.toolCard:hover {
   background: var(--row-hover);
 }
@@ -284,9 +284,9 @@ a.toolCard:focus-visible {
 
 /* the tool's name on a station sign, after ÖBB's platform signs: one long,
    low plate in their 6:1 (99 × 16.5 cm), the same on every row, the name
-   centred across it and set a little above the middle, clear of the marks
-   in the lower right corner. A name too long for one line grows the plate
-   rather than overflowing it. */
+   centred on it both ways, clear of the marks in the lower right corner. A
+   name too long for one line grows the plate rather than overflowing it.
+   Outlined at rest: see the wayfinding signs under The Sign Rule. */
 .toolCard__sign {
   position: relative;
   display: flex;
@@ -295,15 +295,16 @@ a.toolCard:focus-visible {
   flex: 0 1 26rem;
   max-width: 100%;
   aspect-ratio: 6 / 1;
-  padding: 0.2em 3.6em 0.65em;
+  padding: 0 3.6em;
   text-align: center;
   letter-spacing: 0.01em;
 }
 
-/* the sign's marks, in its lower right corner as on a platform sign: the
-   tool's pictogram in its white square, then the orange arrow pointing on,
-   as tall as the square */
-.toolCard__marks {
+/* a wayfinding sign's marks (SignMarks), in its lower right corner as on a
+   platform sign: the tool's pictogram in its white square, then the orange
+   arrow pointing on, as tall as the square. Shown only while the sign is
+   pointed at: see the wayfinding signs under The Sign Rule. */
+.signMarks {
   position: absolute;
   right: 0.4em;
   bottom: 0.35em;
@@ -311,24 +312,25 @@ a.toolCard:focus-visible {
   align-items: center;
   gap: 0.25em;
   font-size: 0.85em;
+  opacity: 0;
 }
 
 /* the way on: orange on the blue (about 3:1), the same by day and night,
    because the plate is */
-.toolCard__arrow {
+.signMarks__arrow {
   display: grid;
   width: 1.6em;
   height: 1.6em;
   color: #fb8c4a;
 }
 
-.toolCard__arrow svg {
+.signMarks__arrow svg {
   width: 100%;
   height: 100%;
   overflow: visible;
 }
 
-.toolCard__arrow path {
+.signMarks__arrow path {
   fill: none;
   stroke: currentColor;
   stroke-width: 2.5px;
@@ -4859,15 +4861,26 @@ body[data-panel-gesture="se"] * {
   overflow: hidden;
 }
 
+/* the hero runs the whole width of the window, edge to edge, and starts
+   right under the header; the rest of the page keeps <main>'s column */
 .chalkboard {
   position: relative;
   display: grid;
   place-items: center;
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  margin-top: -2rem;
   min-height: clamp(480px, 80vh, 780px);
   padding: 3.5rem 1.25rem;
   overflow: hidden;
   isolation: isolate;
   background: var(--background);
+}
+
+/* 100vw counts a classic scrollbar too, so the page clips the sliver the
+   hero would overhang rather than scroll sideways */
+body:has(.chalkboard) {
+  overflow-x: clip;
 }
 
 .chalkboard__grain,
@@ -5009,68 +5022,36 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   text-align: center;
 }
 
-/* the way to the tools as one station sign, after Vienna Hbf's: a single
-   blue panel with a row per destination, the rows parted by a faint
-   white rule, and each row's orange arrow (.signArrow) in its lower right
-   corner */
+/* the way to the tools as a row of three station signs, outlined on the
+   board until pointed at (the wayfinding signs under The Sign Rule). The
+   row is wider than the welcome text and breaks out of it: a grid item
+   wider than its column doesn't centre on its own, so equal negative
+   margins pull it back to the middle. It wraps on a narrow board. */
 .heroTools {
-  display: grid;
-  width: min(100%, 22rem);
-  margin: 0.5rem auto 0;
+  --row: min(calc(100vw - 2.5rem), 59rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem 2.5rem;
+  justify-self: start;
+  width: var(--row);
+  margin: 1rem calc(50% - var(--row) / 2) 0;
 }
 
-.heroTools .buttonLink {
+/* the hero's signs and the chapters' calls to action: ÖBB's 6:1 plate, like
+   the tool index's, 18rem long (never wider than its column), the name
+   centred on it both ways, 3.6em either side so it clears the marks */
+.heroTools .buttonLink,
+.buttonLink.chapter__cta {
   position: relative;
-  justify-content: flex-start;
-  width: 100%;
-  padding: 0.8em 2.4em 0.8em 1.1em;
-  border-radius: 0;
-  font-size: 1.05rem;
+  width: 18rem;
+  max-width: 100%;
+  aspect-ratio: 6 / 1;
+  padding: 0 3.6em;
+  font-size: 1.15rem;
+  line-height: 1.1;
+  text-align: center;
   letter-spacing: 0.01em;
-}
-
-.heroTools .buttonLink:first-child {
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-
-.heroTools .buttonLink:last-child {
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-
-.heroTools .buttonLink + .buttonLink {
-  border-top: 1px solid color-mix(in srgb, var(--on-accent) 22%, transparent);
-}
-
-/* a sign's orange arrow, in its lower right corner, where every sign keeps
-   it: the way on, never leading the words */
-.buttonLink:has(.signArrow) {
-  position: relative;
-  padding-right: 2.2em;
-}
-
-.signArrow {
-  position: absolute;
-  right: 0.7em;
-  bottom: 0.55em;
-  display: grid;
-  width: 0.9em;
-  height: 0.9em;
-  color: #fb8c4a;
-}
-
-.signArrow svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.signArrow path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5px;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-  vector-effect: non-scaling-stroke;
 }
 
 /* a real statement, so sentence case under the Case Rule, not a label */
@@ -5309,8 +5290,12 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   font-size: 1.05rem;
 }
 
-.chapter__cta {
+/* the hero's sign (see .heroTools), its lettering a step smaller so the
+   longest call, "Open the calculators", stays on one line between the
+   marks' clearances */
+.buttonLink.chapter__cta {
   margin-top: 0.5rem;
+  font-size: 1rem;
 }
 
 .chapter__links {
@@ -5512,8 +5497,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .buttonControl,
     .interactiveChart__customizeMenuItem,
     .interactiveChart__applyButton,
-    .fitsFullHeader__copy,
-    .toolCard__sign
+    .fitsFullHeader__copy
   ) {
   border: 0;
   border-radius: var(--radius);
@@ -5539,9 +5523,40 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     .navTab,
     .navFlyout__link,
     .siteFooter a
-  ):hover:not(:disabled),
-a.toolCard:hover .toolCard__sign {
+  ):hover:not(:disabled) {
   background-color: var(--accent-hover);
+}
+
+/* The exception: wayfinding signs, the homepage hero's, its chapters' calls
+   to action and the tool index's, are only an outline in the text colour at rest, so a board of them doesn't
+   shout. Pointed at or focused, the sign becomes the station-blue plate (not
+   the deeper hover blue) and shows its marks. */
+:is(.heroTools .buttonLink, .chapter__cta, .toolCard__sign) {
+  border: 1.5px solid var(--foreground);
+  border-radius: var(--radius);
+  background-color: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+  text-decoration: none;
+}
+
+:is(
+    .heroTools .buttonLink:is(:hover, :focus-visible),
+    .chapter__cta:is(:hover, :focus-visible),
+    a.toolCard:is(:hover, :focus-visible) .toolCard__sign
+  ) {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+:is(
+    .heroTools .buttonLink:is(:hover, :focus-visible),
+    .chapter__cta:is(:hover, :focus-visible),
+    a.toolCard:is(:hover, :focus-visible)
+  )
+  .signMarks {
+  opacity: 1;
 }
 
 /* pressed, open or current: deep, with the white bar along the foot. Only

@@ -2,8 +2,7 @@ import Link from "next/link";
 
 import { BetaMark } from "@/components/beta-badge";
 import type { NavLink } from "@/components/navigation";
-import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
-import { ToolPictogram } from "@/components/tool-pictograms";
+import { SignMarks } from "@/components/tool-pictograms";
 
 /**
  * A section's tools as rows, each one link: its name on a station sign,
@@ -18,14 +17,7 @@ export function ToolIndex({ links }: { links: NavLink[] }) {
           <h2>
             <span className="toolCard__sign">
               {link.label}
-              <span className="toolCard__marks">
-                <SignIcon>
-                  <ToolPictogram href={link.href} />
-                </SignIcon>
-                <span className="toolCard__arrow">
-                  <ArrowRightIcon />
-                </span>
-              </span>
+              <SignMarks href={link.href} />
             </span>
             <BetaMark tool={link} />
           </h2>

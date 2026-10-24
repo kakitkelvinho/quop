@@ -4,7 +4,7 @@ import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
 import { HomeChapters } from "@/components/home-chapters";
 import { loadPowerTrace } from "@/components/home-trace";
 import { SectionCards } from "@/components/section-cards";
-import { ArrowRightIcon } from "@/components/sign-icon";
+import { SignMarks } from "@/components/tool-pictograms";
 
 export default function Home() {
   return (
@@ -13,12 +13,11 @@ export default function Home() {
       <ChalkboardHero>
         <h1>Quantum optics, in the browser.</h1>
         <p className="lead">
-          Plot lab data, run quick optics calculations and lay out an optical table. Nothing to
-          install, free for anyone to try.
+          Plot lab data, run quick optics calculations and lay out an optical table.
         </p>
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
         {/* the way straight to the tools, for whoever came to use one rather than
-            read the story: one station sign, a row per destination */}
+            read the story: three station signs in a row, outlined until pointed at */}
         <nav aria-label="Tools" className="heroTools">
           {[
             ["/builder/tabletop", "Tabletop"],
@@ -27,9 +26,7 @@ export default function Home() {
           ].map(([href, label]) => (
             <Link className="buttonLink" href={href} key={href}>
               {label}
-              <span className="signArrow">
-                <ArrowRightIcon />
-              </span>
+              <SignMarks href={href} />
             </Link>
           ))}
         </nav>

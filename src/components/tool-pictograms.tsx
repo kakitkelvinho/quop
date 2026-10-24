@@ -1,11 +1,20 @@
 import type { ReactNode } from "react";
 
+import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
+
 /**
  * Each tool's station pictogram, drawn as outlines for SignIcon's square (the
  * square, stroke and caps come from `.signIcon`). One per tool on the index,
- * beside the sign's orange arrow, as a platform sign shows what lies that way.
+ * and one per section for the homepage's signs, beside the sign's orange
+ * arrow, as a platform sign shows what lies that way.
  */
 const PICTOGRAMS: Record<string, ReactNode> = {
+  // a beam through a lens
+  "/builder/tabletop": <path d="M2 12h20M12 4c2.6 3.5 2.6 12.5 0 16M12 4c-2.6 3.5-2.6 12.5 0 16" />,
+  // a trace on axes
+  "/plotters": <path d="M3 3v18h18M6 16l4-7 3 4 5-8" />,
+  // a keypad
+  "/calculators": <path d="M5 3h14v18H5zM8 7h8M8 12h2M14 12h2M8 16h2M14 16h2" />,
   // a light wave
   "/calculators/energy-wavelength-calculator": <path d="M2 12c2.5-6.5 5-6.5 7.5 0s5 6.5 7.5 0 3.5-4.5 5-3" />,
   // a pulse striking a surface
@@ -43,5 +52,23 @@ export function ToolPictogram({ href }: { href: string }) {
     <svg aria-hidden="true" viewBox="0 0 24 24">
       {pictogram}
     </svg>
+  );
+}
+
+/**
+ * A wayfinding sign's marks, in its lower right corner as on a platform
+ * sign: the tool's pictogram in its square, then the orange arrow. Shown
+ * only while the sign is pointed at (`.signMarks` in globals.css).
+ */
+export function SignMarks({ href }: { href: string }) {
+  return (
+    <span className="signMarks">
+      <SignIcon>
+        <ToolPictogram href={href} />
+      </SignIcon>
+      <span className="signMarks__arrow">
+        <ArrowRightIcon />
+      </span>
+    </span>
   );
 }
