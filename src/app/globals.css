@@ -284,9 +284,8 @@ a.toolCard:focus-visible {
 
 /* the tool's name on a station sign, after ÖBB's platform signs: one long,
    low plate in their 6:1 (99 × 16.5 cm), the same on every row, the name
-   centred across it and set a little above the middle, clear of the marks
-   in the lower right corner. A name too long for one line grows the plate
-   rather than overflowing it. */
+   centred on it both ways, clear of the marks in the lower right corner. A
+   name too long for one line grows the plate rather than overflowing it. */
 .toolCard__sign {
   position: relative;
   display: flex;
@@ -295,7 +294,7 @@ a.toolCard:focus-visible {
   flex: 0 1 26rem;
   max-width: 100%;
   aspect-ratio: 6 / 1;
-  padding: 0.2em 3.6em 0.65em;
+  padding: 0 3.6em;
   text-align: center;
   letter-spacing: 0.01em;
 }
@@ -311,6 +310,29 @@ a.toolCard:focus-visible {
   align-items: center;
   gap: 0.25em;
   font-size: 0.85em;
+}
+
+/* PROTOTYPE (#278): at rest the sign is only an outline in the text colour
+   and the name; the row under the pointer (or focused) turns its sign station
+   blue and shows the marks, as the homepage's signs do */
+.toolCard .toolCard__sign {
+  border: 1.5px solid var(--foreground);
+  background-color: transparent;
+  color: var(--foreground);
+}
+
+a.toolCard:is(:hover, :focus-visible) h2 .toolCard__sign {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.toolCard__marks {
+  opacity: 0;
+}
+
+a.toolCard:is(:hover, :focus-visible) .toolCard__marks {
+  opacity: 1;
 }
 
 /* the way on: orange on the blue (about 3:1), the same by day and night,
@@ -5009,36 +5031,85 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   text-align: center;
 }
 
-/* the way to the tools as one station sign, after Vienna Hbf's: a single
-   blue panel with a row per destination, the rows parted by a faint
-   white rule, and each row's orange arrow (.signArrow) in its lower right
-   corner */
+/* PROTOTYPE (#278): the way to the tools as a row of three station signs,
+   outlined in the chalk's colour on the board; the one under the pointer
+   fills station blue. Each is ÖBB's 6:1 plate, like the tool index's: the
+   name centred on it both ways, 3.6em either side so it clears the marks,
+   which sit in the lower
+   right corner as on a platform sign: the tool's pictogram in its square,
+   then the orange arrow, both only while it is pointed at. The row is wider
+   than the welcome text and breaks out of it: a grid item wider than its
+   column doesn't centre on its own, so equal negative margins (% of the
+   column) pull it back to the middle. It wraps on a narrow board. */
 .heroTools {
-  display: grid;
-  width: min(100%, 22rem);
-  margin: 0.5rem auto 0;
+  --row: min(calc(100vw - 2.5rem), 59rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem 2.5rem;
+  justify-self: start;
+  width: var(--row);
+  margin: 1rem calc(50% - var(--row) / 2) 0;
 }
 
 .heroTools .buttonLink {
   position: relative;
-  justify-content: flex-start;
-  width: 100%;
-  padding: 0.8em 2.4em 0.8em 1.1em;
-  border-radius: 0;
-  font-size: 1.05rem;
+  flex: 0 1 18rem;
+  aspect-ratio: 6 / 1;
+  padding: 0 3.6em;
+  border: 1.5px solid var(--foreground);
+  background-color: transparent;
+  color: var(--foreground);
+  font-size: 1.15rem;
+  line-height: 1.1;
+  text-align: center;
   letter-spacing: 0.01em;
 }
 
-.heroTools .buttonLink:first-child {
-  border-radius: var(--radius) var(--radius) 0 0;
+.heroTools .buttonLink:hover:not(:disabled),
+.heroTools .buttonLink:focus-visible {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
 }
 
-.heroTools .buttonLink:last-child {
-  border-radius: 0 0 var(--radius) var(--radius);
+.heroTools__marks {
+  position: absolute;
+  right: 0.4em;
+  bottom: 0.35em;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  font-size: 0.85em;
+  opacity: 0;
 }
 
-.heroTools .buttonLink + .buttonLink {
-  border-top: 1px solid color-mix(in srgb, var(--on-accent) 22%, transparent);
+.heroTools .buttonLink:hover .heroTools__marks,
+.heroTools .buttonLink:focus-visible .heroTools__marks {
+  opacity: 1;
+}
+
+/* orange on the blue: a mark to see, not words to read */
+.heroTools__arrow {
+  display: grid;
+  width: 1.6em;
+  height: 1.6em;
+  color: #fb8c4a;
+}
+
+.heroTools__arrow svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.heroTools__arrow path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5px;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
 }
 
 /* a sign's orange arrow, in its lower right corner, where every sign keeps
@@ -5715,4 +5786,18 @@ a.toolCard:hover .toolCard__sign {
 
 .cornerFan__item.is-on .cornerFan__name {
   fill: currentColor;
+}
+
+/* PROTOTYPE (#278): the hero is the whole width of the window, edge to edge,
+   and starts right under the header; the rest of the page keeps <main>'s
+   column. 100vw counts a classic scrollbar too, so the page clips the sliver
+   it would overhang rather than scroll sideways. */
+.chalkboard {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  margin-top: -2rem;
+}
+
+body:has(.chalkboard) {
+  overflow-x: clip;
 }
