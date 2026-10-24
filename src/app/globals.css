@@ -5038,49 +5038,20 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   margin: 1rem calc(50% - var(--row) / 2) 0;
 }
 
-/* ÖBB's 6:1 plate, like the tool index's: the name centred on it both
-   ways, 3.6em either side so it clears the marks */
-.heroTools .buttonLink {
+/* the hero's signs and the chapters' calls to action: ÖBB's 6:1 plate, like
+   the tool index's, 18rem long (never wider than its column), the name
+   centred on it both ways, 3.6em either side so it clears the marks */
+.heroTools .buttonLink,
+.buttonLink.chapter__cta {
   position: relative;
-  flex: 0 1 18rem;
+  width: 18rem;
+  max-width: 100%;
   aspect-ratio: 6 / 1;
   padding: 0 3.6em;
   font-size: 1.15rem;
   line-height: 1.1;
   text-align: center;
   letter-spacing: 0.01em;
-}
-
-/* a sign's orange arrow, in its lower right corner, where every sign keeps
-   it: the way on, never leading the words */
-.buttonLink:has(.signArrow) {
-  position: relative;
-  padding-right: 2.2em;
-}
-
-.signArrow {
-  position: absolute;
-  right: 0.7em;
-  bottom: 0.55em;
-  display: grid;
-  width: 0.9em;
-  height: 0.9em;
-  color: #fb8c4a;
-}
-
-.signArrow svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.signArrow path {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.5px;
-  stroke-linecap: square;
-  stroke-linejoin: miter;
-  vector-effect: non-scaling-stroke;
 }
 
 /* a real statement, so sentence case under the Case Rule, not a label */
@@ -5319,8 +5290,12 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   font-size: 1.05rem;
 }
 
-.chapter__cta {
+/* the hero's sign (see .heroTools), its lettering a step smaller so the
+   longest call, "Open the calculators", stays on one line between the
+   marks' clearances */
+.buttonLink.chapter__cta {
   margin-top: 0.5rem;
+  font-size: 1rem;
 }
 
 .chapter__links {
@@ -5552,11 +5527,11 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   background-color: var(--accent-hover);
 }
 
-/* The exception: wayfinding signs, the homepage hero's and the tool index's,
-   are only an outline in the text colour at rest, so a board of them doesn't
+/* The exception: wayfinding signs, the homepage hero's, its chapters' calls
+   to action and the tool index's, are only an outline in the text colour at rest, so a board of them doesn't
    shout. Pointed at or focused, the sign becomes the station-blue plate (not
    the deeper hover blue) and shows its marks. */
-:is(.heroTools .buttonLink, .toolCard__sign) {
+:is(.heroTools .buttonLink, .chapter__cta, .toolCard__sign) {
   border: 1.5px solid var(--foreground);
   border-radius: var(--radius);
   background-color: transparent;
@@ -5567,6 +5542,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 
 :is(
     .heroTools .buttonLink:is(:hover, :focus-visible),
+    .chapter__cta:is(:hover, :focus-visible),
     a.toolCard:is(:hover, :focus-visible) .toolCard__sign
   ) {
   border-color: var(--accent);
@@ -5576,6 +5552,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 
 :is(
     .heroTools .buttonLink:is(:hover, :focus-visible),
+    .chapter__cta:is(:hover, :focus-visible),
     a.toolCard:is(:hover, :focus-visible)
   )
   .signMarks {
