@@ -5009,36 +5009,41 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   text-align: center;
 }
 
-/* the way to the tools as one station sign, after Vienna Hbf's: a single
-   blue panel with a row per destination, the rows parted by a faint
-   white rule, and each row's orange arrow (.signArrow) in its lower right
-   corner */
+/* PROTOTYPE (#279): the way to the tools as a row of three outlined signs,
+   chalk-coloured on the board; the one under the pointer becomes a station
+   sign, blue with its orange arrow (.signArrow) in the lower right corner */
 .heroTools {
-  display: grid;
-  width: min(100%, 22rem);
-  margin: 0.5rem auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0.75rem auto 0;
 }
 
 .heroTools .buttonLink {
-  position: relative;
-  justify-content: flex-start;
-  width: 100%;
-  padding: 0.8em 2.4em 0.8em 1.1em;
-  border-radius: 0;
+  min-width: 9rem;
+  padding: 0.7em 2.2em 0.7em 1.2em;
+  border: 1.5px solid var(--foreground);
+  background-color: transparent;
+  color: var(--foreground);
   font-size: 1.05rem;
   letter-spacing: 0.01em;
 }
 
-.heroTools .buttonLink:first-child {
-  border-radius: var(--radius) var(--radius) 0 0;
+.heroTools .buttonLink:hover:not(:disabled),
+.heroTools .buttonLink:focus-visible {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--on-accent);
 }
 
-.heroTools .buttonLink:last-child {
-  border-radius: 0 0 var(--radius) var(--radius);
+.heroTools .signArrow {
+  opacity: 0;
 }
 
-.heroTools .buttonLink + .buttonLink {
-  border-top: 1px solid color-mix(in srgb, var(--on-accent) 22%, transparent);
+.heroTools .buttonLink:hover .signArrow,
+.heroTools .buttonLink:focus-visible .signArrow {
+  opacity: 1;
 }
 
 /* a sign's orange arrow, in its lower right corner, where every sign keeps
@@ -5777,13 +5782,17 @@ html[data-theme="dark"] .chalkboard[class*="has-light-"] .chalkLight {
   -webkit-mask-image: radial-gradient(
     circle var(--lr) at calc(var(--lx) - var(--ex) - 0.7rem) calc(var(--ly) - var(--ey) - 0.4rem),
     #000 0,
-    rgb(0 0 0 / 0.55) 40%,
+    rgb(0 0 0 / 0.85) 22%,
+    rgb(0 0 0 / 0.5) 50%,
+    rgb(0 0 0 / 0.16) 78%,
     transparent 100%
   );
   mask-image: radial-gradient(
     circle var(--lr) at calc(var(--lx) - var(--ex) - 0.7rem) calc(var(--ly) - var(--ey) - 0.4rem),
     #000 0,
-    rgb(0 0 0 / 0.55) 40%,
+    rgb(0 0 0 / 0.85) 22%,
+    rgb(0 0 0 / 0.5) 50%,
+    rgb(0 0 0 / 0.16) 78%,
     transparent 100%
   );
 }

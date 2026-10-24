@@ -31,7 +31,7 @@ const RESIDUE_FADE_MS = 2600;
 const STILL_BELOW_PX = 640;
 
 /** PROTOTYPE (#279): how far the cursor light reaches, in px. */
-const LIGHT_RADIUS = 220;
+const LIGHT_RADIUS = 340;
 
 /** PROTOTYPE (#279): how quickly the light catches up with the cursor, per frame. 1 = glued on. */
 const LIGHT_FOLLOW = 0.2;
@@ -225,6 +225,9 @@ export function ChalkboardHero({
       gradient.addColorStop(1, deep);
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, w, h);
+
+      // PROTOTYPE (#279): the still board is bare slate; the equations carry the feel
+      if (light === "still") return;
 
       const [mr, mg, mb] = markRGB();
 

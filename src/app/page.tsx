@@ -15,8 +15,7 @@ export default function Home() {
       <ChalkLightPrototype>
         <h1>Quantum optics, in the browser.</h1>
         <p className="lead">
-          Plot lab data, run quick optics calculations and lay out an optical table. Nothing to
-          install, free for anyone to try.
+          Plot lab data, run quick optics calculations and lay out an optical table.
         </p>
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
         {/* the way straight to the tools, for whoever came to use one rather than
