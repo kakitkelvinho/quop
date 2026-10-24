@@ -12,6 +12,7 @@ const VARIANTS: { key: string; light: ChalkLight | null; name: string }[] = [
   { key: "A", light: "brighten", name: "Brighten the written chalk" },
   { key: "B", light: "reveal", name: "Reveal hidden working" },
   { key: "C", light: "rake", name: "Raking light on the slate" },
+  { key: "D", light: "still", name: "Still board, lit (no animation)" },
   { key: "Z", light: null, name: "No light (today)" },
 ];
 

@@ -39,7 +39,7 @@ const LIGHT_FOLLOW = 0.2;
 /** PROTOTYPE (#279): brighten = the written chalk lights up under it; reveal = a
  *  faint hidden layer of older working shows only inside it; rake = it catches
  *  the slate's own grain and leaves the chalk alone. */
-export type ChalkLight = "brighten" | "reveal" | "rake";
+export type ChalkLight = "brighten" | "reveal" | "rake" | "still";
 
 /** Seeds the grain and the hand-drawn card frames. Any integer. */
 const SEED = 4;
@@ -164,6 +164,7 @@ export function ChalkboardHero({
   const grainRef = useRef<HTMLCanvasElement>(null);
   const rakeRef = useRef<HTMLCanvasElement>(null);
   const hiddenRef = useRef<HTMLDivElement>(null);
+  const hiddenBaseRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const welcomeRef = useRef<HTMLDivElement>(null);
@@ -309,8 +310,10 @@ export function ChalkboardHero({
     function fillHidden() {
       const hidden = hiddenRef.current;
       if (!hidden) return;
+      const base = hiddenBaseRef.current;
       hidden.innerHTML = "";
-      if (light !== "reveal") return;
+      if (base) base.innerHTML = "";
+      if (light !== "reveal" && light !== "still") return;
       const boardRect = board!.getBoundingClientRect();
       const welcomeRect = welcome!.getBoundingClientRect();
       const random = mulberry32(SEED * 31337);
@@ -344,6 +347,8 @@ export function ChalkboardHero({
           hidden.append(el);
         }
       }
+      // still: the same working stays faintly visible everywhere; the light brightens it
+      if (light === "still" && base) base.innerHTML = hidden.innerHTML;
     }
 
     /* what a board that has been used all morning looks like */
@@ -475,7 +480,7 @@ export function ChalkboardHero({
       ink.style.fontSize = `calc(var(--eq-size) * ${item.size})`;
       ink.innerHTML = svgs.get(item.id) ?? "";
       el.append(ink);
-      if (light === "brighten") {
+      if (light === "brighten" || light === "still") {
         // PROTOTYPE (#279): a brighter copy of the same chalk, masked to the light
         const lit = ink.cloneNode(true) as HTMLDivElement;
         lit.classList.add("chalkEq__ink--lit");
@@ -693,6 +698,17 @@ export function ChalkboardHero({
       }
       board!.classList.remove("is-still");
 
+      // PROTOTYPE (#279): still: no writing or wiping; every slot that has room
+      // gets an equation up front and it stays there
+      if (light === "still") {
+        SLOTS.forEach((slot, index) => {
+          for (const item of shuffled(unusedEquations())) {
+            if (slot.shapes.includes(item.shape) && place(item, index, false, slot, true)) return;
+          }
+        });
+        return;
+      }
+
       for (let k = 0; k < ON_SCREEN_AT_ONCE; k++) {
         if (animate && !reduce.matches) later(() => spawn(true), k * 420);
         else spawn(false);
@@ -795,6 +811,7 @@ export function ChalkboardHero({
       <canvas aria-hidden="true" className="chalkboard__grain" ref={grainRef} />
       <canvas aria-hidden="true" className="chalkboard__rake" ref={rakeRef} />
       <canvas aria-hidden="true" className="chalkboard__ghosts" ref={ghostRef} />
+      <div aria-hidden="true" className="chalkHiddenBase" ref={hiddenBaseRef} />
       <div aria-hidden="true" className="chalkHidden" ref={hiddenRef} />
       <div aria-hidden="true" className="chalkLight" />
       <div aria-hidden="true" className="chalkLayer" ref={layerRef} />
