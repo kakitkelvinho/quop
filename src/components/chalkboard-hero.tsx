@@ -36,7 +36,10 @@ const LIGHT_RADIUS = 220;
 /** PROTOTYPE (#279): how quickly the light catches up with the cursor, per frame. 1 = glued on. */
 const LIGHT_FOLLOW = 0.2;
 
-/** PROTOTYPE (#279): brighten = the written chalk lights up under it; reveal = a
+/** PROTOTYPE (#279): on the still board, the least clear space between two equations, in px. */
+const STILL_GAP_PX = 90;
+
+/** PROTOTYPE (#279): brighten =the written chalk lights up under it; reveal = a
  *  faint hidden layer of older working shows only inside it; rake = it catches
  *  the slate's own grain and leaves the chalk alone. */
 export type ChalkLight = "brighten" | "reveal" | "rake" | "still";
@@ -164,7 +167,6 @@ export function ChalkboardHero({
   const grainRef = useRef<HTMLCanvasElement>(null);
   const rakeRef = useRef<HTMLCanvasElement>(null);
   const hiddenRef = useRef<HTMLDivElement>(null);
-  const hiddenBaseRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const welcomeRef = useRef<HTMLDivElement>(null);
@@ -310,10 +312,8 @@ export function ChalkboardHero({
     function fillHidden() {
       const hidden = hiddenRef.current;
       if (!hidden) return;
-      const base = hiddenBaseRef.current;
       hidden.innerHTML = "";
-      if (base) base.innerHTML = "";
-      if (light !== "reveal" && light !== "still") return;
+      if (light !== "reveal") return;
       const boardRect = board!.getBoundingClientRect();
       const welcomeRect = welcome!.getBoundingClientRect();
       const random = mulberry32(SEED * 31337);
@@ -346,10 +346,7 @@ export function ChalkboardHero({
           el.innerHTML = svgs.get(item.id) ?? "";
           hidden.append(el);
         }
-      }
-      // still: the same working stays faintly visible everywhere; the light brightens it
-      if (light === "still" && base) base.innerHTML = hidden.innerHTML;
-    }
+      }    }
 
     /* what a board that has been used all morning looks like */
     function drawGhosts() {
@@ -463,7 +460,9 @@ export function ChalkboardHero({
         rect.top < other.bottom + margin &&
         rect.bottom > other.top - margin;
       if (overlaps(welcome!.getBoundingClientRect(), 14)) return false;
-      return [...active.values()].every((entry) => !overlaps(entry.el.getBoundingClientRect(), 18));
+      // PROTOTYPE (#279): the still board keeps a wider berth, so it reads sparse
+      const gap = light === "still" ? STILL_GAP_PX : 18;
+      return [...active.values()].every((entry) => !overlaps(entry.el.getBoundingClientRect(), gap));
     }
 
     function place(
@@ -811,7 +810,6 @@ export function ChalkboardHero({
       <canvas aria-hidden="true" className="chalkboard__grain" ref={grainRef} />
       <canvas aria-hidden="true" className="chalkboard__rake" ref={rakeRef} />
       <canvas aria-hidden="true" className="chalkboard__ghosts" ref={ghostRef} />
-      <div aria-hidden="true" className="chalkHiddenBase" ref={hiddenBaseRef} />
       <div aria-hidden="true" className="chalkHidden" ref={hiddenRef} />
       <div aria-hidden="true" className="chalkLight" />
       <div aria-hidden="true" className="chalkLayer" ref={layerRef} />

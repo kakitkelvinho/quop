@@ -5845,19 +5845,8 @@ html[data-theme="dark"] .chalkEq__ink--accent.chalkEq__ink--lit {
   );
 }
 
-/* D · still: the older working is always faintly there; the light brightens
-   it along with the written equations */
-.chalkHiddenBase {
-  --eq-size: clamp(1.45rem, 0.85rem + 1.45vw, 2.35rem);
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.4;
-  -webkit-mask-image: radial-gradient(ellipse 42% 34% at 50% 47%, transparent 46%, #000 100%);
-  mask-image: radial-gradient(ellipse 42% 34% at 50% 47%, transparent 46%, #000 100%);
-}
-
-.has-light-still .chalkHidden .chalkHidden__eq {
-  color: rgb(var(--mark) / 0.6);
+/* D · still: the board is bare until the light finds an equation; only the
+   lit copy is ever shown */
+.has-light-still .chalkEq__ink:not(.chalkEq__ink--lit) {
+  opacity: 0;
 }
