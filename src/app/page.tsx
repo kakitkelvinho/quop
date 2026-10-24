@@ -1,14 +1,13 @@
 import Link from "next/link";
 
-import { ChalkFilters } from "@/components/chalkboard-hero";
-import { ChalkLightPrototype } from "@/components/chalk-light.prototype";
+import { ChalkboardHero, ChalkFilters } from "@/components/chalkboard-hero";
 import { HomeChapters } from "@/components/home-chapters";
 import { loadPowerTrace } from "@/components/home-trace";
 import { SectionCards } from "@/components/section-cards";
 import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
 
-/** PROTOTYPE (#279): the hero's three destinations, each with its station
- *  pictogram (drawn for the hero-links prototype, #278). */
+/** PROTOTYPE (#278): the hero's three destinations, each with its station
+ *  pictogram (drawn for the hero-links prototype). */
 const HERO_TOOLS = [
   {
     href: "/builder/tabletop",
@@ -34,14 +33,13 @@ export default function Home() {
   return (
     <>
       <ChalkFilters />
-      {/* PROTOTYPE (#279): the cursor light swaps per ?variant= */}
-      <ChalkLightPrototype>
+      <ChalkboardHero>
         <h1>Quantum optics, in the browser.</h1>
         <p className="lead">
           Plot lab data, run quick optics calculations and lay out an optical table.
         </p>
         <p className="chalkboard__credit">Built at Macroscopic Quantum Optics, Aalto University</p>
-        {/* PROTOTYPE (#279): the way straight to the tools, for whoever came to
+        {/* PROTOTYPE (#278): the way straight to the tools, for whoever came to
             use one rather than read the story: three station signs in a row,
             each with its pictogram and the arrow in its lower right corner */}
         <nav aria-label="Tools" className="heroTools">
@@ -61,7 +59,7 @@ export default function Home() {
             </Link>
           ))}
         </nav>
-      </ChalkLightPrototype>
+      </ChalkboardHero>
       <HomeChapters trace={loadPowerTrace()} />
       <nav aria-labelledby="home-index" className="homeIndex">
         <h2 className="homeIndex__label" id="home-index">

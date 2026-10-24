@@ -30,20 +30,6 @@ const RESIDUE_FADE_MS = 2600;
  *  fixed few go up above and below the welcome text and stay there. */
 const STILL_BELOW_PX = 640;
 
-/** PROTOTYPE (#279): how far the cursor light reaches, in px. */
-const LIGHT_RADIUS = 340;
-
-/** PROTOTYPE (#279): how quickly the light catches up with the cursor, per frame. 1 = glued on. */
-const LIGHT_FOLLOW = 0.2;
-
-/** PROTOTYPE (#279): on the still board, the least clear space between two equations, in px. */
-const STILL_GAP_PX = 90;
-
-/** PROTOTYPE (#279): brighten =the written chalk lights up under it; reveal = a
- *  faint hidden layer of older working shows only inside it; rake = it catches
- *  the slate's own grain and leaves the chalk alone. */
-export type ChalkLight = "brighten" | "reveal" | "rake" | "still";
-
 /** Seeds the grain and the hand-drawn card frames. Any integer. */
 const SEED = 4;
 
@@ -156,17 +142,9 @@ function ghostScale() {
   return document.documentElement.dataset.theme === "dark" ? 1 : 0.42;
 }
 
-export function ChalkboardHero({
-  children,
-  light = null,
-}: {
-  children: ReactNode;
-  light?: ChalkLight | null;
-}) {
+export function ChalkboardHero({ children }: { children: ReactNode }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const grainRef = useRef<HTMLCanvasElement>(null);
-  const rakeRef = useRef<HTMLCanvasElement>(null);
-  const hiddenRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLCanvasElement>(null);
   const layerRef = useRef<HTMLDivElement>(null);
   const welcomeRef = useRef<HTMLDivElement>(null);
@@ -226,9 +204,6 @@ export function ChalkboardHero({
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, w, h);
 
-      // PROTOTYPE (#279): the still board is bare slate; the equations carry the feel
-      if (light === "still") return;
-
       const [mr, mg, mb] = markRGB();
 
       ctx.save();
@@ -259,97 +234,6 @@ export function ChalkboardHero({
       }
       ctx.restore();
     }
-
-    /* PROTOTYPE (#279): the same speckle and grain, several times stronger, for
-       the raking light to pick out; transparent everywhere else */
-    function drawRake() {
-      const canvas = rakeRef.current;
-      if (!canvas) return;
-      const { ctx, h, w } = sizeCanvas(canvas);
-      ctx.clearRect(0, 0, w, h);
-      if (light !== "rake") return;
-      const random = mulberry32(SEED * 7717 + 1);
-      const [mr, mg, mb] = markRGB();
-      for (let i = 0; i < Math.round((w * h) / 160); i++) {
-        ctx.fillStyle = `rgba(${mr},${mg},${mb},${random() * 0.22})`;
-        ctx.fillRect(random() * w, random() * h, 1, 1);
-      }
-      ctx.lineCap = "round";
-      for (let i = 0; i < 260; i++) {
-        const y = random() * h;
-        const x = random() * w;
-        const len = 40 + random() * 300;
-        ctx.strokeStyle = `rgba(${mr},${mg},${mb},${0.03 + random() * 0.07})`;
-        ctx.lineWidth = 0.6 + random() * 1.6;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.bezierCurveTo(
-          x + len * 0.3,
-          y + (random() - 0.5) * 8,
-          x + len * 0.7,
-          y + (random() - 0.5) * 8,
-          x + len,
-          y + (random() - 0.5) * 4,
-        );
-        ctx.stroke();
-      }
-      // a few broad smears of old working, too faint to see without the light
-      ctx.filter = "blur(6px)";
-      for (let i = 0; i < 26; i++) {
-        const cx = random() * w;
-        const cy = random() * h;
-        const radius = 70 + random() * 220;
-        const start = random() * Math.PI * 2;
-        ctx.strokeStyle = `rgba(${mr},${mg},${mb},${0.03 + random() * 0.05})`;
-        ctx.lineWidth = 18 + random() * 40;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, start, start + 0.4 + random() * 1.1);
-        ctx.stroke();
-      }
-      ctx.filter = "none";
-    }
-
-    /* PROTOTYPE (#279): older working scattered across the whole board, shown
-       only where the light falls. Jittered cells, so it reads as a used board
-       rather than a pattern; nothing goes behind the welcome text. */
-    function fillHidden() {
-      const hidden = hiddenRef.current;
-      if (!hidden) return;
-      hidden.innerHTML = "";
-      if (light !== "reveal") return;
-      const boardRect = board!.getBoundingClientRect();
-      const welcomeRect = welcome!.getBoundingClientRect();
-      const random = mulberry32(SEED * 31337);
-      const ids = EQUATIONS.filter((item) => svgs.has(item.id));
-      if (!ids.length) return;
-      const cellW = 250;
-      const cellH = 110;
-      for (let row = 0, y = cellH / 2; y < boardRect.height; row++, y += cellH) {
-        for (let x = (row % 2) * (cellW / 2); x < boardRect.width + cellW / 2; x += cellW) {
-          const cx = x + (random() - 0.5) * cellW * 0.4;
-          const cy = y + (random() - 0.5) * cellH * 0.35;
-          const pageX = boardRect.left + cx;
-          const pageY = boardRect.top + cy;
-          if (
-            pageX > welcomeRect.left - 60 &&
-            pageX < welcomeRect.right + 60 &&
-            pageY > welcomeRect.top - 30 &&
-            pageY < welcomeRect.bottom + 30
-          ) {
-            continue;
-          }
-          const item = ids[Math.floor(random() * ids.length)];
-          const el = document.createElement("div");
-          el.className = "chalkHidden__eq";
-          el.style.left = `${cx}px`;
-          el.style.top = `${cy}px`;
-          el.style.fontSize = `calc(var(--eq-size) * ${(0.5 + random() * 0.3) * item.size})`;
-          el.style.rotate = `${(random() - 0.5) * 5}deg`;
-          el.style.opacity = `${0.45 + random() * 0.55}`;
-          el.innerHTML = svgs.get(item.id) ?? "";
-          hidden.append(el);
-        }
-      }    }
 
     /* what a board that has been used all morning looks like */
     function drawGhosts() {
@@ -463,9 +347,7 @@ export function ChalkboardHero({
         rect.top < other.bottom + margin &&
         rect.bottom > other.top - margin;
       if (overlaps(welcome!.getBoundingClientRect(), 14)) return false;
-      // PROTOTYPE (#279): the still board keeps a wider berth, so it reads sparse
-      const gap = light === "still" ? STILL_GAP_PX : 18;
-      return [...active.values()].every((entry) => !overlaps(entry.el.getBoundingClientRect(), gap));
+      return [...active.values()].every((entry) => !overlaps(entry.el.getBoundingClientRect(), 18));
     }
 
     function place(
@@ -482,12 +364,6 @@ export function ChalkboardHero({
       ink.style.fontSize = `calc(var(--eq-size) * ${item.size})`;
       ink.innerHTML = svgs.get(item.id) ?? "";
       el.append(ink);
-      if (light === "brighten" || light === "still") {
-        // PROTOTYPE (#279): a brighter copy of the same chalk, masked to the light
-        const lit = ink.cloneNode(true) as HTMLDivElement;
-        lit.classList.add("chalkEq__ink--lit");
-        el.append(lit);
-      }
       el.style.left = `${slot.x}%`;
       el.style.top = `${slot.y}%`;
       layer!.append(el);
@@ -505,13 +381,6 @@ export function ChalkboardHero({
         el.remove();
         return false;
       }
-
-      // PROTOTYPE (#279): where this box's top-left sits on the board, so the
-      // lit copy's mask can find the light in board coordinates. Read before
-      // the write-on transition starts; translate(-50%, -50%) is already in it.
-      const placed = el.getBoundingClientRect();
-      el.style.setProperty("--ex", `${placed.left - boardRect.left}px`);
-      el.style.setProperty("--ey", `${placed.top - boardRect.top}px`);
 
       active.set(slotIndex, { el, item });
 
@@ -664,9 +533,7 @@ export function ChalkboardHero({
       active.clear();
       layer!.innerHTML = "";
       drawGrain();
-      drawRake();
       drawGhosts();
-      fillHidden();
 
       const boardRect = board!.getBoundingClientRect();
       if (boardRect.width < STILL_BELOW_PX) {
@@ -700,17 +567,6 @@ export function ChalkboardHero({
       }
       board!.classList.remove("is-still");
 
-      // PROTOTYPE (#279): still: no writing or wiping; every slot that has room
-      // gets an equation up front and it stays there
-      if (light === "still") {
-        SLOTS.forEach((slot, index) => {
-          for (const item of shuffled(unusedEquations())) {
-            if (slot.shapes.includes(item.shape) && place(item, index, false, slot, true)) return;
-          }
-        });
-        return;
-      }
-
       for (let k = 0; k < ON_SCREEN_AT_ONCE; k++) {
         if (animate && !reduce.matches) later(() => spawn(true), k * 420);
         else spawn(false);
@@ -731,7 +587,6 @@ export function ChalkboardHero({
     // the theme toggle swaps html[data-theme]; the canvases have to be redrawn
     const themeObserver = new MutationObserver(() => {
       drawGrain();
-      drawRake();
       drawGhosts();
     });
     themeObserver.observe(document.documentElement, {
@@ -752,69 +607,12 @@ export function ChalkboardHero({
       window.removeEventListener("resize", onResize);
       themeObserver.disconnect();
     };
-  }, [light]);
-
-  /* PROTOTYPE (#279): the light itself. The board carries --lx/--ly (where the
-     light is, in board px) and --lit (0 off, 1 on); each variant's CSS reads
-     them. Mouse and pen only: a finger has no hover to follow. */
-  useEffect(() => {
-    const board = boardRef.current;
-    if (!board || !light) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let target = { x: 0, y: 0 };
-    let at = { x: 0, y: 0 };
-    let lit = 0;
-    let want = 0;
-    let frame = 0;
-
-    const draw = () => {
-      const follow = reduce.matches ? 1 : LIGHT_FOLLOW;
-      at = { x: at.x + (target.x - at.x) * follow, y: at.y + (target.y - at.y) * follow };
-      lit += (want - lit) * (reduce.matches ? 1 : 0.12);
-      board.style.setProperty("--lx", `${at.x.toFixed(1)}px`);
-      board.style.setProperty("--ly", `${at.y.toFixed(1)}px`);
-      board.style.setProperty("--lit", lit.toFixed(3));
-      const settled =
-        Math.abs(target.x - at.x) < 0.3 &&
-        Math.abs(target.y - at.y) < 0.3 &&
-        Math.abs(want - lit) < 0.002;
-      frame = settled ? 0 : requestAnimationFrame(draw);
-    };
-    const kick = () => {
-      if (!frame) frame = requestAnimationFrame(draw);
-    };
-    const onMove = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
-      const rect = board.getBoundingClientRect();
-      target = { x: event.clientX - rect.left, y: event.clientY - rect.top };
-      // come on where the cursor is, rather than slide in from where it went out
-      if (lit < 0.01) at = target;
-      want = 1;
-      kick();
-    };
-    const onLeave = () => {
-      want = 0;
-      kick();
-    };
-
-    board.style.setProperty("--lr", `${LIGHT_RADIUS}px`);
-    board.style.setProperty("--lit", "0");
-    board.addEventListener("pointermove", onMove);
-    board.addEventListener("pointerleave", onLeave);
-    return () => {
-      cancelAnimationFrame(frame);
-      board.removeEventListener("pointermove", onMove);
-      board.removeEventListener("pointerleave", onLeave);
-    };
-  }, [light]);
+  }, []);
 
   return (
-    <section className={`chalkboard${light ? ` has-light-${light}` : ""}`} ref={boardRef}>
+    <section className="chalkboard" ref={boardRef}>
       <canvas aria-hidden="true" className="chalkboard__grain" ref={grainRef} />
-      <canvas aria-hidden="true" className="chalkboard__rake" ref={rakeRef} />
       <canvas aria-hidden="true" className="chalkboard__ghosts" ref={ghostRef} />
-      <div aria-hidden="true" className="chalkHidden" ref={hiddenRef} />
-      <div aria-hidden="true" className="chalkLight" />
       <div aria-hidden="true" className="chalkLayer" ref={layerRef} />
       <div className="chalkboard__welcome" ref={welcomeRef}>
         {children}
