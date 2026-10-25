@@ -2,222 +2,570 @@
 
 .nl-prose {
   display: grid;
-  gap: 0.9rem;
-  max-width: 42rem;
-  font-size: 1.12rem;
+  align-content: start;
+  gap: 0.85rem;
+  font-size: 1.08rem;
   line-height: 1.6;
+}
+
+.nl-prose h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0 0 0.3rem;
+  font-size: clamp(1.25rem, 2.4vw, 1.6rem);
+  line-height: 1.15;
 }
 
 .nl-eq {
   overflow-x: auto;
-  padding: 0.25rem 0;
-  font-size: 1.2rem;
+  padding: 0.2rem 0;
+  font-size: 1.15rem;
 }
 
-.nl-chart {
-  position: relative;
-  width: 100%;
+.nl-states {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding-left: 1.2rem;
 }
 
-.nl-readout {
-  font: 500 0.8rem/1 var(--font-mono);
+.nb-secno {
+  font-size: 0.8em;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
 
-.nl-stepper button,
-.nl-deck__bar button,
-.nl-toggle__bar button {
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border);
+.nb-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nb-kicker::before {
+  content: "";
+  width: 0.5em;
+  height: 0.5em;
+  background: var(--accent);
+}
+
+/* signs: the Sign Rule, locally */
+.nb-sign,
+.nf-presets button,
+.nf-follow {
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  padding: 0.3rem 0.7rem;
+  border: 0;
   border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--foreground);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 800 0.85rem/1 var(--font-sans);
   cursor: pointer;
 }
 
-:is(.nl-stepper, .nl-toggle__bar) button.is-on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+:is(.nb-sign, .nf-presets button, .nf-follow):hover {
+  background: var(--accent-hover);
 }
 
-/* A */
-.nl-article {
+:is(.nb-sign[aria-pressed="true"], .nf-presets button.is-on) {
+  background: var(--accent-hover) var(--sign-foot);
+}
+
+.nb-sign:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---------- figures ---------- */
+
+.nf-figure {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.nf-wave {
+  position: relative;
+  aspect-ratio: 2.15;
+  width: 100%;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.nf-wave:active {
+  cursor: grabbing;
+}
+
+.nf-wave canvas,
+.nf-flat {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.nf-axislabel {
+  position: absolute;
+  right: 0.2rem;
+  bottom: 0.2rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.nf-chart {
+  position: relative;
+  height: 15rem;
+}
+
+.nf-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.nf-follow {
+  margin-left: auto;
+  font-weight: 700;
+}
+
+.nf-slider {
+  display: grid;
+  grid-template-columns: 1.2rem 1fr 3rem;
+  align-items: center;
+  gap: 0.5rem;
+  font-style: italic;
+}
+
+.nf-slider input {
+  accent-color: var(--accent);
+}
+
+.nf-slider output {
+  font: 500 0.85rem/1 var(--font-sans);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.nf-figure figcaption {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.nf-readout {
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+/* a state link in the prose */
+.nf-s {
+  display: inline;
+  padding: 0 0.1em;
+  border: 0;
+  border-bottom: 1.5px dotted var(--accent);
+  border-radius: 0;
+  background: none;
+  color: var(--accent-strong);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nf-s::after {
+  content: "";
+  display: inline-block;
+  width: 0.4em;
+  height: 0.4em;
+  margin-left: 0.25em;
+  vertical-align: 0.15em;
+  border: 1.5px solid var(--accent);
+}
+
+.nf-s:hover,
+.nf-s.is-on {
+  background: var(--accent-soft);
+}
+
+.nf-s.is-on::after {
+  background: var(--accent);
+}
+
+/* the flat projection */
+.nf-flat,
+.nf-thumb {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nf-axis,
+.nf-stem {
+  stroke: var(--muted);
+  stroke-width: 0.025;
+  opacity: 0.6;
+}
+
+.nf-ellipse {
+  stroke: var(--foreground);
+  stroke-width: 0.03;
+  opacity: 0.45;
+}
+
+.nf-curve {
+  stroke: var(--focus-ring);
+  stroke-width: 0.07;
+}
+
+.nf-tip {
+  stroke: var(--foreground);
+  stroke-width: 0.07;
+}
+
+/* ---------- E: pages ---------- */
+
+.nb {
+  --nb-bar: 3.2rem;
+  --nb-top: calc(3.5rem + 1px); /* the site header: h-14, h-16 from md */
+  position: relative;
+  display: grid;
+  gap: 1rem;
+  padding-bottom: 5rem; /* clear the prototype switcher */
+}
+
+.nb-bar {
+  position: sticky;
+  top: var(--nb-top);
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: var(--nb-bar);
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.nb-pager,
+.nb-modes {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.nb-pageinput {
+  width: 3.2rem;
+  height: 2.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font: 600 0.95rem/1 var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.nb-of {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.nb-sheets {
   display: grid;
   gap: 2.5rem;
 }
 
-.nl-figure {
+/* a page is paper: a hairline, no shadow, its own running head and folio */
+.nb-sheet {
   display: grid;
-  gap: 0.6rem;
-  margin: 0.5rem 0;
-  padding: 1rem;
+  grid-template-rows: auto 1fr auto;
+  gap: 1.4rem;
+  min-height: min(56rem, calc(100svh - var(--nb-bar) - 3rem));
+  padding: 1.1rem clamp(1rem, 4vw, 3rem);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.nl-figure figcaption {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.nl-stepper {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.nl-stepper input {
-  flex: 1 1 8rem;
-}
-
-/* B */
-.nl-scrolly {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
-.nl-scrolly__figure {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 0.4rem;
-  height: 38vh;
-  padding: 0.75rem 0;
   background: var(--background);
+  scroll-margin-top: calc(var(--nb-top) + var(--nb-bar) + 1rem);
 }
 
-.nl-scrolly__steps {
+.nb-running {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nb-folio {
+  text-align: center;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.nb-spread {
   display: grid;
+  gap: 1.6rem;
+  align-items: start;
 }
 
-.nl-scrolly__step {
-  min-height: 75vh;
-  align-content: center;
-  opacity: 0.35;
-  transition: opacity 300ms;
+/* on a phone the figure leads, as a textbook's figure heads its page */
+.nb-figcol {
+  grid-row: 1;
 }
 
-.nl-scrolly__step.is-active {
-  opacity: 1;
-}
-
-@media (min-width: 900px) {
-  .nl-scrolly {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+@media (min-width: 960px) {
+  .nb-spread {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 3rem;
   }
 
-  .nl-scrolly__steps {
-    grid-row: 1;
-    grid-column: 1;
-  }
-
-  .nl-scrolly__figure {
-    grid-row: 1;
-    grid-column: 2;
-    top: 15vh;
-    height: 70vh;
+  .nb-figcol {
+    grid-row: auto;
+    position: sticky;
+    top: calc(var(--nb-top) + var(--nb-bar) + 1.5rem);
   }
 }
 
-/* C */
-.nl-deck {
-  display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 1rem;
-  height: calc(100svh - 9rem);
-  min-height: 26rem;
-  background: var(--background);
-}
-
-.nl-deck:fullscreen {
-  height: 100vh;
-  padding: 3vh 4vw;
-}
-
-.nl-slide {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-rows: auto minmax(12rem, 1fr);
-  min-height: 0;
-  animation: nl-in 300ms ease-out;
-}
-
-.nl-slide--title {
-  grid-template-rows: 1fr;
+.nb-sheet--title {
+  grid-template-rows: auto auto auto 1fr;
   align-content: center;
+  gap: 1.2rem;
+  padding-block: clamp(2rem, 8vh, 6rem);
 }
 
-.nl-slide__figure {
-  min-height: 0;
+.nb-lead {
+  max-width: 38rem;
 }
 
-@media (min-width: 900px) {
-  .nl-slide {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-    grid-template-rows: 1fr;
-    align-items: center;
-  }
-
-  .nl-slide__figure {
-    height: 100%;
-  }
-}
-
-@keyframes nl-in {
-  from {
-    opacity: 0;
-    translate: 0 6px;
-  }
-}
-
-.nl-deck__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding-bottom: 3.5rem; /* clear the prototype switcher */
-}
-
-.nl-deck__bar button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.nl-deck__dots {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.nl-deck__dots button {
-  width: 0.7rem;
-  height: 0.7rem;
-  padding: 0;
-  border-radius: 999px;
-}
-
-.nl-deck__dots button.is-on {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-/* D */
-.nl-toggle {
+.nb-contents {
   display: grid;
-  gap: 1rem;
+  max-width: 34rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  align-content: start;
+  list-style: none;
 }
 
-.nl-toggle__bar {
+.nb-contents li {
+  margin: 0;
+}
+
+.nb-contents a {
   display: flex;
-  justify-self: end;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.nb-contents a:hover {
+  background: var(--row-hover);
+}
+
+.nb-dots {
+  flex: 1;
+  border-bottom: 1px dotted var(--muted);
+  opacity: 0.6;
+}
+
+/* page mode: only the current sheet shows. The rest are hidden="until-found",
+   which keeps their box (content-visibility: hidden), so fold it away. */
+.nb--page .nb-sheets {
   gap: 0;
 }
 
-.nl-toggle__bar button + button {
-  margin-left: -1px;
+.nb--page .nb-sheet {
+  min-height: calc(100svh - var(--nb-top) - var(--nb-bar) - 7rem);
+}
+
+.nb--page .nb-sheet[hidden] {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* the overview: every page at a glance, and find */
+.nb-overview {
+  margin: auto;
+  width: min(64rem, calc(100vw - 2rem));
+  max-height: calc(100svh - 2rem);
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.nb-overview::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.nb-overview__head {
+  position: sticky;
+  top: -1rem;
+  display: flex;
+  gap: 0.5rem;
+  margin: -1rem -1rem 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.nb-overview__head input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.nb-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nb-overview__grid button {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nb-overview__grid button:hover {
+  border-color: var(--accent);
+}
+
+.nb-overview__grid .is-current button {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.nb-overview__grid .is-dim {
+  opacity: 0.35;
+}
+
+.nf-thumb {
+  width: 100%;
+  aspect-ratio: 2.15;
+}
+
+.nb-overview__title {
+  display: flex;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.nb-overview__snippet {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (max-width: 520px) {
+  .nb-running span:first-child {
+    display: none;
+  }
+
+  .nb-bar {
+    flex-wrap: nowrap;
+    gap: 0.25rem;
+  }
+
+  .nb-bar .nb-sign {
+    min-width: 2rem;
+    padding-inline: 0.45rem;
+  }
+
+  .nb-pageinput {
+    width: 2.4rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .nb {
+    --nb-top: calc(4rem + 1px);
+  }
+}
+
+@media print {
+  .nb-bar {
+    display: none;
+  }
+
+  .nb-sheet {
+    break-after: page;
+    border: 0;
+    min-height: 0;
+  }
+}
+
+/* ---------- A: article ---------- */
+
+.ar {
+  display: grid;
+  gap: 3.5rem;
+  padding-bottom: 5rem;
+}
+
+.ar-head {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 40rem;
+}
+
+.ar-section {
+  display: grid;
+  gap: 1.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.ar-figcol {
+  grid-row: 1;
+}
+
+@media (min-width: 960px) {
+  .ar-section {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+  }
+
+  .ar-figcol {
+    grid-row: auto;
+    position: sticky;
+    top: 5.5rem;
+  }
 }
