@@ -765,7 +765,12 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
 
 // The Array plotter's CSV upload: the first two columns are x and y.
 export function parseArrayCsv(contents: string, label: string): CsvParseResult {
-  const lines = splitLines(contents).filter((line) => !line.trim().startsWith("%"));
+  // Keep each line's number in the file, so an error names the row the user sees.
+  const numbered = contents
+    .split(/\r?\n/)
+    .map((line, index) => ({ line: line.replace(/^ +| +$/g, ""), number: index + 1 }))
+    .filter(({ line }) => line.trim() !== "" && !isCommentLine(line.trim()));
+  const lines = numbered.map(({ line }) => line);
   const separator = detectSeparator(lines);
 
   if (!lines.length) {
@@ -807,7 +812,7 @@ export function parseArrayCsv(contents: string, label: string): CsvParseResult {
     if (columns.length < 2) {
       return {
         datasets: [],
-        error: `${label}: row ${index + 1} does not contain at least two columns.`,
+        error: `${label}: row ${numbered[index].number} does not contain at least two columns.`,
         skippedRowCount: 0,
         sourceLabel: label,
       };
@@ -825,7 +830,7 @@ export function parseArrayCsv(contents: string, label: string): CsvParseResult {
     if (!Number.isFinite(xValue) || !Number.isFinite(yValue)) {
       return {
         datasets: [],
-        error: `${label}: row ${index + 1} has a non-numeric x or y value.`,
+        error: `${label}: row ${numbered[index].number} has a non-numeric x or y value.`,
         skippedRowCount: 0,
         sourceLabel: label,
       };

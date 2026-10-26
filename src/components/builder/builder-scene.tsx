@@ -1060,7 +1060,10 @@ export default function BuilderScene() {
     setPlacingType(null);
     setTrayOpen(false);
     setSelection([]);
+    setSelectedBeamId(null);
     setSelectedFrameId(null);
+    setSelectedConnectionId(null);
+    setAddingStopsTo(null);
     setBeamColor(
       BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length],
     );
