@@ -40,32 +40,8 @@ export type ComponentType =
 
 export type LensShape = "plano-convex" | "biconvex";
 
-/** Components drawn with light inside them, a cavity's mode or a delay line's beam, whose colour and visibility can be set. */
-export const LIT_TYPES: ReadonlySet<ComponentType> = new Set(["cavity", "delay-line"]);
 /** The light inside a cavity or delay line, unless its colour is set. */
 export const DEFAULT_LIGHT_COLOR = "#ff5a36";
-
-/** Components a particle can be placed in — its host. */
-export const HOST_TYPES: ReadonlySet<ComponentType> = new Set(["paul-trap", "cavity"]);
-
-/**
- * Components held in a coloured mount: their `color` tints the mount, so it
- * can mark the beam line they serve. A lens stands on a bare rod, and the
- * trap and cavity have no holder, so they are left out.
- */
-export const MOUNTED_TYPES: ReadonlySet<ComponentType> = new Set([
-  "mirror-mount",
-  "beam-splitter",
-  "waveplate",
-  "filter",
-  "iris",
-  "fiber-collimator",
-  "periscope",
-  "periscope-top",
-]);
-
-/** Components that can stand on a translation stage, so can carry a `stageColor`. */
-export const STAGED_TYPES: ReadonlySet<ComponentType> = new Set(["objective", "sample"]);
 
 /** Whether this component is drawn on a stage: an objective always, a sample unless it floats. */
 export function hasStage(component: BuilderComponent): boolean {
@@ -261,6 +237,13 @@ export type BuilderSceneData = {
 // Component library
 // ---------------------------------------------------------------------------
 
+// What a new part starts with (see `created`), declared ahead of the table.
+export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
+export const DEFAULT_FOCAL_LENGTH_MM = 100;
+export const DEFAULT_CAVITY_LENGTH_MM = 50;
+export const DEFAULT_BLOCK_COLOR = "#3b4a6b";
+export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
+
 export type ComponentSpec = {
   label: string;
   /** short name drawn as the in-scene tag */
@@ -285,11 +268,44 @@ export type ComponentSpec = {
   referenceX?: number;
   /** set on a part that comes with another and is never placed alone: it is left out of the parts panel */
   partOf?: ComponentType;
+  /** the optional fields only this kind has (see BuilderComponent); every kind has a `color` and a `label` */
+  fields: readonly KindField[];
+  /** what a newly placed part of this kind starts with, besides its place; see newComponent */
+  created?: Created;
+  /** drawn with light inside it, a cavity's mode or a delay line's beam, whose colour and visibility can be set */
+  lit?: true;
+  /** a particle can be placed in it: its host */
+  host?: true;
+  /**
+   * held in a coloured mount: its `color` tints the mount, so it can mark the
+   * beam line it serves. A lens stands on a bare rod, and the trap and cavity
+   * have no holder, so they are left out.
+   */
+  mounted?: true;
+  /** can stand on a translation stage, so can carry a `stageColor` */
+  staged?: true;
+  /**
+   * how a beam sets its angle (see settleAngles); missing means it is turned
+   * by hand. "mirror": from the beam it sits in, as a mirror; a delay line too,
+   * though it stands across the beam. "periscope": as a mirror, about the beam
+   * that rises between a periscope's two mirrors. "detector": its face (local
+   * −x) turns to the light arriving at it.
+   */
+  angle?: "mirror" | "periscope" | "detector";
+  /** its one connector, drawn as a stub, takes a cable as well as a fibre (see component-models.tsx) */
+  stubTakesCable?: true;
 };
+
+/** The optional BuilderComponent fields that belong to some kinds and not others. */
+export type KindField = Exclude<keyof BuilderComponent, "id" | "type" | "position" | "rotation" | "color" | "label">;
+
+type Created = Partial<Pick<BuilderComponent, KindField | "color">>;
 
 /**
  * Keyed by type id. The ids are what setup files store, so they keep their old
  * names (`mirror-mount`, `beam-splitter`) even where the label has moved on.
+ * The kind sets below list kinds in this order, and the setup brief names them
+ * in it, so moving an entry rewords the brief.
  */
 export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   "laser-source": {
@@ -299,14 +315,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 20,
     radius: 60,
     referenceX: 56, // the emitter's output face, where the beam leaves: drawn 12 mm long at x = 50
-  },
-  "fiber-collimator": {
-    label: "Fibre collimator",
-    tag: "Fiber",
-    top: 20,
-    minHeight: 20,
-    radius: 30,
-    referenceX: 10.5, // the lens window's face, where light leaves or enters: drawn 0.6 mm thick at x = 10.2
+    fields: ["internalPathMm"],
   },
   "mirror-mount": {
     label: "Mirror",
@@ -315,6 +324,10 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 27,
     radius: 34,
+    fields: [],
+    created: { color: DEFAULT_MOUNT_COLOR },
+    mounted: true,
+    angle: "mirror",
   },
   "beam-splitter": {
     label: "Beam cube",
@@ -323,6 +336,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 25,
     radius: 30,
+    fields: [],
+    mounted: true,
   },
   lens: {
     label: "Lens",
@@ -330,6 +345,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 17,
     radius: 26,
+    fields: ["lensShape", "focalLength"],
+    created: { lensShape: "plano-convex", focalLength: DEFAULT_FOCAL_LENGTH_MM },
   },
   waveplate: {
     label: "Waveplate",
@@ -337,6 +354,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 30,
     minHeight: 36,
     radius: 26,
+    fields: [],
+    mounted: true,
   },
   filter: {
     label: "Filter",
@@ -344,6 +363,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 19,
     minHeight: 25,
     radius: 24,
+    fields: [],
+    mounted: true,
   },
   iris: {
     label: "Iris",
@@ -351,13 +372,18 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 27,
     radius: 24,
+    fields: [],
+    mounted: true,
   },
-  sample: {
-    label: "Sample",
-    tag: "Sample",
-    top: 18,
-    minHeight: 13,
-    radius: 32, // wide enough to take in the XYZ stage it stands on
+  "fiber-collimator": {
+    label: "Fibre collimator",
+    tag: "Fiber",
+    top: 20,
+    minHeight: 20,
+    radius: 30,
+    referenceX: 10.5, // the lens window's face, where light leaves or enters: drawn 0.6 mm thick at x = 10.2
+    fields: [],
+    mounted: true,
   },
   "paul-trap": {
     label: "Paul trap",
@@ -365,6 +391,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 31,
     minHeight: 28,
     radius: 26,
+    fields: [],
+    host: true,
   },
   cavity: {
     label: "Cavity",
@@ -372,6 +400,10 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 16,
     radius: 30,
+    fields: ["cavityLength", "lightColor", "lightHidden"],
+    created: { cavityLength: DEFAULT_CAVITY_LENGTH_MM },
+    lit: true,
+    host: true,
   },
   particle: {
     label: "Particle",
@@ -379,6 +411,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 10,
     minHeight: 5,
     radius: 10,
+    fields: ["host", "particleRadius"],
   },
   photodiode: {
     label: "Photodiode",
@@ -387,6 +420,9 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 20,
     radius: 22,
     referenceX: -2.15, // the chip's face: drawn 0.2 mm thick at x = -2.05
+    fields: [],
+    angle: "detector",
+    stubTakesCable: true,
   },
   camera: {
     label: "Camera",
@@ -395,6 +431,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 31,
     radius: 30,
     referenceX: -23, // the C-mount ring's face: drawn 2 mm thick at x = -22
+    fields: [],
+    angle: "detector",
   },
   spectrometer: {
     label: "Spectrometer",
@@ -405,6 +443,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 50,
     radius: 70,
     referenceX: -62, // the entrance port's outer end
+    fields: [],
+    angle: "detector",
   },
   "single-photon-detector": {
     label: "Single-photon detector",
@@ -414,6 +454,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 23,
     radius: 38,
     referenceX: -30.5, // the FC receptacle's tip
+    fields: [],
+    angle: "detector",
   },
   "time-tagger": {
     label: "Time tagger",
@@ -423,6 +465,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 27,
     fixedHeight: 27,
     radius: 131,
+    fields: [],
   },
   "beam-block": {
     label: "Beam block",
@@ -430,6 +473,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 15,
     minHeight: 21,
     radius: 32,
+    fields: [],
   },
   objective: {
     label: "Objective",
@@ -438,6 +482,17 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 24,
     radius: 32,
     referenceX: -29, // the threaded plate's outer face: drawn at x = -23, 6 mm thick
+    fields: ["objectiveLength", "stageColor"],
+    staged: true,
+  },
+  sample: {
+    label: "Sample",
+    tag: "Sample",
+    top: 18,
+    minHeight: 13,
+    radius: 32, // wide enough to take in the XYZ stage it stands on
+    fields: ["opacity", "sampleStage", "sampleStageLeft", "stageColor"],
+    staged: true,
   },
   block: {
     label: "Block",
@@ -445,6 +500,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 15,
     minHeight: 15,
     radius: 26,
+    fields: ["size"],
+    created: { size: BLOCK_SIZE_MM, color: DEFAULT_BLOCK_COLOR },
   },
   aom: {
     label: "AOM",
@@ -452,6 +509,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 24,
     radius: 32,
+    fields: [],
   },
   eom: {
     label: "EOM",
@@ -459,6 +517,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 24,
     radius: 40,
+    fields: [],
   },
   "faraday-isolator": {
     label: "Faraday isolator",
@@ -467,6 +526,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 26,
     radius: 38,
+    fields: [],
   },
   periscope: {
     label: "Periscope",
@@ -475,6 +535,10 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 30,
     radius: 34,
+    fields: [],
+    created: { color: DEFAULT_MOUNT_COLOR },
+    mounted: true,
+    angle: "periscope",
   },
   "periscope-top": {
     label: "Periscope top mirror",
@@ -483,6 +547,9 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 30,
     radius: 30,
+    fields: ["periscope"],
+    mounted: true,
+    angle: "periscope",
   },
   "delay-line": {
     label: "Delay line",
@@ -491,8 +558,31 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 22,
     minHeight: 30,
     radius: 40,
+    fields: ["delayMinPathMm", "delayTravelMm", "delayStageMm", "lightColor", "lightHidden"],
+    lit: true,
+    angle: "mirror",
   },
 };
+
+/** The kinds whose spec in COMPONENT_SPECS passes `test`, in the table's order. */
+export function kindsWhere(test: (spec: ComponentSpec) => boolean): ReadonlySet<ComponentType> {
+  return new Set((Object.keys(COMPONENT_SPECS) as ComponentType[]).filter((type) => test(COMPONENT_SPECS[type])));
+}
+
+/** Components drawn with light inside them, a cavity's mode or a delay line's beam, whose colour and visibility can be set. */
+export const LIT_TYPES = kindsWhere((spec) => spec.lit === true);
+/** Components a particle can be placed in — its host. */
+export const HOST_TYPES = kindsWhere((spec) => spec.host === true);
+/** Components held in a coloured mount: see ComponentSpec's `mounted`. */
+export const MOUNTED_TYPES = kindsWhere((spec) => spec.mounted === true);
+/** Components that can stand on a translation stage, so can carry a `stageColor`. */
+export const STAGED_TYPES = kindsWhere((spec) => spec.staged === true);
+/** A delay line takes its angle from the beam it sits in, like a mirror, but stands across it (see delayLineYaw). */
+export const MIRROR_LIKE = kindsWhere((spec) => spec.angle === "mirror");
+/** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
+export const PERISCOPE_MIRRORS = kindsWhere((spec) => spec.angle === "periscope");
+/** Detectors whose face (local −x) turns to the light arriving at them. */
+export const AIMED_DETECTORS = kindsWhere((spec) => spec.angle === "detector");
 
 export type PartCategory = { name: string; types: ComponentType[] };
 
@@ -549,7 +639,6 @@ export function handleSweep(fromDeg: number, toDeg: number, step: number): numbe
  */
 export const BEAM_HEIGHT_MM = 100;
 export const MAX_HEIGHT_MM = 300;
-export const DEFAULT_MOUNT_COLOR = "#8b1e3f";
 export const DEFAULT_SAMPLE_COLOR = "#f2c94c";
 export const SAMPLE_OPACITY = 0.8;
 export const SAMPLE_OPACITY_RANGE: [number, number] = [0.1, 1];
@@ -564,14 +653,11 @@ export const BEAM_OPACITY_RANGE: [number, number] = [0.1, 1];
 
 /** A laser's built-in path, mm: up to 100 m, far past any real folded delay. */
 export const INTERNAL_PATH_RANGE_MM: [number, number] = [0, 100000];
-export const DEFAULT_FOCAL_LENGTH_MM = 100;
 export const FOCAL_LENGTH_RANGE_MM: [number, number] = [10, 2000];
-export const DEFAULT_CAVITY_LENGTH_MM = 50;
 export const CAVITY_LENGTH_RANGE_MM: [number, number] = [10, 300];
 export const DEFAULT_PARTICLE_COLOR = "#ff5a36";
 export const PARTICLE_RADIUS_MM = 3;
 export const PARTICLE_RADIUS_RANGE_MM: [number, number] = [0.5, 15];
-export const DEFAULT_BLOCK_COLOR = "#3b4a6b";
 export const DEFAULT_OBJECTIVE_COLOR = "#d5d9df";
 export const DEFAULT_OBJECTIVE_LENGTH_MM = 54;
 export const OBJECTIVE_LENGTH_RANGE_MM: [number, number] = [30, 130];
@@ -582,7 +668,6 @@ export const DEFAULT_HOUSING_COLORS: Partial<Record<ComponentType, string>> = {
   spectrometer: "#fbfbf8",
   "single-photon-detector": "#1b1c1f",
 };
-export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 export const BLOCK_SIZE_RANGE_MM: [number, number] = [2, 300];
 /** A delay line's minimum delay, mm: a new one's, and the range any can have, as a laser's built-in path. */
 export const DELAY_MIN_PATH_MM = 50;
@@ -643,6 +728,32 @@ export function snapToGrid(value: number, step = GRID_SIZE_MM): number {
 export function clampToTable(x: number, z: number): [number, number] {
   const guard: [number, number] = [-TABLE_GUARD_MM, TABLE_GUARD_MM];
   return [clamp(x, guard), clamp(z, guard)];
+}
+
+/**
+ * A newly placed part of `type` at `x`, `z`: at its default height, unturned,
+ * with what its kind starts with (COMPONENT_SPECS' `created`). The keys come
+ * in the order the builder has always written them.
+ */
+export function newComponent(
+  type: ComponentType,
+  id: string,
+  x: number,
+  z: number,
+  extra?: { label?: string; host?: string },
+): BuilderComponent {
+  const created = { ...COMPONENT_SPECS[type].created };
+  if (created.size) created.size = [...created.size];
+  return {
+    id,
+    type,
+    position: [x, defaultHeight(type), z],
+    rotation: 0,
+    color: undefined,
+    label: extra?.label,
+    ...created,
+    ...(extra?.host ? { host: extra.host } : {}),
+  };
 }
 
 export function createComponentId(type: ComponentType): string {
@@ -1173,15 +1284,6 @@ function mirrorAngleStop(
   }
   return undefined;
 }
-
-/** A delay line takes its angle from the beam it sits in, like a mirror, but stands across it (see delayLineYaw). */
-const MIRROR_LIKE = new Set<ComponentType>(["mirror-mount", "delay-line"]);
-
-/** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
-const PERISCOPE_MIRRORS = new Set<ComponentType>(["periscope", "periscope-top"]);
-
-/** Detectors whose face (local −x) turns to the light arriving at them. */
-const AIMED_DETECTORS = new Set<ComponentType>(["photodiode", "camera", "spectrometer", "single-photon-detector"]);
 
 /**
  * Where a detector's angle comes from: the first beam, in scene order, that

@@ -52,6 +52,7 @@ import {
   componentTop,
   delayArmMm,
   delayRailMm,
+  kindsWhere,
   type BuilderComponent,
   type ComponentType,
   type ConnectionKind,
@@ -1954,7 +1955,7 @@ export const FIBER_STUBS: Partial<Record<ComponentType, (axis: number) => Catmul
  * The parts whose one connector takes a cable as well as a fibre: a
  * photodiode's jack on the back of its head is where its signal leaves.
  */
-const ANY_KIND_STUBS: ReadonlySet<ComponentType> = new Set<ComponentType>(["photodiode"]);
+const ANY_KIND_STUBS = kindsWhere((spec) => spec.stubTakesCable === true);
 
 /**
  * Whether a connection of `kind` at a part of `type` leaves from the part's

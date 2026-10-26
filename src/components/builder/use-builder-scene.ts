@@ -6,11 +6,7 @@ import * as groupEdits from "@/components/builder/group-edits";
 import * as groups from "@/components/builder/groups";
 import {
   BEAM_COLORS,
-  BLOCK_SIZE_MM,
   CONNECTION_KINDS,
-  DEFAULT_BLOCK_COLOR,
-  DEFAULT_CAVITY_LENGTH_MM,
-  DEFAULT_FOCAL_LENGTH_MM,
   FRAME_COLORS,
   DEFAULT_MOUNT_COLOR,
   PERISCOPE_RISE_MM,
@@ -24,6 +20,7 @@ import {
   defaultHeight,
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
+  newComponent,
   parseLabelScale,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
@@ -228,20 +225,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
         ...current,
         components: [
           ...current.components,
-          {
-            id,
-            type,
-            position: [x, defaultHeight(type), z],
-            rotation: 0,
-            color: type === "mirror-mount" || type === "periscope" ? DEFAULT_MOUNT_COLOR : undefined,
-            label: extra?.label,
-            ...(type === "lens"
-              ? { lensShape: "plano-convex" as const, focalLength: DEFAULT_FOCAL_LENGTH_MM }
-              : {}),
-            ...(type === "cavity" ? { cavityLength: DEFAULT_CAVITY_LENGTH_MM } : {}),
-            ...(type === "block" ? { size: [...BLOCK_SIZE_MM] as Vec3, color: DEFAULT_BLOCK_COLOR } : {}),
-            ...(extra?.host ? { host: extra.host } : {}),
-          },
+          newComponent(type, id, x, z, extra),
           ...top,
         ],
       }));
