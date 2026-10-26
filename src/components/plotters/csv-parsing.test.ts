@@ -397,4 +397,17 @@ describe("parseArrayCsv", () => {
 
     assert.match(parsed.error ?? "", /row 2 has a non-numeric x or y value/);
   });
+
+  it("skips every comment marker the other plotters skip", () => {
+    const parsed = parseArrayCsv("# exported\n0,0\n1,1\n; note\n// end\n# end", "data.csv");
+
+    assert.equal(parsed.error, null);
+    assert.equal(parsed.datasets[0].points.length, 2);
+  });
+
+  it("names the file's own row number past blank and comment lines", () => {
+    const parsed = parseArrayCsv("% header\n\n0,0\n\n1,abc", "data.csv");
+
+    assert.match(parsed.error ?? "", /row 5 has a non-numeric x or y value/);
+  });
 });
