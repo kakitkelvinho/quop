@@ -2404,6 +2404,108 @@ function modelSignature(
   return JSON.stringify([placed, showPosts, stubTaken, hasPartner]);
 }
 
+/** What a model is drawn from beyond the component itself. */
+type ModelContext = {
+  modelProps: ModelProps;
+  /** a connection leaves from the part's stub, so the stub is not drawn */
+  stubTaken: boolean;
+  /** a periscope mirror's other mirror, if it has one */
+  partner?: BuilderComponent;
+};
+
+/**
+ * Each kind's 3D model. A Record, so a kind added to ComponentType without
+ * a model here fails to compile rather than drawing nothing.
+ */
+const COMPONENT_MODELS: Record<
+  ComponentType,
+  (component: BuilderComponent, context: ModelContext) => ReactNode
+> = {
+  "laser-source": (_, { modelProps }) => <LaserSource {...modelProps} />,
+  "fiber-collimator": (_, { modelProps, stubTaken }) => (
+    <FiberCollimator {...modelProps} stub={!stubTaken} />
+  ),
+  "mirror-mount": (_, { modelProps }) => <MirrorMount {...modelProps} />,
+  "beam-splitter": (_, { modelProps }) => <BeamSplitter {...modelProps} />,
+  lens: (component, { modelProps }) => (
+    <Lens
+      {...modelProps}
+      shape={fieldValue(component, "lensShape")}
+      focalLength={fieldValue(component, "focalLength")}
+    />
+  ),
+  waveplate: (_, { modelProps }) => <Waveplate {...modelProps} />,
+  filter: (_, { modelProps }) => <Filter {...modelProps} />,
+  iris: (_, { modelProps }) => <Iris {...modelProps} />,
+  sample: (component, { modelProps: { palette, axis } }) => (
+    <Sample
+      palette={palette}
+      axis={axis}
+      stage={component.sampleStage ?? "below"}
+      left={component.sampleStageLeft === true}
+      stageColor={component.stageColor ?? palette.stage}
+      color={component.color ?? DEFAULT_SAMPLE_COLOR}
+      opacity={fieldValue(component, "opacity")}
+    />
+  ),
+  "paul-trap": (_, { modelProps }) => <PaulTrap {...modelProps} />,
+  cavity: (component, { modelProps }) => (
+    <Cavity
+      {...modelProps}
+      length={fieldValue(component, "cavityLength")}
+      light={innerLight(component)}
+    />
+  ),
+  particle: (component, { modelProps: { axis } }) => (
+    <Particle
+      axis={axis}
+      color={component.color ?? DEFAULT_PARTICLE_COLOR}
+      radius={fieldValue(component, "particleRadius")}
+    />
+  ),
+  photodiode: (_, { modelProps, stubTaken }) => <Photodiode {...modelProps} stub={!stubTaken} />,
+  "beam-block": (_, { modelProps }) => <BeamBlock {...modelProps} />,
+  objective: (component, { modelProps }) => (
+    <Objective
+      {...modelProps}
+      length={fieldValue(component, "objectiveLength")}
+      stageColor={component.stageColor ?? modelProps.palette.stage}
+    />
+  ),
+  block: (component, { modelProps }) => (
+    <GenericBlock {...modelProps} size={fieldValue(component, "size")} />
+  ),
+  aom: (_, { modelProps }) => <Aom {...modelProps} />,
+  eom: (_, { modelProps }) => <Eom {...modelProps} />,
+  "faraday-isolator": (_, { modelProps }) => <FaradayIsolator {...modelProps} />,
+  "delay-line": (component, { modelProps }) => (
+    <DelayLine
+      {...modelProps}
+      rail={delayRailMm(component)}
+      arm={delayArmMm(component)}
+      light={innerLight(component)}
+    />
+  ),
+  periscope: (component, { modelProps, partner }) => (
+    <>
+      <PeriscopeStand
+        palette={modelProps.palette}
+        axis={modelProps.axis}
+        rotation={component.rotation}
+        top={partner}
+      />
+      <PeriscopeMirror {...modelProps} tilt={periscopeTilt(modelProps.axis, partner, 1)} />
+    </>
+  ),
+  "periscope-top": (_, { modelProps, partner }) => (
+    <PeriscopeMirror {...modelProps} tilt={periscopeTilt(modelProps.axis, partner, -1)} />
+  ),
+  camera: (_, { modelProps }) => <CameraBody {...modelProps} />,
+  spectrometer: (_, { modelProps }) => <Spectrometer {...modelProps} />,
+  "single-photon-detector": (_, { modelProps }) => <SinglePhotonDetector {...modelProps} />,
+  "time-tagger": (_, { modelProps }) => <TimeTagger {...modelProps} />,
+};
+
 export const ComponentMesh = memo(function ComponentMesh({
   component,
   palette,
@@ -2469,94 +2571,7 @@ export const ComponentMesh = memo(function ComponentMesh({
     >
       {/* the group stands at the part's port; its body is drawn behind it */}
       <group position={[-componentReferenceX(component), 0, 0]}>
-        {component.type === "laser-source" ? (
-          <LaserSource {...modelProps} />
-        ) : null}
-        {component.type === "fiber-collimator" ? (
-          <FiberCollimator {...modelProps} stub={!stubTaken} />
-        ) : null}
-        {component.type === "mirror-mount" ? (
-          <MirrorMount {...modelProps} />
-        ) : null}
-        {component.type === "beam-splitter" ? (
-          <BeamSplitter {...modelProps} />
-        ) : null}
-        {component.type === "lens" ? (
-          <Lens
-            {...modelProps}
-            shape={fieldValue(component, "lensShape")}
-            focalLength={fieldValue(component, "focalLength")}
-          />
-        ) : null}
-        {component.type === "waveplate" ? <Waveplate {...modelProps} /> : null}
-        {component.type === "filter" ? <Filter {...modelProps} /> : null}
-        {component.type === "iris" ? <Iris {...modelProps} /> : null}
-        {component.type === "sample" ? (
-          <Sample
-            palette={palette}
-            axis={axis}
-            stage={component.sampleStage ?? "below"}
-            left={component.sampleStageLeft === true}
-            stageColor={component.stageColor ?? palette.stage}
-            color={component.color ?? DEFAULT_SAMPLE_COLOR}
-            opacity={fieldValue(component, "opacity")}
-          />
-        ) : null}
-        {component.type === "paul-trap" ? <PaulTrap {...modelProps} /> : null}
-        {component.type === "cavity" ? (
-          <Cavity
-            {...modelProps}
-            length={fieldValue(component, "cavityLength")}
-            light={innerLight(component)}
-          />
-        ) : null}
-        {component.type === "particle" ? (
-          <Particle
-            axis={axis}
-            color={component.color ?? DEFAULT_PARTICLE_COLOR}
-            radius={fieldValue(component, "particleRadius")}
-          />
-        ) : null}
-        {component.type === "photodiode" ? <Photodiode {...modelProps} stub={!stubTaken} /> : null}
-        {component.type === "beam-block" ? <BeamBlock {...modelProps} /> : null}
-        {component.type === "objective" ? (
-          <Objective
-            {...modelProps}
-            length={fieldValue(component, "objectiveLength")}
-            stageColor={component.stageColor ?? palette.stage}
-          />
-        ) : null}
-        {component.type === "block" ? (
-          <GenericBlock {...modelProps} size={fieldValue(component, "size")} />
-        ) : null}
-        {component.type === "aom" ? <Aom {...modelProps} /> : null}
-        {component.type === "eom" ? <Eom {...modelProps} /> : null}
-        {component.type === "faraday-isolator" ? <FaradayIsolator {...modelProps} /> : null}
-        {component.type === "delay-line" ? (
-          <DelayLine
-            {...modelProps}
-            rail={delayRailMm(component)}
-            arm={delayArmMm(component)}
-            light={innerLight(component)}
-          />
-        ) : null}
-        {component.type === "periscope" ? (
-          <>
-            <PeriscopeStand palette={palette} axis={axis} rotation={component.rotation} top={partner} />
-            <PeriscopeMirror {...modelProps} tilt={periscopeTilt(axis, partner, 1)} />
-          </>
-        ) : null}
-        {component.type === "periscope-top" ? (
-          <PeriscopeMirror {...modelProps} tilt={periscopeTilt(axis, partner, -1)} />
-        ) : null}
-        {component.type === "camera" ? <CameraBody {...modelProps} /> : null}
-        {component.type === "spectrometer" ? (
-          <Spectrometer {...modelProps} />
-        ) : null}
-        {component.type === "single-photon-detector" ? (
-          <SinglePhotonDetector {...modelProps} />
-        ) : null}
-        {component.type === "time-tagger" ? <TimeTagger {...modelProps} /> : null}
+        {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken, partner })}
 
         {hovered && !selected ? (
           <HoverRing radius={radius} color={palette.hover} />

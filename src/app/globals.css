@@ -5040,6 +5040,7 @@ html[data-theme="dark"] .chalkEq__ink--accent {
    the tool index's, 18rem long (never wider than its column), the name
    centred on it both ways, 3.6em either side so it clears the marks */
 .heroTools .buttonLink,
+.notFound__signs .buttonLink,
 .buttonLink.chapter__cta {
   position: relative;
   width: 18rem;
@@ -5050,6 +5051,27 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   line-height: 1.1;
   text-align: center;
   letter-spacing: 0.01em;
+}
+
+/* the 404's way back: the hero's signs, in a row from the page's left edge,
+   wrapping to one a line on a phone */
+.notFound__signs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  margin-top: 0.75rem;
+}
+
+/* the address that wasn't found, as typed: it is code-like, but set in the
+   page's own sans so the sentence reads as one line of prose */
+.notFound__address {
+  padding: 0;
+  background: none;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 /* a real statement, so sentence case under the Case Rule, not a label */
@@ -5525,11 +5547,11 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   background-color: var(--accent-hover);
 }
 
-/* The exception: wayfinding signs, the homepage hero's, its chapters' calls
+/* The exception: wayfinding signs, the homepage hero's, the 404's, its chapters' calls
    to action and the tool index's, are only an outline in the text colour at rest, so a board of them doesn't
    shout. Pointed at or focused, the sign becomes the station-blue plate (not
    the deeper hover blue) and shows its marks. */
-:is(.heroTools .buttonLink, .chapter__cta, .toolCard__sign) {
+:is(.heroTools .buttonLink, .notFound__signs .buttonLink, .chapter__cta, .toolCard__sign) {
   border: 1.5px solid var(--foreground);
   border-radius: var(--radius);
   background-color: transparent;
@@ -5540,6 +5562,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 
 :is(
     .heroTools .buttonLink:is(:hover, :focus-visible),
+    .notFound__signs .buttonLink:is(:hover, :focus-visible),
     .chapter__cta:is(:hover, :focus-visible),
     a.toolCard:is(:hover, :focus-visible) .toolCard__sign
   ) {
@@ -5550,6 +5573,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 
 :is(
     .heroTools .buttonLink:is(:hover, :focus-visible),
+    .notFound__signs .buttonLink:is(:hover, :focus-visible),
     .chapter__cta:is(:hover, :focus-visible),
     a.toolCard:is(:hover, :focus-visible)
   )
