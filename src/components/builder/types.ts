@@ -10,6 +10,16 @@
 // setup-brief.ts describes the setup file to an AI assistant from this file;
 // a new saved field won't typecheck there until the brief has a line for it.
 
+import {
+  CAMERA_MOUNT_RING,
+  FC_BARREL_LENGTH_MM,
+  FC_FLANGE_DEPTH_MM,
+  FC_TIP_LENGTH_MM,
+  LASER_EMITTER,
+  SPCM_FACE_X,
+  SPECTROMETER_PORT,
+} from "./model-dimensions.ts";
+
 export type ComponentType =
   | "laser-source"
   | "fiber-collimator"
@@ -277,10 +287,13 @@ export type ComponentSpec = {
   radius: number;
   /**
    * Where its port sits along its local x axis, mm from the body's centre,
-   * read off its model in component-models.tsx: the first surface a ruler laid
+   * read off its model: the first surface a ruler laid
    * along the beam touches, where light leaves or enters it. A part with a
    * port is placed, snapped, saved and turned by that port; its model is
-   * drawn this far behind it. Missing means the port is the centre.
+   * drawn this far behind it. Missing means the port is the centre. Where
+   * the model's measurements are in model-dimensions.ts it is worked out from
+   * them; otherwise the comment beside it names the model in
+   * component-models.tsx it must agree with.
    */
   referenceX?: number;
   /** set on a part that comes with another and is never placed alone: it is left out of the parts panel */
@@ -298,7 +311,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 20,
     radius: 60,
-    referenceX: 56, // the emitter's output face, where the beam leaves: drawn 12 mm long at x = 50
+    // the emitter's output face, where the beam leaves: 56
+    referenceX: LASER_EMITTER.x + LASER_EMITTER.length / 2,
   },
   "fiber-collimator": {
     label: "Fibre collimator",
@@ -306,7 +320,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 20,
     radius: 30,
-    referenceX: 10.5, // the lens window's face, where light leaves or enters: drawn 0.6 mm thick at x = 10.2
+    referenceX: 10.5, // the lens window's face, where light leaves or enters: FiberCollimator draws it 0.6 mm thick at x = 10.2
   },
   "mirror-mount": {
     label: "Mirror",
@@ -386,7 +400,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 20,
     radius: 22,
-    referenceX: -2.15, // the chip's face: drawn 0.2 mm thick at x = -2.05
+    referenceX: -2.15, // the chip's face: Photodiode draws it 0.2 mm thick at x = -2.05
   },
   camera: {
     label: "Camera",
@@ -394,7 +408,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 31,
     radius: 30,
-    referenceX: -23, // the C-mount ring's face: drawn 2 mm thick at x = -22
+    // the C-mount ring's face: -23
+    referenceX: CAMERA_MOUNT_RING.x - CAMERA_MOUNT_RING.depth / 2,
   },
   spectrometer: {
     label: "Spectrometer",
@@ -404,7 +419,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     // spectrometer on a riser would: a port 150 mm up is drawn 170 mm tall
     minHeight: 50,
     radius: 70,
-    referenceX: -62, // the entrance port's outer end
+    // the entrance port's outer end: -62
+    referenceX: SPECTROMETER_PORT.x - SPECTROMETER_PORT.length / 2,
   },
   "single-photon-detector": {
     label: "Single-photon detector",
@@ -413,7 +429,8 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 17,
     minHeight: 23,
     radius: 38,
-    referenceX: -30.5, // the FC receptacle's tip
+    // the FC receptacle's tip: -30.5
+    referenceX: SPCM_FACE_X - FC_FLANGE_DEPTH_MM - FC_BARREL_LENGTH_MM - FC_TIP_LENGTH_MM,
   },
   "time-tagger": {
     label: "Time tagger",
@@ -437,7 +454,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 17,
     minHeight: 24,
     radius: 32,
-    referenceX: -29, // the threaded plate's outer face: drawn at x = -23, 6 mm thick
+    referenceX: -29, // the threaded plate's outer face: Objective draws it at x = -23, 6 mm thick
   },
   block: {
     label: "Block",
