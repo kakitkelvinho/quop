@@ -1,205 +1,47 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent } from "react";
-import {
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-  type ChartData,
-  type ChartDataset,
-  type ChartOptions,
-} from "chart.js";
-
-import { readCsvTable, type DataPoint } from "@/components/plotters/csv-parsing";
+import { useMemo } from "react";
+import { readCsvTable } from "@/components/plotters/csv-parsing";
 import { timeSeries } from "@/components/plotters/csv-series";
+import { createDemoTimeSeriesCsv, DEMO_TIME_SERIES_LABEL } from "@/components/plotters/demo-csv";
+import { titleFromFileName } from "@/components/plotters/figure-spec";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import { SidebarFold } from "@/components/sidebar-fold";
+import { PlotterShell } from "@/components/plotters/plotter-shell";
+import { useCsvSource } from "@/components/plotters/use-plotter-source";
 
-ChartJS.register(
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-);
-
-function createDemoCsv() {
-  const rows = ["ch2,ch3,time"];
-
-  for (let index = 0; index < 320; index += 1) {
-    const time = -6.7e-8 + index * 1.41e-10;
-    const ch2 = 0.2 + 0.06 * Math.exp(-(index / 120)) * Math.sin(index * 0.18);
-    const ch3 =
-      -0.005 + 0.0035 * Math.exp(-(index / 90)) * Math.cos(index * 0.16);
-
-    rows.push(
-      `${ch2.toFixed(12)},${ch3.toFixed(12)},${time.toExponential(12)}`,
-    );
-  }
-
-  return rows.join("\n");
-}
-
-const demoCsv = createDemoCsv();
-
-function getBundledAssetPath(filename: string) {
-  if (typeof window === "undefined") {
-    return `/data/${filename}`;
-  }
-
-  const basePath = window.location.pathname.split("/plotters/")[0] ?? "";
-  return `${basePath}/data/${filename}`;
-}
+const demoCsv = { text: createDemoTimeSeriesCsv(), label: DEMO_TIME_SERIES_LABEL };
 
 export default function CsvPlotter() {
-  const [csvInput, setCsvInput] = useState(demoCsv);
-  const [sourceLabel, setSourceLabel] = useState("demo-time-series.csv");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const source = useCsvSource({ initial: demoCsv, sample: "power15.csv" });
+  const table = useMemo(() => readCsvTable(source.text, "columns"), [source.text]);
+  const parsed = useMemo(() => timeSeries(table), [table]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadDefaultCsv() {
-      try {
-        const response = await fetch(getBundledAssetPath("power15.csv"));
-
-        if (!response.ok) {
-          throw new Error("Unable to load default CSV.");
-        }
-
-        const nextCsv = await response.text();
-
-        if (cancelled) {
-          return;
-        }
-
-        setCsvInput(nextCsv);
-        setSourceLabel("power15.csv");
-      } catch {
-        if (cancelled) {
-          return;
-        }
-
-        setCsvInput(demoCsv);
-        setSourceLabel("demo-time-series.csv");
-      }
-    }
-
-    void loadDefaultCsv();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const table = readCsvTable(csvInput, "columns");
-  const parsed = timeSeries(table);
-
-  const chartData: ChartData<"scatter"> = {
-    datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel) => {
-      return {
-        label: channel.label,
-        data: channel.points,
-        showLine: true,
-        borderWidth: 2,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      };
-    }),
-  };
-
-  const chartOptions: ChartOptions<"scatter"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: "top",
-        labels: {
-          usePointStyle: true,
-          boxWidth: 10,
-        },
-      },
-      title: { display: false },
-      tooltip: { enabled: true },
-    },
-    scales: {
-      x: {
-        type: "linear",
-        title: { display: true, text: parsed.xLabel },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
-      },
-      y: {
-        title: { display: true, text: "channels" },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
-      },
-    },
-    elements: {
-      point: { radius: 1.5, hoverRadius: 3 },
-      line: { tension: 0 },
-    },
-  };
-
-  async function handleFileUpload(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    const nextCsv = await file.text();
-
-    setCsvInput(nextCsv);
-    setSourceLabel(file.name);
-    event.target.value = "";
-  }
-
-  const statusMessage = parsed.error
-    ? parsed.error
-    : `Plotting ${parsed.rowCount} rows from ${sourceLabel}. X-axis: ${parsed.xLabel}. Channels: ${parsed.channelLabels.join(", ")}.${
-        parsed.skippedRowCount > 0
-          ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
-          : ""
-      }`;
+  const statusMessage = source.error
+    ? source.error
+    : parsed.error
+      ? parsed.error
+      : `Plotting ${parsed.rowCount} rows from ${source.label}. X-axis: ${parsed.xLabel}. Channels: ${parsed.channelLabels.join(", ")}.${
+          parsed.skippedRowCount > 0
+            ? ` (${parsed.skippedRowCount} row${parsed.skippedRowCount === 1 ? "" : "s"} skipped.)`
+            : ""
+        }`;
 
   return (
-    <div
-      className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
-    >
-      <div className="visualizerSidebar">
-        <SidebarFold
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-        />
-        <div className="inputCard fieldStack">
-          <h2>Data</h2>
-
+    <PlotterShell
+      sidebar={
+        <>
           <label className="field">
             <span>CSV, TSV or TXT file</span>
-            <FileDrop
-              kind="CSV, TSV or TXT file"
-              accept={TABLE_FILE_ACCEPT}
-              onChange={(event) => {
-                void handleFileUpload(event);
-              }}
-            />
+            <FileDrop kind="CSV, TSV or TXT file" accept={TABLE_FILE_ACCEPT} onChange={source.upload} />
           </label>
 
           <label className="field">
             <span>CSV contents</span>
             <div className="field__control field__control--textarea">
               <textarea
-                value={csvInput}
-                onChange={(event) => {
-                  setCsvInput(event.target.value);
-                  setSourceLabel("inline CSV");
-                }}
+                value={source.text}
+                onChange={(event) => source.edit(event.target.value)}
                 spellCheck={false}
                 aria-label="CSV input"
               />
@@ -221,20 +63,25 @@ export default function CsvPlotter() {
           ) : null}
 
           <p className="resultCard">{statusMessage}</p>
-        </div>
+        </>
+      }
+    >
+      <h2>Plot</h2>
+      <div className="visualizerChartSurface">
+        <InteractiveScatterChart
+          series={parsed.series}
+          xLabel={parsed.xLabel}
+          yLabel="channels"
+          legend="points"
+          title={titleFromFileName(source.label)}
+          pointSize={1.5}
+        />
+        {parsed.error ? (
+          <div className="visualizerEmptyState visualizerOverlayState">
+            Invalid CSV.
+          </div>
+        ) : null}
       </div>
-
-      <div className="sectionCard visualizerChartCard">
-        <h2>Plot</h2>
-        <div className="visualizerChartSurface">
-          <InteractiveScatterChart data={chartData} options={chartOptions} sourceLabel={sourceLabel} />
-          {parsed.error ? (
-            <div className="visualizerEmptyState visualizerOverlayState">
-              Invalid CSV.
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    </PlotterShell>
   );
 }
