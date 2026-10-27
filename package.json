@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test 'src/**/*.test.ts'",
+    "test": "node --test 'src/**/*.test.ts' && npx playwright install --with-deps chromium && npm run test:ui",
     "test:ui": "next build && playwright test"
   },
   "dependencies": {
