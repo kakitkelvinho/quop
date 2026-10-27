@@ -6,9 +6,16 @@ import { ArrowRightIcon, SignIcon } from "@/components/sign-icon";
  * Each tool's station pictogram, drawn as outlines for SignIcon's square (the
  * square, stroke and caps come from `.signIcon`). One per tool on the index,
  * and one per section for the homepage's signs, beside the sign's orange
- * arrow, as a platform sign shows what lies that way.
+ * arrow, as a platform sign shows what lies that way. The section and home
+ * pictograms also mark the 404's signs.
  */
 const PICTOGRAMS: Record<string, ReactNode> = {
+  // a house: back to the start
+  "/": <path d="M3 11l9-8 9 8M6 9v12h12V9M10 21v-6h4v6" />,
+  // the Builder section is the Tabletop, so it wears the Tabletop's lens
+  "/builder": <path d="M2 12h20M12 4c2.6 3.5 2.6 12.5 0 16M12 4c-2.6 3.5-2.6 12.5 0 16" />,
+  // a ruled page
+  "/notes": <path d="M5 3h14v18H5zM8 8h8M8 12h8M8 16h5" />,
   // a beam through a lens
   "/builder/tabletop": <path d="M2 12h20M12 4c2.6 3.5 2.6 12.5 0 16M12 4c-2.6 3.5-2.6 12.5 0 16" />,
   // a trace on axes
