@@ -26,6 +26,46 @@ Some simple I/Os to quickly calculate different physical concepts to help with b
 
 Our oscilloscope data are recorded primarily in `.csv`, and our spectrometer data is recorded in `.fits` files. Instead of writing python scripts every time or modifying mathematica notebooks to quickly check our data, we made this so we can quickly visualize the data we have recorded in the lab.
 
+### UI tests
+
+`tests/ui/` holds browser tests written with [Playwright](https://playwright.dev). They build the site, open the homepage, the plotters, the Tabletop and a 404 page in Chromium, once in light and once in dark, and check two things:
+
+- **behaviour**: the page loads, each plotter plots its sample (the status line shows the right row count), and the Time CSV Plotter plots an uploaded file;
+- **looks**: a screenshot of each page matches its saved copy in `tests/ui/*-snapshots/`.
+
+CI runs them on every pull request, in the same `ci` check as lint and the unit tests.
+
+**Run them locally**
+
+```sh
+npm ci
+npx playwright install chromium   # once: downloads Playwright's browser
+npm run test:ui                   # builds the site, then runs every test
+```
+
+The saved screenshots are Linux images, made on the same OS as CI, because fonts render slightly differently on each OS. On macOS or Windows run `npm run test:ui -- --ignore-snapshots` to check behaviour only and leave the screenshots to CI.
+
+**After an intended visual change**
+
+A screenshot test fails when a page looks different. When the change is wanted, save new screenshots and commit them with the change. On Linux:
+
+```sh
+npm run test:ui -- --update-snapshots
+```
+
+On macOS or Windows, run the same command in Playwright's Linux image with Docker (afterwards run `npm ci` again, since it replaces `node_modules` with Linux builds):
+
+```sh
+docker run --rm -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.63.0-noble \
+  bash -c "npm ci && npm run test:ui -- --update-snapshots"
+```
+
+Look at the new images in `tests/ui/*-snapshots/` before committing them.
+
+**When CI fails**
+
+Open the failed run (the `ci` check on the pull request, then *Summary*), download the `playwright-report` artifact, unzip it, and run `npx playwright show-report <unzipped folder>`. Each failed test lists its error, and a screenshot failure shows the expected, actual and diff images side by side, so you can tell a real change from a bug. Run locally, the same report is in `playwright-report/`.
+
 ### Reporting problems
 
 Found something broken or confusing? Use the "Report a problem" link in the footer or on any tool page. This lets you email me directly so I can address the problem.

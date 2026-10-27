@@ -45,3 +45,7 @@ next-env.d.ts
 
 # Claude's screenshots and exported setups, kept on disk but not in the site
 /Claude outputs/
+
+# Playwright UI tests: reports and failure traces (baselines in tests/ui are kept)
+/playwright-report/
+/test-results/
