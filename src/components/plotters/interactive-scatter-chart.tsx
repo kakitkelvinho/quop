@@ -18,34 +18,43 @@ import {
   Title,
   Tooltip,
   type ChartConfiguration,
-  type ChartData,
-  type ChartOptions,
 } from "chart.js";
 
 import {
-  CHART_STYLE_FONTS,
+  AxisLabelsIcon,
+  CustomizeIcon,
+  FontIcon,
+  JoinDotsIcon,
+  LegendIcon,
+  PointSizeIcon,
+  ResetZoomIcon,
+  SaveIcon,
+  ScrollIcon,
+  StyleIcon,
+  ThemeIcon,
+  TickAxesIcon,
+  TitleIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "@/components/plotters/chart-icons";
+import { CHART_STYLE_FONTS, MATPLOTLIB_FONT_FAMILY, PDF_FONT, SVG_FONT_ALIASES } from "@/components/plotters/chart-fonts";
+import {
   CHART_STYLE_LABELS,
-  CHART_STYLE_PALETTES,
-  CLASSIC_DARK,
-  CLASSIC_EXPORT,
   CLASSIC_FONT_FAMILY,
-  CLASSIC_LIGHT,
   setChartStyle,
   useChartStyle,
-  type ChartStyle,
-  type ClassicColors,
 } from "@/components/plotters/chart-style";
 import {
-  DARK_SKIN,
-  LIGHT_SKIN,
-  MATPLOTLIB_FONT_FAMILY,
-  matplotlibFrame,
-  PDF_FONT,
-  plainLabel,
-  SVG_FONT_ALIASES,
-  type MatplotlibFrameOptions,
-  type SkinColors,
-} from "@/components/plotters/matplotlib-skin";
+  figureData,
+  figureOptions,
+  type Bounds,
+  type FigureState,
+  type FigureTarget,
+  type LegendMarker,
+  type Series,
+  type XFormat,
+} from "@/components/plotters/figure-spec";
+import { matplotlibFrame } from "@/components/plotters/matplotlib-skin";
 import { renderChartPdf } from "@/components/plotters/pdf-export";
 import { renderChartSvg } from "@/components/plotters/svg-export";
 import { ChartInfo, DragGesture, ToolGesture } from "@/components/plotters/chart-info";
@@ -59,13 +68,6 @@ ChartJS.register(
   Tooltip,
   Legend,
 );
-
-type Bounds = {
-  xMin: number;
-  xMax: number;
-  yMin: number;
-  yMax: number;
-};
 
 const FONT_OPTIONS = [
   { label: "Computer Modern", value: MATPLOTLIB_FONT_FAMILY },
@@ -126,100 +128,8 @@ function getDocumentColorMode(): "light" | "dark" {
   return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
 }
 
-function getAxisTitleText(title: unknown) {
-  if (!title || typeof title !== "object") {
-    return "";
-  }
-
-  const text = (title as { text?: string | string[] }).text;
-
-  if (typeof text === "string") {
-    return text;
-  }
-
-  if (Array.isArray(text)) {
-    return text.join(" ");
-  }
-
-  return "";
-}
-
-function getFontSize(fontSource: unknown) {
-  if (!fontSource || typeof fontSource !== "object") {
-    return undefined;
-  }
-
-  const size = (fontSource as { size?: number }).size;
-  return typeof size === "number" ? size : undefined;
-}
-
-function getAxisTitleFontSize(title: unknown) {
-  if (!title || typeof title !== "object") {
-    return undefined;
-  }
-
-  return getFontSize((title as { font?: unknown }).font);
-}
-
-function getChartTitleText(title: unknown) {
-  if (!title || typeof title !== "object") {
-    return "";
-  }
-
-  const text = (title as { text?: string | string[] }).text;
-
-  if (typeof text === "string") {
-    return text;
-  }
-
-  if (Array.isArray(text)) {
-    return text.join(" ");
-  }
-
-  return "";
-}
-
-function getChartTitleFontSize(title: unknown) {
-  if (!title || typeof title !== "object") {
-    return undefined;
-  }
-
-  return getFontSize((title as { font?: unknown }).font);
-}
-
-function getFontFamily(fontSource: unknown) {
-  if (!fontSource || typeof fontSource !== "object") {
-    return undefined;
-  }
-
-  const family = (fontSource as { family?: string }).family;
-  return typeof family === "string" ? family : undefined;
-}
-
-function getTickFontSize(ticks: unknown) {
-  if (!ticks || typeof ticks !== "object") {
-    return undefined;
-  }
-
-  return getFontSize((ticks as { font?: unknown }).font);
-}
-
 function getTickMultiplierFromExponent(exponent: number) {
   return 10 ** exponent;
-}
-
-function getDefaultTitleFromSourceLabel(sourceLabel?: string) {
-  if (!sourceLabel) {
-    return "";
-  }
-
-  const normalized = sourceLabel.replace(/\\/g, "/").split("/").pop()?.trim() ?? "";
-
-  if (!normalized) {
-    return "";
-  }
-
-  return normalized.replace(/\.[^.]+$/, "");
 }
 
 function parseIntegerDraft(
@@ -245,163 +155,11 @@ function parseIntegerDraft(
   return parsed;
 }
 
-/**
- * The fewest decimals that show every tick exactly, as matplotlib's default
- * formatter does: 0, 5, 10 rather than 0.00, 5.00, 10.00.
- */
-function autoDecimalPlaces(values: number[]) {
-  let places = 0;
-  for (const value of values) {
-    while (places < 8 && Math.abs(Number(value.toFixed(places)) - value) > Math.abs(value) * 1e-9 + 1e-12) {
-      places += 1;
-    }
-  }
-  return places;
-}
-
-function formatTickValue(
-  value: unknown,
-  multiplier: number,
-  /** null picks them from the ticks on the axis */
-  decimalPlaces: number | null,
-  ticks: { value: number }[] = [],
-) {
-  const numeric = typeof value === "number" ? value : Number(value);
-
-  if (!Number.isFinite(numeric)) {
-    return String(value);
-  }
-
-  const scaled = numeric * multiplier;
-
-  if (decimalPlaces === null) {
-    const absolute = Math.abs(scaled);
-    // only the ticks written out in full decide the decimals, zero with them
-    const written = ticks
-      .map((tick) => tick.value * multiplier)
-      .filter((tickValue) => Math.abs(tickValue) >= 1e-3 && Math.abs(tickValue) < 1e5);
-    if (scaled === 0 && written.length === 0) return "0";
-    if (scaled !== 0 && (absolute >= 1e5 || absolute < 1e-3)) {
-      return scaled.toExponential().replace(/-/g, "\u2212");
-    }
-    decimalPlaces = autoDecimalPlaces(written);
-  }
-
-  if (scaled === 0) {
-    return decimalPlaces > 0 ? (0).toFixed(decimalPlaces) : "0";
-  }
-
-  const absolute = Math.abs(scaled);
-
-  // a true minus sign, as matplotlib draws it, not a hyphen
-  if (absolute >= 1e5 || absolute < 1e-3) {
-    return scaled.toExponential(decimalPlaces).replace(/-/g, "\u2212");
-  }
-
-  return scaled
-    .toLocaleString(undefined, {
-      minimumFractionDigits: decimalPlaces,
-      maximumFractionDigits: decimalPlaces,
-    })
-    .replace(/-/g, "\u2212");
-}
-
-/**
- * One axis in the chosen style. In both, the title is laid out as plain
- * text but painted by the frame plugin, which draws its ^ / _ markup.
- *
- * matplotlib: no grid and no Chart.js border or tick marks (the plugin
- * draws the spines and inward ticks), and labels close to the spine.
- * Chart.js: its own border, outward ticks and grid, in `classic.grid`.
- */
-function axisStyle(
-  style: ChartStyle,
-  scale: NonNullable<ChartOptions<"scatter">["scales"]>[string],
-  label: string,
-  classic: ClassicColors,
-  factor = 1,
-) {
-  if (style === "chartjs") {
-    return {
-      grid: { ...scale?.grid, color: classic.grid },
-      border: { ...scale?.border },
-      ticks: {},
-      title: { color: "transparent", text: plainLabel(label) },
-    };
-  }
-  return {
-    grid: { ...scale?.grid, display: false },
-    border: { ...scale?.border, display: false },
-    ticks: { padding: 6 * factor },
-    title: {
-      color: "transparent",
-      text: plainLabel(label),
-      padding: { top: 4 * factor, bottom: 4 * factor },
-    },
-  };
-}
-
-function scaledLegendBoxes(
-  labels: { boxWidth?: number; boxHeight?: number } | undefined,
-  factor: number,
-) {
-  return {
-    ...(labels?.boxWidth !== undefined ? { boxWidth: labels.boxWidth * factor } : {}),
-    ...(labels?.boxHeight !== undefined ? { boxHeight: labels.boxHeight * factor } : {}),
-  };
-}
-
-/** Tight margins round the figure, as matplotlib's constrained layout leaves. */
-function scaleLayoutPadding(factor: number) {
-  return { top: 6 * factor, right: 14 * factor, bottom: 4 * factor, left: 4 * factor };
-}
-
-function cloneScatterData(
-  data: ChartData<"scatter">,
-  scaleFactor = 1,
-): ChartData<"scatter"> {
-  return {
-    ...data,
-    datasets: data.datasets.map((dataset) => ({
-      ...dataset,
-      data: (dataset.data ?? []).map((entry) =>
-        typeof entry === "object" && entry !== null ? { ...entry } : entry,
-      ),
-      ...(typeof dataset.pointRadius === "number"
-        ? { pointRadius: dataset.pointRadius * scaleFactor }
-        : null),
-      ...(typeof dataset.pointHoverRadius === "number"
-        ? { pointHoverRadius: dataset.pointHoverRadius * scaleFactor }
-        : null),
-      ...(typeof dataset.borderWidth === "number"
-        ? { borderWidth: dataset.borderWidth * scaleFactor }
-        : null),
-      ...(typeof (dataset as unknown as { radius?: number }).radius ===
-      "number"
-        ? {
-            radius:
-              (dataset as unknown as { radius: number }).radius *
-              scaleFactor,
-          }
-        : null),
-    })),
-  };
-}
-
-function extractFinitePoints(data: ChartData<"scatter">) {
+function extractFinitePoints(series: Series[]) {
   const points: Array<{ x: number; y: number }> = [];
 
-  for (const dataset of data.datasets) {
-    for (const entry of dataset.data ?? []) {
-      if (
-        typeof entry !== "object" ||
-        entry === null ||
-        !("x" in entry) ||
-        !("y" in entry)
-      ) {
-        continue;
-      }
-
+  for (const { points: entries } of series) {
+    for (const entry of entries) {
       const x = Number(entry.x);
       const y = Number(entry.y);
 
@@ -416,8 +174,8 @@ function extractFinitePoints(data: ChartData<"scatter">) {
   return points;
 }
 
-function buildBaseBounds(data: ChartData<"scatter">): Bounds {
-  const points = extractFinitePoints(data);
+function buildBaseBounds(series: Series[]): Bounds {
+  const points = extractFinitePoints(series);
 
   if (points.length === 0) {
     return { xMin: -1, xMax: 1, yMin: -1, yMax: 1 };
@@ -446,28 +204,20 @@ function buildBaseBounds(data: ChartData<"scatter">): Bounds {
   };
 }
 
-function buildDataSignature(data: ChartData<"scatter">) {
-  const points = extractFinitePoints(data);
-  const baseBounds = buildBaseBounds(data);
-  const datasetSummary = data.datasets
-    .map((dataset, index) => {
-      const entries = dataset.data ?? [];
+function buildDataSignature(series: Series[]) {
+  const points = extractFinitePoints(series);
+  const baseBounds = buildBaseBounds(series);
+  const datasetSummary = series
+    .map(({ label, points: entries }, index) => {
       const first = entries[0];
       const last = entries[entries.length - 1];
 
       return [
         index,
-        dataset.label ?? "",
+        label,
         entries.length,
-        typeof first === "object" &&
-        first !== null &&
-        "x" in first &&
-        "y" in first
-          ? `${Number(first.x)}:${Number(first.y)}`
-          : "",
-        typeof last === "object" && last !== null && "x" in last && "y" in last
-          ? `${Number(last.x)}:${Number(last.y)}`
-          : "",
+        first ? `${Number(first.x)}:${Number(first.y)}` : "",
+        last ? `${Number(last.x)}:${Number(last.y)}` : "",
       ].join("|");
     })
     .join("||");
@@ -557,390 +307,33 @@ function getCanvasPoint(
   };
 }
 
-function ResetZoomIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle
-        cx="10"
-        cy="10"
-        r="5.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M13 13 17 20"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="3"
-      />
-      <path
-        d="M5 5 20 20"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="4"
-      />
-      <path
-        d="M20 5 5 20"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="4"
-      />
-    </svg>
-  );
-}
-
-function ZoomInIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M10 6.8v6.4M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function ZoomOutIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function ScrollIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M12 4v16"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m8.5 7 3.5-3 3.5 3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m8.5 17 3.5 3 3.5-3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function ThemeIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M15.2 3.2a8.8 8.8 0 1 0 5.6 15.7 7.7 7.7 0 0 1-5.6-15.7Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
-
-function JoinDotsIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle
-        cx="6.5"
-        cy="16.5"
-        r="2.1"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <circle
-        cx="17.5"
-        cy="7.5"
-        r="2.1"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M8.5 15.2c2.3-0.1 3.9-1 5-2.2 1-1 1.6-2.1 2-3.3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function PointSizeIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle
-        cx="12"
-        cy="12"
-        r="3.1"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M14.6 9.4 18.6 5.4"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m16.2 5.4 2.4 0v2.4"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M9.4 14.6 5.4 18.6"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M7.8 18.6H5.4v-2.4"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function AxisLabelsIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <text
-        x="5"
-        y="16.2"
-        fill="currentColor"
-        fontFamily="Cambria Math, STIX Two Math, Times New Roman, serif"
-        fontSize="12.5"
-        fontStyle="italic"
-        fontWeight="700"
-      >
-        xy
-      </text>
-    </svg>
-  );
-}
-
-function LegendIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="6.5" cy="7" r="1.5" fill="currentColor" />
-      <path
-        d="M10 7h8"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <circle cx="6.5" cy="12" r="1.5" fill="currentColor" />
-      <path
-        d="M10 12h8"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <circle cx="6.5" cy="17" r="1.5" fill="currentColor" />
-      <path
-        d="M10 17h8"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-function StyleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <rect
-        x="4.5"
-        y="4.5"
-        width="15"
-        height="15"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M9 19.5v-2.6M14 19.5v-2.6M4.5 10h2.6M4.5 15h2.6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M7.5 15.5c2.2-5 4.5-7.5 9-8.5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.6"
-      />
-    </svg>
-  );
-}
-
-function FontIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <text
-        x="5.3"
-        y="17"
-        fill="currentColor"
-        fontFamily="Times New Roman, Times, serif"
-        fontSize="14"
-        fontWeight="700"
-      >
-        A
-      </text>
-    </svg>
-  );
-}
-
-function TitleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M5.5 5.5h13v13h-13z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <rect x="8" y="7.4" width="8" height="3.3" rx="0.8" fill="currentColor" />
-    </svg>
-  );
-}
-
-function TickAxesIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M5 18.5h14"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.9"
-      />
-      <path
-        d="M5.5 19V5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.9"
-      />
-      <path
-        d="M9 18.5v3M14 18.5v3M19 18.5v3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.9"
-      />
-      <path
-        d="M2.5 15h3M1.2 10h4.3M2.5 5h3"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.9"
-      />
-    </svg>
-  );
-}
-
-function CustomizeIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M4 7h9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <circle cx="15.5" cy="7" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M4 12h4.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <circle cx="11" cy="12" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M13.5 12H20" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M4 17h9" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <circle cx="15.5" cy="17" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M17.7 7H20M17.7 17H20" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M6 19h12"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M12 5v10"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m8.5 11.5 3.5 3.5 3.5-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M7 19v-3.5h10V19"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
-
-
-type XTickFormat = (value: number, ticks: { value: number }[]) => string;
+export type InteractiveScatterChartProps = {
+  series: Series[];
+  /** the axis labels it starts with; the toolbar can change them */
+  xLabel: string;
+  yLabel: string;
+  /** omitted: no legend */
+  legend?: LegendMarker;
+  /** the title it starts with; omitted, none */
+  title?: string;
+  /** writes the x axis as something other than plain numbers (a Clock column) */
+  xFormat?: XFormat;
+  /** the point size it starts with */
+  pointSize?: number;
+  /** false: never animate, for a chart redrawn as a slider moves or too big to animate */
+  animate?: boolean;
+};
 
 function InteractiveScatterChartInner({
-  data,
-  options,
-  sourceLabel,
-  formatXTick,
-}: {
-  data: ChartData<"scatter">;
-  options: ChartOptions<"scatter">;
-  sourceLabel?: string;
-  /** writes the x ticks in place of the number format (a clock axis) */
-  formatXTick?: XTickFormat;
-}) {
+  series,
+  xLabel: initialXAxisLabel,
+  yLabel: initialYAxisLabel,
+  legend,
+  title: initialChartTitle = "",
+  xFormat,
+  pointSize: initialPointSize = 3,
+  animate = true,
+}: InteractiveScatterChartProps) {
   const chartRef = useRef<ChartJS<"scatter"> | null>(null);
   const [dragSelection, setDragSelection] = useState<DragSelection | null>(
     null,
@@ -982,72 +375,22 @@ function InteractiveScatterChartInner({
       cancelled = true;
     };
   }, []);
-  const [joinedPoints, setJoinedPoints] = useState(() =>
-    data.datasets.some((dataset) => dataset.showLine),
-  );
-  // a plotter's font, if it sets one; otherwise the style's
-  const plotterFontFamily =
-    getFontFamily(options.font) ??
-    getFontFamily(
-      options.plugins?.title && typeof options.plugins.title === "object"
-        ? options.plugins.title.font
-        : undefined,
-    ) ??
-    getFontFamily(
-      options.plugins?.legend && typeof options.plugins.legend === "object"
-        ? options.plugins.legend.labels?.font
-        : undefined,
-    ) ??
-    getFontFamily(options.scales?.x?.ticks?.font) ??
-    getFontFamily(options.scales?.y?.ticks?.font) ??
-    getFontFamily(options.scales?.x?.title?.font) ??
-    getFontFamily(options.scales?.y?.title?.font);
+  const [joinedPoints, setJoinedPoints] = useState(true);
   const [fontControlsOpen, setFontControlsOpen] = useState(false);
   // a font picked here wins over the style's, in either style
-  const [pickedFontFamily, setPickedFontFamily] = useState(plotterFontFamily);
+  const [pickedFontFamily, setPickedFontFamily] = useState<string | undefined>(undefined);
   const fontFamily = pickedFontFamily ?? CHART_STYLE_FONTS[chartStyle];
   const [pointSizeControlsOpen, setPointSizeControlsOpen] = useState(false);
-  const [pointSize, setPointSize] = useState(() => {
-    const firstDataset = data.datasets[0];
-    const datasetRadius =
-      typeof firstDataset?.pointRadius === "number"
-        ? firstDataset.pointRadius
-        : undefined;
-    const optionRadius =
-      typeof options.elements?.point?.radius === "number"
-        ? options.elements.point.radius
-        : undefined;
-
-    return datasetRadius ?? optionRadius ?? 3;
-  });
-  const initialChartTitle =
-    getChartTitleText(options.plugins?.title) ||
-    getDefaultTitleFromSourceLabel(sourceLabel);
-  const initialChartTitleFontSize =
-    getChartTitleFontSize(options.plugins?.title) ?? 18;
+  const [pointSize, setPointSize] = useState(initialPointSize);
   const [titleControlsOpen, setTitleControlsOpen] = useState(false);
   const [chartTitle, setChartTitle] = useState(initialChartTitle);
-  const [chartTitleFontSize, setChartTitleFontSize] = useState(
-    initialChartTitleFontSize,
-  );
-  const initialXAxisLabel = getAxisTitleText(options.scales?.x?.title);
-  const initialYAxisLabel = getAxisTitleText(options.scales?.y?.title);
-  const initialAxisLabelFontSize =
-    getAxisTitleFontSize(options.scales?.x?.title) ??
-    getAxisTitleFontSize(options.scales?.y?.title) ??
-    14;
+  const [chartTitleFontSize, setChartTitleFontSize] = useState(18);
   const [axisControlsOpen, setAxisControlsOpen] = useState(false);
   const [xAxisLabel, setXAxisLabel] = useState(initialXAxisLabel);
   const [yAxisLabel, setYAxisLabel] = useState(initialYAxisLabel);
-  const [axisLabelFontSize, setAxisLabelFontSize] = useState(
-    initialAxisLabelFontSize,
-  );
-  const initialLegendFontSize =
-    getFontSize(options.plugins?.legend?.labels?.font) ?? 12;
+  const [axisLabelFontSize, setAxisLabelFontSize] = useState(14);
   const [legendControlsOpen, setLegendControlsOpen] = useState(false);
-  const [legendFontSize, setLegendFontSize] = useState(initialLegendFontSize);
-  const initialXTickFontSize = getTickFontSize(options.scales?.x?.ticks) ?? 12;
-  const initialYTickFontSize = getTickFontSize(options.scales?.y?.ticks) ?? 12;
+  const [legendFontSize, setLegendFontSize] = useState(12);
   const [tickControlsOpen, setTickControlsOpen] = useState(false);
   const [xTickMultiplier, setXTickMultiplier] = useState(1);
   const [yTickMultiplier, setYTickMultiplier] = useState(1);
@@ -1060,8 +403,8 @@ function InteractiveScatterChartInner({
   const [yTickDecimalPlaces, setYTickDecimalPlaces] = useState<number | null>(null);
   const [xTickDecimalPlacesDraft, setXTickDecimalPlacesDraft] = useState("");
   const [yTickDecimalPlacesDraft, setYTickDecimalPlacesDraft] = useState("");
-  const [xTickFontSize, setXTickFontSize] = useState(initialXTickFontSize);
-  const [yTickFontSize, setYTickFontSize] = useState(initialYTickFontSize);
+  const [xTickFontSize, setXTickFontSize] = useState(12);
+  const [yTickFontSize, setYTickFontSize] = useState(12);
   const [saveControlsOpen, setSaveControlsOpen] = useState(false);
   const [saveHighQuality, setSaveHighQuality] = useState(true);
   const [saveWhiteBackground, setSaveWhiteBackground] = useState(true);
@@ -1073,7 +416,7 @@ function InteractiveScatterChartInner({
     axisControlsOpen ||
     legendControlsOpen ||
     tickControlsOpen;
-  const baseBounds = useMemo(() => buildBaseBounds(data), [data]);
+  const baseBounds = useMemo(() => buildBaseBounds(series), [series]);
   const [viewport, setViewport] = useState<Bounds>(baseBounds);
 
   function zoomY(factor: number, anchor?: number) {
@@ -1412,133 +755,7 @@ function InteractiveScatterChartInner({
 
   /** The chart as an export draws it, every pixel measure times `scaleFactor`. */
   function buildExportConfig(scaleFactor: number): ChartConfiguration<"scatter"> {
-    // an export is always the light, paper-ready figure, whatever the screen shows
-    const exportTextColor = isMatplotlib ? LIGHT_SKIN.text : CLASSIC_EXPORT.text;
-    const exportFrame: MatplotlibFrameOptions = {
-      colors: isMatplotlib ? LIGHT_SKIN : { text: CLASSIC_EXPORT.text, frame: CLASSIC_EXPORT.grid },
-      labels: { x: xAxisLabel, y: yAxisLabel },
-      scale: scaleFactor,
-      frame: isMatplotlib,
-    };
-    const exportXSkin = axisStyle(
-      chartStyle,
-      mergedOptions.scales?.x,
-      xAxisLabel,
-      CLASSIC_EXPORT,
-      scaleFactor,
-    );
-    const exportYSkin = axisStyle(
-      chartStyle,
-      mergedOptions.scales?.y,
-      yAxisLabel,
-      CLASSIC_EXPORT,
-      scaleFactor,
-    );
-    const exportData = cloneScatterData(chartData, scaleFactor);
-    const exportOptions: ChartOptions<"scatter"> = {
-      ...mergedOptions,
-      responsive: false,
-      animation: false,
-      color: exportTextColor,
-      layout: isMatplotlib ? { padding: scaleLayoutPadding(scaleFactor) } : mergedOptions.layout,
-      elements: {
-        ...mergedOptions.elements,
-        point: {
-          ...mergedOptions.elements?.point,
-          hoverRadius:
-            Math.max(pointSize + 1.5, pointSize * 1.5) * scaleFactor,
-          radius: pointSize * scaleFactor,
-        },
-      },
-      plugins: {
-        ...mergedOptions.plugins,
-        legend: mergedOptions.plugins?.legend
-          ? {
-              ...mergedOptions.plugins.legend,
-              labels: {
-                ...mergedOptions.plugins.legend.labels,
-                // swatch sizes scale with the text, or a point-style dot swamps its label
-                ...scaledLegendBoxes(mergedOptions.plugins.legend.labels, scaleFactor),
-                color: exportTextColor,
-                font: {
-                  ...mergedOptions.plugins.legend.labels?.font,
-                  family: fontFamily,
-                  size: legendFontSize * scaleFactor,
-                },
-              },
-            }
-          : mergedOptions.plugins?.legend,
-        title: mergedOptions.plugins?.title
-          ? {
-              ...mergedOptions.plugins.title,
-              color: exportTextColor,
-              font: {
-                ...mergedOptions.plugins.title.font,
-                family: fontFamily,
-                size: chartTitleFontSize * scaleFactor,
-              },
-            }
-          : mergedOptions.plugins?.title,
-        tooltip: mergedOptions.plugins?.tooltip
-          ? {
-              ...mergedOptions.plugins.tooltip,
-              bodyColor: exportTextColor,
-              titleColor: exportTextColor,
-            }
-          : mergedOptions.plugins?.tooltip,
-        matplotlibFrame: exportFrame,
-      },
-      scales: {
-        ...mergedOptions.scales,
-        x: {
-          ...mergedOptions.scales?.x,
-          ...exportXSkin,
-          ticks: {
-            ...mergedOptions.scales?.x?.ticks,
-            ...exportXSkin.ticks,
-            color: exportTextColor,
-            font: {
-              ...mergedOptions.scales?.x?.ticks?.font,
-              family: fontFamily,
-              size: xTickFontSize * scaleFactor,
-            },
-          },
-          title: {
-            ...mergedOptions.scales?.x?.title,
-            ...exportXSkin.title,
-            font: {
-              ...mergedOptions.scales?.x?.title?.font,
-              family: fontFamily,
-              size: axisLabelFontSize * scaleFactor,
-            },
-          },
-        },
-        y: {
-          ...mergedOptions.scales?.y,
-          ...exportYSkin,
-          ticks: {
-            ...mergedOptions.scales?.y?.ticks,
-            ...exportYSkin.ticks,
-            color: exportTextColor,
-            font: {
-              ...mergedOptions.scales?.y?.ticks?.font,
-              family: fontFamily,
-              size: yTickFontSize * scaleFactor,
-            },
-          },
-          title: {
-            ...mergedOptions.scales?.y?.title,
-            ...exportYSkin.title,
-            font: {
-              ...mergedOptions.scales?.y?.title?.font,
-              family: fontFamily,
-              size: axisLabelFontSize * scaleFactor,
-            },
-          },
-        },
-      },
-    };
-
+    const target: FigureTarget = { kind: "export", scale: scaleFactor };
     const exportPlugins = saveWhiteBackground
       ? [
           matplotlibFrame,
@@ -1556,7 +773,12 @@ function InteractiveScatterChartInner({
         ]
       : [matplotlibFrame];
 
-    return { type: "scatter", data: exportData, options: exportOptions, plugins: exportPlugins };
+    return {
+      type: "scatter",
+      data: figureData(series, figureState, target),
+      options: figureOptions(figureState, target),
+      plugins: exportPlugins,
+    };
   }
 
   function handleSave() {
@@ -1624,172 +846,30 @@ function InteractiveScatterChartInner({
           }
         : null;
 
-  const isDarkMode = colorMode === "dark";
-  const skin: SkinColors = isDarkMode ? DARK_SKIN : LIGHT_SKIN;
-  const classic = isDarkMode ? CLASSIC_DARK : CLASSIC_LIGHT;
-  const chartTextColor = isMatplotlib ? skin.text : classic.text;
-  const xSkin = axisStyle(chartStyle, options.scales?.x, xAxisLabel, classic);
-  const ySkin = axisStyle(chartStyle, options.scales?.y, yAxisLabel, classic);
-  const chartData = useMemo<ChartData<"scatter">>(() => {
-    const palette = CHART_STYLE_PALETTES[chartStyle];
-    return {
-      ...data,
-      datasets: data.datasets.map((dataset, index) => ({
-        ...dataset,
-        // the style's colour cycle, by series, whatever the plotter passed
-        borderColor: palette[index % palette.length],
-        backgroundColor: palette[index % palette.length],
-        // matplotlib's lines.linewidth
-        borderWidth: chartStyle === "matplotlib" ? 1.5 : dataset.borderWidth,
-        pointHoverRadius: Math.max(pointSize + 1.5, pointSize * 1.5),
-        pointRadius: pointSize,
-        radius: pointSize,
-        showLine: joinedPoints,
-      })),
-    };
-  }, [chartStyle, data, joinedPoints, pointSize]);
-  const mergedOptions: ChartOptions<"scatter"> = {
-    ...options,
-    animation:
-      dragSelection?.axis === "pan-y" || dragSelection?.axis === "pan-x"
-        ? false
-        : options.animation,
-    color: chartTextColor,
-    font: {
-      ...options.font,
-      family: fontFamily,
-    },
-    layout: isMatplotlib ? { padding: scaleLayoutPadding(1) } : options.layout,
-    plugins: {
-      ...options.plugins,
-      matplotlibFrame: {
-        colors: isMatplotlib ? skin : { text: classic.text, frame: classic.grid },
-        labels: { x: xAxisLabel, y: yAxisLabel },
-        frame: isMatplotlib,
-      },
-      legend: options.plugins?.legend
-        ? {
-            ...options.plugins.legend,
-            labels: {
-              ...options.plugins.legend.labels,
-              ...(isMatplotlib ? { usePointStyle: true, boxHeight: 5 } : {}),
-              color: chartTextColor,
-              font: {
-                ...options.plugins.legend.labels?.font,
-                family: fontFamily,
-                size: legendFontSize,
-              },
-            },
-          }
-        : options.plugins?.legend,
-      title: {
-        ...options.plugins?.title,
-        color: chartTextColor,
-        display: Boolean(chartTitle),
-        font: {
-          ...options.plugins?.title?.font,
-          family: fontFamily,
-          size: chartTitleFontSize,
-          // matplotlib titles are set in the regular weight, Chart.js's in bold
-          weight: isMatplotlib ? "normal" : "bold",
-        },
-        text: chartTitle,
-      },
-      tooltip: {
-        ...options.plugins?.tooltip,
-        backgroundColor: isDarkMode
-          ? "rgba(15, 19, 28, 0.96)"
-          : "rgba(255, 251, 245, 0.96)",
-        bodyColor: chartTextColor,
-        bodyFont: {
-          ...options.plugins?.tooltip?.bodyFont,
-          family: fontFamily,
-        },
-        borderColor: isDarkMode
-          ? "rgba(148, 163, 184, 0.35)"
-          : "rgba(91, 102, 117, 0.22)",
-        borderWidth: 1,
-        titleColor: chartTextColor,
-        titleFont: {
-          ...options.plugins?.tooltip?.titleFont,
-          family: fontFamily,
-        },
-      },
-    },
-    elements: {
-      ...options.elements,
-      point: {
-        ...options.elements?.point,
-        hoverRadius: Math.max(pointSize + 1.5, pointSize * 1.5),
-        radius: pointSize,
-      },
-    },
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      ...options.scales,
-      x: {
-        ...options.scales?.x,
-        ...xSkin,
-        max: viewport.xMax,
-        min: viewport.xMin,
-        ticks: {
-          ...options.scales?.x?.ticks,
-          ...xSkin.ticks,
-          callback: (value, _index, ticks) =>
-            formatXTick
-              ? formatXTick(Number(value), ticks)
-              : formatTickValue(value, xTickMultiplier, xTickDecimalPlaces, ticks),
-          color: chartTextColor,
-          font: {
-            ...options.scales?.x?.ticks?.font,
-            family: fontFamily,
-            size: xTickFontSize,
-          },
-          includeBounds: false,
-        },
-        title: {
-          ...options.scales?.x?.title,
-          ...xSkin.title,
-          display: Boolean(xAxisLabel),
-          font: {
-            ...options.scales?.x?.title?.font,
-            family: fontFamily,
-            size: axisLabelFontSize,
-          },
-        },
-      },
-      y: {
-        ...options.scales?.y,
-        ...ySkin,
-        max: viewport.yMax,
-        min: viewport.yMin,
-        ticks: {
-          ...options.scales?.y?.ticks,
-          ...ySkin.ticks,
-          callback: (value, _index, ticks) =>
-            formatTickValue(value, yTickMultiplier, yTickDecimalPlaces, ticks),
-          color: chartTextColor,
-          font: {
-            ...options.scales?.y?.ticks?.font,
-            family: fontFamily,
-            size: yTickFontSize,
-          },
-          includeBounds: false,
-        },
-        title: {
-          ...options.scales?.y?.title,
-          ...ySkin.title,
-          display: Boolean(yAxisLabel),
-          font: {
-            ...options.scales?.y?.title?.font,
-            family: fontFamily,
-            size: axisLabelFontSize,
-          },
-        },
-      },
-    },
+  const figureState: FigureState = {
+    style: chartStyle,
+    fontFamily,
+    pointSize,
+    joinedPoints,
+    title: chartTitle,
+    titleFontSize: chartTitleFontSize,
+    xLabel: xAxisLabel,
+    yLabel: yAxisLabel,
+    axisLabelFontSize,
+    legend: legend ?? null,
+    legendFontSize,
+    xTicks: { multiplier: xTickMultiplier, decimalPlaces: xTickDecimalPlaces, fontSize: xTickFontSize },
+    yTicks: { multiplier: yTickMultiplier, decimalPlaces: yTickDecimalPlaces, fontSize: yTickFontSize },
+    xFormat,
+    viewport,
+    // panning redraws on every move: animating each would lag behind the pointer
+    animate: animate && dragSelection?.axis !== "pan-y" && dragSelection?.axis !== "pan-x",
   };
+  const chartData = useMemo(
+    () => figureData(series, { style: chartStyle, pointSize, joinedPoints }, { kind: "screen" }),
+    [chartStyle, series, joinedPoints, pointSize],
+  );
+  const chartOptions = figureOptions(figureState, { kind: "screen", theme: colorMode });
 
   return (
     <div
@@ -1805,7 +885,7 @@ function InteractiveScatterChartInner({
       >
         <Scatter
           data={chartData}
-          options={mergedOptions}
+          options={chartOptions}
           plugins={[matplotlibFrame]}
           ref={chartRef}
         />
@@ -2319,13 +1399,8 @@ function InteractiveScatterChartInner({
   );
 }
 
-export default function InteractiveScatterChart(props: {
-  data: ChartData<"scatter">;
-  options: ChartOptions<"scatter">;
-  sourceLabel?: string;
-  formatXTick?: XTickFormat;
-}) {
-  const chartKey = useMemo(() => buildDataSignature(props.data), [props.data]);
+export default function InteractiveScatterChart(props: InteractiveScatterChartProps) {
+  const chartKey = useMemo(() => buildDataSignature(props.series), [props.series]);
 
   return <InteractiveScatterChartInner key={chartKey} {...props} />;
 }

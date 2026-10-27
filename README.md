@@ -30,7 +30,7 @@ Our oscilloscope data are recorded primarily in `.csv`, and our spectrometer dat
 
 `tests/ui/` holds browser tests written with [Playwright](https://playwright.dev). They build the site, open the homepage, the plotters, the Tabletop and a 404 page in Chromium, once in light and once in dark, and check two things:
 
-- **behaviour**: the page loads, each plotter plots its sample (the status line shows the right row count), and the Time CSV Plotter plots an uploaded file;
+- **behaviour**: the page loads, each plotter plots its sample (the status line shows the right row count), the Time CSV Plotter plots an uploaded file, a FITS plotter says when its sample can't be loaded, typing in the CSV Plotter keeps its column filter, and a file held over a file picker keeps it outlined;
 - **looks**: a screenshot of each page matches its saved copy in `tests/ui/*-snapshots/`.
 
 CI runs them on every pull request, in the same `ci` check as lint and the unit tests.
