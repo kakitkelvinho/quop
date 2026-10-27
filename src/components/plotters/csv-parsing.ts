@@ -1,4 +1,4 @@
-// CSV parsing shared by the CSV, Time CSV, Array and CSV+FITS plotters.
+// The CSV reader shared by the CSV, Time CSV, Array and CSV+FITS plotters.
 // Kept free of React/Chart.js so it can be tested with node:test.
 
 export type DataPoint = {
@@ -6,25 +6,15 @@ export type DataPoint = {
   y: number;
 };
 
-export type ChannelSeries = {
-  label: string;
-  points: DataPoint[];
-};
-
-export type ParsedCsv = {
-  channelLabels: string[];
-  error: string | null;
-  rowCount: number;
-  skippedRowCount: number;
-  series: ChannelSeries[];
-  xLabel: string;
-  extraInfo: string;
-};
-
 // Which way a CSV's series run: down its columns, or along its rows.
 export type CsvLayout = "columns" | "rows";
 
-export type ParsedGenericCsv = {
+/**
+ * A CSV as every plotter reads it: its numeric columns, a row of numbers
+ * per record, and what was left out. The plotters pick their series from
+ * it with the selectors in csv-series.ts.
+ */
+export type CsvTable = {
   error: string | null;
   headers: string[];
   /**
@@ -35,20 +25,16 @@ export type ParsedGenericCsv = {
   layout: CsvLayout;
   rowCount: number;
   skippedRowCount: number;
+  // a blank or unreadable cell is NaN, a gap in its own column only
   rows: number[][];
+  /**
+   * Read by columns, the file's line number of each row, so an error can
+   * name the line the user sees. Read by rows, empty.
+   */
+  rowLines: number[];
+  // Read by columns, the cells that held something other than a number.
+  unreadableCells: { row: number; column: number }[];
   extraInfo: string;
-};
-
-export type CsvDataset = {
-  label: string;
-  points: DataPoint[];
-};
-
-export type CsvParseResult = {
-  datasets: CsvDataset[];
-  error: string | null;
-  skippedRowCount: number;
-  sourceLabel: string;
 };
 
 // Instrument exports (Moku, oscilloscopes, spectrometers, ...) often prefix
@@ -106,13 +92,16 @@ function isCommentLine(line: string): boolean {
   return COMMENT_PREFIXES.some((prefix) => line.startsWith(prefix));
 }
 
+type NumberedLine = { text: string; number: number };
+
 // Splits a file into its non-blank lines, trimming spaces but not tabs, so a
 // tab-separated line keeps a leading or trailing empty cell in its place.
-function splitLines(csv: string): string[] {
+// Each keeps its line number in the file.
+function splitLines(csv: string): NumberedLine[] {
   return csv
     .split(/\r?\n/)
-    .map((line) => line.replace(/^ +| +$/g, ""))
-    .filter((line) => line.trim() !== "");
+    .map((line, index) => ({ text: line.replace(/^ +| +$/g, ""), number: index + 1 }))
+    .filter(({ text }) => text.trim() !== "");
 }
 
 const SEPARATOR_SAMPLE_LINES = 20;
@@ -165,12 +154,6 @@ function isFullyNumericRow(fields: string[]): boolean {
   );
 }
 
-function findTimeColumn(headers: string[]) {
-  return headers.findIndex((header) =>
-    /(^|[^a-z])time([^a-z]|$)/i.test(header),
-  );
-}
-
 // Splits a file into comment-stripped lines and finds where the numeric data
 // starts and which line above it is the header.
 // Strips any comment marker up front so a commented header row (e.g. a
@@ -178,11 +161,15 @@ function findTimeColumn(headers: string[]) {
 // one, and pre-computes each line's fields once. A column that is blank on
 // every line (a separator at the end of each line, as a logger writes it)
 // is dropped.
-function readLines(rawLines: string[]) {
-  const separator = detectSeparator(rawLines);
-  const fieldLines = rawLines.map((line) => {
+function readLines(rawLines: NumberedLine[]) {
+  const separator = detectSeparator(rawLines.map((line) => line.text));
+  const fieldLines = rawLines.map(({ text: line, number }) => {
     const text = stripCommentPrefix(line.trim());
-    return { text, fields: text ? parseCsvRow(stripCommentPrefix(line), separator) : [] };
+    return {
+      text,
+      number,
+      fields: text ? parseCsvRow(stripCommentPrefix(line), separator) : [],
+    };
   });
   const width = Math.max(0, ...fieldLines.map((line) => line.fields.length));
   const isEmptyColumn = Array.from({ length: width }, (_, column) =>
@@ -190,194 +177,12 @@ function readLines(rawLines: string[]) {
   );
   const hasEmptyColumn = isEmptyColumn.some(Boolean);
 
-  return fieldLines.map(({ text, fields: allFields }) => {
+  return fieldLines.map(({ text, number, fields: allFields }) => {
     const fields = hasEmptyColumn
       ? allFields.filter((_, column) => !isEmptyColumn[column])
       : allFields;
-    return { text, fields, isNumericRow: isFullyNumericRow(fields) };
+    return { text, number, fields, isNumericRow: isFullyNumericRow(fields) };
   });
-}
-
-function locateHeaderAndData(rawLines: string[]) {
-  const lines = readLines(rawLines);
-
-  const dataStartIndex = lines.findIndex((line) => line.isNumericRow);
-
-  if (dataStartIndex === -1) {
-    return { lines, dataStartIndex, headerIndex: -1, leadingInfo: [] };
-  }
-
-  // The header is the nearest line above the first data row whose column
-  // count matches the data - everything above that (instrument settings,
-  // acquisition notes, ...) is treated as metadata rather than plotted.
-  const dataColumnCount = lines[dataStartIndex].fields.length;
-  let headerIndex = -1;
-
-  for (let index = dataStartIndex - 1; index >= 0; index -= 1) {
-    const candidate = lines[index];
-
-    if (!candidate.isNumericRow && candidate.fields.length === dataColumnCount) {
-      headerIndex = index;
-      break;
-    }
-  }
-
-  const leadingInfo = lines
-    .slice(0, headerIndex === -1 ? dataStartIndex : headerIndex)
-    .map((line) => line.text)
-    .filter(Boolean);
-
-  return { lines, dataStartIndex, headerIndex, leadingInfo };
-}
-
-export function parseTimeSeriesCsv(csv: string): ParsedCsv {
-  const rawLines = splitLines(csv);
-
-  if (rawLines.length < 2) {
-    return {
-      channelLabels: [],
-      error: "Provide a header row and at least one data row.",
-      rowCount: 0,
-      skippedRowCount: 0,
-      series: [],
-      xLabel: "time",
-      extraInfo: "",
-    };
-  }
-
-  const { lines, dataStartIndex, headerIndex, leadingInfo } =
-    locateHeaderAndData(rawLines);
-
-  if (dataStartIndex === -1) {
-    return {
-      channelLabels: [],
-      error: "Couldn't find any numeric data rows in this file.",
-      rowCount: 0,
-      skippedRowCount: 0,
-      series: [],
-      xLabel: "time",
-      extraInfo: rawLines.map((line) => stripCommentPrefix(line)).join("\n"),
-    };
-  }
-
-  if (headerIndex === -1) {
-    return {
-      channelLabels: [],
-      error:
-        "Couldn't find a header row above the data with a matching number of columns.",
-      rowCount: 0,
-      skippedRowCount: 0,
-      series: [],
-      xLabel: "time",
-      extraInfo: leadingInfo.join("\n"),
-    };
-  }
-
-  const headers = lines[headerIndex].fields.map(
-    (header, index) => header || `column_${index + 1}`,
-  );
-
-  const timeIndex = findTimeColumn(headers);
-
-  if (timeIndex === -1) {
-    return {
-      channelLabels: [],
-      error: "CSV input must include a column named time.",
-      rowCount: 0,
-      skippedRowCount: 0,
-      series: [],
-      xLabel: "time",
-      extraInfo: leadingInfo.join("\n"),
-    };
-  }
-
-  const channelIndexes = headers
-    .map((label, index) => ({ index, label }))
-    .filter(({ index }) => index !== timeIndex);
-
-  if (channelIndexes.length === 0) {
-    return {
-      channelLabels: [],
-      error: "CSV input must include at least one channel column besides time.",
-      rowCount: 0,
-      skippedRowCount: 0,
-      series: [],
-      xLabel: headers[timeIndex],
-      extraInfo: leadingInfo.join("\n"),
-    };
-  }
-
-  const series = channelIndexes.map(({ label }) => ({
-    label,
-    points: [] as DataPoint[],
-  }));
-
-  let skippedRowCount = 0;
-  const trailingInfo: string[] = [];
-
-  for (let index = dataStartIndex; index < lines.length; index += 1) {
-    const row = lines[index];
-
-    if (row.fields.length !== headers.length) {
-      skippedRowCount += 1;
-      if (row.text) trailingInfo.push(row.text);
-      continue;
-    }
-
-    const timeValue = parseNumericCell(row.fields[timeIndex]);
-
-    if (!Number.isFinite(timeValue)) {
-      skippedRowCount += 1;
-      continue;
-    }
-
-    const rowValues: number[] = [];
-    let rowIsValid = true;
-
-    for (const { index: channelIndex } of channelIndexes) {
-      const value = parseNumericCell(row.fields[channelIndex]);
-
-      if (!Number.isFinite(value)) {
-        rowIsValid = false;
-        break;
-      }
-
-      rowValues.push(value);
-    }
-
-    if (!rowIsValid) {
-      skippedRowCount += 1;
-      continue;
-    }
-
-    channelIndexes.forEach((_channel, offset) => {
-      series[offset].points.push({ x: timeValue, y: rowValues[offset] });
-    });
-  }
-
-  const rowCount = series[0]?.points.length ?? 0;
-
-  if (rowCount === 0) {
-    return {
-      channelLabels: channelIndexes.map(({ label }) => label),
-      error: "No valid numeric data rows were found under the header row.",
-      rowCount: 0,
-      skippedRowCount,
-      series: [],
-      xLabel: headers[timeIndex],
-      extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
-    };
-  }
-
-  return {
-    channelLabels: channelIndexes.map(({ label }) => label),
-    error: null,
-    rowCount,
-    skippedRowCount,
-    series,
-    xLabel: headers[timeIndex],
-    extraInfo: [...leadingInfo, ...trailingInfo].join("\n"),
-  };
 }
 
 type CsvLine = ReturnType<typeof readLines>[number];
@@ -405,7 +210,7 @@ function isSteadyRun(cells: string[]): boolean {
 function parseWideLayout(
   lines: CsvLine[],
   steadyHeaderOnly = false,
-): ParsedGenericCsv | null {
+): CsvTable | null {
   const isNumericOrBlank = (cell: string) =>
     isBlankCell(cell) || Number.isFinite(parseNumericCell(cell));
 
@@ -494,6 +299,8 @@ function parseWideLayout(
       rowCount: rows.length,
       skippedRowCount,
       rows,
+      rowLines: [],
+      unreadableCells: [],
       extraInfo: [
         ...lines.slice(0, headerIndex).map((line) => line.text).filter(Boolean),
         "Wide layout: header values plotted as x, one series per row.",
@@ -641,17 +448,29 @@ function readColumnTable(lines: CsvLine[], readClocks: boolean) {
       .filter((column) => isClockColumn[column])
       .map((column) => [column, runClock(tableLines.map((line) => line.fields[column]))]),
   );
+  const rows = tableLines.map((line, row) =>
+    plotted.map(
+      (column) => clockValues.get(column)?.[row] ?? parseNumericCell(line.fields[column]),
+    ),
+  );
+  const unreadableCells: { row: number; column: number }[] = [];
+
+  rows.forEach((values, row) => {
+    values.forEach((value, column) => {
+      if (!Number.isFinite(value) && !isBlankCell(tableLines[row].fields[plotted[column]])) {
+        unreadableCells.push({ row, column });
+      }
+    });
+  });
 
   return {
     headers: plotted.map((column) => names[column]),
     clockColumns: plotted
       .map((column, index) => (isClockColumn[column] ? index : -1))
       .filter((index) => index !== -1),
-    rows: tableLines.map((line, row) =>
-      plotted.map(
-        (column) => clockValues.get(column)?.[row] ?? parseNumericCell(line.fields[column]),
-      ),
-    ),
+    rows,
+    rowLines: tableLines.map((line) => line.number),
+    unreadableCells,
     // a row's first word cell (a sample name, a timestamp) names it when
     // the table is read by rows
     rowLabels: tableLines.map((line) =>
@@ -668,13 +487,14 @@ function readColumnTable(lines: CsvLine[], readClocks: boolean) {
 }
 
 /**
- * Reads a numeric CSV into an x column and y columns. With `layout`
- * "columns" each column is a series, as in a spreadsheet; with "rows" each
- * row is. Left out, a file is read by columns unless it is a wide export
- * (a header of steadily rising or falling numbers, one row per spectrum),
- * which is read by rows.
+ * The one CSV reader every plotter uses. It finds the header and the data
+ * the same way for every file and reads it into a table of numbers. With
+ * `layout` "columns" each column is a series, as in a spreadsheet; with
+ * "rows" each row is. Left out, a file is read by columns unless it is a
+ * wide export (a header of steadily rising or falling numbers, one row per
+ * spectrum), which is read by rows.
  */
-export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericCsv {
+export function readCsvTable(csv: string, layout?: CsvLayout): CsvTable {
   const rawLines = splitLines(csv);
 
   if (rawLines.length < 2) {
@@ -686,6 +506,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
       rowCount: 0,
       skippedRowCount: 0,
       rows: [],
+      rowLines: [],
+      unreadableCells: [],
       extraInfo: "",
     };
   }
@@ -715,7 +537,9 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
       rowCount: 0,
       skippedRowCount: 0,
       rows: [],
-      extraInfo: rawLines.map((line) => stripCommentPrefix(line)).join("\n"),
+      rowLines: [],
+      unreadableCells: [],
+      extraInfo: rawLines.map((line) => stripCommentPrefix(line.text)).join("\n"),
     };
   }
 
@@ -736,6 +560,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
       rowCount: table.rows.length,
       skippedRowCount: table.skippedRowCount,
       rows: table.rows,
+      rowLines: table.rowLines,
+      unreadableCells: table.unreadableCells,
       extraInfo,
     };
   }
@@ -759,99 +585,8 @@ export function parseGenericCsv(csv: string, layout?: CsvLayout): ParsedGenericC
       isHeaderX ? headerValues[column] : column + 1,
       ...table.rows.map((row) => row[column]),
     ]),
+    rowLines: [],
+    unreadableCells: [],
     extraInfo,
-  };
-}
-
-// The Array plotter's CSV upload: the first two columns are x and y.
-export function parseArrayCsv(contents: string, label: string): CsvParseResult {
-  // Keep each line's number in the file, so an error names the row the user sees.
-  const numbered = contents
-    .split(/\r?\n/)
-    .map((line, index) => ({ line: line.replace(/^ +| +$/g, ""), number: index + 1 }))
-    .filter(({ line }) => line.trim() !== "" && !isCommentLine(line.trim()));
-  const lines = numbered.map(({ line }) => line);
-  const separator = detectSeparator(lines);
-
-  if (!lines.length) {
-    return {
-      datasets: [],
-      error: `${label}: no usable CSV rows found.`,
-      skippedRowCount: 0,
-      sourceLabel: label,
-    };
-  }
-
-  const dataStartIndex = lines.findIndex((line) => {
-    const columns = parseCsvRow(line, separator);
-
-    if (columns.length < 2) {
-      return false;
-    }
-
-    const xValue = parseNumericCell(columns[0]);
-    const yValue = parseNumericCell(columns[1]);
-    return Number.isFinite(xValue) && Number.isFinite(yValue);
-  });
-
-  if (dataStartIndex === -1) {
-    return {
-      datasets: [],
-      error: `${label}: could not find a numeric x/y data block.`,
-      skippedRowCount: 0,
-      sourceLabel: label,
-    };
-  }
-
-  const points: DataPoint[] = [];
-  let skippedRowCount = 0;
-
-  for (let index = dataStartIndex; index < lines.length; index += 1) {
-    const columns = parseCsvRow(lines[index], separator);
-
-    if (columns.length < 2) {
-      return {
-        datasets: [],
-        error: `${label}: row ${numbered[index].number} does not contain at least two columns.`,
-        skippedRowCount: 0,
-        sourceLabel: label,
-      };
-    }
-
-    // A blank x or y is a missing point: skip it rather than plot a 0.
-    if (isBlankCell(columns[0]) || isBlankCell(columns[1])) {
-      skippedRowCount += 1;
-      continue;
-    }
-
-    const xValue = parseNumericCell(columns[0]);
-    const yValue = parseNumericCell(columns[1]);
-
-    if (!Number.isFinite(xValue) || !Number.isFinite(yValue)) {
-      return {
-        datasets: [],
-        error: `${label}: row ${numbered[index].number} has a non-numeric x or y value.`,
-        skippedRowCount: 0,
-        sourceLabel: label,
-      };
-    }
-
-    points.push({ x: xValue, y: yValue });
-  }
-
-  if (!points.length) {
-    return {
-      datasets: [],
-      error: `${label}: no numeric data rows found.`,
-      skippedRowCount,
-      sourceLabel: label,
-    };
-  }
-
-  return {
-    datasets: [{ label, points }],
-    error: null,
-    skippedRowCount,
-    sourceLabel: label,
   };
 }

@@ -59,3 +59,13 @@ export function clockTicks(min: number, max: number, maxCount = 8): number[] {
 
   return ticks;
 }
+
+// A tooltip's line for a point plotted against a clock: "a: (11:48, 21.3)".
+export function formatClockPoint(
+  label: string | undefined,
+  x: number | null | undefined,
+  y: number | null | undefined,
+  withSeconds: boolean,
+): string {
+  return `${label}: (${formatClock(x ?? Number.NaN, withSeconds)}, ${y?.toLocaleString()})`;
+}

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { clockTicks, formatClock, hasSeconds } from "./clock-axis.ts";
+import { clockTicks, formatClock, formatClockPoint, hasSeconds } from "./clock-axis.ts";
 
 describe("formatClock", () => {
   it("writes seconds of the day as a clock time", () => {
@@ -43,5 +43,12 @@ describe("hasSeconds", () => {
   it("is true only when a reading falls between whole minutes", () => {
     assert.equal(hasSeconds([60, 120, 180]), false);
     assert.equal(hasSeconds([60, 125]), true);
+  });
+});
+
+describe("formatClockPoint", () => {
+  it("writes a point's x as a clock time", () => {
+    assert.equal(formatClockPoint("a", 42515, 21.5, true), "a: (11:48:35, 21.5)");
+    assert.equal(formatClockPoint("a", 42515, 21.5, false), "a: (11:48, 21.5)");
   });
 });

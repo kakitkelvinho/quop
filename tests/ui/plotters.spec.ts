@@ -47,3 +47,65 @@ test("the Time CSV Plotter plots an uploaded file", async ({ page }) => {
   );
   await expect(page.locator("canvas").first()).toBeVisible();
 });
+
+// When the bundled sample can't be fetched, a FITS plotter says so, rather
+// than "No file." as though nothing had been asked for.
+for (const plotterPath of ["plotters/fits-plotter/", "plotters/csv-fits-viewer/"]) {
+  test(`${plotterPath} says when its sample FITS file can't be loaded`, async ({ page }) => {
+    await page.route("**/data/bec15.fits", (route) => route.abort());
+    await page.goto(plotterPath);
+
+    await expect(
+      page.locator(".resultCard", { hasText: "Couldn't load the sample file bec15.fits" }),
+    ).toBeVisible();
+  });
+}
+
+test("typing in the CSV Plotter's contents keeps the column filter", async ({ page }) => {
+  await page.goto("plotters/generic-csv-plotter/");
+  await page
+    .getByLabel("Choose a CSV, TSV or TXT file")
+    .setInputFiles(path.join(__dirname, "fixtures", "many-columns.csv"));
+  await expect(page.locator(".resultCard")).toHaveText("5 rows.");
+
+  const filter = page.getByLabel("Filter columns");
+  await filter.fill("signal_1");
+
+  // an edit to the table keeps the picker as it was
+  const contents = page.getByLabel("CSV input");
+  await contents.press("Control+End");
+  await contents.pressSequentially("0");
+  await expect(contents).toHaveValue(/\n0$/);
+  await expect(filter).toHaveValue("signal_1");
+
+  // a new file starts it over
+  await page
+    .getByLabel("Choose a CSV, TSV or TXT file")
+    .setInputFiles(path.join(__dirname, "fixtures", "many-columns.csv"));
+  await expect(page.getByLabel("Filter columns")).toHaveValue("");
+});
+
+test("a file held over a file picker keeps it outlined over the picker's own parts", async ({ page }) => {
+  await page.goto("plotters/csv-plotter/");
+  const drop = page.locator(".fileDrop").first();
+
+  // the browser fires a leave on the row whenever the pointer moves onto
+  // one of its children; only a leave to outside the row ends the outline
+  const drag = (type: string, relatedTo: string | null) =>
+    drop.evaluate(
+      (element, { type, relatedTo }) => {
+        const relatedTarget = relatedTo ? element.querySelector(relatedTo) ?? document.body : null;
+        element.dispatchEvent(
+          new DragEvent(type, { bubbles: true, cancelable: true, relatedTarget }),
+        );
+      },
+      { type, relatedTo },
+    );
+
+  await drag("dragover", null);
+  await expect(drop).toHaveClass(/is-over/);
+  await drag("dragleave", ".fileDrop__button");
+  await expect(drop).toHaveClass(/is-over/);
+  await drag("dragleave", "body");
+  await expect(drop).not.toHaveClass(/is-over/);
+});
