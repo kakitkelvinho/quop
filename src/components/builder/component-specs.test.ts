@@ -138,7 +138,7 @@ describe("the kind table", () => {
     sameSet(MIRROR_LIKE, ["mirror-mount", "delay-line"]);
     sameSet(PERISCOPE_MIRRORS, ["periscope", "periscope-top"]);
     sameSet(AIMED_DETECTORS, ["photodiode", "camera", "spectrometer", "single-photon-detector"]);
-    // component-models.tsx's stubs that take a cable as well as a fibre
+    // connection-jacks.ts's stubs that take a cable as well as a fibre
     sameSet(kindsWhere((spec) => spec.stubTakesCable === true), ["photodiode"]);
   });
 
