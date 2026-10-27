@@ -9,10 +9,10 @@ import { useRowDrag } from "@/components/builder/use-row-drag";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
+  fieldValue,
   BEAM_OPACITY_RANGE,
   BEAM_WIDTH_MM,
   BEAM_WIDTH_RANGE_MM,
-  BLOCK_SIZE_MM,
   BLOCK_SIZE_RANGE_MM,
   COMPONENT_SPECS,
   CONNECTION_KINDS,
@@ -20,7 +20,6 @@ import {
   CONNECTION_LENGTH_RANGE_M,
   DEFAULT_BLOCK_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
-  DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_HOUSING_COLORS,
@@ -28,12 +27,9 @@ import {
   OBJECTIVE_LENGTH_RANGE_MM,
   CAVITY_LENGTH_RANGE_MM,
   FOCAL_LENGTH_RANGE_MM,
-  PARTICLE_RADIUS_MM,
   PARTICLE_RADIUS_RANGE_MM,
   clamp,
   type Vec3,
-  DEFAULT_CAVITY_LENGTH_MM,
-  DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_SAMPLE_COLOR,
   FRAME_COLORS,
@@ -43,9 +39,7 @@ import {
   MOUNTED_TYPES,
   hasStage,
   LIT_TYPES,
-  DEFAULT_LIGHT_COLOR,
   ROTATION_STEP_DEG,
-  SAMPLE_OPACITY,
   SAMPLE_OPACITY_RANGE,
   clampHeight,
   heightRange,
@@ -422,7 +416,7 @@ function LightFields({
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
 }) {
   const name = component.type === "cavity" ? "Mode" : "Beam";
-  const color = component.lightColor ?? DEFAULT_LIGHT_COLOR;
+  const color = fieldValue(component, "lightColor");
   return (
     <>
       <div className="builderChoice" role="group" aria-label={name}>
@@ -754,7 +748,7 @@ export function ComponentInspector({
                 key={shape.value}
                 type="button"
                 className="builderButton"
-                aria-pressed={(component.lensShape ?? "plano-convex") === shape.value}
+                aria-pressed={fieldValue(component, "lensShape") === shape.value}
                 onClick={() => onUpdate({ lensShape: shape.value })}
               >
                 {shape.label}
@@ -767,7 +761,7 @@ export function ComponentInspector({
             step={5}
             min={FOCAL_LENGTH_RANGE_MM[0]}
             max={FOCAL_LENGTH_RANGE_MM[1]}
-            value={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
+            value={fieldValue(component, "focalLength")}
             onChange={(next) => onUpdate({ focalLength: clamp(next, FOCAL_LENGTH_RANGE_MM) })}
           />
         </>
@@ -781,7 +775,7 @@ export function ComponentInspector({
           step={5}
           min={CAVITY_LENGTH_RANGE_MM[0]}
           max={CAVITY_LENGTH_RANGE_MM[1]}
-          value={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
+          value={fieldValue(component, "cavityLength")}
           onChange={(next) => onUpdate({ cavityLength: clamp(next, CAVITY_LENGTH_RANGE_MM) })}
         />
       ) : null}
@@ -816,8 +810,8 @@ export function ComponentInspector({
           </label>
           <SliderField
             label="Opacity"
-            value={component.opacity ?? SAMPLE_OPACITY}
-            display={`${Math.round((component.opacity ?? SAMPLE_OPACITY) * 100)}%`}
+            value={fieldValue(component, "opacity")}
+            display={`${Math.round(fieldValue(component, "opacity") * 100)}%`}
             range={SAMPLE_OPACITY_RANGE}
             step={0.05}
             onBegin={onCheckpoint}
@@ -835,8 +829,8 @@ export function ComponentInspector({
           />
           <SliderField
             label="Radius"
-            value={component.particleRadius ?? PARTICLE_RADIUS_MM}
-            display={`${(component.particleRadius ?? PARTICLE_RADIUS_MM).toFixed(1)} mm`}
+            value={fieldValue(component, "particleRadius")}
+            display={`${fieldValue(component, "particleRadius").toFixed(1)} mm`}
             range={PARTICLE_RADIUS_RANGE_MM}
             step={0.5}
             onBegin={onCheckpoint}
@@ -848,7 +842,7 @@ export function ComponentInspector({
         <>
           <div className="builderFieldRow">
             {(["Length", "Height", "Width"] as const).map((name, axisIndex) => {
-              const size = component.size ?? BLOCK_SIZE_MM;
+              const size = fieldValue(component, "size");
               return (
                 <NumberField
                   key={name}
@@ -880,7 +874,7 @@ export function ComponentInspector({
             step={2}
             min={OBJECTIVE_LENGTH_RANGE_MM[0]}
             max={OBJECTIVE_LENGTH_RANGE_MM[1]}
-            value={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+            value={fieldValue(component, "objectiveLength")}
             onChange={(next) => onUpdate({ objectiveLength: clamp(next, OBJECTIVE_LENGTH_RANGE_MM) })}
           />
           <ColorField
