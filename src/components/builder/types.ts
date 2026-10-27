@@ -9,6 +9,7 @@
 //
 // setup-brief.ts describes the setup file to an AI assistant from this file;
 // a new saved field won't typecheck there until the brief has a line for it.
+// A component's optional fields have theirs in COMPONENT_FIELDS.
 
 export type ComponentType =
   | "laser-source"
@@ -51,6 +52,12 @@ export function hasStage(component: BuilderComponent): boolean {
 
 export type Vec3 = [number, number, number];
 
+/**
+ * A part on the table. Its optional fields other than `color` and `label`
+ * belong to some kinds only (each kind's `fields` in COMPONENT_SPECS), and
+ * COMPONENT_FIELDS says how a file's value for each is read and held, and
+ * what a missing one means.
+ */
 export type BuilderComponent = {
   id: string;
   type: ComponentType;
@@ -268,7 +275,11 @@ export type ComponentSpec = {
   referenceX?: number;
   /** set on a part that comes with another and is never placed alone: it is left out of the parts panel */
   partOf?: ComponentType;
-  /** the optional fields only this kind has (see BuilderComponent); every kind has a `color` and a `label` */
+  /**
+   * the optional fields only this kind has, each described in COMPONENT_FIELDS;
+   * every kind has a `color` and a `label`. Listed in the order a file opened
+   * and saved again keeps them, so moving one changes saved files.
+   */
   fields: readonly KindField[];
   /** what a newly placed part of this kind starts with, besides its place; see newComponent */
   created?: Created;
@@ -558,7 +569,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 22,
     minHeight: 30,
     radius: 40,
-    fields: ["delayMinPathMm", "delayTravelMm", "delayStageMm", "lightColor", "lightHidden"],
+    fields: ["lightColor", "lightHidden", "delayMinPathMm", "delayTravelMm", "delayStageMm"],
     lit: true,
     angle: "mirror",
   },
@@ -686,6 +697,201 @@ export function clamp(value: number, [min, max]: [number, number]): number {
   return Math.min(max, Math.max(min, value));
 }
 
+// ---------------------------------------------------------------------------
+// Component fields
+// ---------------------------------------------------------------------------
+
+/**
+ * How a setup file's value for a field is read; anything else in the file is
+ * left out, so the field is missing.
+ *   * "number": a finite number, held to `range`.
+ *   * "color": a CSS colour (see cssColor).
+ *   * "enum": one of `options`. Unlike every other reader, it always stores a
+ *     value: anything else, or nothing, stores the field's default.
+ *   * "vec3": three finite numbers, each held to `range`.
+ *   * "id": any text, the id of another component.
+ *   * "flag": `true` only.
+ *   * "own": a hand-written reader for fields read together, which returns all of them.
+ *   * "with": read by `field`'s own reader.
+ */
+type FieldRead<K extends KindField> =
+  | { as: "number"; range: [number, number] }
+  | { as: "color" }
+  | { as: "enum"; options: readonly NonNullable<BuilderComponent[K]>[] }
+  | { as: "vec3"; range: [number, number] }
+  | { as: "id" }
+  | { as: "flag" }
+  | { as: "own"; read: (raw: Record<string, unknown>) => Partial<BuilderComponent> }
+  | { as: "with"; field: KindField };
+
+type FieldSpec<K extends KindField> = {
+  read: FieldRead<K>;
+  /** what a missing value means; see fieldValue */
+  default?: NonNullable<BuilderComponent[K]>;
+  /** the scene version it was added in: a file from before it has the field ignored. Missing means read from any version. */
+  since?: number;
+  /** its line in the setup brief */
+  brief: string;
+};
+
+// Markdown for the brief's lines, shared with setup-brief.ts.
+export const briefRange = ([min, max]: [number, number], unit = "") => `${min}–${max}${unit}`;
+export const briefCode = (value: unknown) => `\`${JSON.stringify(value)}\``;
+/** `a`, `b` or `c` */
+export function briefTypeList(types: Iterable<ComponentType>, last: "and" | "or"): string {
+  const names = [...types].map((type) => `\`${type}\``);
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} ${last} ${names.at(-1)}` : names.join("");
+}
+
+/**
+ * Each optional field a kind of component has, described once: how a file's
+ * value is read and held, its default, the version it came in, and its line
+ * in the setup brief, which lists them in this order. Which kinds have a field
+ * is each kind's `fields` in COMPONENT_SPECS.
+ */
+export const COMPONENT_FIELDS = {
+  lensShape: {
+    read: { as: "enum", options: ["plano-convex", "biconvex"] },
+    default: "plano-convex",
+    brief: `${briefCode("plano-convex")} (the default) or ${briefCode("biconvex")}.`,
+  },
+  focalLength: {
+    read: { as: "number", range: FOCAL_LENGTH_RANGE_MM },
+    default: DEFAULT_FOCAL_LENGTH_MM,
+    brief: `mm, ${briefRange(FOCAL_LENGTH_RANGE_MM)}; default ${DEFAULT_FOCAL_LENGTH_MM}. It sets the drawn curvature.`,
+  },
+  cavityLength: {
+    read: { as: "number", range: CAVITY_LENGTH_RANGE_MM },
+    default: DEFAULT_CAVITY_LENGTH_MM,
+    brief: `mm between its two mirrors, ${briefRange(CAVITY_LENGTH_RANGE_MM)}; default ${DEFAULT_CAVITY_LENGTH_MM}.`,
+  },
+  objectiveLength: {
+    read: { as: "number", range: OBJECTIVE_LENGTH_RANGE_MM },
+    default: DEFAULT_OBJECTIVE_LENGTH_MM,
+    since: 8,
+    brief: `mm from the back of its thread to its nose, ${briefRange(OBJECTIVE_LENGTH_RANGE_MM)}; default ${DEFAULT_OBJECTIVE_LENGTH_MM}. Only the barrel stretches.`,
+  },
+  opacity: {
+    read: { as: "number", range: SAMPLE_OPACITY_RANGE },
+    default: SAMPLE_OPACITY,
+    brief: `${briefRange(SAMPLE_OPACITY_RANGE)}; default ${SAMPLE_OPACITY}.`,
+  },
+  host: {
+    read: { as: "id" },
+    brief: `the id of the ${briefTypeList(HOST_TYPES, "or")} it sits in. It is then drawn at its host's centre, whatever its own position says, and moves with it.`,
+  },
+  periscope: {
+    read: { as: "id" },
+    brief:
+      "the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.",
+  },
+  delayMinPathMm: {
+    read: { as: "own", read: parseDelay },
+    default: DELAY_MIN_PATH_MM,
+    brief: `mm, its minimum delay: the path a beam through it gains with its stage at 0, like a laser's \`internalPathMm\`. It is not drawn. ${briefRange(DELAY_MIN_PATH_RANGE_MM)}; default ${DELAY_MIN_PATH_MM}.`,
+  },
+  delayTravelMm: {
+    read: { as: "with", field: "delayMinPathMm" },
+    default: DELAY_TRAVEL_MM,
+    brief: `mm, how far its stage can travel, ${briefRange(DELAY_TRAVEL_RANGE_MM)}; default ${DELAY_TRAVEL_MM}. Its rail is drawn long enough for it.`,
+  },
+  delayStageMm: {
+    read: { as: "with", field: "delayMinPathMm" },
+    default: 0,
+    brief:
+      "mm the stage has travelled, from 0 to `delayTravelMm`; default 0. A beam through it gains `delayMinPathMm` plus twice this, out and back, and counts both in its path length.",
+  },
+  lightColor: {
+    read: { as: "color" },
+    default: DEFAULT_LIGHT_COLOR,
+    brief: `a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam down to its carriage and back); default ${briefCode(DEFAULT_LIGHT_COLOR)}.`,
+  },
+  lightHidden: {
+    read: { as: "flag" },
+    brief: "`true` leaves the light inside it out of the drawing; leave it out otherwise.",
+  },
+  sampleStage: {
+    read: { as: "own", read: parseSampleStage },
+    since: 13,
+    brief:
+      '`"side"` draws its XYZ stage beside it, across the beam, holding it on an arm; `"none"` draws it floating. Leave it out for the default, the stage under it on a post.',
+  },
+  stageColor: {
+    read: { as: "color" },
+    since: 13,
+    brief:
+      "a hex colour for the plates of the translation stage it stands on (the micrometers stay silver). Leave it out for the theme's own: near-black by day, dark grey at night.",
+  },
+  sampleStageLeft: {
+    read: { as: "with", field: "sampleStage" },
+    since: 13,
+    brief:
+      '`true` puts a `"side"` stage on the sample\'s left (−z, looking along +x) instead of its right; leave it out otherwise.',
+  },
+  particleRadius: {
+    read: { as: "number", range: PARTICLE_RADIUS_RANGE_MM },
+    default: PARTICLE_RADIUS_MM,
+    brief: `mm, ${briefRange(PARTICLE_RADIUS_RANGE_MM)}; default ${PARTICLE_RADIUS_MM}.`,
+  },
+  size: {
+    read: { as: "vec3", range: BLOCK_SIZE_RANGE_MM },
+    default: BLOCK_SIZE_MM,
+    brief: `\`[along x, height, along z]\`, mm, each ${briefRange(BLOCK_SIZE_RANGE_MM)}; default ${briefCode(BLOCK_SIZE_MM)}. Its height (y) is the block's centre, so one resting on the table has y = half its height.`,
+  },
+  internalPathMm: {
+    read: { as: "number", range: INTERNAL_PATH_RANGE_MM },
+    default: 0,
+    brief: `mm of light path inside the laser before it leaves, such as a folded delay, ${briefRange(INTERNAL_PATH_RANGE_MM)}; default 0. A beam that starts at this laser counts it in its path length.`,
+  },
+} satisfies { [K in KindField]-?: FieldSpec<K> };
+
+/** A field's value, or its default when it has one and the component has no value of its own. */
+type FieldValue<K extends KindField> = (typeof COMPONENT_FIELDS)[K] extends { default: unknown }
+  ? NonNullable<BuilderComponent[K]>
+  : BuilderComponent[K];
+
+/** The component's own value for `field`, or the field's default (see COMPONENT_FIELDS); not clamped. */
+export function fieldValue<K extends KindField>(component: BuilderComponent, field: K): FieldValue<K> {
+  const spec: FieldSpec<KindField> = COMPONENT_FIELDS[field];
+  return (component[field] ?? spec.default) as FieldValue<K>;
+}
+
+/** A file's value for one field, as COMPONENT_FIELDS reads it: the field, or nothing when the value is unusable. */
+function readField(field: KindField, raw: Record<string, unknown>): Partial<BuilderComponent> {
+  const spec: FieldSpec<KindField> = COMPONENT_FIELDS[field];
+  const value = raw[field];
+  let read: unknown;
+  switch (spec.read.as) {
+    case "own":
+      return spec.read.read(raw);
+    case "with":
+      return {};
+    case "number": {
+      const number = finiteNumber(value);
+      read = number === undefined ? undefined : clamp(number, spec.read.range);
+      break;
+    }
+    case "color":
+      read = cssColor(value, undefined);
+      break;
+    case "enum":
+      read = (spec.read.options as readonly unknown[]).includes(value) ? value : spec.default;
+      break;
+    case "vec3": {
+      const range = spec.read.range;
+      read = isVec3(value) ? value.map((side) => clamp(side, range)) : undefined;
+      break;
+    }
+    case "id":
+      read = typeof value === "string" ? value : undefined;
+      break;
+    case "flag":
+      read = value === true ? true : undefined;
+      break;
+  }
+  return read === undefined ? {} : { [field]: read };
+}
+
 /** The heights a component can take, mm. */
 export function heightRange(type: ComponentType): [number, number] {
   const spec = COMPONENT_SPECS[type];
@@ -786,7 +992,7 @@ export function componentById(
  */
 export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): number {
   const first = beam.path.length ? componentById(components, beam.path[0]) : undefined;
-  return first?.type === "laser-source" ? (first.internalPathMm ?? 0) : 0;
+  return first?.type === "laser-source" ? fieldValue(first, "internalPathMm") : 0;
 }
 
 /**
@@ -800,9 +1006,9 @@ export function delaySetting(component: BuilderComponent): {
   stage: number;
   path: number;
 } {
-  const minPath = clamp(component.delayMinPathMm ?? DELAY_MIN_PATH_MM, DELAY_MIN_PATH_RANGE_MM);
-  const travel = clamp(component.delayTravelMm ?? DELAY_TRAVEL_MM, DELAY_TRAVEL_RANGE_MM);
-  const stage = clamp(component.delayStageMm ?? 0, [0, travel]);
+  const minPath = clamp(fieldValue(component, "delayMinPathMm"), DELAY_MIN_PATH_RANGE_MM);
+  const travel = clamp(fieldValue(component, "delayTravelMm"), DELAY_TRAVEL_RANGE_MM);
+  const stage = clamp(fieldValue(component, "delayStageMm"), [0, travel]);
   return { minPath, travel, stage, path: minPath + 2 * stage };
 }
 
@@ -940,7 +1146,7 @@ export function lengthToPicoseconds(lengthMm: number): number {
 /** The in-scene tag when there is no label. A lens carries its focal length. */
 export function componentTag(component: BuilderComponent): string {
   if (component.type === "lens") {
-    return `f ${Math.round(component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM)}`;
+    return `f ${Math.round(fieldValue(component, "focalLength"))}`;
   }
   return COMPONENT_SPECS[component.type].tag;
 }
@@ -956,32 +1162,32 @@ export function beamDisplayName(beam: Beam): string {
 /** Selection-ring radius: a cavity grows with its length. */
 export function componentRadius(component: BuilderComponent): number {
   if (component.type === "cavity") {
-    const length = clamp(component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM, CAVITY_LENGTH_RANGE_MM);
+    const length = clamp(fieldValue(component, "cavityLength"), CAVITY_LENGTH_RANGE_MM);
     return Math.max(COMPONENT_SPECS.cavity.radius, length / 2 + 12);
   }
   if (component.type === "objective") {
     // drawn from the thread's back at x = -29 to the nose, so the far end sets the ring
-    const length = clamp(component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM, OBJECTIVE_LENGTH_RANGE_MM);
+    const length = clamp(fieldValue(component, "objectiveLength"), OBJECTIVE_LENGTH_RANGE_MM);
     return Math.max(COMPONENT_SPECS.objective.radius, length - 29 + 8);
   }
   if (component.type === "delay-line") {
     return Math.max(COMPONENT_SPECS["delay-line"].radius, delayRailMm(component) / 2 + 12);
   }
   if (component.type === "block") {
-    const [dx, , dz] = component.size ?? BLOCK_SIZE_MM;
+    const [dx, , dz] = fieldValue(component, "size");
     return Math.hypot(dx, dz) / 2 + 6;
   }
   if (component.type === "particle") {
-    return Math.max(COMPONENT_SPECS.particle.radius, (component.particleRadius ?? PARTICLE_RADIUS_MM) + 5);
+    return Math.max(COMPONENT_SPECS.particle.radius, fieldValue(component, "particleRadius") + 5);
   }
   return COMPONENT_SPECS[component.type].radius;
 }
 
 /** How far the part reaches above its optical centre, mm: where its label sits. */
 export function componentTop(component: BuilderComponent): number {
-  if (component.type === "block") return (component.size ?? BLOCK_SIZE_MM)[1] / 2;
+  if (component.type === "block") return fieldValue(component, "size")[1] / 2;
   if (component.type === "particle") {
-    return Math.max(COMPONENT_SPECS.particle.top, (component.particleRadius ?? PARTICLE_RADIUS_MM) + 4);
+    return Math.max(COMPONENT_SPECS.particle.top, fieldValue(component, "particleRadius") + 4);
   }
   return COMPONENT_SPECS[component.type].top;
 }
@@ -1735,46 +1941,10 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
     color: cssColor(raw.color, undefined),
     label: labelText(raw.label),
   };
-  if (type === "lens") {
-    component.lensShape = raw.lensShape === "biconvex" ? "biconvex" : "plano-convex";
-    const focal = finiteNumber(raw.focalLength);
-    if (focal !== undefined) component.focalLength = clamp(focal, FOCAL_LENGTH_RANGE_MM);
-  }
-  if (type === "cavity") {
-    const length = finiteNumber(raw.cavityLength);
-    if (length !== undefined) component.cavityLength = clamp(length, CAVITY_LENGTH_RANGE_MM);
-  }
-  if (type === "objective" && version >= 8) {
-    const length = finiteNumber(raw.objectiveLength);
-    if (length !== undefined) component.objectiveLength = clamp(length, OBJECTIVE_LENGTH_RANGE_MM);
-  }
-  if (type === "sample") {
-    const opacity = finiteNumber(raw.opacity);
-    if (opacity !== undefined) component.opacity = clamp(opacity, SAMPLE_OPACITY_RANGE);
-    if (version >= 13) Object.assign(component, parseSampleStage(raw));
-  }
-  if (STAGED_TYPES.has(type as ComponentType) && version >= 13) {
-    const stage = cssColor(raw.stageColor, undefined);
-    if (stage !== undefined) component.stageColor = stage;
-  }
-  if (type === "particle") {
-    if (typeof raw.host === "string") component.host = raw.host;
-    const radius = finiteNumber(raw.particleRadius);
-    if (radius !== undefined) component.particleRadius = clamp(radius, PARTICLE_RADIUS_RANGE_MM);
-  }
-  if (type === "periscope-top" && typeof raw.periscope === "string") component.periscope = raw.periscope;
-  if (LIT_TYPES.has(type as ComponentType)) {
-    const light = cssColor(raw.lightColor, undefined);
-    if (light !== undefined) component.lightColor = light;
-    if (raw.lightHidden === true) component.lightHidden = true;
-  }
-  if (type === "delay-line") Object.assign(component, parseDelay(raw));
-  if (type === "laser-source") {
-    const internal = finiteNumber(raw.internalPathMm);
-    if (internal !== undefined) component.internalPathMm = clamp(internal, INTERNAL_PATH_RANGE_MM);
-  }
-  if (type === "block" && isVec3(raw.size)) {
-    component.size = raw.size.map((side) => clamp(side, BLOCK_SIZE_RANGE_MM)) as Vec3;
+  // in the kind's own order, which is the order a saved file keeps them in
+  for (const field of COMPONENT_SPECS[type as ComponentType].fields) {
+    const { since }: FieldSpec<KindField> = COMPONENT_FIELDS[field];
+    if (since === undefined || version >= since) Object.assign(component, readField(field, raw));
   }
   return component;
 }
