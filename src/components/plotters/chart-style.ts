@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-import { MATPLOTLIB_FONT_FAMILY, TAB10 } from "@/components/plotters/matplotlib-skin";
+import { TAB10 } from "./matplotlib-skin.ts";
 
 // Which look the plotters draw in: the matplotlib skin (matplotlib-skin.ts)
 // or the classic Chart.js one they had before it. One setting for every
@@ -28,12 +28,6 @@ const CLASSIC_PALETTE = ["#8b1e3f", "#1f6f78", "#d17a22", "#4a6d3b", "#5c4b8a"] 
 export const CHART_STYLE_PALETTES: Record<ChartStyle, readonly string[]> = {
   matplotlib: TAB10,
   chartjs: CLASSIC_PALETTE,
-};
-
-/** The font a chart uses unless its plotter or its user picks another. */
-export const CHART_STYLE_FONTS: Record<ChartStyle, string> = {
-  matplotlib: MATPLOTLIB_FONT_FAMILY,
-  chartjs: CLASSIC_FONT_FAMILY,
 };
 
 export type ClassicColors = { text: string; grid: string };

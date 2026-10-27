@@ -1,35 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import {
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-  type ChartData,
-  type ChartDataset,
-  type ChartOptions,
-} from "chart.js";
-
-import { readCsvTable, type DataPoint } from "@/components/plotters/csv-parsing";
+import { readCsvTable } from "@/components/plotters/csv-parsing";
 import { timeSeries } from "@/components/plotters/csv-series";
 import { createDemoTimeSeriesCsv, DEMO_TIME_SERIES_LABEL } from "@/components/plotters/demo-csv";
+import { titleFromFileName } from "@/components/plotters/figure-spec";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { PlotterShell } from "@/components/plotters/plotter-shell";
 import { useCsvSource } from "@/components/plotters/use-plotter-source";
-
-ChartJS.register(
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-);
 
 const demoCsv = { text: createDemoTimeSeriesCsv(), label: DEMO_TIME_SERIES_LABEL };
 
@@ -37,57 +16,6 @@ export default function CsvPlotter() {
   const source = useCsvSource({ initial: demoCsv, sample: "power15.csv" });
   const table = useMemo(() => readCsvTable(source.text, "columns"), [source.text]);
   const parsed = useMemo(() => timeSeries(table), [table]);
-
-  // rebuilt only when the table changes: folding the sidebar must not make
-  // the chart look through every point again
-  const chartData = useMemo<ChartData<"scatter">>(
-    () => ({
-      datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel) => ({
-        label: channel.label,
-        data: channel.points,
-        showLine: true,
-        borderWidth: 2,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      })),
-    }),
-    [parsed],
-  );
-
-  const chartOptions = useMemo<ChartOptions<"scatter">>(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          labels: {
-            usePointStyle: true,
-            boxWidth: 10,
-          },
-        },
-        title: { display: false },
-        tooltip: { enabled: true },
-      },
-      scales: {
-        x: {
-          type: "linear",
-          title: { display: true, text: parsed.xLabel },
-          grid: { color: "rgba(91, 102, 117, 0.18)" },
-        },
-        y: {
-          title: { display: true, text: "channels" },
-          grid: { color: "rgba(91, 102, 117, 0.18)" },
-        },
-      },
-      elements: {
-        point: { radius: 1.5, hoverRadius: 3 },
-        line: { tension: 0 },
-      },
-    }),
-    [parsed.xLabel],
-  );
 
   const statusMessage = source.error
     ? source.error
@@ -140,7 +68,14 @@ export default function CsvPlotter() {
     >
       <h2>Plot</h2>
       <div className="visualizerChartSurface">
-        <InteractiveScatterChart data={chartData} options={chartOptions} sourceLabel={source.label} />
+        <InteractiveScatterChart
+          series={parsed.series}
+          xLabel={parsed.xLabel}
+          yLabel="channels"
+          legend="points"
+          title={titleFromFileName(source.label)}
+          pointSize={1.5}
+        />
         {parsed.error ? (
           <div className="visualizerEmptyState visualizerOverlayState">
             Invalid CSV.
