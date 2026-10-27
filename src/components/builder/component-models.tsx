@@ -28,22 +28,16 @@ import type { ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
-  BLOCK_SIZE_MM,
   CAVITY_LENGTH_RANGE_MM,
   DEFAULT_BLOCK_COLOR,
-  DEFAULT_CAVITY_LENGTH_MM,
-  DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
-  DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
-  PARTICLE_RADIUS_MM,
-  SAMPLE_OPACITY,
   clamp,
   componentDisplayName,
   componentRadius,
@@ -51,6 +45,7 @@ import {
   componentTop,
   delayArmMm,
   delayRailMm,
+  fieldValue,
   type BuilderComponent,
   type ComponentType,
   type LensShape,
@@ -1598,7 +1593,7 @@ function cavityMirrorProfile(length: number): Vector2[] {
 
 /** The colour of the light drawn inside a cavity or delay line, or null when it is hidden. */
 function innerLight(component: BuilderComponent): string | null {
-  return component.lightHidden ? null : (component.lightColor ?? DEFAULT_LIGHT_COLOR);
+  return component.lightHidden ? null : fieldValue(component, "lightColor");
 }
 
 /** Two facing concave mirrors along local x, floating, with the mode between. */
@@ -2335,8 +2330,8 @@ const COMPONENT_MODELS: Record<
   lens: (component, { modelProps }) => (
     <Lens
       {...modelProps}
-      shape={component.lensShape ?? "plano-convex"}
-      focalLength={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
+      shape={fieldValue(component, "lensShape")}
+      focalLength={fieldValue(component, "focalLength")}
     />
   ),
   waveplate: (_, { modelProps }) => <Waveplate {...modelProps} />,
@@ -2350,14 +2345,14 @@ const COMPONENT_MODELS: Record<
       left={component.sampleStageLeft === true}
       stageColor={component.stageColor ?? palette.stage}
       color={component.color ?? DEFAULT_SAMPLE_COLOR}
-      opacity={component.opacity ?? SAMPLE_OPACITY}
+      opacity={fieldValue(component, "opacity")}
     />
   ),
   "paul-trap": (_, { modelProps }) => <PaulTrap {...modelProps} />,
   cavity: (component, { modelProps }) => (
     <Cavity
       {...modelProps}
-      length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
+      length={fieldValue(component, "cavityLength")}
       light={innerLight(component)}
     />
   ),
@@ -2365,7 +2360,7 @@ const COMPONENT_MODELS: Record<
     <Particle
       axis={axis}
       color={component.color ?? DEFAULT_PARTICLE_COLOR}
-      radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
+      radius={fieldValue(component, "particleRadius")}
     />
   ),
   photodiode: (_, { modelProps, stubTaken }) => <Photodiode {...modelProps} stub={!stubTaken} />,
@@ -2373,12 +2368,12 @@ const COMPONENT_MODELS: Record<
   objective: (component, { modelProps }) => (
     <Objective
       {...modelProps}
-      length={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+      length={fieldValue(component, "objectiveLength")}
       stageColor={component.stageColor ?? modelProps.palette.stage}
     />
   ),
   block: (component, { modelProps }) => (
-    <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
+    <GenericBlock {...modelProps} size={fieldValue(component, "size")} />
   ),
   aom: (_, { modelProps }) => <Aom {...modelProps} />,
   eom: (_, { modelProps }) => <Eom {...modelProps} />,
