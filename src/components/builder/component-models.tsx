@@ -28,23 +28,16 @@ import type { ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
-  BLOCK_SIZE_MM,
   CAVITY_LENGTH_RANGE_MM,
   DEFAULT_BLOCK_COLOR,
-  DEFAULT_CAVITY_LENGTH_MM,
-  DEFAULT_FOCAL_LENGTH_MM,
   DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
-  DEFAULT_OBJECTIVE_LENGTH_MM,
   DEFAULT_PARTICLE_COLOR,
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_SAMPLE_COLOR,
-  CONNECTION_KINDS,
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
-  PARTICLE_RADIUS_MM,
-  SAMPLE_OPACITY,
   clamp,
   componentDisplayName,
   componentRadius,
@@ -52,12 +45,44 @@ import {
   componentTop,
   delayArmMm,
   delayRailMm,
+  fieldValue,
   type BuilderComponent,
   type ComponentType,
-  type ConnectionKind,
   type LensShape,
   type Vec3,
 } from "@/components/builder/types";
+import {
+  AOM_CRYSTAL,
+  AOM_SMA_RISE_MM,
+  CAMERA_DEPTH_MM,
+  CAMERA_FRONT_X,
+  CAMERA_MOUNT_RING,
+  DELAY_DRIVE_MM,
+  DELAY_RAIL_DROP_MM,
+  EOM_LENGTH,
+  EOM_SIDE,
+  EOM_SMA_RISE_MM,
+  FC_BARREL_LENGTH_MM,
+  FC_FLANGE_DEPTH_MM,
+  FC_TIP_LENGTH_MM,
+  LASER_ARROW,
+  LASER_BODY_MM,
+  LASER_EMITTER,
+  PD_RADIUS,
+  SPCM_DEPTH_MM,
+  SPCM_FACE_X,
+  SPCM_JACK_DROP_MM,
+  SPCM_JACK_Z_MM,
+  SPECTROMETER_BODY_MM,
+  SPECTROMETER_PORT,
+  TAGGER_DEPTH_MM,
+  TAGGER_INPUTS,
+  TAGGER_NUT_MM,
+  TAGGER_PANEL_MM,
+  collimatorStubPoints,
+  photodiodeStubPoints,
+  taggerInputZ,
+} from "@/components/builder/model-dimensions";
 
 const GLASS_BLUE = "#bfe3ff";
 const GLASS_CYAN = "#9fd8e0";
@@ -166,16 +191,9 @@ const TRAP_HOLDER_GEOMETRY = annulus(15, 5, 3);
 const MIRROR_RING_GEOMETRY = annulus(15.5, OPTIC_D / 2, 8);
 const COLLIMATOR_PLATE_GEOMETRY = boredPlate(32, 4, 12, 8);
 
-/** The fiber jacket: out of the collimator's back and down to the table. */
-function fiberJacketCurve(axis: number) {
-  return new CatmullRomCurve3([
-    new Vector3(-44, axis, 0),
-    new Vector3(-60, axis - 4, 0),
-    new Vector3(-72, axis * 0.7, 6),
-    new Vector3(-78, axis * 0.33, 14),
-    new Vector3(-86, 4, 26),
-    new Vector3(-104, 1.8, 40),
-  ]);
+/** A curve through a fibre stub's points. */
+function stubCurve(points: [number, number, number][]) {
+  return new CatmullRomCurve3(points.map((point) => new Vector3(...point)));
 }
 /**
  * Everything that isn't bare steel or glass is drawn as glossy enamel: a
@@ -522,15 +540,15 @@ function LaserSource({ palette, axis }: ModelProps) {
           ))
         : null}
       <RoundedBox
-        args={[96, 40, 40]}
+        args={[LASER_BODY_MM, 40, 40]}
         radius={0.8}
         smoothness={3}
         position={[0, axis, 0]}
       >
         <Enamel color={palette.body} />
       </RoundedBox>
-      <mesh position={[50, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[7, 7, 12, 22]} />
+      <mesh position={[LASER_EMITTER.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[7, 7, LASER_EMITTER.length, 22]} />
         <meshStandardMaterial
           color={EMITTER_RED}
           emissive={EMITTER_RED}
@@ -539,8 +557,8 @@ function LaserSource({ palette, axis }: ModelProps) {
         />
       </mesh>
       {/* the +x arrow: which way this source fires */}
-      <mesh position={[64, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
-        <coneGeometry args={[5, 12, 16]} />
+      <mesh position={[LASER_ARROW.x, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
+        <coneGeometry args={[5, LASER_ARROW.length, 16]} />
         <meshStandardMaterial
           color={EMITTER_RED}
           emissive={EMITTER_RED}
@@ -906,9 +924,6 @@ function FoldPair({ palette, axis, bottom, facing }: Pick<ModelProps, "palette" 
  * and back; setting the stage slides the carriage. The rail runs to the
  * carriage's farthest setting, and a drive knob stands at its far end.
  */
-/** How far below the beam a delay line's rail runs, and the length of the drive knob at its far end, mm. */
-const DELAY_RAIL_DROP_MM = 26;
-const DELAY_DRIVE_MM = 12;
 /** How far the port's fold-mirror plate stands past the rail's front end (FoldPair's plate, at 9 ± 3), mm. */
 const DELAY_PORT_PLATE_MM = 12;
 
@@ -1447,7 +1462,7 @@ function Sample({
  */
 function FiberCollimator({ palette, color, axis, stub }: ModelProps & { stub: boolean }) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
-  const jacket = useMemo(() => fiberJacketCurve(axis), [axis]);
+  const jacket = useMemo(() => stubCurve(collimatorStubPoints(axis)), [axis]);
   return (
     <group>
       <Pillar palette={palette} top={axis - 16 + 2} />
@@ -1578,7 +1593,7 @@ function cavityMirrorProfile(length: number): Vector2[] {
 
 /** The colour of the light drawn inside a cavity or delay line, or null when it is hidden. */
 function innerLight(component: BuilderComponent): string | null {
-  return component.lightHidden ? null : (component.lightColor ?? DEFAULT_LIGHT_COLOR);
+  return component.lightHidden ? null : fieldValue(component, "lightColor");
 }
 
 /** Two facing concave mirrors along local x, floating, with the mode between. */
@@ -1874,27 +1889,13 @@ function SmaConnector({
  * shallow cup with the real, small active area in it: a square silicon chip
  * in a gold frame. Colour the dome to tell detectors apart.
  */
-const PD_RADIUS = 13;
 const PD_FACE_DEPTH = 4;
 const PD_CUP_RADIUS = 9.5;
 const PD_CUP_BLACK = "#20252d";
 const PD_FACE_GEOMETRY = annulus(PD_RADIUS, PD_CUP_RADIUS, PD_FACE_DEPTH);
 
-/** The fiber out of the dome's tip (+x) and down to the table. */
-function photodiodeFiberCurve(axis: number) {
-  const x = PD_RADIUS + 4;
-  return new CatmullRomCurve3([
-    new Vector3(x, axis, 0),
-    new Vector3(x + 14, axis - 2, 0),
-    new Vector3(x + 26, axis * 0.7, 6),
-    new Vector3(x + 32, axis * 0.33, 14),
-    new Vector3(x + 40, 4, 26),
-    new Vector3(x + 58, 1.8, 40),
-  ]);
-}
-
 function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean }) {
-  const fiber = useMemo(() => photodiodeFiberCurve(axis), [axis]);
+  const fiber = useMemo(() => stubCurve(photodiodeStubPoints(axis)), [axis]);
   return (
     <group>
       <Pillar palette={palette} top={axis - PD_RADIUS} />
@@ -1941,37 +1942,11 @@ function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean
 }
 
 /**
- * The parts that draw a fibre stub down to the table, and its curve from the
- * connector out. A fibre connected to one takes the stub's place: it leaves
- * the same connector along the same curve, in the connection's colour.
- */
-export const FIBER_STUBS: Partial<Record<ComponentType, (axis: number) => CatmullRomCurve3>> = {
-  "fiber-collimator": fiberJacketCurve,
-  photodiode: photodiodeFiberCurve,
-};
-
-/**
- * The parts whose one connector takes a cable as well as a fibre: a
- * photodiode's jack on the back of its head is where its signal leaves.
- */
-const ANY_KIND_STUBS: ReadonlySet<ComponentType> = new Set<ComponentType>(["photodiode"]);
-
-/**
- * Whether a connection of `kind` at a part of `type` leaves from the part's
- * stub, along the stub's curve, and so takes the stub's place.
- */
-export function leavesFromStub(type: ComponentType, kind: ConnectionKind): boolean {
-  return FIBER_STUBS[type] !== undefined && (CONNECTION_KINDS[kind].usesFiberStub || ANY_KIND_STUBS.has(type));
-}
-
-/**
  * An acousto-optic modulator, drawn bare: the crystal with the beam along x
  * and a piezo transducer bonded on top that launches the sound wave down
  * through it. The wavefronts are faint sheets, so the grating the beam
  * diffracts off can be seen.
  */
-const AOM_CRYSTAL: [number, number, number] = [30, 14, 12];
-
 function Aom({ palette, axis }: ModelProps) {
   const [length, height, width] = AOM_CRYSTAL;
   const top = axis + height / 2;
@@ -2016,7 +1991,7 @@ function Aom({ palette, axis }: ModelProps) {
         <boxGeometry args={[length * 0.6, 3, width]} />
         <Enamel color="#1b1f26" />
       </mesh>
-      <SmaConnector palette={palette} at={[0, top + 3.5, 0]} />
+      <SmaConnector palette={palette} at={[0, top + AOM_SMA_RISE_MM, 0]} />
     </group>
   );
 }
@@ -2025,9 +2000,6 @@ function Aom({ palette, axis }: ModelProps) {
  * An electro-optic modulator, drawn bare: a long crystal bar along the beam
  * between gold electrodes top and bottom, wired up to an SMA.
  */
-const EOM_LENGTH = 44;
-const EOM_SIDE = 9;
-
 function Eom({ palette, axis }: ModelProps) {
   const top = axis + EOM_SIDE / 2;
   return (
@@ -2055,7 +2027,7 @@ function Eom({ palette, axis }: ModelProps) {
         <cylinderGeometry args={[0.5, 0.5, 5, 8]} />
         <meshStandardMaterial color={GOLD} roughness={0.3} metalness={0.9} />
       </mesh>
-      <SmaConnector palette={palette} at={[0, top + 5.5, 0]} />
+      <SmaConnector palette={palette} at={[0, top + EOM_SMA_RISE_MM, 0]} />
     </group>
   );
 }
@@ -2064,9 +2036,7 @@ function Eom({ palette, axis }: ModelProps) {
  * A scientific CMOS camera: a flat box, shallow along the beam, with the
  * C-mount on the axis in the middle of the front face (-x).
  */
-const CAMERA_DEPTH_MM = 25;
 const CAMERA_HALF_MM = 25;
-const CAMERA_FRONT_X = -9;
 
 function CameraBody({ palette, color, axis }: ModelProps) {
   return (
@@ -2086,8 +2056,8 @@ function CameraBody({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[13, 15, 20, 28]} />
         <Hardware palette={palette} />
       </mesh>
-      <mesh position={[-22, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[11, 11, 2, 28]} />
+      <mesh position={[CAMERA_MOUNT_RING.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[11, 11, CAMERA_MOUNT_RING.depth, 28]} />
         <Enamel color="#12161d" />
       </mesh>
     </group>
@@ -2099,12 +2069,12 @@ function Spectrometer({ palette, color, axis }: ModelProps) {
   return (
     <group>
       <mesh position={[0, body / 2, 0]}>
-        <boxGeometry args={[110, body, 80]} />
+        <boxGeometry args={[SPECTROMETER_BODY_MM, body, 80]} />
         <Enamel color={color ?? palette.body} />
       </mesh>
       {/* input slit / fibre port, on the shared axis */}
-      <mesh position={[-57, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[7, 7, 10, 20]} />
+      <mesh position={[SPECTROMETER_PORT.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[7, 7, SPECTROMETER_PORT.length, 20]} />
         <Enamel color="#1b1f26" />
       </mesh>
       <mesh position={[0, body + 1, 0]}>
@@ -2122,18 +2092,11 @@ function Spectrometer({ palette, color, axis }: ModelProps) {
  * SMA jacks out the back (+x). Fibers and cables are drawn as connections, not
  * as part of the module.
  */
-const SPCM_FACE_X = -20;
-const SPCM_DEPTH_MM = 48;
 const SPCM_HALF_MM = 17;
 const SPCM_WIDTH_MM = 30;
-const SPCM_JACK_DROP_MM = 6;
-const SPCM_JACK_Z_MM = [-7, 7];
 const FC_FLANGE_MM = 13;
-const FC_FLANGE_DEPTH_MM = 1.5;
 const FC_BARREL_RADIUS_MM = 4.5;
-const FC_BARREL_LENGTH_MM = 7;
 const FC_TIP_RADIUS_MM = 2.8;
-const FC_TIP_LENGTH_MM = 2;
 /** where the thread ridges sit on the barrel, mm out from the flange */
 const FC_THREAD_MM = [1.5, 3.5, 5.5];
 
@@ -2195,14 +2158,8 @@ function SinglePhotonDetector({ palette, color, axis }: ModelProps) {
  * with a row of SMA inputs across its front panel (-x) at its fixed height and
  * a status light at one end. Cables from the detectors end here.
  */
-const TAGGER_DEPTH_MM = 150;
 const TAGGER_HALF_MM = 23;
 const TAGGER_WIDTH_MM = 200;
-const TAGGER_PANEL_MM = 1.5;
-const TAGGER_INPUTS = 8;
-const TAGGER_PITCH_MM = 18;
-/** the row of inputs is shifted toward +z, leaving the -z end for the status light */
-const TAGGER_ROW_Z_MM = 22;
 const TAGGER_LED_Z_MM = -78;
 const TAGGER_LED = "#36c26b";
 const TAGGER_FOOT_INSET_MM = 18;
@@ -2237,15 +2194,14 @@ function TimeTagger({ palette, axis }: ModelProps) {
         <Hardware palette={palette} />
       </mesh>
       {Array.from({ length: TAGGER_INPUTS }, (_, index) => {
-        const z = TAGGER_ROW_Z_MM + (index - (TAGGER_INPUTS - 1) / 2) * TAGGER_PITCH_MM;
         return (
-          <group key={index} position={[panel, axis, z]} rotation={[0, 0, Math.PI / 2]}>
+          <group key={index} position={[panel, axis, taggerInputZ(index)]} rotation={[0, 0, Math.PI / 2]}>
             {/* the bulkhead nut, then the jack */}
-            <mesh position={[0, 0.75, 0]}>
-              <cylinderGeometry args={[4.2, 4.2, 1.5, 6]} />
+            <mesh position={[0, TAGGER_NUT_MM / 2, 0]}>
+              <cylinderGeometry args={[4.2, 4.2, TAGGER_NUT_MM, 6]} />
               <Stainless palette={palette} />
             </mesh>
-            <SmaConnector palette={palette} at={[0, 1.5, 0]} />
+            <SmaConnector palette={palette} at={[0, TAGGER_NUT_MM, 0]} />
           </group>
         );
       })}
@@ -2261,66 +2217,6 @@ function TimeTagger({ palette, axis }: ModelProps) {
       ))}
     </group>
   );
-}
-
-/**
- * Where a connection plugs into a part that has a connector for it, in the
- * part's frame about its body's centre (height from the table), and the way
- * it leaves: straight out of the connector, along x or up. A cable goes into
- * an instrument's back, where its signal or power is: a camera's or a
- * spectrometer's back face, a single-photon counter's SMA outputs, a laser's
- * back, a delay line's drive, the SMA on a modulator, or the time tagger's
- * input facing the other end. A fibre goes into a spectrometer's or a
- * counter's fibre port, and leaves a laser out of its front. `toward` is the other end, in the same frame.
- */
-export type ConnectionJack = { at: Vector3; out: Vector3 };
-
-/** how far into an SMA a cable's plug starts, mm up its 8 mm body: the plug sleeves over it */
-const SMA_SLEEVE_MM = 5;
-
-export function connectionJack(part: BuilderComponent, kind: ConnectionKind, toward: Vector3): ConnectionJack | undefined {
-  const axis = part.position[1];
-  const jack = (x: number, y: number, z: number, out: [number, number, number]) => ({
-    at: new Vector3(x, y, z),
-    out: new Vector3(...out),
-  });
-  if (part.type === "delay-line") {
-    return jack(-delayRailMm(part) / 2 - DELAY_DRIVE_MM, axis - DELAY_RAIL_DROP_MM, 0, [-1, 0, 0]);
-  }
-  if (kind === "fiber") {
-    // a fibre-coupled laser's fibre leaves from the tip of its +x arrow, the way it fires
-    if (part.type === "laser-source") return jack(70, axis, 0, [1, 0, 0]);
-    if (part.type === "spectrometer") return jack(-60, axis, 0, [-1, 0, 0]);
-    if (part.type === "single-photon-detector") return jack(SPCM_FACE_X - 9.5, axis, 0, [-1, 0, 0]);
-    return undefined;
-  }
-  switch (part.type) {
-    case "camera":
-      return jack(CAMERA_FRONT_X + CAMERA_DEPTH_MM, axis, 0, [1, 0, 0]);
-    case "spectrometer":
-      return jack(55, axis, 0, [1, 0, 0]);
-    case "laser-source":
-      return jack(-48, axis, 0, [-1, 0, 0]);
-    case "single-photon-detector":
-      return jack(
-        SPCM_FACE_X + SPCM_DEPTH_MM + SMA_SLEEVE_MM,
-        axis - SPCM_JACK_DROP_MM,
-        SPCM_JACK_Z_MM[toward.z < 0 ? 0 : 1],
-        [1, 0, 0],
-      );
-    case "aom":
-      return jack(0, axis + AOM_CRYSTAL[1] / 2 + 3.5 + SMA_SLEEVE_MM, 0, [0, 1, 0]);
-    case "eom":
-      return jack(0, axis + EOM_SIDE / 2 + 5.5 + SMA_SLEEVE_MM, 0, [0, 1, 0]);
-    case "time-tagger": {
-      // the input in the row nearest the other end
-      const index = clamp(Math.round((toward.z - TAGGER_ROW_Z_MM) / TAGGER_PITCH_MM + (TAGGER_INPUTS - 1) / 2), [0, TAGGER_INPUTS - 1]);
-      const z = TAGGER_ROW_Z_MM + (index - (TAGGER_INPUTS - 1) / 2) * TAGGER_PITCH_MM;
-      return jack(-TAGGER_DEPTH_MM / 2 - TAGGER_PANEL_MM - 1.5 - SMA_SLEEVE_MM, axis, z, [-1, 0, 0]);
-    }
-    default:
-      return undefined;
-  }
 }
 
 function SelectionRing({ radius, color }: { radius: number; color: string }) {
@@ -2434,8 +2330,8 @@ const COMPONENT_MODELS: Record<
   lens: (component, { modelProps }) => (
     <Lens
       {...modelProps}
-      shape={component.lensShape ?? "plano-convex"}
-      focalLength={component.focalLength ?? DEFAULT_FOCAL_LENGTH_MM}
+      shape={fieldValue(component, "lensShape")}
+      focalLength={fieldValue(component, "focalLength")}
     />
   ),
   waveplate: (_, { modelProps }) => <Waveplate {...modelProps} />,
@@ -2449,14 +2345,14 @@ const COMPONENT_MODELS: Record<
       left={component.sampleStageLeft === true}
       stageColor={component.stageColor ?? palette.stage}
       color={component.color ?? DEFAULT_SAMPLE_COLOR}
-      opacity={component.opacity ?? SAMPLE_OPACITY}
+      opacity={fieldValue(component, "opacity")}
     />
   ),
   "paul-trap": (_, { modelProps }) => <PaulTrap {...modelProps} />,
   cavity: (component, { modelProps }) => (
     <Cavity
       {...modelProps}
-      length={component.cavityLength ?? DEFAULT_CAVITY_LENGTH_MM}
+      length={fieldValue(component, "cavityLength")}
       light={innerLight(component)}
     />
   ),
@@ -2464,7 +2360,7 @@ const COMPONENT_MODELS: Record<
     <Particle
       axis={axis}
       color={component.color ?? DEFAULT_PARTICLE_COLOR}
-      radius={component.particleRadius ?? PARTICLE_RADIUS_MM}
+      radius={fieldValue(component, "particleRadius")}
     />
   ),
   photodiode: (_, { modelProps, stubTaken }) => <Photodiode {...modelProps} stub={!stubTaken} />,
@@ -2472,12 +2368,12 @@ const COMPONENT_MODELS: Record<
   objective: (component, { modelProps }) => (
     <Objective
       {...modelProps}
-      length={component.objectiveLength ?? DEFAULT_OBJECTIVE_LENGTH_MM}
+      length={fieldValue(component, "objectiveLength")}
       stageColor={component.stageColor ?? modelProps.palette.stage}
     />
   ),
   block: (component, { modelProps }) => (
-    <GenericBlock {...modelProps} size={component.size ?? BLOCK_SIZE_MM} />
+    <GenericBlock {...modelProps} size={fieldValue(component, "size")} />
   ),
   aom: (_, { modelProps }) => <Aom {...modelProps} />,
   eom: (_, { modelProps }) => <Eom {...modelProps} />,
