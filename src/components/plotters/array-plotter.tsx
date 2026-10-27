@@ -14,92 +14,17 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
+import { arraySeries } from "@/components/plotters/array-input";
+import { readCsvTable, type DataPoint } from "@/components/plotters/csv-parsing";
+import { firstTwoColumns, type Series } from "@/components/plotters/csv-series";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { SidebarFold } from "@/components/sidebar-fold";
 
 ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-type Point = {
-  x: number;
-  y: number;
-};
-
-type ParseResult = {
-  error: string | null;
-  points: Point[];
-  xCount: number;
-  yCount: number;
-};
-
 const defaultX = "[0, 1, 2, 3, 4, 5, 6]";
 const defaultY = "[0, 1, 4, 9, 16, 25, 36]";
-
-function parseNumberArray(value: string): number[] {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return [];
-  }
-
-  const parsed = trimmed.startsWith("[")
-    ? JSON.parse(trimmed)
-    : trimmed.split(/[\s,]+/).filter(Boolean);
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("Expected an array of numbers.");
-  }
-
-  return parsed.map((entry) => {
-    const numeric = typeof entry === "number" ? entry : Number(entry);
-
-    if (!Number.isFinite(numeric)) {
-      throw new Error("Arrays must contain only finite numbers.");
-    }
-
-    return numeric;
-  });
-}
-
-function buildSeries(xInput: string, yInput: string): ParseResult {
-  try {
-    const x = parseNumberArray(xInput);
-    const y = parseNumberArray(yInput);
-
-    if (x.length === 0 || y.length === 0) {
-      return {
-        error: "Enter at least one value in both arrays.",
-        points: [],
-        xCount: x.length,
-        yCount: y.length,
-      };
-    }
-
-    if (x.length !== y.length) {
-      return {
-        error: "x and y need the same number of entries.",
-        points: [],
-        xCount: x.length,
-        yCount: y.length,
-      };
-    }
-
-    return {
-      error: null,
-      points: x.map((xValue, index) => ({ x: xValue, y: y[index] })),
-      xCount: x.length,
-      yCount: y.length,
-    };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Unable to parse the arrays.",
-      points: [],
-      xCount: 0,
-      yCount: 0,
-    };
-  }
-}
 
 const chartOptions: ChartOptions<"scatter"> = {
   responsive: true,
@@ -130,16 +55,16 @@ export default function ArrayPlotter() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [xInput, setXInput] = useState(defaultX);
   const [yInput, setYInput] = useState(defaultY);
-  const [csvDatasets, setCsvDatasets] = useState<CsvDataset[]>([]);
+  const [csvDatasets, setCsvDatasets] = useState<Series[]>([]);
   const [csvStatus, setCsvStatus] = useState<string | null>(null);
   const [csvError, setCsvError] = useState<string | null>(null);
 
-  const series = buildSeries(xInput, yInput);
+  const series = arraySeries(xInput, yInput);
   const usingCsvMode = csvDatasets.length > 0;
 
   const chartData: ChartData<"scatter"> = {
     datasets: usingCsvMode
-      ? csvDatasets.map<ChartDataset<"scatter", Point[]>>((dataset) => {
+      ? csvDatasets.map<ChartDataset<"scatter", DataPoint[]>>((dataset) => {
           return {
             label: dataset.label,
             data: dataset.points,
@@ -165,7 +90,9 @@ export default function ArrayPlotter() {
     }
 
     const results = await Promise.all(
-      files.map(async (file) => parseArrayCsv(await file.text(), file.name)),
+      files.map(async (file) =>
+        firstTwoColumns(readCsvTable(await file.text(), "columns"), file.name),
+      ),
     );
     const firstError = results.find((result) => result.error);
 

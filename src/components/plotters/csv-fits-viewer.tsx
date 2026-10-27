@@ -14,7 +14,8 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
+import { readCsvTable, type DataPoint } from "@/components/plotters/csv-parsing";
+import { timeSeries } from "@/components/plotters/csv-series";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import { describeFitsError } from "@/components/plotters/fits-errors";
 import { parseFitsFile, type FitsSummary } from "@/components/plotters/fits-file";
@@ -111,7 +112,8 @@ function CsvCompactPanel() {
       cancelled = true;
     };
   }, []);
-  const parsed = parseTimeSeriesCsv(csvInput);
+  const table = readCsvTable(csvInput, "columns");
+  const parsed = timeSeries(table);
 
   const chartData: ChartData<"scatter"> = {
     datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>(

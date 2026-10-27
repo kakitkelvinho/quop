@@ -14,7 +14,8 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { parseTimeSeriesCsv, type DataPoint } from "@/components/plotters/csv-parsing";
+import { readCsvTable, type DataPoint } from "@/components/plotters/csv-parsing";
+import { timeSeries } from "@/components/plotters/csv-series";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { SidebarFold } from "@/components/sidebar-fold";
@@ -97,7 +98,8 @@ export default function CsvPlotter() {
     };
   }, []);
 
-  const parsed = parseTimeSeriesCsv(csvInput);
+  const table = readCsvTable(csvInput, "columns");
+  const parsed = timeSeries(table);
 
   const chartData: ChartData<"scatter"> = {
     datasets: parsed.series.map<ChartDataset<"scatter", DataPoint[]>>((channel) => {
@@ -204,12 +206,12 @@ export default function CsvPlotter() {
             </div>
           </label>
 
-          {parsed.extraInfo ? (
+          {table.extraInfo ? (
             <label className="field">
               <span>Metadata</span>
               <div className="field__control field__control--textarea">
                 <textarea
-                  value={parsed.extraInfo}
+                  value={table.extraInfo}
                   readOnly
                   spellCheck={false}
                   aria-label="Non-plotted file metadata"

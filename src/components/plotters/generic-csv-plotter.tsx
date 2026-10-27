@@ -14,17 +14,22 @@ import {
   type ChartOptions,
 } from "chart.js";
 
-import { clockTicks, formatClock, hasSeconds } from "@/components/plotters/clock-axis";
 import {
-  parseGenericCsv,
+  clockTicks,
+  formatClock,
+  formatClockPoint,
+  hasSeconds,
+} from "@/components/plotters/clock-axis";
+import {
+  readCsvTable,
   type CsvLayout,
   type DataPoint,
 } from "@/components/plotters/csv-parsing";
+import { resolveX, xLabel as axisLabel, xySeries } from "@/components/plotters/csv-series";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { XYPicker } from "@/components/plotters/xy-picker";
 import {
-  ROW_NUMBER,
   resolveY,
   swapX,
   yCandidates,
@@ -74,16 +79,12 @@ export default function GenericCsvPlotter() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   // undefined: the parser picks (columns, unless the file is a wide export)
   const [layout, setLayout] = useState<CsvLayout | undefined>(undefined);
-  const parsed = useMemo(() => parseGenericCsv(csvInput, layout), [csvInput, layout]);
+  const parsed = useMemo(() => readCsvTable(csvInput, layout), [csvInput, layout]);
   // null: the file's clock column if it has one, else its first column
   const [xColumnIndex, setXColumnIndex] = useState<number | null>(null);
   const [ySelection, setYSelection] = useState<YSelection>(null);
 
-  const chosenXColumnIndex = xColumnIndex ?? parsed.clockColumns[0] ?? 0;
-  const resolvedXColumnIndex =
-    parsed.headers.length < 2 || chosenXColumnIndex === ROW_NUMBER
-      ? ROW_NUMBER
-      : Math.min(chosenXColumnIndex, parsed.headers.length - 1);
+  const resolvedXColumnIndex = resolveX(parsed, xColumnIndex);
   const yCandidateIndexes = useMemo(
     () => yCandidates(parsed.headers.length, resolvedXColumnIndex, parsed.clockColumns),
     [parsed.headers.length, parsed.clockColumns, resolvedXColumnIndex],
@@ -93,32 +94,23 @@ export default function GenericCsvPlotter() {
     [ySelection, yCandidateIndexes],
   );
 
-  const xLabel =
-    resolvedXColumnIndex === ROW_NUMBER
-      ? "row number"
-      : (parsed.headers[resolvedXColumnIndex] ?? "x");
+  const xLabel = axisLabel(parsed, resolvedXColumnIndex);
   const isClockX = parsed.clockColumns.includes(resolvedXColumnIndex);
 
   // rebuilt only when the table or the X / Y choice changes: folding the
   // sidebar or typing elsewhere must not redraw thousands of points
   const chartData = useMemo<ChartData<"scatter">>(
     () => ({
-      datasets: resolvedYColumnIndexes.map<ChartDataset<"scatter", DataPoint[]>>(
-        (columnIndex) => ({
-          label: parsed.headers[columnIndex],
-          // a blank cell is a gap in its own series only
-          data: parsed.rows
-            .map((row, rowIndex) => ({
-              x: resolvedXColumnIndex === ROW_NUMBER ? rowIndex + 1 : row[resolvedXColumnIndex],
-              y: row[columnIndex],
-            }))
-            .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y)),
-          showLine: true,
-          borderWidth: 2,
-          pointRadius: 1.5,
-          pointHoverRadius: 3,
-        }),
-      ),
+      datasets: xySeries(parsed, resolvedXColumnIndex, resolvedYColumnIndexes).map<
+        ChartDataset<"scatter", DataPoint[]>
+      >(({ label, points }) => ({
+        label,
+        data: points,
+        showLine: true,
+        borderWidth: 2,
+        pointRadius: 1.5,
+        pointHoverRadius: 3,
+      })),
     }),
     [parsed, resolvedXColumnIndex, resolvedYColumnIndexes],
   );
@@ -151,7 +143,12 @@ export default function GenericCsvPlotter() {
               enabled: true,
               callbacks: {
                 label: (context) =>
-                  `${context.dataset.label}: (${formatClock(context.parsed.x ?? Number.NaN, clockSeconds)}, ${context.parsed.y?.toLocaleString()})`,
+                  formatClockPoint(
+                    context.dataset.label,
+                    context.parsed.x,
+                    context.parsed.y,
+                    clockSeconds,
+                  ),
               },
             }
           : { enabled: true },
