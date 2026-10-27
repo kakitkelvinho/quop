@@ -50,7 +50,8 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
 import { beamsHit } from "@/components/builder/beam-pick";
-import { ComponentMesh, leavesFromStub } from "@/components/builder/component-models";
+import { ComponentMesh } from "@/components/builder/component-models";
+import { leavesFromStub } from "@/components/builder/connection-jacks";
 import {
   GroupRotationHandle,
   PartRotationHandle,

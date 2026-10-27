@@ -5,7 +5,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { memo, useMemo } from "react";
 import { CatmullRomCurve3, Vector3 } from "three";
 
-import { FIBER_STUBS, connectionJack, leavesFromStub } from "@/components/builder/component-models";
+import { FIBER_STUBS, connectionJack, leavesFromStub } from "@/components/builder/connection-jacks";
 import {
   CONNECTION_KINDS,
   bodyCentre,
@@ -44,12 +44,13 @@ function endPoints(part: BuilderComponent, other: BuilderComponent, kind: Connec
   if (stub) {
     // the stub curls to the part's +z; mirror it when the other end is on its -z side
     const side = toward.z < 0 ? -1 : 1;
-    return stub(height).points.map((point) => placed(new Vector3(point.x, point.y, point.z * side)));
+    return stub(height).map(([px, py, pz]) => placed(new Vector3(px, py, pz * side)));
   }
 
-  const jack = connectionJack(part, kind, toward);
+  const jack = connectionJack(part, kind, toward.z);
   if (jack) {
-    const { at, out } = jack;
+    const at = new Vector3(...jack.at);
+    const out = new Vector3(...jack.out);
     const h = at.y;
     // a connector pointing up lifts the cable clear, then it bends over toward the other end
     const rising = out.y > 0.5;
