@@ -37,7 +37,11 @@ export function FileDrop({
         event.preventDefault();
         setOver(true);
       }}
-      onDragLeave={() => setOver(false)}
+      onDragLeave={(event) => {
+        // moving onto one of the row's own children fires a leave too; only
+        // leaving the row itself ends the drag-over
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOver(false);
+      }}
       onDrop={(event) => {
         event.preventDefault();
         setOver(false);

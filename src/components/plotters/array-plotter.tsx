@@ -1,207 +1,59 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
-import {
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-  type ChartData,
-  type ChartDataset,
-  type ChartOptions,
-} from "chart.js";
+import { useMemo, useState } from "react";
 
-import { parseArrayCsv, type CsvDataset } from "@/components/plotters/csv-parsing";
+import { arraySeries } from "@/components/plotters/array-input";
+import { readCsvTable } from "@/components/plotters/csv-parsing";
+import { firstTwoColumns } from "@/components/plotters/csv-series";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
-import { SidebarFold } from "@/components/sidebar-fold";
-
-ChartJS.register(LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
-type Point = {
-  x: number;
-  y: number;
-};
-
-type ParseResult = {
-  error: string | null;
-  points: Point[];
-  xCount: number;
-  yCount: number;
-};
+import { PlotterShell } from "@/components/plotters/plotter-shell";
+import { useCsvFiles } from "@/components/plotters/use-plotter-source";
 
 const defaultX = "[0, 1, 2, 3, 4, 5, 6]";
 const defaultY = "[0, 1, 4, 9, 16, 25, 36]";
 
-function parseNumberArray(value: string): number[] {
-  const trimmed = value.trim();
-
-  if (!trimmed) {
-    return [];
-  }
-
-  const parsed = trimmed.startsWith("[")
-    ? JSON.parse(trimmed)
-    : trimmed.split(/[\s,]+/).filter(Boolean);
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("Expected an array of numbers.");
-  }
-
-  return parsed.map((entry) => {
-    const numeric = typeof entry === "number" ? entry : Number(entry);
-
-    if (!Number.isFinite(numeric)) {
-      throw new Error("Arrays must contain only finite numbers.");
-    }
-
-    return numeric;
-  });
-}
-
-function buildSeries(xInput: string, yInput: string): ParseResult {
-  try {
-    const x = parseNumberArray(xInput);
-    const y = parseNumberArray(yInput);
-
-    if (x.length === 0 || y.length === 0) {
-      return {
-        error: "Enter at least one value in both arrays.",
-        points: [],
-        xCount: x.length,
-        yCount: y.length,
-      };
-    }
-
-    if (x.length !== y.length) {
-      return {
-        error: "x and y need the same number of entries.",
-        points: [],
-        xCount: x.length,
-        yCount: y.length,
-      };
-    }
-
-    return {
-      error: null,
-      points: x.map((xValue, index) => ({ x: xValue, y: y[index] })),
-      xCount: x.length,
-      yCount: y.length,
-    };
-  } catch (error) {
-    return {
-      error: error instanceof Error ? error.message : "Unable to parse the arrays.",
-      points: [],
-      xCount: 0,
-      yCount: 0,
-    };
-  }
-}
-
-const chartOptions: ChartOptions<"scatter"> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: true, position: "top" },
-    title: { display: false },
-    tooltip: { enabled: true },
-  },
-  scales: {
-    x: {
-      type: "linear",
-      title: { display: true, text: "x" },
-      grid: { color: "rgba(91, 102, 117, 0.18)" },
-    },
-    y: {
-      title: { display: true, text: "y" },
-      grid: { color: "rgba(91, 102, 117, 0.18)" },
-    },
-  },
-  elements: {
-    point: { radius: 3, hoverRadius: 5 },
-    line: { tension: 0 },
-  },
-};
-
 export default function ArrayPlotter() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [xInput, setXInput] = useState(defaultX);
   const [yInput, setYInput] = useState(defaultY);
-  const [csvDatasets, setCsvDatasets] = useState<CsvDataset[]>([]);
-  const [csvStatus, setCsvStatus] = useState<string | null>(null);
-  const [csvError, setCsvError] = useState<string | null>(null);
+  const csv = useCsvFiles();
 
-  const series = buildSeries(xInput, yInput);
-  const usingCsvMode = csvDatasets.length > 0;
+  const series = useMemo(() => arraySeries(xInput, yInput), [xInput, yInput]);
 
-  const chartData: ChartData<"scatter"> = {
-    datasets: usingCsvMode
-      ? csvDatasets.map<ChartDataset<"scatter", Point[]>>((dataset) => {
-          return {
-            label: dataset.label,
-            data: dataset.points,
-            showLine: true,
-            borderWidth: 2,
-          };
-        })
-      : [
-          {
-            label: "Input series",
-            data: series.points,
-            showLine: true,
-            borderWidth: 2,
-          },
-        ],
-  };
-
-  async function handleCsvUpload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-
-    if (!files.length) {
-      return;
-    }
-
-    const results = await Promise.all(
-      files.map(async (file) => parseArrayCsv(await file.text(), file.name)),
+  // the uploaded files, read; the first that can't be plotted stops them all
+  const csvResult = useMemo(() => {
+    const results = csv.files.map((file) =>
+      firstTwoColumns(readCsvTable(file.text, "columns"), file.label),
     );
     const firstError = results.find((result) => result.error);
 
     if (firstError) {
-      setCsvDatasets([]);
-      setCsvStatus(null);
-      setCsvError(firstError.error);
-      event.target.value = "";
-      return;
+      return { datasets: [], skippedRowCount: 0, error: firstError.error };
     }
 
-    const datasets = results.flatMap((result) => result.datasets);
-    setCsvDatasets(datasets);
-    const skippedRowCount = results.reduce(
-      (total, result) => total + result.skippedRowCount,
-      0,
-    );
-    setCsvStatus(
-      `${files.length} file${files.length === 1 ? "" : "s"}.${
-        skippedRowCount > 0
-          ? ` ${skippedRowCount} skipped.`
-          : ""
-      }`,
-    );
-    setCsvError(null);
-    event.target.value = "";
-  }
+    return {
+      datasets: results.flatMap((result) => result.datasets),
+      skippedRowCount: results.reduce((total, result) => total + result.skippedRowCount, 0),
+      error: csv.error,
+    };
+  }, [csv.files, csv.error]);
 
-  function handleClearCsv() {
-    setCsvDatasets([]);
-    setCsvStatus(null);
-    setCsvError(null);
-  }
+  const csvDatasets = csvResult.datasets;
+  const csvError = csvResult.error;
+  const usingCsvMode = csvDatasets.length > 0;
 
+  // rebuilt only when the data changes: folding the sidebar must not make
+  // the chart look through every point again
+  const chartSeries = useMemo(
+    () => (usingCsvMode ? csvDatasets : [{ label: "Input series", points: series.points }]),
+    [usingCsvMode, csvDatasets, series.points],
+  );
+
+  const fileCount = csv.files.length;
   const statusMessage = usingCsvMode
-    ? csvStatus ?? `${csvDatasets.length} dataset${csvDatasets.length === 1 ? "" : "s"}.`
+    ? `${fileCount} file${fileCount === 1 ? "" : "s"}.${
+        csvResult.skippedRowCount > 0 ? ` ${csvResult.skippedRowCount} skipped.` : ""
+      }`
     : series.error
       ? series.error
       : `${series.points.length} points.`;
@@ -209,26 +61,16 @@ export default function ArrayPlotter() {
   const activeError = usingCsvMode ? csvError : series.error;
 
   return (
-    <div
-      className={`visualizerLayout${sidebarCollapsed ? " visualizerLayout--sidebarCollapsed" : ""}`}
-    >
-      <div className="visualizerSidebar">
-        <SidebarFold
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((collapsed) => !collapsed)}
-        />
-        <div className="inputCard fieldStack">
-          <h2>Data</h2>
-
+    <PlotterShell
+      sidebar={
+        <>
           <label className="field">
             <span>CSV, TSV or TXT files</span>
             <FileDrop
               kind="CSV, TSV or TXT file"
               accept={TABLE_FILE_ACCEPT}
               multiple
-              onChange={(event) => {
-                void handleCsvUpload(event);
-              }}
+              onChange={csv.upload}
             />
           </label>
 
@@ -236,7 +78,7 @@ export default function ArrayPlotter() {
             <button
               type="button"
               className="buttonLink"
-              onClick={handleClearCsv}
+              onClick={csv.clear}
             >
               Clear CSVs
             </button>
@@ -267,20 +109,18 @@ export default function ArrayPlotter() {
           </label>
 
           <p className="resultCard">{csvError ?? statusMessage}</p>
-        </div>
+        </>
+      }
+    >
+      <h2>Plot</h2>
+      <div className="visualizerChartSurface">
+        <InteractiveScatterChart series={chartSeries} xLabel="x" yLabel="y" legend="boxes" />
+        {activeError ? (
+          <div className="visualizerEmptyState visualizerOverlayState">
+            Invalid data.
+          </div>
+        ) : null}
       </div>
-
-      <div className="sectionCard visualizerChartCard">
-        <h2>Plot</h2>
-        <div className="visualizerChartSurface">
-          <InteractiveScatterChart data={chartData} options={chartOptions} />
-          {activeError ? (
-            <div className="visualizerEmptyState visualizerOverlayState">
-              Invalid data.
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </div>
+    </PlotterShell>
   );
 }
