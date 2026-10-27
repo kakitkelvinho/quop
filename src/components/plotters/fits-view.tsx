@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import type { ChartData, ChartOptions } from "chart.js";
 
+import { titleFromFileName } from "@/components/plotters/figure-spec";
 import type { FitsSummary } from "@/components/plotters/fits-file";
 import FitsHeaderDisplay from "@/components/plotters/fits-header-display";
 import FitsImageViewer from "@/components/plotters/fits-image-viewer";
@@ -43,33 +43,6 @@ export function FitsMetaGrid({ summary, className = "fitsMetaGrid" }: { summary:
   );
 }
 
-function seriesOptions(summary: FitsSummary | null): ChartOptions<"scatter"> {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: { display: false },
-      tooltip: { enabled: true },
-    },
-    scales: {
-      x: {
-        type: "linear",
-        title: { display: true, text: summary?.kind === "series" ? summary.xLabel : "x" },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
-      },
-      y: {
-        title: { display: true, text: summary?.kind === "series" ? summary.yLabel : "value" },
-        grid: { color: "rgba(91, 102, 117, 0.18)" },
-      },
-    },
-    elements: {
-      point: { radius: 1.75, hoverRadius: 3.5 },
-      line: { tension: 0 },
-    },
-  };
-}
-
 /**
  * A FITS file drawn: a 1D file as a trace, a 2D one in the Image view, with
  * its header beside it. `surfaceClassName` styles the drawing's box, and
@@ -84,23 +57,10 @@ export function FitsView({
   surfaceClassName: string;
   emptyText: string;
 }) {
-  const seriesData = useMemo<ChartData<"scatter">>(
-    () =>
-      summary?.kind === "series"
-        ? {
-            datasets: [
-              {
-                label: summary.sourceLabel,
-                data: summary.points,
-                showLine: true,
-                borderWidth: 2,
-              },
-            ],
-          }
-        : { datasets: [] },
+  const series = useMemo(
+    () => (summary?.kind === "series" ? [{ label: summary.sourceLabel, points: summary.points }] : []),
     [summary],
   );
-  const options = useMemo(() => seriesOptions(summary), [summary]);
 
   return (
     <FitsHeaderDisplay header={summary?.header ?? null}>
@@ -109,7 +69,13 @@ export function FitsView({
           <div className="visualizerEmptyState">{emptyText}</div>
         ) : null}
         {summary?.kind === "series" ? (
-          <InteractiveScatterChart data={seriesData} options={options} sourceLabel={summary.sourceLabel} />
+          <InteractiveScatterChart
+            series={series}
+            xLabel={summary.xLabel}
+            yLabel={summary.yLabel}
+            title={titleFromFileName(summary.sourceLabel)}
+            pointSize={1.75}
+          />
         ) : null}
         {summary?.kind === "image" ? (
           <FitsImageViewer key={summary.sourceLabel} summary={summary} />

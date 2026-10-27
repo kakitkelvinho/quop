@@ -1,32 +1,11 @@
-import localFont from "next/font/local";
 import type { CartesianScaleOptions, Chart, ChartType, FontSpec, Plugin, Scale, TRBL } from "chart.js";
 import { toFont, toPadding } from "chart.js/helpers";
-
-import type { PdfFont } from "./pdf-export.ts";
-import { fontFamilyNames, type FontAliases } from "./svg-export.ts";
 
 // The plotters' shared look: matplotlib's defaults, drawn over Chart.js. A
 // boxed frame with inward ticks on all four spines (major and minor), the
 // Computer Modern serif, the tab10 colour cycle, no grid, and axis labels
-// that take a light ^ / _ markup for super- and subscripts.
-
-const cmuSerif = localFont({
-  src: "./fonts/cmu-serif-500-roman.woff2",
-  display: "swap",
-  fallback: ["Latin Modern Roman", "Times New Roman", "serif"],
-});
-
-/** Computer Modern (CMU Serif), as a family string the canvas can use. */
-export const MATPLOTLIB_FONT_FAMILY = cmuSerif.style.fontFamily;
-
-// next/font's own names lead the stack: the web font, then the metric-matched fallback it generates
-const [cmuWebFamily, cmuMetricFallback] = fontFamilyNames(MATPLOTLIB_FONT_FAMILY);
-
-/** In a file those names mean nothing; the web font is CMU Serif, which a paper's machine may have. */
-export const SVG_FONT_ALIASES: FontAliases = { [cmuWebFamily]: "CMU Serif", [cmuMetricFallback]: null };
-
-/** A PDF carries the web font itself, under that same name. */
-export const PDF_FONT: PdfFont = { family: "CMU Serif", webFamily: cmuWebFamily };
+// that take a light ^ / _ markup for super- and subscripts. The font itself
+// is in chart-fonts.ts.
 
 /** matplotlib's default colour cycle, `tab10`. */
 export const TAB10 = [

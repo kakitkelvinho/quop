@@ -9,7 +9,6 @@ import {
   type PointerEvent,
 } from "react";
 import dynamic from "next/dynamic";
-import { type ChartData, type ChartOptions } from "chart.js";
 
 import {
   buildColorBarStops,
@@ -40,7 +39,16 @@ import {
   TRUE_PIXEL_ASPECT,
 } from "@/components/plotters/pixel-aspect";
 import { chooseSurfaceStep } from "@/components/plotters/surface-geometry";
+import {
+  AxisLabelsIcon,
+  ResetZoomIcon,
+  SaveIcon,
+  TitleIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "@/components/plotters/chart-icons";
 import { ChartInfo, ToolGesture } from "@/components/plotters/chart-info";
+import { titleFromFileName } from "@/components/plotters/figure-spec";
 import { SignIcon } from "@/components/sign-icon";
 import { useNumberDraft } from "@/components/use-number-draft";
 
@@ -232,132 +240,6 @@ function buildSliceBandStyle(
   };
 }
 
-function ResetZoomIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle
-        cx="10"
-        cy="10"
-        r="5.5"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M13 13 17 20"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="3"
-      />
-      <path
-        d="M5 5 20 20"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="4"
-      />
-      <path
-        d="M20 5 5 20"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="4"
-      />
-    </svg>
-  );
-}
-
-function ZoomInIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M10 6.8v6.4M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function ZoomOutIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M15 15 20.5 20.5" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path d="M6.8 10h6.4" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-    </svg>
-  );
-}
-
-function AxisLabelsIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <text
-        x="5"
-        y="16.2"
-        fill="currentColor"
-        fontFamily="Cambria Math, STIX Two Math, Times New Roman, serif"
-        fontSize="12.5"
-        fontStyle="italic"
-        fontWeight="700"
-      >
-        xy
-      </text>
-    </svg>
-  );
-}
-
-function TitleIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M5.5 5.5h13v13h-13z"
-        fill="none"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <rect x="8" y="7.4" width="8" height="3.3" rx="0.8" fill="currentColor" />
-    </svg>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M6 19h12"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M12 5v10"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="m8.5 11.5 3.5 3.5 3.5-3.5"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-      <path
-        d="M7 19v-3.5h10V19"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
 function SliceIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -487,16 +369,6 @@ const CAMERA_PRESET_OPTIONS: Array<{ label: string; title: string; value: Camera
   { label: "Side y", title: "Side-on, y across", value: "side-y" },
 ];
 
-function getDefaultTitleFromSourceLabel(sourceLabel: string) {
-  const normalized = sourceLabel.replace(/\\/g, "/").split("/").pop()?.trim() ?? "";
-
-  if (!normalized) {
-    return "";
-  }
-
-  return normalized.replace(/\.[^.]+$/, "");
-}
-
 function getExportFileName(title: string, xAxisLabel: string, yAxisLabel: string) {
   const baseName = (title || xAxisLabel || yAxisLabel || "fits-image")
     .trim()
@@ -557,7 +429,7 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
   const [selectedColumn, setSelectedColumn] = useState(() => Math.floor(summary.width / 2));
   const [titleControlsOpen, setTitleControlsOpen] = useState(false);
   const [chartTitle, setChartTitle] = useState(() =>
-    getDefaultTitleFromSourceLabel(summary.sourceLabel),
+    titleFromFileName(summary.sourceLabel),
   );
   const [chartTitleFontSize, setChartTitleFontSize] = useState(18);
   const [axisControlsOpen, setAxisControlsOpen] = useState(false);
@@ -969,58 +841,9 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
     () => buildSliceSeries(summary, sliceAxis, activeRow, activeColumn),
     [activeColumn, activeRow, sliceAxis, summary],
   );
-  const sliceChartData: ChartData<"scatter"> = useMemo(
-    () => ({
-      datasets: [
-        {
-          label: sliceSeries.selectionLabel,
-          data: sliceSeries.points,
-          parsing: false,
-          showLine: true,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          borderWidth: 2,
-        },
-      ],
-    }),
+  const sliceChartSeries = useMemo(
+    () => [{ label: sliceSeries.selectionLabel, points: sliceSeries.points }],
     [sliceSeries],
-  );
-  const sliceChartOptions: ChartOptions<"scatter"> = useMemo(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        title: {
-          display: true,
-          text: sliceSeries.selectionLabel,
-        },
-        tooltip: { enabled: true },
-      },
-      scales: {
-        x: {
-          type: "linear",
-          title: {
-            display: true,
-            text: sliceSeries.axisLabel,
-          },
-          grid: { color: "rgba(91, 102, 117, 0.16)" },
-        },
-        y: {
-          title: {
-            display: true,
-            text: "Intensity",
-          },
-          grid: { color: "rgba(91, 102, 117, 0.16)" },
-        },
-      },
-      elements: {
-        line: { tension: 0 },
-        point: { radius: 0, hoverRadius: 3 },
-      },
-    }),
-    [sliceSeries.axisLabel, sliceSeries.selectionLabel],
   );
 
   return (
@@ -1546,9 +1369,12 @@ function FitsImageViewerInner({ summary }: { summary: FitsImageSummary }) {
             </div>
             <div className="fitsSlicePanel__chart">
               <InteractiveScatterChart
-                data={sliceChartData}
-                options={sliceChartOptions}
-                sourceLabel={`${summary.sourceLabel}-${sliceSeries.selectionLabel}`}
+                animate={false}
+                pointSize={0}
+                series={sliceChartSeries}
+                title={sliceSeries.selectionLabel}
+                xLabel={sliceSeries.axisLabel}
+                yLabel="Intensity"
               />
             </div>
           </section>

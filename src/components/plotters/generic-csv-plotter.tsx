@@ -1,32 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Chart as ChartJS,
-  Legend,
-  LineElement,
-  LinearScale,
-  PointElement,
-  Title,
-  Tooltip,
-  type ChartData,
-  type ChartDataset,
-  type ChartOptions,
-} from "chart.js";
-
-import {
-  clockTicks,
-  formatClock,
-  formatClockPoint,
-  hasSeconds,
-} from "@/components/plotters/clock-axis";
-import {
-  readCsvTable,
-  type CsvLayout,
-  type DataPoint,
-} from "@/components/plotters/csv-parsing";
+import { hasSeconds } from "@/components/plotters/clock-axis";
+import { readCsvTable, type CsvLayout } from "@/components/plotters/csv-parsing";
 import { resolveX, xLabel as axisLabel, xySeries } from "@/components/plotters/csv-series";
 import { createGenericDemoCsv, DEMO_GENERIC_LABEL } from "@/components/plotters/demo-csv";
+import { titleFromFileName, type XFormat } from "@/components/plotters/figure-spec";
 import { FileDrop, TABLE_FILE_ACCEPT } from "@/components/plotters/file-drop";
 import InteractiveScatterChart from "@/components/plotters/interactive-scatter-chart";
 import { PlotterShell } from "@/components/plotters/plotter-shell";
@@ -39,24 +18,10 @@ import {
   type YSelection,
 } from "@/components/plotters/xy-selection";
 
-ChartJS.register(
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-);
-
 // past this many points or series the chart is drawn without animating
 // them in: setting up the animations alone takes seconds
 const LARGE_PLOT_POINTS = 20000;
 const LARGE_PLOT_SERIES = 50;
-
-// a clock axis's tick, with seconds when the ticks are less than a minute apart
-function formatClockTick(value: number, ticks: { value: number }[]) {
-  return formatClock(value, ticks.length > 1 && ticks[1].value - ticks[0].value < 60);
-}
 
 const demoCsv = { text: createGenericDemoCsv(), label: DEMO_GENERIC_LABEL };
 
@@ -95,85 +60,22 @@ export default function GenericCsvPlotter() {
 
   // rebuilt only when the table or the X / Y choice changes: folding the
   // sidebar or typing elsewhere must not redraw thousands of points
-  const chartData = useMemo<ChartData<"scatter">>(
-    () => ({
-      datasets: xySeries(parsed, resolvedXColumnIndex, resolvedYColumnIndexes).map<
-        ChartDataset<"scatter", DataPoint[]>
-      >(({ label, points }) => ({
-        label,
-        data: points,
-        showLine: true,
-        borderWidth: 2,
-        pointRadius: 1.5,
-        pointHoverRadius: 3,
-      })),
-    }),
+  const chartSeries = useMemo(
+    () => xySeries(parsed, resolvedXColumnIndex, resolvedYColumnIndexes),
     [parsed, resolvedXColumnIndex, resolvedYColumnIndexes],
   );
 
-  const pointCount = chartData.datasets.reduce((sum, dataset) => sum + dataset.data.length, 0);
-  const isLargePlot =
-    pointCount > LARGE_PLOT_POINTS || chartData.datasets.length > LARGE_PLOT_SERIES;
+  const pointCount = chartSeries.reduce((sum, { points }) => sum + points.length, 0);
+  const isLargePlot = pointCount > LARGE_PLOT_POINTS || chartSeries.length > LARGE_PLOT_SERIES;
 
-  const chartOptions = useMemo<ChartOptions<"scatter">>(() => {
-    // the tooltip shows seconds when the readings are finer than a minute
-    const clockSeconds =
-      isClockX && hasSeconds(parsed.rows.map((row) => row[resolvedXColumnIndex]));
-
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: isLargePlot ? false : undefined,
-      plugins: {
-        legend: {
-          display: true,
-          position: "top",
-          labels: {
-            usePointStyle: true,
-            boxWidth: 10,
-          },
-        },
-        title: { display: false },
-        tooltip: isClockX
-          ? {
-              enabled: true,
-              callbacks: {
-                label: (context) =>
-                  formatClockPoint(
-                    context.dataset.label,
-                    context.parsed.x,
-                    context.parsed.y,
-                    clockSeconds,
-                  ),
-              },
-            }
-          : { enabled: true },
-      },
-      scales: {
-        x: {
-          type: "linear",
-          title: { display: true, text: xLabel },
-          grid: { color: "rgba(91, 102, 117, 0.18)" },
-          // a clock axis ticks on whole minutes, hours, ...
-          ...(isClockX
-            ? {
-                afterBuildTicks: (axis) => {
-                  axis.ticks = clockTicks(axis.min, axis.max).map((value) => ({ value }));
-                },
-              }
-            : {}),
-        },
-        y: {
-          title: { display: true, text: "selected columns" },
-          grid: { color: "rgba(91, 102, 117, 0.18)" },
-        },
-      },
-      elements: {
-        point: { radius: 1.5, hoverRadius: 3 },
-        line: { tension: 0 },
-      },
-    };
-  }, [isClockX, isLargePlot, parsed.rows, resolvedXColumnIndex, xLabel]);
+  // the tooltip shows seconds when the readings are finer than a minute
+  const xFormat = useMemo<XFormat | undefined>(
+    () =>
+      isClockX
+        ? { kind: "clock", seconds: hasSeconds(parsed.rows.map((row) => row[resolvedXColumnIndex])) }
+        : undefined,
+    [isClockX, parsed.rows, resolvedXColumnIndex],
+  );
 
   // the columns mean something else once the table is turned
   function handleLayoutChange(nextLayout: CsvLayout) {
@@ -286,10 +188,14 @@ export default function GenericCsvPlotter() {
       <div className="visualizerChartSurface">
         {canRenderChart ? (
           <InteractiveScatterChart
-            formatXTick={isClockX ? formatClockTick : undefined}
-            data={chartData}
-            options={chartOptions}
-            sourceLabel={source.label}
+            series={chartSeries}
+            xLabel={xLabel}
+            yLabel="selected columns"
+            legend="points"
+            title={titleFromFileName(source.label)}
+            xFormat={xFormat}
+            pointSize={1.5}
+            animate={!isLargePlot}
           />
         ) : null}
         {!canRenderChart ? (
