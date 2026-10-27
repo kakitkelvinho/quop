@@ -26,7 +26,11 @@ for (const plotter of plotters) {
     // the chart, so it settles a pixel or two differently from run to run.
     // Giving each chart a fixed height for the screenshot keeps it the same.
     await page.addStyleTag({ content: ".interactiveChart__stage { height: 420px; }" });
-    await expect(page).toHaveScreenshot({ fullPage: true });
+    // A chart also measures its labels with whatever font is ready when it
+    // first draws, which can move the plot area by a pixel or two. So a
+    // plotter may differ in up to 1% of its pixels, not the usual 0.1%:
+    // that jitter stays well under it, and a broken chart goes far over it.
+    await expect(page).toHaveScreenshot({ fullPage: true, maxDiffPixelRatio: 0.01 });
   });
 }
 

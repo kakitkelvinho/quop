@@ -37,30 +37,33 @@ CI runs them on every pull request, in the same `ci` check as lint and the unit 
 
 **Run them locally**
 
+Fonts render slightly differently on each machine, so the saved screenshots are made in Playwright's Linux Docker image, which renders like CI. With [Docker](https://www.docker.com/) installed, this runs every test exactly as CI does:
+
 ```sh
-npm ci
-npx playwright install chromium   # once: downloads Playwright's browser
-npm run test:ui                   # builds the site, then runs every test
+docker run --rm -v "$PWD":/work -v quop-node-modules:/work/node_modules -w /work \
+  mcr.microsoft.com/playwright:v1.63.0-noble bash -c "npm ci && npm run test:ui"
 ```
 
-The saved screenshots are Linux images, made on the same OS as CI, because fonts render slightly differently on each OS. On macOS or Windows run `npm run test:ui -- --ignore-snapshots` to check behaviour only and leave the screenshots to CI.
+(`quop-node-modules` keeps the container's Linux packages apart from your own `node_modules`.)
+
+Without Docker, check behaviour only and leave the screenshots to CI:
+
+```sh
+npm ci
+npx playwright install chromium            # once: downloads Playwright's browser
+npm run test:ui -- --ignore-snapshots      # builds the site, then runs the tests
+```
 
 **After an intended visual change**
 
-A screenshot test fails when a page looks different. When the change is wanted, save new screenshots and commit them with the change. On Linux:
+A screenshot test fails when a page looks different. When the change is wanted, make new screenshots by adding `-- --update-snapshots` to the Docker command:
 
 ```sh
-npm run test:ui -- --update-snapshots
+docker run --rm -v "$PWD":/work -v quop-node-modules:/work/node_modules -w /work \
+  mcr.microsoft.com/playwright:v1.63.0-noble bash -c "npm ci && npm run test:ui -- --update-snapshots"
 ```
 
-On macOS or Windows, run the same command in Playwright's Linux image with Docker (afterwards run `npm ci` again, since it replaces `node_modules` with Linux builds):
-
-```sh
-docker run --rm -v "$PWD":/work -w /work mcr.microsoft.com/playwright:v1.63.0-noble \
-  bash -c "npm ci && npm run test:ui -- --update-snapshots"
-```
-
-Look at the new images in `tests/ui/*-snapshots/` before committing them.
+Look at the new images in `tests/ui/*-snapshots/`, then commit them with the change.
 
 **When CI fails**
 
