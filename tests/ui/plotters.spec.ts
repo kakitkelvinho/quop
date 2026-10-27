@@ -17,16 +17,15 @@ const plotters = [
 
 for (const plotter of plotters) {
   test(`${plotter.path} plots its sample`, async ({ page }) => {
-    // A chart takes its size from the text around it as first drawn, so if a
-    // web font arrives late the chart can end up a few pixels off. Opening
-    // the page twice means the second visit has every font in the cache.
     await page.goto(plotter.path);
-    await page.evaluate(() => document.fonts.ready);
-    await page.reload();
     for (const text of plotter.status) {
       await expect(page.locator(".resultCard", { hasText: text })).toBeVisible();
     }
     await expect(page.locator("canvas").first()).toBeVisible();
+    // A chart sizes itself to the space around it, and that space depends on
+    // the chart, so it settles a pixel or two differently from run to run.
+    // Giving each chart a fixed height for the screenshot keeps it the same.
+    await page.addStyleTag({ content: ".interactiveChart__stage { height: 420px; }" });
     await expect(page).toHaveScreenshot({ fullPage: true });
   });
 }

@@ -25,9 +25,16 @@ export default defineConfig({
   },
   use: {
     browserName: "chromium",
-    // Draw WebGL (the Builder's 3D table) in software. Without this, every
-    // screenshot taken in the same browser after the Builder test fails.
-    launchOptions: { args: ["--use-angle=swiftshader"] },
+    launchOptions: {
+      args: [
+        // Draw WebGL (the Builder's 3D table) in software. Without this, every
+        // screenshot taken in the same browser after the Builder test fails.
+        "--use-angle=swiftshader",
+        // Draw text the same whatever the machine's font settings, so the
+        // screenshots made on one Linux match those made on another.
+        "--font-render-hinting=none",
+      ],
+    },
     baseURL: `http://localhost:${port}${basePath}/`,
     viewport: { width: 1280, height: 900 },
     // the homepage's chalk and scroll animations hold still when motion is reduced
