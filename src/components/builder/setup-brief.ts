@@ -2,7 +2,8 @@
 // a setup file for the experiment they describe. The prose is written here;
 // the component types, their heights and the defaults come from types.ts, so
 // a new type shows up on its own. A new field on a component, beam,
-// connection or frame won't typecheck until it has a line in the tables below.
+// connection or frame won't typecheck until it has a line in the tables below,
+// or, for a field only some kinds of component have, in COMPONENT_FIELDS.
 // setup-brief.test.ts opens the worked example with the setup parser.
 
 import {
@@ -11,42 +12,26 @@ import {
   BEAM_OPACITY_RANGE,
   BEAM_WIDTH_MM,
   BEAM_WIDTH_RANGE_MM,
-  BLOCK_SIZE_MM,
-  BLOCK_SIZE_RANGE_MM,
-  CAVITY_LENGTH_RANGE_MM,
   PART_CATEGORIES,
   COMPONENT_SPECS,
   CONNECTION_KINDS,
   CONNECTION_LENGTH_RANGE_M,
-  DEFAULT_CAVITY_LENGTH_MM,
-  DEFAULT_FOCAL_LENGTH_MM,
-  DEFAULT_OBJECTIVE_LENGTH_MM,
-  DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
-  DELAY_MIN_PATH_MM,
-  DELAY_MIN_PATH_RANGE_MM,
-  DELAY_TRAVEL_MM,
-  DELAY_TRAVEL_RANGE_MM,
-  FOCAL_LENGTH_RANGE_MM,
-  OBJECTIVE_LENGTH_RANGE_MM,
   FRAME_COLORS,
   FRAME_FILL_OPACITY,
   FRAME_FILL_OPACITY_RANGE,
   FRAME_SIZE_RANGE_MM,
-  HOST_TYPES,
-  INTERNAL_PATH_RANGE_MM,
   LABEL_SCALE_RANGE,
-  LIT_TYPES,
   MOUNTED_TYPES,
-  PARTICLE_RADIUS_MM,
-  PARTICLE_RADIUS_RANGE_MM,
   ROTATION_STEP_DEG,
-  SAMPLE_OPACITY,
-  SAMPLE_OPACITY_RANGE,
   SCENE_VERSION,
-  STAGED_TYPES,
   TABLE_GUARD_MM,
+  COMPONENT_FIELDS,
+  briefCode as code,
+  briefRange as range,
+  briefTypeList as typeList,
   defaultHeight,
+  kindsWhere,
   heightRange,
   type Beam,
   type BuilderComponent,
@@ -55,22 +40,14 @@ import {
   type Connection,
   type Frame,
   type Group,
+  type KindField,
 } from "./types.ts";
 
-/** One line per field. `only` names the type a component field belongs to. */
-type FieldDocs<T> = { [K in keyof T]-?: { text: string; only?: ComponentType | ComponentType[] } };
+/** One line per field. */
+type FieldDocs<T> = { [K in keyof T]-?: { text: string } };
 
-/** Whether a field documented as `only` some types is one of `type`'s own. */
-const ownField = (only: ComponentType | ComponentType[] | undefined, type: ComponentType) =>
-  Array.isArray(only) ? only.includes(type) : only === type;
-
-const range = ([min, max]: [number, number], unit = "") => `${min}–${max}${unit}`;
-const code = (value: unknown) => `\`${JSON.stringify(value)}\``;
-/** `a`, `b` or `c` */
-function typeList(types: Iterable<ComponentType>, last: "and" | "or"): string {
-  const names = [...types].map((type) => `\`${type}\``);
-  return names.length > 1 ? `${names.slice(0, -1).join(", ")} ${last} ${names.at(-1)}` : names.join("");
-}
+/** The kinds that have `field`, in COMPONENT_SPECS's order. */
+const kindsWith = (field: KindField) => kindsWhere((spec) => spec.fields.includes(field));
 
 const FILE_FIELDS: FieldDocs<BuilderSceneData> = {
   version: {
@@ -88,7 +65,8 @@ const FILE_FIELDS: FieldDocs<BuilderSceneData> = {
   },
 };
 
-const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
+/** The fields every component has; those only some kinds have are in COMPONENT_FIELDS. */
+const COMMON_FIELDS: FieldDocs<Pick<BuilderComponent, "id" | "type" | "position" | "rotation" | "color" | "label">> = {
   id: { text: "text, unique in the file. Beams, connections and particles refer to the part by it." },
   type: { text: "one of the type ids under **Component types**. A part of another type is dropped." },
   position: {
@@ -99,72 +77,6 @@ const COMPONENT_FIELDS: FieldDocs<BuilderComponent> = {
     text: `a hex colour such as ${code(DEFAULT_MOUNT_COLOR)}; missing means the part's own colour. On a ${typeList(MOUNTED_TYPES, "or")} it tints the mount, to mark the beam line the part serves.`,
   },
   label: { text: "text drawn on the part's tag, such as `PBS`, `λ/2` or `780 nm ECDL`; missing shows the type's short name." },
-  lensShape: { text: `${code("plano-convex")} (the default) or ${code("biconvex")}.`, only: "lens" },
-  focalLength: {
-    text: `mm, ${range(FOCAL_LENGTH_RANGE_MM)}; default ${DEFAULT_FOCAL_LENGTH_MM}. It sets the drawn curvature.`,
-    only: "lens",
-  },
-  cavityLength: {
-    text: `mm between its two mirrors, ${range(CAVITY_LENGTH_RANGE_MM)}; default ${DEFAULT_CAVITY_LENGTH_MM}.`,
-    only: "cavity",
-  },
-  objectiveLength: {
-    text: `mm from the back of its thread to its nose, ${range(OBJECTIVE_LENGTH_RANGE_MM)}; default ${DEFAULT_OBJECTIVE_LENGTH_MM}. Only the barrel stretches.`,
-    only: "objective",
-  },
-  opacity: { text: `${range(SAMPLE_OPACITY_RANGE)}; default ${SAMPLE_OPACITY}.`, only: "sample" },
-  host: {
-    text: `the id of the ${typeList(HOST_TYPES, "or")} it sits in. It is then drawn at its host's centre, whatever its own position says, and moves with it.`,
-    only: "particle",
-  },
-  periscope: {
-    text: "the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.",
-    only: "periscope-top",
-  },
-  delayMinPathMm: {
-    text: `mm, its minimum delay: the path a beam through it gains with its stage at 0, like a laser's \`internalPathMm\`. It is not drawn. ${range(DELAY_MIN_PATH_RANGE_MM)}; default ${DELAY_MIN_PATH_MM}.`,
-    only: "delay-line",
-  },
-  delayTravelMm: {
-    text: `mm, how far its stage can travel, ${range(DELAY_TRAVEL_RANGE_MM)}; default ${DELAY_TRAVEL_MM}. Its rail is drawn long enough for it.`,
-    only: "delay-line",
-  },
-  delayStageMm: {
-    text: "mm the stage has travelled, from 0 to `delayTravelMm`; default 0. A beam through it gains `delayMinPathMm` plus twice this, out and back, and counts both in its path length.",
-    only: "delay-line",
-  },
-  lightColor: {
-    text: `a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam down to its carriage and back); default ${code(DEFAULT_LIGHT_COLOR)}.`,
-    only: [...LIT_TYPES],
-  },
-  lightHidden: {
-    text: "`true` leaves the light inside it out of the drawing; leave it out otherwise.",
-    only: [...LIT_TYPES],
-  },
-  sampleStage: {
-    text: '`"side"` draws its XYZ stage beside it, across the beam, holding it on an arm; `"none"` draws it floating. Leave it out for the default, the stage under it on a post.',
-    only: "sample",
-  },
-  stageColor: {
-    text: "a hex colour for the plates of the translation stage it stands on (the micrometers stay silver). Leave it out for the theme's own: near-black by day, dark grey at night.",
-    only: [...STAGED_TYPES],
-  },
-  sampleStageLeft: {
-    text: '`true` puts a `"side"` stage on the sample\'s left (−z, looking along +x) instead of its right; leave it out otherwise.',
-    only: "sample",
-  },
-  particleRadius: {
-    text: `mm, ${range(PARTICLE_RADIUS_RANGE_MM)}; default ${PARTICLE_RADIUS_MM}.`,
-    only: "particle",
-  },
-  size: {
-    text: `\`[along x, height, along z]\`, mm, each ${range(BLOCK_SIZE_RANGE_MM)}; default ${code(BLOCK_SIZE_MM)}. Its height (y) is the block's centre, so one resting on the table has y = half its height.`,
-    only: "block",
-  },
-  internalPathMm: {
-    text: `mm of light path inside the laser before it leaves, such as a folded delay, ${range(INTERNAL_PATH_RANGE_MM)}; default 0. A beam that starts at this laser counts it in its path length.`,
-    only: "laser-source",
-  },
 };
 
 const BEAM_FIELDS: FieldDocs<Beam> = {
@@ -224,12 +136,12 @@ const GROUP_FIELDS: FieldDocs<Group> = {
   },
 };
 
-function fieldList<T>(fields: FieldDocs<T>, keep: (doc: { only?: ComponentType | ComponentType[] }) => boolean = () => true): string {
-  return (Object.entries(fields) as [string, { text: string; only?: ComponentType | ComponentType[] }][])
-    .filter(([, doc]) => keep(doc))
-    .map(([key, doc]) => `- \`${key}\`: ${doc.text}`)
-    .join("\n");
+function fieldList<T>(fields: FieldDocs<T>): string {
+  return (Object.entries(fields) as [string, { text: string }][]).map(([key, doc]) => `- \`${key}\`: ${doc.text}`).join("\n");
 }
+
+/** The fields only some kinds have, in the brief's order. */
+const KIND_FIELDS = Object.keys(COMPONENT_FIELDS) as KindField[];
 
 function heightLine(type: ComponentType): string {
   const [min, max] = heightRange(type);
@@ -241,9 +153,7 @@ function componentTypes(): string {
   return PART_CATEGORIES.map(({ name, types }) => {
     const entries = types.map((type) => {
       const spec = COMPONENT_SPECS[type];
-      const own = (Object.entries(COMPONENT_FIELDS) as [string, { only?: ComponentType | ComponentType[] }][])
-        .filter(([, doc]) => ownField(doc.only, type))
-        .map(([key]) => `\`${key}\``);
+      const own = KIND_FIELDS.filter((field) => spec.fields.includes(field)).map((field) => `\`${field}\``);
       const fields = own.length ? ` Its own fields: ${own.join(", ")}.` : "";
       return `- \`${type}\`: ${spec.label}. ${heightLine(type)}${fields}`;
     });
@@ -346,14 +256,11 @@ ${fieldList(FILE_FIELDS)}
 
 Every component has:
 
-${fieldList(COMPONENT_FIELDS, (doc) => !doc.only)}
+${fieldList(COMMON_FIELDS)}
 
 Some types read fields of their own; leave them out to take the default:
 
-${(Object.entries(COMPONENT_FIELDS) as [string, { text: string; only?: ComponentType | ComponentType[] }][])
-  .filter(([, doc]) => doc.only)
-  .map(([key, doc]) => `- \`${key}\` (${typeList([doc.only!].flat(), "and")} only): ${doc.text}`)
-  .join("\n")}
+${KIND_FIELDS.map((field) => `- \`${field}\` (${typeList(kindsWith(field), "and")} only): ${COMPONENT_FIELDS[field].brief}`).join("\n")}
 
 ### A beam
 
