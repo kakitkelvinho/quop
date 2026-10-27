@@ -34,8 +34,15 @@ test("Builder opens with its table", async ({ page }) => {
 test("an unknown address shows the 404 page", async ({ page }) => {
   const response = await page.goto("no-such-page/");
   expect(response?.status()).toBe(404);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not found");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("No page at this address.");
+  const address = page.locator(".notFound__address");
+  await expect(address).toHaveText(/\/no-such-page\/$/);
   // the 404 page fetches the site's other pages ahead of a click; let that settle
   await page.waitForLoadState("networkidle");
+  // On CI the address starts with the /quop base path, so the screenshot
+  // shows it without, the same everywhere.
+  await address.evaluate((element) => {
+    element.textContent = "/no-such-page/";
+  });
   await expect(page).toHaveScreenshot();
 });
