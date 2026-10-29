@@ -104,8 +104,8 @@ export const FORMULA_SHEETS: Record<string, FormulaSheet> = {
   },
   "/calculators/gaussian-beam": {
     equations: [
-      "z_\\mathrm{R} = \\frac{\\pi w_0^2}{\\lambda}",
-      "\\theta = \\frac{\\lambda}{\\pi w_0}",
+      "z_\\mathrm{R} = \\frac{\\pi w_0^2}{M^2\\lambda}",
+      "\\theta = \\frac{M^2\\lambda}{\\pi w_0}",
       "b = 2z_\\mathrm{R}",
     ],
     symbols: [
@@ -118,6 +118,11 @@ export const FORMULA_SHEETS: Record<string, FormulaSheet> = {
       },
       { symbol: "b", meaning: "Confocal parameter: the depth of focus", unit: "\\text{as } z_\\mathrm{R}" },
       { symbol: "\\theta", meaning: "Far-field divergence, half-angle", unit: "\\mathrm{mrad}" },
+      {
+        symbol: "M^2",
+        meaning: "Beam quality factor, under Advanced: 1 for an ideal Gaussian, larger for a real beam",
+        value: "\\geq 1",
+      },
     ],
   },
 };

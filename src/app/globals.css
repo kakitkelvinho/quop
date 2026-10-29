@@ -501,6 +501,30 @@ select.linkedField__unit {
   font-weight: 500;
 }
 
+/* settings most readers leave alone, folded under the fields they qualify */
+.advancedSettings > summary {
+  padding: 0.2rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.advancedSettings__state {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.advancedSettings > .field {
+  margin-top: 0.6rem;
+}
+
+.advancedSettings__note {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 400;
+}
+
 /* A calculator's working, under its fields: the equations it uses, typeset
    with KaTeX, then a fold naming every symbol and each constant's value. */
 .formulaSheet {

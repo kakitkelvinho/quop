@@ -180,8 +180,9 @@ export function distanceQuantity(unit: DistanceUnit): Quantity {
 }
 
 // Gaussian beam: both are written as the waist radius w₀ in metres. The
-// Rayleigh range z_R = πw₀²/λ needs the wavelength, so without one it reads
-// and writes nothing.
+// Rayleigh range z_R = πw₀²/(M²λ) needs the wavelength, so without one it
+// reads and writes nothing. M² is 1 for an ideal Gaussian; a real beam's
+// larger M² shortens its Rayleigh range for the same waist.
 export function waistQuantity(unit: DistanceUnit): Quantity {
   return {
     read: (text) => {
@@ -192,17 +193,17 @@ export function waistQuantity(unit: DistanceUnit): Quantity {
   };
 }
 
-export function rayleighRangeQuantity(unit: DistanceUnit, wavelengthMetres: number | null): Quantity {
+export function rayleighRangeQuantity(unit: DistanceUnit, wavelengthMetres: number | null, mSquared = 1): Quantity {
+  // M²λ: the wavelength an ideal Gaussian would need to spread as this beam does
+  const spread = wavelengthMetres === null ? null : mSquared * wavelengthMetres;
   return {
     read: (text) => {
       const range = readNumber(text);
-      if (range === null || range <= 0 || wavelengthMetres === null) return null;
-      return Math.sqrt((range * DISTANCE_UNITS[unit] * wavelengthMetres) / Math.PI);
+      if (range === null || range <= 0 || spread === null) return null;
+      return Math.sqrt((range * DISTANCE_UNITS[unit] * spread) / Math.PI);
     },
     write: (waist) =>
-      wavelengthMetres === null
-        ? ""
-        : formatSignificant((Math.PI * waist ** 2) / wavelengthMetres / DISTANCE_UNITS[unit], 5),
+      spread === null ? "" : formatSignificant((Math.PI * waist ** 2) / spread / DISTANCE_UNITS[unit], 5),
   };
 }
 

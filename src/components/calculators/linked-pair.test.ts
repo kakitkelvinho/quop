@@ -135,6 +135,12 @@ describe("Gaussian beam", () => {
     assert.deepEqual(linkedTexts(editField(1, "29.526"), beam(1064e-9)), ["100.000", "29.526"]);
   });
 
+  it("shortens the Rayleigh range by M² for the same waist", () => {
+    const real: LinkedQuantities = [waistQuantity("um"), rayleighRangeQuantity("mm", 1064e-9, 1.3)];
+    // 29.526 mm / 1.3
+    assert.deepEqual(linkedTexts(editField(0, "100"), real), ["100", "22.712"]);
+  });
+
   it("gives nothing without a wavelength, nor for a waist of zero", () => {
     assert.deepEqual(linkedTexts(editField(0, "100"), beam(null)), ["100", ""]);
     assert.deepEqual(linkedTexts(editField(1, "10"), beam(null)), ["", "10"]);
