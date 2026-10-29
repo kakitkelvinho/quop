@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 
 import { DecimalNote } from "@/components/calculators/decimal-note";
 import { formatSignificant } from "@/components/calculators/format-quantity";
+import { GaussianBeamProfile } from "@/components/calculators/gaussian-beam-profile";
 import { LinkedFields } from "@/components/calculators/linked-fields";
 import {
   changeUnit,
@@ -111,6 +112,13 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
             </span>
           </span>
         </p>
+
+        <GaussianBeamProfile
+          waist={waistMetres === null ? null : waistMetres / DISTANCE_UNITS[waistUnit]}
+          rayleigh={rayleighMetres === null ? null : rayleighMetres / DISTANCE_UNITS[rangeUnit]}
+          waistUnit={unitLabel(waistUnit)}
+          rangeUnit={unitLabel(rangeUnit)}
+        />
       </div>
 
       {children}

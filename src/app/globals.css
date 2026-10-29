@@ -578,6 +578,102 @@ select.linkedField__unit {
   color: var(--muted);
 }
 
+/* The Gaussian beam's side view: intensity shaded in the accent, the beam
+   radius in ink, the far-field cone and ±z_R as quieter dashes. */
+.beamProfile {
+  --beam: var(--accent);
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* on the black board the station blue sinks; the night ring's lighter blue holds */
+html[data-theme="dark"] .beamProfile {
+  --beam: #4f8dd6;
+}
+
+.beamProfile svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.beamProfile stop {
+  stop-color: var(--beam);
+}
+
+.beamProfile__grid line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.beamProfile__axis rect {
+  fill: none;
+  stroke: var(--border);
+}
+
+.beamProfile__axis text,
+.beamProfile__note {
+  fill: var(--muted);
+}
+
+.beamProfile__envelope {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 1.6;
+}
+
+.beamProfile__cone {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 6 4;
+}
+
+.beamProfile__rayleigh {
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 3;
+}
+
+.beamProfile__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.beamProfile__legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.beamProfile__key {
+  display: inline-block;
+  width: 1.4rem;
+  height: 0;
+  border-top: 2px solid var(--foreground);
+}
+
+.beamProfile__key--intensity {
+  height: 0.7rem;
+  border: 0;
+  background: linear-gradient(transparent, var(--beam), transparent);
+}
+
+.beamProfile__key--cone {
+  border-top: 2px dashed var(--muted);
+}
+
+.beamProfile__key--rayleigh {
+  border-top: 2px dotted var(--muted);
+}
+
 /* The Hairline Rule: a card is content grouped on the page, not a box. No
    border, no shadow, no fill; one hairline between two cards, nothing above
    the first or below the last. */
