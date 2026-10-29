@@ -67,6 +67,10 @@ function AdvancedField({
   );
 }
 
+/** The divergence's units, as radians per unit. */
+const ANGLE_UNITS = { mrad: 1e-3, "°": Math.PI / 180 } as const;
+type AngleUnit = keyof typeof ANGLE_UNITS;
+
 const LENGTH_OPTIONS = Object.keys(DISTANCE_UNITS).map((unit) => ({ value: unit, label: unitLabel(unit) }));
 
 /** `children`: the working under the fields, typeset on the server. */
@@ -77,6 +81,7 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
   const [pair, setPair] = useState<LinkedPair>(() => editField(0, "100"));
   const [waistUnit, setWaistUnit] = useState<DistanceUnit>("um");
   const [rangeUnit, setRangeUnit] = useState<DistanceUnit>("mm");
+  const [angleUnit, setAngleUnit] = useState<AngleUnit>("mrad");
 
   const nanometres = readNumber(wavelength);
   const typedLambda = nanometres !== null && nanometres > 0 ? nanometres * 1e-9 : null;
@@ -181,8 +186,20 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
           <span className="readoutAside__item">
             Divergence (half-angle) <span className="readout__formula">M²λ/(πnw₀)</span>{" "}
             <span className="readoutAside__value">
-              {divergence === null ? "—" : `${formatSignificant(divergence * 1e3, 4)} mrad`}
-            </span>
+              {divergence === null ? "—" : formatSignificant(divergence / ANGLE_UNITS[angleUnit], 4)}
+            </span>{" "}
+            <select
+              className="readoutAside__unit"
+              aria-label="Divergence unit"
+              value={angleUnit}
+              onChange={(event) => setAngleUnit(event.target.value as AngleUnit)}
+            >
+              {Object.keys(ANGLE_UNITS).map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
           </span>
         </p>
       </div>

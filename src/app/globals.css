@@ -385,6 +385,18 @@ a.toolCard:focus-visible {
   font-weight: 600;
 }
 
+/* a unit picker inside the line of smaller answers, as small as the words */
+.readoutAside__unit {
+  padding: 0.05rem 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .readoutAside .readout__formula {
   margin-left: 0;
 }

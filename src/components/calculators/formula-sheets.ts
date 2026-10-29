@@ -115,7 +115,7 @@ export const FORMULA_SHEETS: Record<string, FormulaSheet> = {
         meaning: "Rayleigh range",
         unit: "\\text{chosen above}",
       },
-      { symbol: "\\theta", meaning: "Far-field divergence, half-angle, in the medium", unit: "\\mathrm{mrad}" },
+      { symbol: "\\theta", meaning: "Far-field divergence, half-angle, in the medium", unit: "\\mathrm{mrad} \\text{ or } {}^\\circ" },
       {
         symbol: "M^2",
         meaning: "Beam quality factor (1 = ideal Gaussian)",
