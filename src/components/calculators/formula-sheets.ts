@@ -104,25 +104,23 @@ export const FORMULA_SHEETS: Record<string, FormulaSheet> = {
   },
   "/calculators/gaussian-beam": {
     equations: [
-      "z_\\mathrm{R} = \\frac{\\pi w_0^2}{M^2\\lambda}",
-      "\\theta = \\frac{M^2\\lambda}{\\pi w_0}",
-      "b = 2z_\\mathrm{R}",
+      "z_\\mathrm{R} = \\frac{\\pi w_0^2 n}{M^2\\lambda}",
+      "\\theta = \\frac{M^2\\lambda}{\\pi n w_0}",
     ],
     symbols: [
       { symbol: "\\lambda", meaning: "Wavelength in vacuum", unit: "\\mathrm{nm}" },
       { symbol: "w_0", meaning: "Waist radius, where the intensity falls to 1/e²", unit: "\\text{chosen above}" },
       {
         symbol: "z_\\mathrm{R}",
-        meaning: "Rayleigh range: the distance from the waist at which the beam is √2 wider",
+        meaning: "Rayleigh range",
         unit: "\\text{chosen above}",
       },
-      { symbol: "b", meaning: "Confocal parameter: the depth of focus", unit: "\\text{as } z_\\mathrm{R}" },
-      { symbol: "\\theta", meaning: "Far-field divergence, half-angle", unit: "\\mathrm{mrad}" },
+      { symbol: "\\theta", meaning: "Far-field divergence, half-angle, in the medium", unit: "\\mathrm{mrad}" },
       {
         symbol: "M^2",
-        meaning: "Beam quality factor, under Advanced: 1 for an ideal Gaussian, larger for a real beam",
-        value: "\\geq 1",
+        meaning: "Beam quality factor (1 = ideal Gaussian)",
       },
+      { symbol: "n", meaning: "Refractive index of the medium at the focus (1 = air)" },
     ],
   },
 };

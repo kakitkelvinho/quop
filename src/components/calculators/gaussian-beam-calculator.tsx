@@ -20,13 +20,60 @@ import {
 import { readFlexibleDecimal } from "@/components/calculators/parse-flexible-decimal";
 import { ToolIntro } from "@/components/tool-intro";
 
+/**
+ * A setting under Advanced: a number with a note on what it means, and a
+ * warning in its place when the number is out of range.
+ */
+function AdvancedField({
+  label,
+  value,
+  onChange,
+  valid,
+  invalidNote,
+  note,
+}: {
+  label: string;
+  value: string;
+  onChange: (text: string) => void;
+  valid: boolean;
+  invalidNote: string;
+  note: string;
+}) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <div className="field__control">
+        <input
+          id={id}
+          aria-describedby={`${id}-note`}
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          spellCheck={false}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
+      {valid || value.trim() === "" ? (
+        <DecimalNote reading={readFlexibleDecimal(value)} />
+      ) : (
+        <p className="advancedSettings__note">{invalidNote}</p>
+      )}
+      <p className="advancedSettings__note" id={`${id}-note`}>
+        {note}
+      </p>
+    </div>
+  );
+}
+
 const LENGTH_OPTIONS = Object.keys(DISTANCE_UNITS).map((unit) => ({ value: unit, label: unitLabel(unit) }));
 
 /** `children`: the working under the fields, typeset on the server. */
 export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
   const [wavelength, setWavelength] = useState("1064");
   const [mSquaredText, setMSquaredText] = useState("1");
-  const mSquaredId = useId();
+  const [indexText, setIndexText] = useState("1");
   const [pair, setPair] = useState<LinkedPair>(() => editField(0, "100"));
   const [waistUnit, setWaistUnit] = useState<DistanceUnit>("um");
   const [rangeUnit, setRangeUnit] = useState<DistanceUnit>("mm");
@@ -36,13 +83,17 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
   // M² is at least 1: no beam spreads slower than an ideal Gaussian
   const mSquared = readNumber(mSquaredText);
   const mSquaredValid = mSquared !== null && mSquared >= 1;
-  const lambda = mSquaredValid ? typedLambda : null;
+  const index = readNumber(indexText);
+  const indexValid = index !== null && index > 0;
+  const lambda = mSquaredValid && indexValid ? typedLambda : null;
   const waist = waistQuantity(waistUnit);
-  const range = rayleighRangeQuantity(rangeUnit, lambda, mSquared ?? 1);
+  const rangeIn = (unit: DistanceUnit) => rayleighRangeQuantity(unit, lambda, mSquared ?? 1, index ?? 1);
+  const range = rangeIn(rangeUnit);
 
   // The waist in metres, from whichever field was typed in last.
   const waistMetres = [waist, range][pair.source].read(pair.text);
-  const spread = lambda !== null && mSquared !== null ? mSquared * lambda : null;
+  // M²λ/n: how fast the beam spreads, as the wavelength an ideal Gaussian in vacuum would need
+  const spread = lambda !== null && mSquared !== null && index !== null ? (mSquared * lambda) / index : null;
   const divergence = waistMetres !== null && spread !== null ? spread / (Math.PI * waistMetres) : null;
   const rayleighMetres = waistMetres !== null && spread !== null ? (Math.PI * waistMetres ** 2) / spread : null;
 
@@ -71,31 +122,24 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
           <summary>
             Advanced
             {mSquaredValid && mSquared !== 1 ? <span className="advancedSettings__state"> · M² = {mSquaredText.trim()}</span> : null}
+            {indexValid && index !== 1 ? <span className="advancedSettings__state"> · n = {indexText.trim()}</span> : null}
           </summary>
-          <div className="field">
-            <label htmlFor={mSquaredId}>Beam quality M²</label>
-            <div className="field__control">
-              <input
-                id={mSquaredId}
-                aria-describedby={`${mSquaredId}-note`}
-                type="text"
-                inputMode="decimal"
-                autoComplete="off"
-                spellCheck={false}
-                value={mSquaredText}
-                onChange={(event) => setMSquaredText(event.target.value)}
-              />
-            </div>
-            {mSquaredValid || mSquaredText.trim() === "" ? (
-              <DecimalNote reading={readFlexibleDecimal(mSquaredText)} />
-            ) : (
-              <p className="advancedSettings__note">M² is at least 1; 1 is an ideal Gaussian.</p>
-            )}
-            <p className="advancedSettings__note" id={`${mSquaredId}-note`}>
-              1 for an ideal Gaussian (TEM₀₀). A real beam with M² above 1 spreads M² times faster and has an M²
-              times shorter Rayleigh range for the same waist.
-            </p>
-          </div>
+          <AdvancedField
+            label="Beam quality M²"
+            value={mSquaredText}
+            onChange={setMSquaredText}
+            valid={mSquaredValid}
+            invalidNote="M² is at least 1."
+            note="1 for an ideal Gaussian (TEM₀₀); real beams are above 1."
+          />
+          <AdvancedField
+            label="Refractive index n"
+            value={indexText}
+            onChange={setIndexText}
+            valid={indexValid}
+            invalidNote="n must be above 0."
+            note="Of the medium the focus is in: 1 for air, about 1.5 for glass, 1.66 for BBO."
+          />
         </details>
 
         <LinkedFields
@@ -125,7 +169,7 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
                 options: LENGTH_OPTIONS,
                 onChange: (value) => {
                   const next = value as DistanceUnit;
-                  setPair(changeUnit(pair, 1, range, rayleighRangeQuantity(next, lambda, mSquared ?? 1)));
+                  setPair(changeUnit(pair, 1, range, rangeIn(next)));
                   setRangeUnit(next);
                 },
               },
@@ -135,18 +179,9 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
 
         <p className="readoutAside">
           <span className="readoutAside__item">
-            Divergence (half-angle) <span className="readout__formula">M²λ/(πw₀)</span>{" "}
+            Divergence (half-angle) <span className="readout__formula">M²λ/(πnw₀)</span>{" "}
             <span className="readoutAside__value">
               {divergence === null ? "—" : `${formatSignificant(divergence * 1e3, 4)} mrad`}
-            </span>
-          </span>
-          <span aria-hidden="true"> · </span>
-          <span className="readoutAside__item">
-            Depth of focus{" "}
-            <span className="readoutAside__value">
-              {rayleighMetres === null
-                ? "—"
-                : `${formatSignificant((2 * rayleighMetres) / DISTANCE_UNITS[rangeUnit], 4)} ${unitLabel(rangeUnit)}`}
             </span>
           </span>
         </p>

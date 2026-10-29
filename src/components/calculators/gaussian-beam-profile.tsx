@@ -369,10 +369,10 @@ export function GaussianBeamProfile({
           <i className="beamProfile__key beamProfile__key--slice" aria-hidden="true" /> Cross-section slice
         </span>
         <span>
-          <i className="beamProfile__key beamProfile__key--waist" aria-hidden="true" /> Waist w₀, for scale
+          <i className="beamProfile__key beamProfile__key--waist" aria-hidden="true" /> Waist w₀
         </span>
         <span className="beamProfile__aside">
-          The window stays put as you edit, so the beam stretches or swells in it. In the side view z and r are on different scales; the cross-section is to scale.
+          Side view: z and r on different scales. Cross-section: to scale.
         </span>
       </figcaption>
     </figure>

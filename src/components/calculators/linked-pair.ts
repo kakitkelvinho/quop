@@ -180,9 +180,10 @@ export function distanceQuantity(unit: DistanceUnit): Quantity {
 }
 
 // Gaussian beam: both are written as the waist radius w₀ in metres. The
-// Rayleigh range z_R = πw₀²/(M²λ) needs the wavelength, so without one it
+// Rayleigh range z_R = πw₀²n/(M²λ) needs the wavelength, so without one it
 // reads and writes nothing. M² is 1 for an ideal Gaussian; a real beam's
-// larger M² shortens its Rayleigh range for the same waist.
+// larger M² shortens its Rayleigh range for the same waist. Inside a medium
+// of index n the wavelength is λ/n, so the beam spreads n times slower.
 export function waistQuantity(unit: DistanceUnit): Quantity {
   return {
     read: (text) => {
@@ -193,9 +194,14 @@ export function waistQuantity(unit: DistanceUnit): Quantity {
   };
 }
 
-export function rayleighRangeQuantity(unit: DistanceUnit, wavelengthMetres: number | null, mSquared = 1): Quantity {
-  // M²λ: the wavelength an ideal Gaussian would need to spread as this beam does
-  const spread = wavelengthMetres === null ? null : mSquared * wavelengthMetres;
+export function rayleighRangeQuantity(
+  unit: DistanceUnit,
+  wavelengthMetres: number | null,
+  mSquared = 1,
+  index = 1,
+): Quantity {
+  // M²λ/n: the wavelength an ideal Gaussian in vacuum would need to spread as this beam does
+  const spread = wavelengthMetres === null ? null : (mSquared * wavelengthMetres) / index;
   return {
     read: (text) => {
       const range = readNumber(text);
