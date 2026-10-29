@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { LinkedFields } from "@/components/calculators/linked-fields";
 import {
@@ -23,7 +23,8 @@ const unitOptions = (units: Record<string, number>) =>
 const TIME_OPTIONS = unitOptions(TIME_UNITS);
 const DISTANCE_OPTIONS = unitOptions(DISTANCE_UNITS);
 
-export function LightTravelCalculator() {
+/** `children`: the working under the fields, typeset on the server. */
+export function LightTravelCalculator({ children }: { children?: ReactNode }) {
   const [pair, setPair] = useState<LinkedPair>(() => editField(0, "30"));
   const [timeUnit, setTimeUnit] = useState<TimeUnit>("fs");
   const [distanceUnit, setDistanceUnit] = useState<DistanceUnit>("um");
@@ -68,6 +69,8 @@ export function LightTravelCalculator() {
           ]}
         />
       </div>
+
+      {children}
     </section>
   );
 }

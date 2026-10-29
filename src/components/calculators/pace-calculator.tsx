@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { LinkedFields } from "@/components/calculators/linked-fields";
 import {
@@ -11,7 +11,8 @@ import {
 } from "@/components/calculators/linked-pair";
 import { ToolIntro } from "@/components/tool-intro";
 
-export function PaceCalculator() {
+/** `children`: the working under the fields, typeset on the server. */
+export function PaceCalculator({ children }: { children?: ReactNode }) {
   const [pair, setPair] = useState<LinkedPair>(() => editField(0, "4:30"));
 
   return (
@@ -29,6 +30,8 @@ export function PaceCalculator() {
           ]}
         />
       </div>
+
+      {children}
     </section>
   );
 }

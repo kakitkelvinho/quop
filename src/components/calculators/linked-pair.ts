@@ -85,8 +85,9 @@ export function readNumber(text: string): number | null {
 }
 
 // Energy and wavelength: both are written as the photon's energy in joules.
-const ELECTRON_VOLT = 1.602176634e-19;
-const PLANCK_TIMES_C = 6.62607015e-34 * 299_792_458;
+export const ELECTRON_VOLT = 1.602176634e-19;
+export const PLANCK = 6.62607015e-34;
+const PLANCK_TIMES_C = PLANCK * 299_792_458;
 
 export const energyQuantity: Quantity = {
   read: (text) => {
@@ -102,6 +103,34 @@ export const wavelengthQuantity: Quantity = {
     return nanometres !== null && nanometres > 0 ? PLANCK_TIMES_C / (nanometres * 1e-9) : null;
   },
   write: (joules) => formatSignificant(PLANCK_TIMES_C / joules / 1e-9, 5),
+};
+
+/** A photon's wavenumber 1/λ in cm⁻¹, from its energy in joules. */
+export const wavenumberFromEnergy = (joules: number) => joules / PLANCK_TIMES_C / 100;
+
+// Raman: both are written as the scattered light's wavenumber 1/λ in cm⁻¹.
+// The shift is measured from the excitation line, Δν̃ = 1/λ₀ − 1/λ, so it is
+// positive on the Stokes side (longer wavelength) and negative on the
+// anti-Stokes side. A shift past the excitation's own wavenumber has no light.
+export function ramanShiftQuantity(excitationWavenumber: number | null): Quantity {
+  return {
+    read: (text) => {
+      const shift = readNumber(text);
+      if (shift === null || excitationWavenumber === null) return null;
+      const scattered = excitationWavenumber - shift;
+      return scattered > 0 ? scattered : null;
+    },
+    write: (scattered) =>
+      excitationWavenumber === null ? "" : formatSignificant(excitationWavenumber - scattered, 5),
+  };
+}
+
+export const scatteredWavelengthQuantity: Quantity = {
+  read: (text) => {
+    const nanometres = readNumber(text);
+    return nanometres !== null && nanometres > 0 ? 1e7 / nanometres : null;
+  },
+  write: (wavenumber) => formatSignificant(1e7 / wavenumber, 6),
 };
 
 // Light travel: both are written as a time in seconds.

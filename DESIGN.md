@@ -190,7 +190,7 @@ The sign selectors live in one list at the end of `globals.css`, so the gesture 
 
 **Body & Display Font:** Source Sans 3 (with `-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif`)
 **Code Font:** `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace`, the system's own, not shipped — reserved for code: inline `code`, the Tabletop's JSON and AI brief, and the plotters' typed-array inputs. Measured values are not code: they are Source Sans with tabular figures (see Readout).
-**Equation Font:** EB Garamond italic (`--font-serif`) — reserved for the equations on the homepage board, which are hand-set HTML rather than KaTeX. Nothing else on the site is set in serif.
+**Equation Font:** EB Garamond italic (`--font-serif`) — reserved for the equations on the homepage board, which are hand-set HTML rather than KaTeX. The one other serif is KaTeX's own, in the formula sheet under each calculator (`formula-sheet.tsx`), where real fractions and subscripts are needed; it is typeset at build time, so the page ships no maths code. Nothing else on the site is set in serif.
 
 **Character:** Source Sans 3, Adobe's open-source sibling of Myriad, carries the whole interface, the Tabletop HUD included, so the brand speaks in one sans. It sits in the humanist signage tradition of Frutiger and the station boards it echoes. It sets smaller than a grotesk, so the root font size is `106.25%`. One variable file (200–900) is self-hosted in `src/app/fonts`. There's no separate display face. Size and weight do the work of hierarchy. Two faces depart from it, each scoped tightly: mono where the content is code, and Garamond italic where the content is a physicist's handwriting.
 

@@ -8,10 +8,13 @@ import {
   energyQuantity,
   linkedTexts,
   paceQuantity,
+  ramanShiftQuantity,
+  scatteredWavelengthQuantity,
   readNumber,
   speedQuantity,
   timeQuantity,
   wavelengthQuantity,
+  wavenumberFromEnergy,
   type LinkedQuantities,
 } from "./linked-pair.ts";
 import { parsePace } from "./pace.ts";
@@ -88,5 +91,32 @@ describe("parsePace", () => {
     assert.equal(parsePace("1:2:3"), null);
     assert.equal(parsePace("0:00"), null);
     assert.equal(parsePace(""), null);
+  });
+});
+
+describe("Raman shift", () => {
+  const excitation = wavenumberFromEnergy(wavelengthQuantity.read("532")!);
+  const raman: LinkedQuantities = [ramanShiftQuantity(excitation), scatteredWavelengthQuantity];
+
+  it("takes the excitation line's wavenumber as 1/λ in cm⁻¹", () => {
+    assert.ok(Math.abs(excitation - 1e7 / 532) < 1e-9);
+  });
+
+  it("puts a Stokes shift at a longer wavelength and anti-Stokes at a shorter one", () => {
+    // silicon's 520.7 cm⁻¹ line under a 532 nm laser
+    assert.deepEqual(linkedTexts(editField(0, "520.7"), raman), ["520.7", "547.157"]);
+    assert.deepEqual(linkedTexts(editField(0, "-520.7"), raman), ["-520.7", "517.660"]);
+  });
+
+  it("works the shift out from a scattered wavelength", () => {
+    assert.deepEqual(linkedTexts(editField(1, "547.157"), raman), ["520.70", "547.157"]);
+  });
+
+  it("has no scattered light for a shift past the excitation, nor without one", () => {
+    assert.deepEqual(linkedTexts(editField(0, "20000"), raman), ["20000", ""]);
+    assert.deepEqual(linkedTexts(editField(0, "1000"), [ramanShiftQuantity(null), scatteredWavelengthQuantity]), [
+      "1000",
+      "",
+    ]);
   });
 });

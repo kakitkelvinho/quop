@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction, type ReactNode } from "react";
 
 import { DecimalNote } from "@/components/calculators/decimal-note";
 import { formatPrefixed, formatSignificant } from "@/components/calculators/format-quantity";
@@ -51,7 +51,8 @@ function LaserField({
   );
 }
 
-export function LidtCalculator() {
+/** `children`: the working under the fields, typeset on the server. */
+export function LidtCalculator({ children }: { children?: ReactNode }) {
   const [laser, setLaser] = useState<LaserState>({
     power: "1",
     repetition: "1000",
@@ -130,6 +131,8 @@ export function LidtCalculator() {
           </p>
         </div>
       </div>
+
+      {children}
     </section>
   );
 }

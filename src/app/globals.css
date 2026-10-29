@@ -488,6 +488,96 @@ select.linkedField__unit {
   font-weight: 600;
 }
 
+/* a second set of fields on one calculator, named small above them */
+.calculatorSheet__heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.calculatorSheet__headingAside {
+  display: block;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+/* A calculator's working, under its fields: the equations it uses, typeset
+   with KaTeX, then a fold naming every symbol and each constant's value. */
+.formulaSheet {
+  display: grid;
+  /* minmax(0, …): a wide table scrolls in its fold, not the page */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  min-width: 0;
+  max-width: 36rem;
+  margin-top: 1rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+
+.formulaSheet__equations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 2.5rem;
+  font-size: 1.05rem;
+}
+
+.formulaSheet__equation {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.formulaSheet__equation .katex-display {
+  margin: 0.4rem 0;
+  text-align: left;
+}
+
+.formulaSheet__equation .katex-display > .katex {
+  text-align: left;
+}
+
+.formulaSheet__symbols > summary {
+  padding: 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formulaSheet__symbols table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.formulaSheet__symbols :is(th, td) {
+  padding: 0.4rem 1rem 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.formulaSheet__symbols thead th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.formulaSheet__symbols tbody th {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.formulaSheet__symbols td:nth-child(n + 3) {
+  white-space: nowrap;
+}
+
+.formulaSheet__none {
+  color: var(--muted);
+}
+
 /* The Hairline Rule: a card is content grouped on the page, not a box. No
    border, no shadow, no fill; one hairline between two cards, nothing above
    the first or below the last. */
