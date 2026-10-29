@@ -583,13 +583,70 @@ select.linkedField__unit {
 .beamProfile {
   --beam: var(--accent);
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  max-width: 60rem;
   margin: 0;
+}
+
+/* the side view and the cross-section side by side, at one height; stacked on a phone */
+.beamProfile__views {
+  display: grid;
+  grid-template-columns: minmax(0, 520fr) minmax(0, 300fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 40rem) {
+  .beamProfile__views {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .beamProfile__section {
+    max-width: 22rem;
+  }
 }
 
 /* on the black board the station blue sinks; the night ring's lighter blue holds */
 html[data-theme="dark"] .beamProfile {
   --beam: #4f8dd6;
+}
+
+.beamProfile__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+.beamProfile__sliceControl {
+  display: grid;
+  flex: 1 1 16rem;
+  gap: 0.3rem;
+  max-width: 28rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.beamProfile__sliceControl strong {
+  color: var(--foreground);
+}
+
+.beamProfile__sliceControl input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.buttonLink.beamProfile__fit {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.84rem;
+}
+
+.buttonLink.beamProfile__fit:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .beamProfile svg {
@@ -639,6 +696,18 @@ html[data-theme="dark"] .beamProfile {
   stroke-dasharray: 2 3;
 }
 
+.beamProfile__slice {
+  stroke: var(--beam);
+  stroke-width: 2;
+}
+
+.beamProfile__waistRing {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
 .beamProfile__legend {
   display: flex;
   flex-wrap: wrap;
@@ -672,6 +741,14 @@ html[data-theme="dark"] .beamProfile {
 
 .beamProfile__key--rayleigh {
   border-top: 2px dotted var(--muted);
+}
+
+.beamProfile__key--slice {
+  border-top-color: var(--beam);
+}
+
+.beamProfile__key--waist {
+  border-top: 2px dashed var(--muted);
 }
 
 /* The Hairline Rule: a card is content grouped on the page, not a box. No

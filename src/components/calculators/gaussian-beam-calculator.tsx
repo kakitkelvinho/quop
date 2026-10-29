@@ -112,14 +112,13 @@ export function GaussianBeamCalculator({ children }: { children?: ReactNode }) {
             </span>
           </span>
         </p>
-
-        <GaussianBeamProfile
-          waist={waistMetres === null ? null : waistMetres / DISTANCE_UNITS[waistUnit]}
-          rayleigh={rayleighMetres === null ? null : rayleighMetres / DISTANCE_UNITS[rangeUnit]}
-          waistUnit={unitLabel(waistUnit)}
-          rangeUnit={unitLabel(rangeUnit)}
-        />
       </div>
+
+      <GaussianBeamProfile
+        beam={waistMetres !== null && rayleighMetres !== null ? { waist: waistMetres, rayleigh: rayleighMetres } : null}
+        waistUnit={waistUnit}
+        rangeUnit={rangeUnit}
+      />
 
       {children}
     </section>
