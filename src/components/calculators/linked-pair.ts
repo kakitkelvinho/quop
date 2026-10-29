@@ -179,6 +179,33 @@ export function distanceQuantity(unit: DistanceUnit): Quantity {
   };
 }
 
+// Gaussian beam: both are written as the waist radius w₀ in metres. The
+// Rayleigh range z_R = πw₀²/λ needs the wavelength, so without one it reads
+// and writes nothing.
+export function waistQuantity(unit: DistanceUnit): Quantity {
+  return {
+    read: (text) => {
+      const waist = readNumber(text);
+      return waist !== null && waist > 0 ? waist * DISTANCE_UNITS[unit] : null;
+    },
+    write: (metres) => formatSignificant(metres / DISTANCE_UNITS[unit], 5),
+  };
+}
+
+export function rayleighRangeQuantity(unit: DistanceUnit, wavelengthMetres: number | null): Quantity {
+  return {
+    read: (text) => {
+      const range = readNumber(text);
+      if (range === null || range <= 0 || wavelengthMetres === null) return null;
+      return Math.sqrt((range * DISTANCE_UNITS[unit] * wavelengthMetres) / Math.PI);
+    },
+    write: (waist) =>
+      wavelengthMetres === null
+        ? ""
+        : formatSignificant((Math.PI * waist ** 2) / wavelengthMetres / DISTANCE_UNITS[unit], 5),
+  };
+}
+
 // Pace: both are written as a speed in km/h.
 export const paceQuantity: Quantity = {
   read: parsePace,

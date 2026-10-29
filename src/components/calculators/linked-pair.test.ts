@@ -8,11 +8,13 @@ import {
   energyQuantity,
   linkedTexts,
   paceQuantity,
+  rayleighRangeQuantity,
   ramanShiftQuantity,
   scatteredWavelengthQuantity,
   readNumber,
   speedQuantity,
   timeQuantity,
+  waistQuantity,
   wavelengthQuantity,
   wavenumberFromEnergy,
   type LinkedQuantities,
@@ -118,5 +120,24 @@ describe("Raman shift", () => {
       "1000",
       "",
     ]);
+  });
+});
+
+describe("Gaussian beam", () => {
+  const beam = (lambda: number | null): LinkedQuantities => [waistQuantity("um"), rayleighRangeQuantity("mm", lambda)];
+
+  it("works the Rayleigh range out from the waist, z_R = πw₀²/λ", () => {
+    // 100 µm at 1064 nm: π × (1e-4 m)² / 1.064e-6 m = 29.526 mm
+    assert.deepEqual(linkedTexts(editField(0, "100"), beam(1064e-9)), ["100", "29.526"]);
+  });
+
+  it("works the waist back out from a Rayleigh range", () => {
+    assert.deepEqual(linkedTexts(editField(1, "29.526"), beam(1064e-9)), ["100.000", "29.526"]);
+  });
+
+  it("gives nothing without a wavelength, nor for a waist of zero", () => {
+    assert.deepEqual(linkedTexts(editField(0, "100"), beam(null)), ["100", ""]);
+    assert.deepEqual(linkedTexts(editField(1, "10"), beam(null)), ["", "10"]);
+    assert.deepEqual(linkedTexts(editField(0, "0"), beam(1064e-9)), ["0", ""]);
   });
 });

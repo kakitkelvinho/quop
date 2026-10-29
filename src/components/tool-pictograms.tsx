@@ -35,6 +35,8 @@ const PICTOGRAMS: Record<string, ReactNode> = {
   ),
   // a distance, end to end
   "/calculators/light-travel-calculator": <path d="M3 12h18M3 8v8M21 8v8M8 9l-3 3 3 3M16 9l3 3-3 3" />,
+  // a beam narrowing to its waist and opening out again
+  "/calculators/gaussian-beam": <path d="M2 4Q12 14 22 4M2 20Q12 10 22 20M12 9v6" />,
   // a pair of brackets
   "/plotters/array-plotter": <path d="M8 4H5v16h3M16 4h3v16h-3" />,
   // a table

@@ -102,4 +102,22 @@ export const FORMULA_SHEETS: Record<string, FormulaSheet> = {
       LIGHT_SPEED_ROW,
     ],
   },
+  "/calculators/gaussian-beam": {
+    equations: [
+      "z_\\mathrm{R} = \\frac{\\pi w_0^2}{\\lambda}",
+      "\\theta = \\frac{\\lambda}{\\pi w_0}",
+      "b = 2z_\\mathrm{R}",
+    ],
+    symbols: [
+      { symbol: "\\lambda", meaning: "Wavelength in vacuum", unit: "\\mathrm{nm}" },
+      { symbol: "w_0", meaning: "Waist radius, where the intensity falls to 1/e²", unit: "\\text{chosen above}" },
+      {
+        symbol: "z_\\mathrm{R}",
+        meaning: "Rayleigh range: the distance from the waist at which the beam is √2 wider",
+        unit: "\\text{chosen above}",
+      },
+      { symbol: "b", meaning: "Confocal parameter: the depth of focus", unit: "\\text{as } z_\\mathrm{R}" },
+      { symbol: "\\theta", meaning: "Far-field divergence, half-angle", unit: "\\mathrm{mrad}" },
+    ],
+  },
 };
