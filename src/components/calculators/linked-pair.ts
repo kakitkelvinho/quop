@@ -85,8 +85,9 @@ export function readNumber(text: string): number | null {
 }
 
 // Energy and wavelength: both are written as the photon's energy in joules.
-const ELECTRON_VOLT = 1.602176634e-19;
-const PLANCK_TIMES_C = 6.62607015e-34 * 299_792_458;
+export const ELECTRON_VOLT = 1.602176634e-19;
+export const PLANCK = 6.62607015e-34;
+const PLANCK_TIMES_C = PLANCK * 299_792_458;
 
 export const energyQuantity: Quantity = {
   read: (text) => {
@@ -102,6 +103,34 @@ export const wavelengthQuantity: Quantity = {
     return nanometres !== null && nanometres > 0 ? PLANCK_TIMES_C / (nanometres * 1e-9) : null;
   },
   write: (joules) => formatSignificant(PLANCK_TIMES_C / joules / 1e-9, 5),
+};
+
+/** A photon's wavenumber 1/λ in cm⁻¹, from its energy in joules. */
+export const wavenumberFromEnergy = (joules: number) => joules / PLANCK_TIMES_C / 100;
+
+// Raman: both are written as the scattered light's wavenumber 1/λ in cm⁻¹.
+// The shift is measured from the excitation line, Δν̃ = 1/λ₀ − 1/λ, so it is
+// positive on the Stokes side (longer wavelength) and negative on the
+// anti-Stokes side. A shift past the excitation's own wavenumber has no light.
+export function ramanShiftQuantity(excitationWavenumber: number | null): Quantity {
+  return {
+    read: (text) => {
+      const shift = readNumber(text);
+      if (shift === null || excitationWavenumber === null) return null;
+      const scattered = excitationWavenumber - shift;
+      return scattered > 0 ? scattered : null;
+    },
+    write: (scattered) =>
+      excitationWavenumber === null ? "" : formatSignificant(excitationWavenumber - scattered, 5),
+  };
+}
+
+export const scatteredWavelengthQuantity: Quantity = {
+  read: (text) => {
+    const nanometres = readNumber(text);
+    return nanometres !== null && nanometres > 0 ? 1e7 / nanometres : null;
+  },
+  write: (wavenumber) => formatSignificant(1e7 / wavenumber, 6),
 };
 
 // Light travel: both are written as a time in seconds.
@@ -147,6 +176,40 @@ export function distanceQuantity(unit: DistanceUnit): Quantity {
       return distance !== null && distance >= 0 ? (distance * DISTANCE_UNITS[unit]) / SPEED_OF_LIGHT : null;
     },
     write: (seconds) => formatSignificant((seconds * SPEED_OF_LIGHT) / DISTANCE_UNITS[unit], 6),
+  };
+}
+
+// Gaussian beam: both are written as the waist radius w₀ in metres. The
+// Rayleigh range z_R = πw₀²n/(M²λ) needs the wavelength, so without one it
+// reads and writes nothing. M² is 1 for an ideal Gaussian; a real beam's
+// larger M² shortens its Rayleigh range for the same waist. Inside a medium
+// of index n the wavelength is λ/n, so the beam spreads n times slower.
+export function waistQuantity(unit: DistanceUnit): Quantity {
+  return {
+    read: (text) => {
+      const waist = readNumber(text);
+      return waist !== null && waist > 0 ? waist * DISTANCE_UNITS[unit] : null;
+    },
+    write: (metres) => formatSignificant(metres / DISTANCE_UNITS[unit], 5),
+  };
+}
+
+export function rayleighRangeQuantity(
+  unit: DistanceUnit,
+  wavelengthMetres: number | null,
+  mSquared = 1,
+  index = 1,
+): Quantity {
+  // M²λ/n: the wavelength an ideal Gaussian in vacuum would need to spread as this beam does
+  const spread = wavelengthMetres === null ? null : (mSquared * wavelengthMetres) / index;
+  return {
+    read: (text) => {
+      const range = readNumber(text);
+      if (range === null || range <= 0 || spread === null) return null;
+      return Math.sqrt((range * DISTANCE_UNITS[unit] * spread) / Math.PI);
+    },
+    write: (waist) =>
+      spread === null ? "" : formatSignificant((Math.PI * waist ** 2) / spread / DISTANCE_UNITS[unit], 5),
   };
 }
 

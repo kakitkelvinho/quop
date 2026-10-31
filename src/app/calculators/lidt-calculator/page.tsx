@@ -1,8 +1,13 @@
+import { FormulaSheet } from "@/components/calculators/formula-sheet";
 import { LidtCalculator } from "@/components/calculators/lidt-calculator";
 import { toolMetadata } from "@/components/tool-intro";
 
 export const metadata = toolMetadata("/calculators/lidt-calculator");
 
 export default function LidtCalculatorPage() {
-  return <LidtCalculator />;
+  return (
+    <LidtCalculator>
+      <FormulaSheet href="/calculators/lidt-calculator" />
+    </LidtCalculator>
+  );
 }

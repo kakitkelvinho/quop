@@ -8,10 +8,15 @@ import {
   energyQuantity,
   linkedTexts,
   paceQuantity,
+  rayleighRangeQuantity,
+  ramanShiftQuantity,
+  scatteredWavelengthQuantity,
   readNumber,
   speedQuantity,
   timeQuantity,
+  waistQuantity,
   wavelengthQuantity,
+  wavenumberFromEnergy,
   type LinkedQuantities,
 } from "./linked-pair.ts";
 import { parsePace } from "./pace.ts";
@@ -88,5 +93,63 @@ describe("parsePace", () => {
     assert.equal(parsePace("1:2:3"), null);
     assert.equal(parsePace("0:00"), null);
     assert.equal(parsePace(""), null);
+  });
+});
+
+describe("Raman shift", () => {
+  const excitation = wavenumberFromEnergy(wavelengthQuantity.read("532")!);
+  const raman: LinkedQuantities = [ramanShiftQuantity(excitation), scatteredWavelengthQuantity];
+
+  it("takes the excitation line's wavenumber as 1/λ in cm⁻¹", () => {
+    assert.ok(Math.abs(excitation - 1e7 / 532) < 1e-9);
+  });
+
+  it("puts a Stokes shift at a longer wavelength and anti-Stokes at a shorter one", () => {
+    // silicon's 520.7 cm⁻¹ line under a 532 nm laser
+    assert.deepEqual(linkedTexts(editField(0, "520.7"), raman), ["520.7", "547.157"]);
+    assert.deepEqual(linkedTexts(editField(0, "-520.7"), raman), ["-520.7", "517.660"]);
+  });
+
+  it("works the shift out from a scattered wavelength", () => {
+    assert.deepEqual(linkedTexts(editField(1, "547.157"), raman), ["520.70", "547.157"]);
+  });
+
+  it("has no scattered light for a shift past the excitation, nor without one", () => {
+    assert.deepEqual(linkedTexts(editField(0, "20000"), raman), ["20000", ""]);
+    assert.deepEqual(linkedTexts(editField(0, "1000"), [ramanShiftQuantity(null), scatteredWavelengthQuantity]), [
+      "1000",
+      "",
+    ]);
+  });
+});
+
+describe("Gaussian beam", () => {
+  const beam = (lambda: number | null): LinkedQuantities => [waistQuantity("um"), rayleighRangeQuantity("mm", lambda)];
+
+  it("works the Rayleigh range out from the waist, z_R = πw₀²/λ", () => {
+    // 100 µm at 1064 nm: π × (1e-4 m)² / 1.064e-6 m = 29.526 mm
+    assert.deepEqual(linkedTexts(editField(0, "100"), beam(1064e-9)), ["100", "29.526"]);
+  });
+
+  it("works the waist back out from a Rayleigh range", () => {
+    assert.deepEqual(linkedTexts(editField(1, "29.526"), beam(1064e-9)), ["100.000", "29.526"]);
+  });
+
+  it("shortens the Rayleigh range by M² for the same waist", () => {
+    const real: LinkedQuantities = [waistQuantity("um"), rayleighRangeQuantity("mm", 1064e-9, 1.3)];
+    // 29.526 mm / 1.3
+    assert.deepEqual(linkedTexts(editField(0, "100"), real), ["100", "22.712"]);
+  });
+
+  it("lengthens the Rayleigh range by n inside a medium", () => {
+    const inGlass: LinkedQuantities = [waistQuantity("um"), rayleighRangeQuantity("mm", 1064e-9, 1, 1.5)];
+    // 29.526 mm × 1.5
+    assert.deepEqual(linkedTexts(editField(0, "100"), inGlass), ["100", "44.289"]);
+  });
+
+  it("gives nothing without a wavelength, nor for a waist of zero", () => {
+    assert.deepEqual(linkedTexts(editField(0, "100"), beam(null)), ["100", ""]);
+    assert.deepEqual(linkedTexts(editField(1, "10"), beam(null)), ["", "10"]);
+    assert.deepEqual(linkedTexts(editField(0, "0"), beam(1064e-9)), ["0", ""]);
   });
 });

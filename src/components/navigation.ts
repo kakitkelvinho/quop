@@ -50,6 +50,12 @@ export const navSections: NavSection[] = [
         description:
           "Distance ↔ time for light in vacuum.",
       },
+      {
+        href: "/calculators/gaussian-beam",
+        label: "Gaussian Beam",
+        description:
+          "Beam waist ↔ Rayleigh range.",
+      },
     ],
   },
   {

@@ -385,6 +385,18 @@ a.toolCard:focus-visible {
   font-weight: 600;
 }
 
+/* a unit picker inside the line of smaller answers, as small as the words */
+.readoutAside__unit {
+  padding: 0.05rem 0.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .readoutAside .readout__formula {
   margin-left: 0;
 }
@@ -486,6 +498,293 @@ select.linkedField__unit {
 .readout__empty {
   color: var(--muted);
   font-weight: 600;
+}
+
+/* a second set of fields on one calculator, named small above them */
+.calculatorSheet__heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.calculatorSheet__headingAside {
+  display: block;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+/* settings most readers leave alone, folded under the fields they qualify */
+.advancedSettings > summary {
+  padding: 0.2rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.advancedSettings__state {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.advancedSettings > .field {
+  margin-top: 0.6rem;
+}
+
+.advancedSettings__note {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 400;
+}
+
+/* A calculator's working, under its fields: the equations it uses, typeset
+   with KaTeX, then a fold naming every symbol and each constant's value. */
+.formulaSheet {
+  display: grid;
+  /* minmax(0, …): a wide table scrolls in its fold, not the page */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  min-width: 0;
+  max-width: 36rem;
+  margin-top: 1rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+
+.formulaSheet__equations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 2.5rem;
+  font-size: 1.05rem;
+}
+
+.formulaSheet__equation {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.formulaSheet__equation .katex-display {
+  margin: 0.4rem 0;
+  text-align: left;
+}
+
+.formulaSheet__equation .katex-display > .katex {
+  text-align: left;
+}
+
+.formulaSheet__symbols > summary {
+  padding: 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formulaSheet__symbols table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.formulaSheet__symbols :is(th, td) {
+  padding: 0.4rem 1rem 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: baseline;
+}
+
+.formulaSheet__symbols thead th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.formulaSheet__symbols tbody th {
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.formulaSheet__symbols td:nth-child(n + 3) {
+  white-space: nowrap;
+}
+
+.formulaSheet__none {
+  color: var(--muted);
+}
+
+/* The Gaussian beam's side view: intensity shaded in the accent, the beam
+   radius in ink, the far-field cone and ±z_R as quieter dashes. */
+.beamProfile {
+  --beam: var(--accent);
+  display: grid;
+  gap: 0.75rem;
+  max-width: 60rem;
+  margin: 0;
+}
+
+/* the side view and the cross-section side by side, at one height; stacked on a phone */
+.beamProfile__views {
+  display: grid;
+  grid-template-columns: minmax(0, 520fr) minmax(0, 300fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 40rem) {
+  .beamProfile__views {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .beamProfile__section {
+    max-width: 22rem;
+  }
+}
+
+/* on the black board the station blue sinks; the night ring's lighter blue holds */
+html[data-theme="dark"] .beamProfile {
+  --beam: #4f8dd6;
+}
+
+.beamProfile__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+.beamProfile__sliceControl {
+  display: grid;
+  flex: 1 1 16rem;
+  gap: 0.3rem;
+  max-width: 28rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.beamProfile__sliceControl strong {
+  color: var(--foreground);
+}
+
+.beamProfile__sliceControl input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.buttonLink.beamProfile__fit {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.84rem;
+}
+
+.buttonLink.beamProfile__fit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.beamProfile svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.beamProfile stop {
+  stop-color: var(--beam);
+}
+
+.beamProfile__grid line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.beamProfile__axis rect {
+  fill: none;
+  stroke: var(--border);
+}
+
+.beamProfile__axis text,
+.beamProfile__note {
+  fill: var(--muted);
+}
+
+.beamProfile__envelope {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-width: 1.6;
+}
+
+.beamProfile__cone {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 6 4;
+}
+
+.beamProfile__rayleigh {
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 2 3;
+}
+
+.beamProfile__slice {
+  stroke: var(--beam);
+  stroke-width: 2;
+}
+
+.beamProfile__waistRing {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.beamProfile__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.2rem;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.beamProfile__legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.beamProfile__key {
+  display: inline-block;
+  width: 1.4rem;
+  height: 0;
+  border-top: 2px solid var(--foreground);
+}
+
+.beamProfile__key--intensity {
+  height: 0.7rem;
+  border: 0;
+  background: linear-gradient(transparent, var(--beam), transparent);
+}
+
+.beamProfile__key--cone {
+  border-top: 2px dashed var(--muted);
+}
+
+.beamProfile__key--rayleigh {
+  border-top: 2px dotted var(--muted);
+}
+
+.beamProfile__key--slice {
+  border-top-color: var(--beam);
+}
+
+.beamProfile__key--waist {
+  border-top: 2px dashed var(--muted);
 }
 
 /* The Hairline Rule: a card is content grouped on the page, not a box. No
