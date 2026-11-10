@@ -10,6 +10,7 @@ import {
   propagate,
   thinLens,
 } from "./angular-spectrum.ts";
+import { fft2, fftshift2, ifft2, ifftshift2 } from "./fft.ts";
 
 const wavelength = 1e-6;
 const k = (2 * Math.PI) / wavelength;
@@ -106,6 +107,64 @@ describe("propagate", () => {
     t.diagnostic(`1024² propagation: ${ms.toFixed(0)} ms`);
     console.log(`1024² propagation: ${ms.toFixed(0)} ms`);
     assert.ok(ms < 1000);
+  });
+});
+
+describe("propagate against the MATLAB propTF.m", () => {
+  // propTF.m, line for line: H = exp(−ikz sqrt(…)) on the centred grid,
+  // U0 = fftshift(fft2(fftshift(u0))), u1 = ifftshift(ifft2(ifftshift(H.*U0))).
+  function propTF(u0: Field, L: number, lambda: number, z: number): Field {
+    const { n } = u0;
+    const re = u0.re.slice();
+    const im = u0.im.slice();
+    const dx = L / n;
+    const kk = (2 * Math.PI) / lambda;
+    fftshift2(re, im, n);
+    fft2(re, im, n);
+    fftshift2(re, im, n);
+    for (let r = 0; r < n; r++) {
+      const fy = -1 / (2 * dx) + r / L;
+      for (let c = 0; c < n; c++) {
+        const fx = -1 / (2 * dx) + c / L;
+        const i = r * n + c;
+        const s = 1 - (lambda * fx) ** 2 - (lambda * fy) ** 2;
+        if (fx * fx + fy * fy > 1 / lambda ** 2) {
+          re[i] = 0;
+          im[i] = 0;
+          continue;
+        }
+        const phase = -kk * z * Math.sqrt(s);
+        const [a, b] = [re[i], im[i]];
+        re[i] = a * Math.cos(phase) - b * Math.sin(phase);
+        im[i] = a * Math.sin(phase) + b * Math.cos(phase);
+      }
+    }
+    ifftshift2(re, im, n);
+    ifft2(re, im, n);
+    ifftshift2(re, im, n);
+    return { n, re, im };
+  }
+  const conjugate = (f: Field): Field => ({ n: f.n, re: f.re.slice(), im: f.im.map((v) => -v) });
+
+  // A tilted Gaussian plus an off-centre copy, so no symmetry hides a sign error.
+  const n = 64;
+  const size = 2e-3;
+  const z = 0.05;
+  const u = gaussian(n, size, 0.2e-3, 3e4);
+  for (let i = 0; i < u.re.length; i++) u.im[i] += 0.3 * u.re[(i + 5 * n + 3) % u.re.length];
+
+  function assertClose(a: Field, b: Field) {
+    for (let i = 0; i < a.re.length; i++) {
+      assert.ok(Math.abs(a.re[i] - b.re[i]) < 1e-12 && Math.abs(a.im[i] - b.im[i]) < 1e-12, `sample ${i}`);
+    }
+  }
+
+  it("propagate(u, z) equals backpropTF(u, z), i.e. propTF(u, −z)", () => {
+    assertClose(propagate(u, { size, wavelength, z }), propTF(u, size, wavelength, -z));
+  });
+
+  it("propagate(conj(u), z) equals conj(propTF(u, z)): same physics, opposite convention", () => {
+    assertClose(propagate(conjugate(u), { size, wavelength, z }), conjugate(propTF(u, size, wavelength, z)));
   });
 });
 
