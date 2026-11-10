@@ -121,3 +121,15 @@ describe("state file", () => {
     assert.equal(readOpenedFile("{", "s.json").kind, "error");
   });
 });
+
+describe("lab setup", () => {
+  it("opens, keeps only the OPA pump, and finds its collection beam's slit at a Fourier plane", async () => {
+    const { LAB_SETUP, LAB_BEAM } = await import("./lab-setup.ts");
+    assert.ok(LAB_SETUP);
+    assert.ok(!LAB_SETUP.beams.some((beam) => beam.path.includes("laser-source-x5gt7h")));
+    assert.ok(LAB_SETUP.beams.some((beam) => beam.label === "Pump" && beam.path[0] === "laser-source-eip37t"));
+    const result = optics(LAB_SETUP, LAB_BEAM);
+    assert.ok(result.ok);
+    assert.equal(result.classification.kind, "fourier");
+  });
+});

@@ -29,7 +29,7 @@ import {
   seriesFluences,
 } from "@/components/dryrun/capture";
 import type { WorkerMessage, WorkerRequest } from "@/components/dryrun/dry-run.worker";
-import { EXAMPLE_SETUP, EXAMPLE_SETUP_NAME } from "@/components/dryrun/example-setup";
+import { LAB_BEAM as EXAMPLE_BEAM, LAB_SETUP as EXAMPLE_SETUP, LAB_SETUP_NAME as EXAMPLE_SETUP_NAME } from "@/components/dryrun/lab-setup";
 import { DRY_RUN_NAME } from "@/components/dryrun/names";
 import { readOpenedFile, serializeState } from "@/components/dryrun/state-file";
 import { FileDrop } from "@/components/plotters/file-drop";
@@ -183,7 +183,7 @@ function Section({ title, children, note }: { title: string; children?: ReactNod
 export default function DryRun() {
   const [setupName, setSetupName] = useState(EXAMPLE_SETUP_NAME);
   const [setup, setSetup] = useState<BuilderSceneData>(EXAMPLE_SETUP);
-  const [beamId, setBeamId] = useState<string | null>("beam-leakage");
+  const [beamId, setBeamId] = useState<string | null>(EXAMPLE_BEAM);
   const [params, setParams] = useState<DryRunParams>(DEFAULT_PARAMS);
   const [fileMessage, setFileMessage] = useState<string | null>(null);
   const [run, setRun] = useState<Run | null>(null);
@@ -744,15 +744,15 @@ export default function DryRun() {
                     className="dryRun__textButton"
                     type="button"
                     onClick={() => {
-                      chooseSetup(EXAMPLE_SETUP, EXAMPLE_SETUP_NAME, "beam-leakage");
+                      chooseSetup(EXAMPLE_SETUP, EXAMPLE_SETUP_NAME, EXAMPLE_BEAM);
                       setFileMessage(null);
                     }}
                   >
-                    Back to the example setup
+                    Back to the lab setup
                   </button>
                 ) : (
-                  <button className="dryRun__textButton" type="button" onClick={() => download(serializeScene(EXAMPLE_SETUP), "dry-run-example-setup.json")}>
-                    Save the example as a setup file, to open in the Tabletop
+                  <button className="dryRun__textButton" type="button" onClick={() => download(serializeScene(EXAMPLE_SETUP), "dry-run-lab-setup.json")}>
+                    Save the lab setup as a setup file, to open in the Tabletop
                   </button>
                 )}
                 <label className="field">
