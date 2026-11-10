@@ -91,9 +91,12 @@ const GLOW_VERTEX = /* glsl */ `
   varying float vFacing;
   void main() {
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    vec3 viewNormal = normalize(normalMatrix * normal);
-    vec3 toCamera = isOrthographic ? vec3(0.0, 0.0, 1.0) : normalize(-mvPosition.xyz);
-    vFacing = abs(dot(viewNormal, toCamera));
+    // guarded: a zero vector through normalize is NaN on some GPUs, and the bloom spreads one NaN pixel over the whole frame
+    vec3 n = normalMatrix * normal;
+    vec3 v = isOrthographic ? vec3(0.0, 0.0, 1.0) : -mvPosition.xyz;
+    float ln = length(n);
+    float lv = length(v);
+    vFacing = ln > 1e-6 && lv > 1e-6 ? clamp(abs(dot(n, v)) / (ln * lv), 0.0, 1.0) : 0.0;
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -107,7 +110,8 @@ const GLOW_FRAGMENT = /* glsl */ `
   uniform float day;
   varying float vFacing;
   void main() {
-    float f = pow(vFacing, core);
+    // pow(0, y) is undefined in GLSL: keep the base off zero
+    float f = pow(max(vFacing, 1e-4), max(core, 1e-3));
     // by day a glow can't outshine the sweep: the beam keeps its colour and the power sets how much of it shows
     gl_FragColor = day > 0.5
       ? vec4(color * (0.8 + 0.2 * f), clamp(power * (0.35 + 0.65 * f), 0.0, 1.0))
@@ -135,7 +139,7 @@ function GlowMaterial({ color, power, core, dark }: { color: Color; power: numbe
       object={material}
       attach="material"
       uniforms-color-value={color}
-      uniforms-power-value={power}
+      uniforms-power-value={Number.isFinite(power) ? Math.max(0, power) : 0}
       uniforms-core-value={core}
       uniforms-day-value={dark ? 0 : 1}
       // light adds up on the night table; by day it would wash the sweep out, so it lies over it

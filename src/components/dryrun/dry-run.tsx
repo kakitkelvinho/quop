@@ -348,7 +348,7 @@ export default function DryRun() {
     const hi = Math.max(...logs);
     const at = Math.log10(Math.max(current.leakage, 1e-9));
     const leakage = hi > lo ? 0.12 + 0.88 * ((at - lo) / (hi - lo)) : 1;
-    return { pump, leakage, condensate: current.condensateLeakage / current.leakage };
+    return { pump, leakage, condensate: current.leakage > 0 ? Math.min(1, current.condensateLeakage / current.leakage) : 0 };
   }, [run, shown, current, done]);
 
   const captureSummary = useMemo(() => {
