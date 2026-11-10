@@ -11,8 +11,13 @@
 // (what a positive lens makes) as e^{−ikr²/(2f)}. The transfer function is
 // then H = exp(+i k z sqrt(1 − (λfx)² − (λfy)²)). The FFT itself keeps
 // MATLAB's e^{−i…} forward kernel; only H and the lens carry the
-// convention. Voelz's propTF.m uses the engineering e^{i(ωt − kz)}, so
-// its H and lens have the opposite signs.
+// convention. Goodman and Voelz use this same sign.
+//
+// The MATLAB propTF.m this ports uses the engineering e^{i(ωt − kz)}:
+// H = exp(−i k z sqrt(…)), and backpropTF.m flips it to +. So
+// propagate(u, z) here equals backpropTF(u, z) there, and for fields in
+// each code's own convention (complex conjugates of each other),
+// propagate(conj(u), z) = conj(propTF(u, z)).
 
 import { fft2, fftshift2, ifft2, ifftshift2, isPowerOfTwo } from "./fft.ts";
 
