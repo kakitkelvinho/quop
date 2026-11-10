@@ -34,6 +34,12 @@ const HBAR_C = HBAR * 299792458;
 export type DryRunParams = {
   /** Fewer energy bins on the ladder (the light physics model). */
   lightModel: boolean;
+  /**
+   * Bottom of the lower polariton branch, E_LP(k = 0), eV. The physics model's
+   * cavity and exciton energies are shifted together to put it here, so the
+   * detuning (and with it the threshold) stays as in Table II.
+   */
+  branchBottomEv: number;
   /** Pump pulse FWHM, fs. */
   pulseFs: number;
   /** Pump wavelength, nm. */
@@ -60,40 +66,71 @@ export type DryRunParams = {
   exposureS: number;
   throughput: number;
   quantumEfficiency: number;
+  /** Read noise at the output amplifier, e⁻ rms; the EM gain divides it, referred to the input. */
   readNoise: number;
+  /** Electron-multiplying gain of the EMCCD, × (1 for a plain CCD). */
+  emGain: number;
   /** Attenuate each capture (as an ND filter would) so it never saturates. */
   autoAttenuate: boolean;
 };
 
 export const LIGHT_MODEL_BINS = 30;
 
+/** The EMCCD's full chip (a 1600 × 400 px, 16 µm sensor); the capture reads a region of it. */
+export const CHIP = { columns: 1600, rows: 400 } as const;
+
+/** Electrons per count at the ADC, after the EM register. */
+export const ELECTRONS_PER_COUNT = 4;
+
+/**
+ * The lab's setup, from the Methods of arXiv:2601.15080: a 2.76 eV (449 nm),
+ * 50 fs pump at 1 kHz; a 50× NA 0.6 objective (infinity corrected for a
+ * 200 mm tube lens, so f = 4 mm); an imaging spectrometer of 500 mm focal
+ * length with a 1200 lines/mm grating and a 20 µm slit; an EMCCD of
+ * 1600 × 400 px at 16 µm, EM gain 150. The capture reads the full 400 rows
+ * but only 256 of the 1600 columns (36 meV round the branch, which spans
+ * about 8 meV), to keep each capture quick. E_LP(0) sits at the measured
+ * condensate energy, 2.56 eV (Fig. 3a).
+ */
 export const DEFAULT_PARAMS: DryRunParams = {
   lightModel: false,
-  pulseFs: 150,
-  pumpNm: 400,
+  branchBottomEv: 2.56,
+  pulseFs: 50,
+  pumpNm: 449.2,
   absorbed: 1,
   seriesFrom: 0.02,
   seriesTo: 2,
   seriesPoints: 13,
-  objectiveMm: 20,
-  objectiveNa: 0.3,
-  grooves: 1800,
-  spectrometerMm: 750,
-  slitUm: 50,
+  objectiveMm: 4,
+  objectiveNa: 0.6,
+  grooves: 1200,
+  spectrometerMm: 500,
+  slitUm: 20,
   columns: 256,
-  rows: 256,
-  pixelUm: 26,
+  rows: CHIP.rows,
+  pixelUm: 16,
   repRateHz: 1000,
   exposureS: 10,
   throughput: 0.05,
   quantumEfficiency: 0.9,
-  readNoise: 5,
+  readNoise: 30,
+  emGain: 150,
   autoAttenuate: true,
 };
 
-/** The ladder the parameters ask for: Table II, with fewer bins in the light model. */
+/**
+ * The ladder the parameters ask for: Table II, with the cavity and exciton
+ * energies shifted together so E_LP(0) sits at `branchBottomEv` (the detuning,
+ * and so every rate, stays Table II's), and fewer bins in the light model.
+ */
 export function ladderParams(params: DryRunParams): LadderParams {
-  return { ...TABLE_II, bins: params.lightModel ? LIGHT_MODEL_BINS : TABLE_II.bins };
+  const shift = params.branchBottomEv * EV - lowerBranch(TABLE_II, 0).energy;
+  return {
+    ...TABLE_II,
+    cavityEnergy0: TABLE_II.cavityEnergy0 + shift,
+    excitonEnergy: TABLE_II.excitonEnergy + shift,
+    bins: params.lightModel ? LIGHT_MODEL_BINS : TABLE_II.bins,
+  };
 }
 
 /** Pump photons absorbed per pulse (dark excitons made) at a fluence in µJ/cm². */
@@ -291,8 +328,11 @@ export function takeCapture(ladder: Ladder, params: DryRunParams, optics: Captur
     photonsPerUnit: params.repRateHz * params.throughput,
     exposure: params.exposureS,
     quantumEfficiency: params.quantumEfficiency,
-    readNoise: params.readNoise,
-    gain: 1,
+    // the EM register multiplies the electrons before the output amplifier, so
+    // referred to the input the read noise shrinks by the gain; its excess
+    // noise factor (√2 at high gain) is not modelled
+    readNoise: params.readNoise / Math.max(1, params.emGain),
+    gain: ELECTRONS_PER_COUNT / Math.max(1, params.emGain),
     bitDepth: 16,
     offset: 0,
     seed,
@@ -303,7 +343,8 @@ export function takeCapture(ladder: Ladder, params: DryRunParams, optics: Captur
     const mean = expectedElectrons(frame, base);
     let peak = 0;
     for (const v of mean) if (v > peak) peak = v;
-    const target = 0.6 * full;
+    // in electrons: 60 % of full scale, through the gain
+    const target = 0.6 * full * (base.gain ?? 1);
     if (peak > target) attenuation = target / peak;
   }
   const capture = expose(frame, { ...base, photonsPerUnit: base.photonsPerUnit * attenuation });

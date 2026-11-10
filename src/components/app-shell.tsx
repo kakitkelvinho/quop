@@ -193,6 +193,9 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const isBuilderRoute = pathname.startsWith("/builder/tabletop");
+  // The Dry Run keeps the header (its day/night switch drives the scene) but,
+  // like the Tabletop, gives its 3D view the whole width under it.
+  const isDryRunRoute = pathname.startsWith("/dryrun");
 
   return (
     <div className="min-h-screen">
@@ -236,13 +239,15 @@ export function AppShell({
         className={
           isBuilderRoute
             ? "builderMain"
-            : "mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6"
+            : isDryRunRoute
+              ? "dryRunMain"
+              : "mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6"
         }
       >
         {children}
       </main>
 
-      {isBuilderRoute ? null : footer}
+      {isBuilderRoute || isDryRunRoute ? null : footer}
     </div>
   );
 }

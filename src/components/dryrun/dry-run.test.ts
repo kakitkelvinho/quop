@@ -5,22 +5,23 @@ import { type BuilderSceneData, parseScene, serializeScene } from "../builder/ty
 import { beamOptics } from "./beam-optics.ts";
 import { DEFAULT_PARAMS, absorbedPerPulse, buildLadder, ladderParams, peakAndWidth, seriesFluences, takeCapture } from "./capture.ts";
 import { EXAMPLE_SETUP } from "./example-setup.ts";
+import { EV, TABLE_II, ladderThreshold, lowerBranch } from "../simulator/ladder.ts";
 import { readOpenedFile, serializeState } from "./state-file.ts";
 
 // The Dry Run prototype (#341): a setup's beam in, captures out.
 
-const optics = (scene: BuilderSceneData, beamId: string, f = 0.02) =>
+const optics = (scene: BuilderSceneData, beamId: string, f = 0.004) =>
   beamOptics(scene, scene.beams.find((beam) => beam.id === beamId)!, { objectiveFocalLength: f });
 
 describe("beamOptics", () => {
-  it("finds the example's slit at a Fourier plane, 20 mm per rad", () => {
+  it("finds the example's slit at a Fourier plane, 16 mm per rad (4 mm objective, 4× relay)", () => {
     const result = optics(EXAMPLE_SETUP, "beam-leakage");
     assert.ok(result.ok);
     assert.equal(result.classification.kind, "fourier");
-    if (result.classification.kind === "fourier") assert.ok(Math.abs(Math.abs(result.classification.scale) - 0.02) < 1e-9);
+    if (result.classification.kind === "fourier") assert.ok(Math.abs(Math.abs(result.classification.scale) - 0.016) < 1e-9);
     assert.deepEqual(
       result.stops.map((stop) => stop.type),
-      ["sample", "objective", "beam-splitter", "lens", "lens", "spectrometer"],
+      ["sample", "objective", "lens", "lens", "spectrometer"],
     );
   });
 
@@ -33,7 +34,7 @@ describe("beamOptics", () => {
   it("says plainly when the beam has no sample", () => {
     const scene: BuilderSceneData = {
       ...EXAMPLE_SETUP,
-      beams: [{ id: "b", path: ["pump", "cube", "lens-1", "spectrometer"], color: "#000" }],
+      beams: [{ id: "b", path: ["pump", "lens-1", "spectrometer"], color: "#000" }],
     };
     const result = optics(scene, "b");
     assert.equal(result.ok, false);
@@ -50,7 +51,7 @@ describe("beamOptics", () => {
   it("reports how far off the Fourier plane a misplaced slit is", () => {
     const scene: BuilderSceneData = {
       ...EXAMPLE_SETUP,
-      components: EXAMPLE_SETUP.components.map((c) => (c.id === "spectrometer" ? { ...c, position: [870, c.position[1], 0] } : c)),
+      components: EXAMPLE_SETUP.components.map((c) => (c.id === "spectrometer" ? { ...c, position: [c.position[0] + 20, c.position[1], 0] } : c)),
     };
     const result = optics(scene, "beam-leakage");
     assert.ok(result.ok);
@@ -69,9 +70,18 @@ describe("capture", () => {
   });
 
   it("turns fluence into absorbed pump photons over the pumped spot", () => {
-    // 1 µJ/cm² over 500 µm² is 5 pJ; a 400 nm photon is 4.97e-19 J.
+    // 1 µJ/cm² over 500 µm² is 5 pJ; a 449.2 nm (2.76 eV) photon is 4.422e-19 J.
     const n = absorbedPerPulse(DEFAULT_PARAMS, 1);
-    assert.ok(Math.abs(n / 1.007e7 - 1) < 1e-3, String(n));
+    assert.ok(Math.abs(n / 1.1307e7 - 1) < 1e-3, String(n));
+  });
+
+  it("shifts cavity and exciton together to put E_LP(0) at 2.56 eV, keeping Table II's detuning", () => {
+    const p = ladderParams(DEFAULT_PARAMS);
+    assert.ok(Math.abs(lowerBranch(p, 0).energy / EV - 2.56) < 1e-9);
+    assert.ok(Math.abs(p.excitonEnergy - p.cavityEnergy0 - (TABLE_II.excitonEnergy - TABLE_II.cavityEnergy0)) < 1e-30);
+    const shifted = buildLadder({ ...p, bins: 10 });
+    const table = buildLadder({ ...TABLE_II, bins: 10 });
+    assert.ok(Math.abs(ladderThreshold(shifted) / ladderThreshold(table) - 1) < 1e-9);
   });
 
   it("leaks more than proportionally across threshold, mostly from k = 0", () => {

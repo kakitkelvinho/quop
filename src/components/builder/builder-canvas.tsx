@@ -12,7 +12,7 @@ import {
   useThree,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
 import {
   Fragment,
   memo,
@@ -22,6 +22,7 @@ import {
   useMemo,
   useRef,
   type ComponentProps,
+  type ReactNode,
   type RefObject,
 } from "react";
 import {
@@ -741,7 +742,8 @@ function Backdrop({ stops }: { stops: ScenePalette["backdrop"] }) {
   return (
     <mesh ref={plane} raycast={() => {}} renderOrder={-1}>
       <planeGeometry args={[1, 1]} />
-      <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} />
+      {/* a scene with fog (the Dry Run's) keeps its sweep: fog is for the table, not the room */}
+      <meshBasicMaterial map={texture} toneMapped={false} depthWrite={false} fog={false} />
     </mesh>
   );
 }
@@ -1168,6 +1170,15 @@ export type BuilderCanvasProps = {
   onConnectionPointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onFramePointerDown: (id: string, event: ThreeEvent<PointerEvent>, grip: FrameGrip) => void;
   onCanvasReady: (handle: CanvasApi) => void;
+  /**
+   * Bloom over the brightest light, at this strength, in full quality only:
+   * for a page that drives its beams from a simulation (the Dry Run). Only
+   * what is drawn brighter than white (unmapped, past 1) glows, so the
+   * enamel never does. Left out, the Tabletop's own finish is unchanged.
+   */
+  bloom?: number;
+  /** more of the scene, in mm on the table, drawn with the rest (the Dry Run's monitor and glow) */
+  children?: ReactNode;
 };
 
 export type CanvasApi = {
@@ -1248,6 +1259,8 @@ export default function BuilderCanvas({
   onConnectionPointerDown,
   onFramePointerDown,
   onCanvasReady,
+  bloom,
+  children,
 }: BuilderCanvasProps) {
   // the orbit pivot: set when an orbit drag starts, cleared by a snap-back
   const pivotRef = useRef<Vector3 | null>(null);
@@ -1508,6 +1521,8 @@ export default function BuilderCanvas({
         />
       ))}
 
+      {children}
+
       <OrbitControls
         makeDefault
         enabled={!dragging}
@@ -1553,6 +1568,7 @@ export default function BuilderCanvas({
               halfRes
             />
             <Vignette offset={0.35} darkness={palette.vignette} />
+            {bloom ? <Bloom mipmapBlur intensity={bloom} luminanceThreshold={1} luminanceSmoothing={0.15} /> : <></>}
           </>
         ) : (
           <></>

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function DryRunPage() {
   return (
-    <section className="pageSection">
+    <section className="dryRunPage">
       <DryRun />
     </section>
   );
