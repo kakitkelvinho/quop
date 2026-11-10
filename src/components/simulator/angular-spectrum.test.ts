@@ -61,11 +61,11 @@ describe("propagate", () => {
       const out = propagate(start, { size, wavelength, z });
       const w = w0 * Math.sqrt(1 + (z / zR) ** 2);
       assert.ok(Math.abs(radius(out, size) / w - 1) < 1e-3, `w at z = ${z}`);
-      // u(0, z) = e^{−ikz} / (1 − i z/zR): amplitude w0/w, phase −kz + atan(z/zR).
+      // u(0, z) = e^{+ikz} / (1 + i z/zR): amplitude w0/w, phase kz − atan(z/zR).
       const amp = Math.hypot(out.re[centre], out.im[centre]);
       assert.ok(Math.abs(amp / (w0 / w) - 1) < 1e-5, `amplitude at z = ${z}`);
       const phase = Math.atan2(out.im[centre], out.re[centre]);
-      assert.ok(Math.abs(wrap(phase - (-k * z + Math.atan(z / zR)))) < 1e-4, `phase at z = ${z}`);
+      assert.ok(Math.abs(wrap(phase - (k * z - Math.atan(z / zR)))) < 1e-4, `phase at z = ${z}`);
     }
   });
 
