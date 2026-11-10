@@ -6,11 +6,13 @@
 // x_j = (j − n/2)·dx for j = 0…n−1, so x = 0 sits at index n/2.
 // Frequencies fx = −1/(2dx) : 1/L : 1/(2dx) − 1/L, as in MATLAB.
 //
-// Sign convention: MATLAB's fft (and ours) uses e^{−i…} forward, and the
-// transfer function is H = exp(−i k z sqrt(1 − (λfx)² − (λfy)²)). That H
-// belongs with a field convention e^{i(ωt − kz)}: a wave travelling +z has
-// phase −kz, an outgoing spherical wave goes as e^{−ikr}, and a converging
-// one (what a positive lens makes) as e^{+ikr²/(2f)}.
+// Sign convention: physics, e^{i(kz − ωt)}. A wave travelling +z has phase
+// +kz, an outgoing spherical wave goes as e^{+ikr}, and a converging one
+// (what a positive lens makes) as e^{−ikr²/(2f)}. The transfer function is
+// then H = exp(+i k z sqrt(1 − (λfx)² − (λfy)²)). The FFT itself keeps
+// MATLAB's e^{−i…} forward kernel; only H and the lens carry the
+// convention. Voelz's propTF.m uses the engineering e^{i(ωt − kz)}, so
+// its H and lens have the opposite signs.
 
 import { fft2, fftshift2, ifft2, ifftshift2, isPowerOfTwo } from "./fft.ts";
 
@@ -51,7 +53,7 @@ export function gridCoordinates(n: number, size: number): Float64Array {
 /**
  * Propagates a field a distance z (returns a new field). Same steps as
  * propTF.m: U2 = ifftshift(ifft2(H .* fft2(fftshift(u1)))), with the exact
- * H = exp(−i k z sqrt(1 − (λfx)² − (λfy)²)) and evanescent components
+ * H = exp(+i k z sqrt(1 − (λfx)² − (λfy)²)) (physics sign, see above) and evanescent components
  * (λ²(fx² + fy²) > 1) set to zero. Negative z back-propagates.
  */
 export function propagate(field: Field, { size, wavelength, z }: PropagationOptions): Field {
@@ -74,7 +76,7 @@ export function propagate(field: Field, { size, wavelength, z }: PropagationOpti
         im[idx] = 0;
         continue;
       }
-      const phase = -k * z * Math.sqrt(s);
+      const phase = k * z * Math.sqrt(s);
       const hr = Math.cos(phase);
       const hi = Math.sin(phase);
       const ur = re[idx];
@@ -90,15 +92,15 @@ export function propagate(field: Field, { size, wavelength, z }: PropagationOpti
 
 /**
  * A thin lens of focal length f (returns a new field): the quadratic phase
- * exp(+i k (x² + y²)/(2f)). The + sign (Voelz writes −) follows from the
- * e^{−ikz} convention above: it turns a plane wave into one converging at
- * z = f for f > 0, and diverging for f < 0.
+ * exp(−i k (x² + y²)/(2f)), as in Voelz, under the e^{+ikz} convention
+ * above: it turns a plane wave into one converging at z = f for f > 0,
+ * and diverging for f < 0.
  */
 export function thinLens(field: Field, { size, wavelength, f }: { size: number; wavelength: number; f: number }): Field {
   const { n } = field;
   const out = cloneField(field);
   const x = gridCoordinates(n, size);
-  const a = Math.PI / (wavelength * f); // k/(2f)
+  const a = -Math.PI / (wavelength * f); // −k/(2f)
   for (let r = 0; r < n; r++) {
     for (let c = 0; c < n; c++) {
       const idx = r * n + c;
@@ -169,7 +171,7 @@ export function checkSampling({ n, size, wavelength, z }: { n: number } & Propag
     let prev = NaN;
     for (let c = 0; c < n; c++) {
       const s = 1 - ly2 - lf[c] * lf[c];
-      const phase = s >= 0 ? -k * z * Math.sqrt(s) : NaN;
+      const phase = s >= 0 ? k * z * Math.sqrt(s) : NaN;
       if (!Number.isNaN(phase) && !Number.isNaN(prev)) {
         maxPhaseStep = Math.max(maxPhaseStep, Math.abs(phase - prev));
       }
