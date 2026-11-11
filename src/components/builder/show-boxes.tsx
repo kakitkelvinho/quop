@@ -170,7 +170,7 @@ export function ShowBoxes({
                 onFocus={() => setFocus(i)}
                 onClick={() => press(item, i)}
               >
-                <Icon name={item.on === false ? (item.iconOff ?? item.icon) : item.icon} />
+                <Icon name={item.icon} off={item.on === false} />
                 <span className="showBoxes__name" aria-hidden="true">
                   {item.label}
                 </span>

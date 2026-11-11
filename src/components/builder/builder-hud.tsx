@@ -1103,7 +1103,7 @@ function ShowStatusRow({
         <Fragment key={item.id}>
           {breakAfter === i ? <span className="builderShowStatus__sep" aria-hidden="true" /> : null}
           <span className={`builderShowStatus__icon${item.on ? " is-on" : ""}`}>
-            <Icon name={item.icon} size={13} />
+            <Icon name={item.icon} size={13} off={!item.on} />
           </span>
         </Fragment>
       ))}
@@ -1181,7 +1181,6 @@ function ShowMenu({
       label: "Labels",
       description: "Part names on the table",
       icon: "labels",
-      iconOff: "labelsOff",
       on: labels,
       onToggle: onToggleLabels,
     },

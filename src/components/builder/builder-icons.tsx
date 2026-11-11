@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 
 import type { ComponentType } from "@/components/builder/types";
 
@@ -261,7 +261,19 @@ const ICONS = {
 
 export type IconName = keyof typeof ICONS;
 
-export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
+/** The off icons draw as their on icon under the one slash, so every "off" leans the same way. */
+const SLASHED: Partial<Record<IconName, IconName>> = { eyeOff: "eye", labelsOff: "labels" };
+/** the slash, bottom left to top right: / */
+const SLASH = "M4 20 20 4";
+
+/**
+ * A builder icon. `off` crosses it out with the slash, cutting a thin gap in
+ * the icon either side of it so the slash reads at any size.
+ */
+export function Icon({ name, size = 18, off = false }: { name: IconName; size?: number; off?: boolean }) {
+  const maskId = useId();
+  const base = SLASHED[name] ?? name;
+  const slashed = off || base !== name;
   return (
     <svg
       aria-hidden="true"
@@ -274,7 +286,18 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      {ICONS[name]}
+      {slashed ? (
+        <>
+          <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+            <rect width="24" height="24" fill="#fff" stroke="none" />
+            <path d={SLASH} stroke="#000" strokeWidth={4.6} />
+          </mask>
+          <g mask={`url(#${maskId})`}>{ICONS[base]}</g>
+          <path d={SLASH} />
+        </>
+      ) : (
+        ICONS[name]
+      )}
     </svg>
   );
 }

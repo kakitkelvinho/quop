@@ -188,7 +188,7 @@ export function ShowWheel({
               <title>{item.description}</title>
               <path className="showWheel__wedge" d={wedge(INNER, OUTER, a0, a1)} />
               <g transform={`translate(${ix - 10} ${iy - 10})`}>
-                <Icon name={item.on ? item.icon : (item.iconOff ?? item.icon)} size={20} />
+                <Icon name={item.icon} off={!item.on} size={20} />
               </g>
               <Name text={item.label} at={[nx, ny]} />
               <text
