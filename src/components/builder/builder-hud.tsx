@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
@@ -15,6 +15,7 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside, panelState, setPanelView } from "@/components/builder/panel-store";
 import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
+import { ShowPlate } from "@/components/builder/show-plate";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
 import { FileFan, TOP_LEFT_ISLANDS } from "@/components/builder/file-fan";
 import { ShareMenu } from "@/components/builder/share-menu";
@@ -1060,20 +1061,30 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
   return ref;
 }
 
+/** PROTOTYPE: the Show menu as the half ring, or as the square plate. */
+type ShowLook = "plate" | "wheel";
+const SHOW_LOOK_KEY = "quop.prototype.showLook";
+/** the plate's and the strip's order: what's on the table, a hairline, how it's drawn */
+const SHOW_ORDER = ["grid", "labels", "posts", "distances", "shadows", "light-graphics"];
+const SHOW_BREAK = 4;
+
 /**
  * PROTOTYPE: what the Show wheel has on, at a glance. A faint row of small
- * icons right of the dock, in the old controls hint's weight: grey when off,
+ * icons under the eye, in the old controls hint's weight: grey when off,
  * full ink when on. The whole row is one button that opens the wheel, as the
  * eye does.
  */
 function ShowStatusRow({
   ref,
   items,
+  breakAfter,
   open,
   onClick,
 }: {
   ref: RefObject<HTMLButtonElement | null>;
   items: { id: string; label: string; icon: IconName; on: boolean }[];
+  /** a hairline after this many icons, where the plate draws its rule */
+  breakAfter?: number;
   open: boolean;
   onClick: () => void;
 }) {
@@ -1088,10 +1099,13 @@ function ShowStatusRow({
       title={`${summary}\nClick to change`}
       onClick={onClick}
     >
-      {items.map((item) => (
-        <span key={item.id} className={`builderShowStatus__icon${item.on ? " is-on" : ""}`}>
-          <Icon name={item.icon} size={13} />
-        </span>
+      {items.map((item, i) => (
+        <Fragment key={item.id}>
+          {breakAfter === i ? <span className="builderShowStatus__sep" aria-hidden="true" /> : null}
+          <span className={`builderShowStatus__icon${item.on ? " is-on" : ""}`}>
+            <Icon name={item.icon} size={13} />
+          </span>
+        </Fragment>
       ))}
     </button>
   );
@@ -1125,7 +1139,10 @@ function ShowMenu({
   open,
   setOpen,
   also,
+  look,
 }: {
+  /** PROTOTYPE: the half ring, or the square plate it is compared with */
+  look: ShowLook;
   /** PROTOTYPE: held by the HUD, so the status row can open the wheel too */
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -1208,7 +1225,35 @@ function ShowMenu({
       >
         <Icon name="eye" />
       </button>
-      {open ? (
+      {open && look === "plate" ? (
+        <ShowPlate
+          items={SHOW_ORDER.map((id) => items.find((item) => item.id === id)!)}
+          breakAfter={SHOW_BREAK}
+          onClose={() => {
+            setOpen(false);
+            buttonRef.current?.focus();
+          }}
+          sliders={[
+            {
+              id: "label-size",
+              label: "Label size",
+              range: LABEL_SCALE_RANGE,
+              value: scale,
+              disabled: !labels,
+              disabledHint: "Turn labels on first",
+              onBegin,
+              onChange,
+            },
+            {
+              id: "brightness",
+              label: "Brightness",
+              range: BRIGHTNESS_RANGE,
+              value: lighting.brightness,
+              onChange: (brightness) => onLightingChange({ brightness }),
+            },
+          ]}
+        />
+      ) : open ? (
         <ShowWheel
           items={items}
           onClose={() => {
@@ -1269,6 +1314,25 @@ export default function BuilderHud(props: BuilderHudProps) {
   // PROTOTYPE: the Show wheel's open state, shared by the eye and the status row
   const [showOpen, setShowOpen] = useState(false);
   const statusRowRef = useRef<HTMLButtonElement>(null);
+  // PROTOTYPE: plate or wheel, remembered in this browser; ?show=wheel or ?show=plate picks one
+  // (the builder renders on the client only, so the window is there to read)
+  const [showLook, setShowLookState] = useState<ShowLook>(() => {
+    try {
+      const asked = new URLSearchParams(window.location.search).get("show");
+      const look = asked === "wheel" || asked === "plate" ? asked : window.localStorage.getItem(SHOW_LOOK_KEY);
+      return look === "wheel" ? "wheel" : "plate";
+    } catch {
+      return "plate";
+    }
+  });
+  const setShowLook = (look: ShowLook) => {
+    setShowLookState(look);
+    try {
+      window.localStorage.setItem(SHOW_LOOK_KEY, look);
+    } catch {
+      // not remembered, still switched
+    }
+  };
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
@@ -1655,18 +1719,35 @@ export default function BuilderHud(props: BuilderHudProps) {
             open={showOpen}
             setOpen={setShowOpen}
             also={statusRowRef}
+            look={showLook}
           />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
+        </div>
+
+        {/* PROTOTYPE: flip between the two Show menus to compare them */}
+        <div className="builderShowCompare" role="group" aria-label="Prototype: Show menu look">
+          {(["plate", "wheel"] as const).map((look) => (
+            <button
+              key={look}
+              type="button"
+              className={showLook === look ? "is-on" : undefined}
+              aria-pressed={showLook === look}
+              onClick={() => setShowLook(look)}
+            >
+              {look}
+            </button>
+          ))}
         </div>
 
         <ShowStatusRow
           ref={statusRowRef}
           open={showOpen}
           onClick={() => setShowOpen(!showOpen)}
+          breakAfter={SHOW_BREAK}
           items={[
-            { id: "posts", label: "Posts", icon: "posts", on: props.showPosts },
             { id: "grid", label: "Grid holes", icon: "grid", on: props.showGrid },
             { id: "labels", label: "Labels", icon: "labels", on: props.showLabels },
+            { id: "posts", label: "Posts", icon: "posts", on: props.showPosts },
             { id: "distances", label: "Beam distances", icon: "ruler", on: props.showDistances },
             { id: "shadows", label: "Shadows", icon: "shadow", on: props.lighting.shadows },
             { id: "light-graphics", label: "Light graphics", icon: "gauge", on: props.quality === "light" },

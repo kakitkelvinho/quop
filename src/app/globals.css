@@ -6115,3 +6115,172 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     opacity: 1;
   }
 }
+
+/* PROTOTYPE: the Show plate, the square sign the half ring is compared with.
+   One row per item (pictogram, name, state square), a hairline between what is
+   on the table and how it is drawn, then two straight sliders. */
+.builderHud__dock:has(.showPlate) {
+  position: relative;
+  z-index: 6;
+}
+
+.showPlate {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  z-index: 50;
+  width: 15rem;
+  padding: 0.3rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  translate: -50% 0;
+  animation: showPlateOpen 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.showPlate__rows {
+  display: grid;
+}
+
+.showPlate__row {
+  display: grid;
+  grid-template-columns: 1.5rem 1fr auto;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  height: 2rem;
+  padding: 0 0.5rem 0 0.4rem;
+  border: 0;
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.showPlate__row:hover {
+  background: var(--builder-hover);
+  color: var(--foreground);
+}
+
+.showPlate__row:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
+.showPlate__row.is-on {
+  color: var(--foreground);
+}
+
+.showPlate__icon {
+  display: inline-grid;
+  place-items: center;
+}
+
+/* the state: an empty square when off, a filled blue one with a tick when on */
+.showPlate__state {
+  display: inline-grid;
+  place-items: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--builder-radius);
+  color: #fff;
+}
+
+.showPlate__row.is-on .showPlate__state {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.showPlate__rule {
+  height: 1px;
+  margin: 0.3rem 0.4rem;
+  border: 0;
+  background: var(--builder-hairline);
+}
+
+.showPlate__slider {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.25rem 0.5rem 0.35rem;
+  color: var(--foreground);
+  font-size: 0.82rem;
+}
+
+.showPlate__sliderHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.showPlate__slider.is-disabled {
+  color: var(--muted);
+}
+
+.showPlate__slider.is-disabled .builderSlider {
+  opacity: 0.45;
+}
+
+@keyframes showPlateOpen {
+  from {
+    opacity: 0;
+    translate: -50% -0.3rem;
+  }
+}
+
+/* the strip's hairline, where the plate draws its rule */
+.builderShowStatus__sep {
+  width: 1px;
+  height: 0.8rem;
+  margin: 0 0.1rem;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+/* PROTOTYPE: the plate / wheel switch, right of the dock and plainly a test control */
+.builderShowCompare {
+  position: absolute;
+  top: 0.45rem;
+  left: calc(100% + 0.75rem);
+  display: flex;
+  border: 1px dashed var(--builder-hairline);
+  border-radius: var(--builder-radius);
+}
+
+.builderShowCompare button {
+  padding: 0.2rem 0.5rem;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.builderShowCompare button.is-on {
+  background: var(--builder-hover);
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showPlate {
+    animation: none;
+  }
+
+  .showPlate__row {
+    transition: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .builderShowCompare {
+    display: none;
+  }
+}
