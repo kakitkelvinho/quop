@@ -232,7 +232,7 @@ function FanRing({
  * the top corners, up from the bottom one), each name floating on the side
  * towards the table. Keys as the ring: the arrows walk it, Home/End, Esc.
  */
-function FanBoxes({
+export function FanBoxes({
   corner,
   label,
   items,
@@ -281,34 +281,36 @@ function FanBoxes({
 
   return (
     <div
-      className={`builderIsland fanBoxes fanBoxes--${corner}`}
+      className={`fanBoxes fanBoxes--${corner}`}
       role="menu"
       aria-label={label}
       aria-orientation="vertical"
       onKeyDown={onKeyDown}
     >
       {items.map((item, i) => (
-        <button
-          key={item.id}
-          ref={(node) => {
-            refs.current[i] = node;
-          }}
-          type="button"
-          role="menuitem"
-          className={`builderIconBtn fanBoxes__box${item.on ? " is-shown" : ""}${item.danger ? " is-danger" : ""}${item.file ? " is-file" : ""}`}
-          aria-label={item.hint ? `${item.label}: ${item.hint}` : item.label}
-          aria-current={item.on || undefined}
-          disabled={item.disabled}
-          tabIndex={i === focus ? 0 : -1}
-          title={item.hint}
-          onFocus={() => setFocus(i)}
-          onClick={() => onPick(item)}
-        >
-          <Icon name={item.icon} />
-          <span className="fanBoxes__name" aria-hidden="true">
-            {item.label}
-          </span>
-        </button>
+        // each box its own island, apart as the QUOP and + islands are; they fan out in turn
+        <div key={item.id} className="builderIsland fanBoxes__island" style={{ "--i": i } as CSSProperties}>
+          <button
+            ref={(node) => {
+              refs.current[i] = node;
+            }}
+            type="button"
+            role="menuitem"
+            className={`builderIconBtn fanBoxes__box${item.on ? " is-shown" : ""}${item.danger ? " is-danger" : ""}${item.file ? " is-file" : ""}`}
+            aria-label={item.hint ? `${item.label}: ${item.hint}` : item.label}
+            aria-current={item.on || undefined}
+            disabled={item.disabled}
+            tabIndex={i === focus ? 0 : -1}
+            title={item.hint}
+            onFocus={() => setFocus(i)}
+            onClick={() => onPick(item)}
+          >
+            <Icon name={item.icon} />
+            <span className="fanBoxes__name" aria-hidden="true">
+              {item.label}
+            </span>
+          </button>
+        </div>
       ))}
     </div>
   );

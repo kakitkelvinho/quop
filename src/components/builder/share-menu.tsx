@@ -3,6 +3,8 @@
 import { useCallback, useId, useRef, useState } from "react";
 
 import { Icon } from "@/components/builder/builder-icons";
+import { FanBoxes, type CornerFanItem } from "@/components/builder/corner-fan";
+import { useMenuLook } from "@/components/builder/menu-look";
 import { SHARE_URL_SAFE_LENGTH } from "@/components/builder/share-link";
 import { useBubbleDismiss } from "@/components/builder/use-bubble-dismiss";
 
@@ -38,6 +40,44 @@ export function ShareMenu({
   };
 
   const long = url !== null && url.length > SHARE_URL_SAFE_LENGTH;
+  // PROTOTYPE: as boxes, a column down the right edge like the ? beside it
+  const look = useMenuLook();
+  const boxItems: CornerFanItem[] =
+    url === null
+      ? []
+      : [
+          {
+            id: "copy",
+            label: "Copy link",
+            icon: "copy",
+            hint: long ? "Large setup: the link may break in some apps; .json is safer" : "Copy a link carrying the setup",
+            run: onCopyLink,
+          },
+          ...(canShare
+            ? [
+                {
+                  id: "share",
+                  label: "Share…",
+                  icon: "share" as const,
+                  hint: "The system share sheet",
+                  run: () => {
+                    // a dismissed share sheet rejects; nothing to say about it
+                    navigator.share({ title: SHARE_TITLE, url }).catch(() => {});
+                  },
+                },
+              ]
+            : []),
+          {
+            id: "email",
+            label: "Email",
+            icon: "mail",
+            hint: "Send the link in an email",
+            run: () => {
+              window.location.href = `mailto:?subject=${encodeURIComponent(SHARE_TITLE)}&body=${encodeURIComponent(url)}`;
+            },
+          },
+          { id: "json", label: ".json", icon: "floppy", file: true, hint: "Download the setup file", run: onDownload },
+        ];
 
   return (
     <div className="builderShare" ref={ref}>
@@ -56,7 +96,18 @@ export function ShareMenu({
       >
         <Icon name="share" />
       </button>
-      {url !== null ? (
+      {url !== null && look === "boxes" ? (
+        <FanBoxes
+          corner="tr"
+          label="Share this setup"
+          items={boxItems}
+          onPick={(item) => done(item.run)()}
+          onClose={() => {
+            close();
+            buttonRef.current?.focus();
+          }}
+        />
+      ) : url !== null ? (
         <div
           className="builderMenu__list builderShare__list"
           role="dialog"

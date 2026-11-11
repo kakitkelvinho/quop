@@ -6151,6 +6151,8 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 /* --- the eye's row ------------------------------------------------------- */
+/* each box its own island, apart as the QUOP and + islands are (0.6rem); the
+   pitch, an island and a gap, is 3.2rem: room for a name under each */
 
 .builderHud__dock:has(.showBoxes) {
   position: relative;
@@ -6158,46 +6160,41 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 .showBoxes {
+  --box-pitch: 3.2rem;
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 50%;
   z-index: 50;
-  display: grid;
-  justify-items: center;
-  gap: 1.45rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
   translate: -50% 0;
-  animation: boxesOpen 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .showBoxes .builderIsland {
   position: static;
 }
 
-/* the boxes sit apart by about a name's width, so the names under the row never touch */
-.showBoxes__row {
-  gap: 0;
+/* the row fans out from under the eye: each box starts at the middle and slides to its place */
+.showBoxes__cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  animation: showBoxOut 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i) * 22ms);
 }
 
-.showBoxes__cell {
-  display: flex;
-  align-items: center;
+/* the wider gap between what's on the table and how it's drawn */
+.showBoxes__cell.is-break {
+  margin-left: 0.7rem;
 }
 
 .showBoxes__box {
   position: relative;
-  margin: 0 0.6rem;
-}
-
-.showBoxes__cell:first-child .showBoxes__box {
-  margin-left: 0;
-}
-
-.showBoxes__cell:last-child .showBoxes__box {
-  margin-right: 0;
 }
 
 .showBoxes__name {
-  top: calc(100% + 0.55rem);
+  top: calc(100% + 0.6rem);
   left: 50%;
   translate: -50% 0;
 }
@@ -6206,61 +6203,91 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   color: var(--muted);
 }
 
-.showBoxes__sep {
-  margin: 0 0.1rem 0 -0.1rem;
+/* a box's slider pops out under its name */
+.showBoxes__pop {
+  position: absolute;
+  top: calc(100% + 1.6rem);
+  left: 50%;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  translate: -50% 0;
+  animation: boxPop 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* the sliders: a slim island of their own under the names */
-.showBoxes__sliders {
-  gap: 0.9rem;
-  padding: 0.25rem 0.6rem;
+.showBoxes .showBoxes__pop {
+  position: absolute;
 }
 
-.showBoxes__slider {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--muted);
+.showBoxes__pop .builderSlider {
+  width: 7rem;
 }
 
-.showBoxes__slider .builderSlider {
-  width: 6.5rem;
-}
-
-.showBoxes__slider .builderReadout {
+.showBoxes__pop .builderReadout {
   min-width: 2.6em;
   text-align: right;
 }
 
-.showBoxes__slider.is-disabled {
-  opacity: 0.45;
+@keyframes showBoxOut {
+  from {
+    opacity: 0;
+    /* from the row's middle, under the eye: the row is about n boxes wide */
+    translate: calc((var(--n, 7) - 1) / 2 * var(--box-pitch) - var(--i) * var(--box-pitch)) -0.8rem;
+    scale: 0.7;
+  }
+}
+
+@keyframes boxPop {
+  from {
+    opacity: 0;
+    translate: -50% -0.4rem;
+  }
 }
 
 /* --- a corner fan's column --------------------------------------------- */
+/* each box its own island, 0.6rem apart, 3.2rem a step; the column unfolds
+   out of its trigger along the edge, the boxes sliding out one behind another */
 
 .fanBoxes {
+  --box-pitch: 3.2rem;
+  position: absolute;
   z-index: 50;
+  display: flex;
   flex-direction: column;
-  animation: boxesOpen 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 0.6rem;
 }
 
-/* top left: beside the trigger, so it clears the + under it; names on the right */
+.fanBoxes .fanBoxes__island {
+  position: static;
+  animation: fanBoxOut 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i) * 25ms);
+}
+
+/* the trigger sits in its own island, 0.25rem padding and a 1px hairline in: line up with that island */
+/* top left: beside the trigger, clear of the + under it; names on the right */
 .fanBoxes--tl {
-  top: -0.25rem;
-  left: calc(100% + 0.6rem);
+  top: calc(-0.25rem - 1px);
+  left: calc(100% + 0.25rem + 1px + 0.6rem);
+  --fan-axis: -1;
 }
 
 /* top right: under the trigger, down the edge; names on the left */
 .fanBoxes--tr {
-  top: calc(100% + 0.6rem);
-  right: -0.25rem;
+  top: calc(100% + 0.25rem + 1px + 0.6rem);
+  right: calc(-0.25rem - 1px);
+  --fan-axis: -1;
 }
 
 /* bottom right: over the trigger, up the edge, the first item nearest it; names on the left */
 .fanBoxes--br {
-  bottom: calc(100% + 0.6rem);
-  right: -0.25rem;
+  bottom: calc(100% + 0.25rem + 1px + 0.6rem);
+  right: calc(-0.25rem - 1px);
   flex-direction: column-reverse;
+  --fan-axis: 1;
+}
+
+/* the top left column slides out sideways from the mark; the others from their trigger along the edge */
+.fanBoxes--tl .fanBoxes__island {
+  animation-name: fanBoxOutSide;
 }
 
 .fanBoxes__box {
@@ -6273,12 +6300,12 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 .fanBoxes--tl .fanBoxes__name {
-  left: calc(100% + 0.65rem);
+  left: calc(100% + 0.9rem);
 }
 
 .fanBoxes--tr .fanBoxes__name,
 .fanBoxes--br .fanBoxes__name {
-  right: calc(100% + 0.65rem);
+  right: calc(100% + 0.9rem);
 }
 
 .fanBoxes__box.is-file .fanBoxes__name {
@@ -6300,9 +6327,18 @@ html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
   color: #fb8c4a;
 }
 
-@keyframes boxesOpen {
+/* each box starts tucked behind the trigger, (i + 1) steps back, and slides out */
+@keyframes fanBoxOut {
   from {
     opacity: 0;
+    translate: 0 calc(var(--fan-axis) * (var(--i) + 1) * var(--box-pitch));
+  }
+}
+
+@keyframes fanBoxOutSide {
+  from {
+    opacity: 0;
+    translate: calc(-1 * var(--box-pitch)) calc(-1 * var(--i) * var(--box-pitch));
   }
 }
 
@@ -6341,10 +6377,17 @@ html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .showBoxes,
-  .fanBoxes {
+  .showBoxes__cell,
+  .showBoxes__pop,
+  .fanBoxes .fanBoxes__island {
     animation: none;
   }
+}
+
+/* PROTOTYPE: as boxes, Share sits top right, left of the ? (an island and a gap in from the edge) */
+.builderHud__share--right {
+  top: 0.9rem;
+  right: calc(0.9rem + 2.5rem + 2px + 0.6rem);
 }
 
 @media (max-width: 40rem) {

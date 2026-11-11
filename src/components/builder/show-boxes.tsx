@@ -1,45 +1,49 @@
 "use client";
 
-// PROTOTYPE (prototype/status-row-fade): the Show wheel as boxes. An island of
-// square toggles drops from the eye, the dock's own buttons, each name floating
-// under its box; a slim island under it holds the two sliders.
+// PROTOTYPE (prototype/status-row-fade): the Show wheel as boxes. A row of the
+// dock's square buttons fans out under the eye, each its own island, each name
+// floating under its box. A box with a slider (Labels: their size; Lighting:
+// the brightness) pops that slider out under itself when pressed.
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { Icon, type IconName } from "@/components/builder/builder-icons";
 import { percent, type DialRange } from "@/components/builder/rim-dial";
-import type { WheelItem } from "@/components/builder/show-wheel";
 
 export type BoxSlider = {
-  id: string;
   label: string;
-  icon: IconName;
   range: DialRange;
   step?: number;
   value: number;
-  disabled?: boolean;
-  /** the tooltip while disabled: what turns the slider on */
-  disabledHint?: string;
   onBegin?: () => void;
   onChange: (value: number) => void;
 };
 
-/** the word under a box, where the full name is too long for one */
-const SHORT: Record<string, string> = { distances: "Lengths", "light-graphics": "Simple" };
+export type ShowBox = {
+  id: string;
+  /** the word under the box */
+  label: string;
+  /** its tooltip and accessible name */
+  description: string;
+  icon: IconName;
+  /** drawn instead of `icon` while the item is off */
+  iconOff?: IconName;
+  /** a toggle has a state; a box that only holds a slider has none */
+  on?: boolean;
+  onToggle?: () => void;
+  /** popped out under the box when it is pressed (and, for a toggle, turned on) */
+  slider?: BoxSlider;
+};
 
 /** A slider that takes one undo snapshot per gesture, like the inspector's. */
-function BoxSliderRow({ slider }: { slider: BoxSlider }) {
+function BoxSliderPop({ slider, id }: { slider: BoxSlider; id: string }) {
   const editing = useRef(false);
   const end = () => {
     editing.current = false;
   };
-  const { label, icon, range, step = 0.05, value, disabled, disabledHint, onBegin, onChange } = slider;
+  const { label, range, step = 0.05, value, onBegin, onChange } = slider;
   return (
-    <label
-      className={`showBoxes__slider${disabled ? " is-disabled" : ""}`}
-      title={disabled ? `${label}: ${disabledHint}` : label}
-    >
-      <Icon name={icon} size={16} />
+    <div className="builderIsland showBoxes__pop" id={id} role="group" aria-label={label}>
       <input
         className="builderSlider"
         type="range"
@@ -48,7 +52,6 @@ function BoxSliderRow({ slider }: { slider: BoxSlider }) {
         max={range[1]}
         step={step}
         value={value}
-        disabled={disabled}
         onChange={(event) => {
           if (!editing.current) {
             editing.current = true;
@@ -59,33 +62,28 @@ function BoxSliderRow({ slider }: { slider: BoxSlider }) {
         onPointerUp={end}
         onKeyUp={end}
         onBlur={end}
-        // the table's own keys (nudging, undo) stay out
-        onKeyDown={(event) => {
-          if (event.key !== "Escape") event.stopPropagation();
-        }}
       />
       <span className="builderReadout">{percent(value)}</span>
-    </label>
+    </div>
   );
 }
 
 /**
- * A menu of checkbox boxes with one roving tab stop: the arrows walk the row,
- * Home/End jump to its ends, Enter or Space toggles, Esc closes. `breakAfter`
- * puts the island's hairline after that many boxes.
+ * A menu of boxes with one roving tab stop: the arrows walk the row, Home/End
+ * jump to its ends, Enter or Space presses, Esc closes (an open slider first).
+ * `breakAfter` puts a wider gap after that many boxes.
  */
 export function ShowBoxes({
   items,
-  sliders,
   breakAfter,
   onClose,
 }: {
-  items: WheelItem[];
-  sliders: BoxSlider[];
+  items: ShowBox[];
   breakAfter?: number;
   onClose: () => void;
 }) {
   const [focus, setFocus] = useState(0);
+  const [popped, setPopped] = useState<string | null>(null);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const n = items.length;
 
@@ -99,69 +97,89 @@ export function ShowBoxes({
     refs.current[next]?.focus();
   };
 
+  const press = (item: ShowBox, i: number) => {
+    setFocus(i);
+    if (item.onToggle) {
+      // a toggle with a slider shows it once turned on, and hides it once turned off
+      const turningOn = !item.on;
+      item.onToggle();
+      setPopped(item.slider && turningOn ? item.id : null);
+    } else {
+      setPopped((current) => (current === item.id ? null : item.id));
+    }
+  };
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const onBox = refs.current.some((node) => node === event.target);
+    // keep every key off the table while the row is open
+    event.stopPropagation();
     if (event.key === "Escape") {
       event.preventDefault();
-      event.stopPropagation();
-      onClose();
+      if (popped) {
+        const at = items.findIndex((item) => item.id === popped);
+        setPopped(null);
+        refs.current[at]?.focus();
+      } else onClose();
       return;
     }
-    if (!onBox) return;
+    if (!refs.current.some((node) => node === event.target)) return;
     const keys: Record<string, () => void> = {
       ArrowRight: () => move(focus + 1),
-      ArrowDown: () => move(focus + 1),
       ArrowLeft: () => move(focus - 1),
-      ArrowUp: () => move(focus - 1),
       Home: () => move(0),
       End: () => move(n - 1),
     };
     const run = keys[event.key];
-    // Enter and Space click the box themselves; keep them, and the rest, off the table
-    event.stopPropagation();
     if (!run) return;
     event.preventDefault();
     run();
   };
 
   return (
-    <div className="showBoxes" onKeyDown={onKeyDown}>
-      <div className="builderIsland showBoxes__row" role="menu" aria-label="Show" aria-orientation="horizontal">
-        {items.map((item, i) => (
-          <div key={item.id} className="showBoxes__cell">
-            {breakAfter === i ? <span className="builderIsland__sep showBoxes__sep" aria-hidden="true" /> : null}
-            <button
-              ref={(node) => {
-                refs.current[i] = node;
-              }}
-              type="button"
-              role="menuitemcheckbox"
-              aria-checked={item.on}
-              aria-label={item.label}
-              className={`builderIconBtn showBoxes__box${item.on ? " is-shown" : ""}`}
-              tabIndex={i === focus ? 0 : -1}
-              title={item.description}
-              onFocus={() => setFocus(i)}
-              onClick={() => {
-                setFocus(i);
-                item.onToggle();
-              }}
-            >
-              <Icon name={item.on ? item.icon : (item.iconOff ?? item.icon)} />
-              <span className="showBoxes__name" aria-hidden="true">
-                {SHORT[item.id] ?? item.label}
-              </span>
-            </button>
+    <div
+      className="showBoxes"
+      role="menu"
+      aria-label="Show"
+      aria-orientation="horizontal"
+      style={{ "--n": n } as CSSProperties}
+      onKeyDown={onKeyDown}
+    >
+      {items.map((item, i) => {
+        const open = popped === item.id && item.slider;
+        const shown = item.on ?? popped === item.id;
+        const popId = `show-box-${item.id}`;
+        return (
+          <div
+            key={item.id}
+            className={`showBoxes__cell${breakAfter === i ? " is-break" : ""}`}
+            style={{ "--i": i } as CSSProperties}
+          >
+            <div className="builderIsland showBoxes__island">
+              <button
+                ref={(node) => {
+                  refs.current[i] = node;
+                }}
+                type="button"
+                role={item.onToggle ? "menuitemcheckbox" : "menuitem"}
+                aria-checked={item.onToggle ? Boolean(item.on) : undefined}
+                aria-expanded={!item.onToggle && item.slider ? Boolean(open) : undefined}
+                aria-controls={open ? popId : undefined}
+                aria-label={item.description}
+                className={`builderIconBtn showBoxes__box${shown ? " is-shown" : ""}`}
+                tabIndex={i === focus ? 0 : -1}
+                title={item.description}
+                onFocus={() => setFocus(i)}
+                onClick={() => press(item, i)}
+              >
+                <Icon name={item.on === false ? (item.iconOff ?? item.icon) : item.icon} />
+                <span className="showBoxes__name" aria-hidden="true">
+                  {item.label}
+                </span>
+              </button>
+            </div>
+            {open && item.slider ? <BoxSliderPop slider={item.slider} id={popId} /> : null}
           </div>
-        ))}
-      </div>
-      {sliders.length ? (
-        <div className="builderIsland showBoxes__sliders">
-          {sliders.map((slider) => (
-            <BoxSliderRow key={slider.id} slider={slider} />
-          ))}
-        </div>
-      ) : null}
+        );
+      })}
     </div>
   );
 }

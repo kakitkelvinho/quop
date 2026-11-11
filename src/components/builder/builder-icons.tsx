@@ -216,6 +216,13 @@ const ICONS = {
       <path d="M9 12h6M9 16h4" />
     </>
   ),
+  // PROTOTYPE: an envelope, for the share boxes' Email
+  mail: (
+    <>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      <path d="m4 6.5 8 6.5 8-6.5" />
+    </>
+  ),
   floppy: (
     <>
       <path d="M6 4h10l4 4v10.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4Z" />

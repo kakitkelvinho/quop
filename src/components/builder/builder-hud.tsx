@@ -15,7 +15,7 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside, panelState, setPanelView } from "@/components/builder/panel-store";
 import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
-import { ShowBoxes } from "@/components/builder/show-boxes";
+import { ShowBoxes, type ShowBox } from "@/components/builder/show-boxes";
 import { setMenuLook, useMenuLook, type MenuLook } from "@/components/builder/menu-look";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
 import { FileFan, TOP_LEFT_ISLANDS } from "@/components/builder/file-fan";
@@ -1065,6 +1065,8 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
 /** the boxes' and the strip's order: what's on the table, a hairline, how it's drawn */
 const SHOW_ORDER = ["grid", "labels", "posts", "distances", "shadows", "light-graphics"];
 const SHOW_BREAK = 4;
+/** the word under a box, where the full name is too long for one */
+const BOX_WORD: Record<string, string> = { distances: "Lengths", "light-graphics": "Simple" };
 
 /**
  * PROTOTYPE: what the Show wheel has on, at a glance. A faint row of small
@@ -1225,33 +1227,39 @@ function ShowMenu({
       </button>
       {open && look === "boxes" ? (
         <ShowBoxes
-          items={SHOW_ORDER.map((id) => items.find((item) => item.id === id)!)}
+          items={[
+            ...SHOW_ORDER.slice(0, SHOW_BREAK).map((id): ShowBox => {
+              const item = items.find((candidate) => candidate.id === id)!;
+              return {
+                ...item,
+                label: BOX_WORD[id] ?? item.label,
+                ...(id === "labels"
+                  ? { slider: { label: "Label size", range: LABEL_SCALE_RANGE, value: scale, onBegin, onChange } }
+                  : {}),
+              };
+            }),
+            {
+              id: "lighting",
+              label: "Lighting",
+              description: "Brightness of the light",
+              icon: "light",
+              slider: {
+                label: "Brightness",
+                range: BRIGHTNESS_RANGE,
+                value: lighting.brightness,
+                onChange: (brightness) => onLightingChange({ brightness }),
+              },
+            },
+            ...SHOW_ORDER.slice(SHOW_BREAK).map((id): ShowBox => {
+              const item = items.find((candidate) => candidate.id === id)!;
+              return { ...item, label: BOX_WORD[id] ?? item.label };
+            }),
+          ]}
           breakAfter={SHOW_BREAK}
           onClose={() => {
             setOpen(false);
             buttonRef.current?.focus();
           }}
-          sliders={[
-            {
-              id: "label-size",
-              label: "Label size",
-              icon: "labels",
-              range: LABEL_SCALE_RANGE,
-              value: scale,
-              disabled: !labels,
-              disabledHint: "Turn labels on first",
-              onBegin,
-              onChange,
-            },
-            {
-              id: "brightness",
-              label: "Brightness",
-              icon: "light",
-              range: BRIGHTNESS_RANGE,
-              value: lighting.brightness,
-              onChange: (brightness) => onLightingChange({ brightness }),
-            },
-          ]}
         />
       ) : open ? (
         <ShowWheel
@@ -1650,10 +1658,19 @@ export default function BuilderHud(props: BuilderHudProps) {
             onClear={props.onClear}
           />
         </div>
-        <div className="builderIsland builderHud__share">
+        {menuLook === "ring" ? (
+          <div className="builderIsland builderHud__share">
+            <ShareMenu getShareUrl={props.getShareUrl} onCopyLink={props.onCopyLink} onDownload={props.onSave} />
+          </div>
+        ) : null}
+      </div>
+
+      {/* PROTOTYPE: as boxes, QUOP's column opens to its right, so Share moves top right, left of the ? */}
+      {menuLook === "boxes" ? (
+        <div className="builderIsland builderHud__share builderHud__share--right">
           <ShareMenu getShareUrl={props.getShareUrl} onCopyLink={props.onCopyLink} onDownload={props.onSave} />
         </div>
-      </div>
+      ) : null}
 
       {panelsMove ? null : aboutPanels}
 
