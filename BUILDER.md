@@ -166,7 +166,7 @@ corners, a side under 10 mm, over 5000 mm overall, junk values) opens as the
 rectangle around it rather than being dropped. Hiding, showing and each Fill
 switch are one undo step.
 
-**A setup brief for an AI assistant.** AI brief, in the ? fan at the top
+**A setup brief for an AI assistant.** AI brief, in the ? menu at the top
 right, opens the setup brief: Markdown instructions an
 author pastes into an AI assistant so it writes a setup file for the experiment
 they describe, which then opens in the Setup JSON panel like any other: the brief asks
@@ -374,11 +374,9 @@ the table alone. A merge that would go over the setup limits is refused with
 a notice, and the table is left as it was.
 
 **Label size is the setup's.** The Show button (an eye) in the middle of the dock
-drops a half ring of wedges for what is drawn besides the setup: Posts, Grid,
-Labels and Beam distances, each with its icon, name and On/Off, and a Label
-size slider (50–200 % in 5 % steps) in a card under the ring. The arrow keys
-walk the ring, Enter or Space toggles a wedge, and Esc or a click outside
-closes it. The slider scales every
+fans out a row of boxes for what is drawn besides the setup and how (see the
+dock, below). While labels are on, a Label size slider (50–200 % in 5 % steps)
+shows under the Labels box. The slider scales every
 component, connection and frame label whole (text, padding, corners, border
 and the lift that keeps a part's label clear of the part) through one CSS
 variable, `--label-scale`, on the canvas host. The beam distance numbers, the
@@ -392,8 +390,12 @@ setups from before version 11 open at 100 %.
 named set of components and frames, such as one experiment's parts when a
 table holds several, kept in the setup's top-level `groups` (scene version
 12; older setups open with none): an id unique across the whole setup, a
-name, a colour, `hidden` only when hidden, and its `members` as part and
-frame ids. A part may be in several groups, as a mirror two experiments share
+name, a colour, `hidden` only when hidden, `faded` only when faded (never
+with `hidden`), and its `members` as part and frame ids. A group's eye in its
+list steps shown → faded → hidden: a part that is in a faded group and in no
+fully shown one draws at 18 % opacity, casting no shadow, and its label
+fades; a frame takes the hidden frame's ghost look; a beam whose every shown
+stop is faded draws faint too. Fading, like hiding, changes only the drawing. A part may be in several groups, as a mirror two experiments share
 is; groups don't nest, and beams and connections are never members. What is
 drawn follows from them (`groups.ts`): a component is shown when it is in no
 group or any of its groups is shown; a frame when it isn't hidden itself and,
@@ -434,31 +436,34 @@ The builder is a full-window workspace: the site nav steps aside and the canvas
 fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
-At rest there are eleven controls and nothing else: the QUOP mark, the +, the
-dock (undo, the eye, redo), the ?, the camera, the day/night switch and the
-three slots of the panel rail. Related controls are grouped behind one
+At rest there are twelve controls and nothing else: the QUOP mark, the +, the
+dock (undo, the eye, redo), Share, the ?, the camera, the day/night switch and
+the three slots of the panel rail. Related controls are grouped behind one
 button each, in the spirit of a game's minimal HUD.
 
-**One menu idiom: the corner fan** (`corner-fan.tsx`). Every menu is a quarter
-fan of wedges from a corner of the workspace, flush with its edges. Its hole
-clears the islands in that corner, measured when it opens and again when the
-window resizes, so clicks pass through to them. The band is 150 px deep
-(`fanRing`'s depth), thinner on a small screen down to its 64 px floor. Each
-wedge is a petal: the wedges part by a 6 px gap at the hole that widens
-outward (`petalInset`), and each holds a 24 px icon and one word at 13 px,
-with its longer hint in the tooltip. It is a `menu` with a roving tab stop:
-the arrows walk it (forward is the way the wedges run from the corner),
-Home/End jump to its ends, Enter or Space runs a wedge, and Esc closes it and
-puts the focus back on its trigger. Picking a wedge closes it, and so does a
-pointer-down outside. One fan is open at a time. The geometry is
-`ring-geometry.ts` (`cornerSpan`, `cornerClear`, `fanArrows`).
+**One menu idiom: boxes.** Every menu is made of the dock's own parts: square
+buttons, each in its own island (`builderIsland`), 0.6 rem apart as the QUOP
+and + islands are, each name floating beside its box with no plate, over the
+table (a 1 px outline of the page colour keeps it legible on any part). A box
+that is on is pressed in, neutral, with a bar along its foot, as a rail slot
+whose list shows; the accent stays for what is live. The corner menus
+(`corner-fan.tsx`, `CornerFan` and `FanBoxes`) are columns that unfold from
+their trigger along the workspace's edge, the boxes sliding out one behind
+another: to the right of QUOP and the +, down from Share and the ?, up from
+the camera, names on the side towards the table. A column is a `menu` with a
+roving tab stop: Up/Down walk it (from the bottom corner Up walks away from
+the trigger), Home/End jump to its ends, Enter or Space runs a box, and Esc or
+Tab closes it and puts the focus back on its trigger. Picking a box closes it,
+and so does a pointer-down outside. One corner menu is open at a time. Only
+the keys a menu uses are kept from the table; ⌘Z and the rest still reach it.
+Keyboard shortcuts to open the menus are issue #347.
 
 - **Top left**: the QUOP mark (the wordmark and a ▾) is the file menu, as a
-  logo menu is. Its fan: **Home** (the site, through the router so the base
+  logo menu is. Its column: **Home** (the site, through the router so the base
   path holds), **.json** (the Setup JSON panel, which saves, opens and
   imports), **.png** (export the view), **Example** (load the example) and
-  **Clear** (empty the table; tinted orange). The **+** under it opens the
-  same ring, its hole clear of both islands: **Part** (the parts panel),
+  **Clear** (empty the table; tinted orange). The **+** under it opens its own
+  column to the right: **Part** (the parts panel),
   **Beam**, **Frame** and **Cable** (Beam and Cable need two parts). While
   adding is live (the parts panel is open, or a beam, frame or cable is being
   drawn) the + is lit, and pressing it again stops it.
@@ -468,15 +473,24 @@ pointer-down outside. One fan is open at a time. The geometry is
   reopening it. The JSON panel
   and the setup brief open in the same spot, so opening one
   closes the others.
-- **Top centre**: the dock: undo, the eye (Show, a half ring of what is drawn
-  on the table and how: Posts, Grid, Labels, Beam distances, Shadows, Light
-  graphics, with the label size and brightness dials round it) and redo. The
-  eye sits in the middle, so its wheel drops symmetrically. While placing,
+- **Top centre**: the dock: undo, the eye (Show) and redo. The eye sits in the
+  middle, so Show's row fans out symmetrically under it (`show-boxes.tsx`), a
+  `toolbar` of boxes for what is drawn on the table and how: **Grid** (the
+  holes), **Labels**, **Posts**, **Lengths** (beam distances), then a wider
+  gap, **Lighting**, **Shadows** and **Simple** (light graphics). Toggles are
+  `aria-pressed`, and an off one wears a `/` slash. One slider shows at a time
+  under its box: Label size while labels are on, or brightness while Lighting
+  is pressed. Left/Right walk the row, Esc closes a popped slider and then the
+  row. On a phone the row wraps into two, four boxes over three. Under the eye
+  sits Show's status strip: the same icons at 13 px in the same order, full ink
+  while on and grey and slashed while off, one button that opens Show too, so
+  what Show holds is visible at rest; it steps aside while Show is open. While placing,
   drawing, connecting or grouping, a mode badge under the dock carries that
   mode's key hints; on a phone it wraps, between the + and the right edge.
   Select has no button: it is the resting state, and Esc returns to it.
-- **Top right**: the ? (help). Its fan: **Guide** (the coach marks), **Keys**
-  (the cheat sheet) and **AI brief** (the setup brief).
+- **Top right**: Share (see *Sharing*), and right of it the ? (help). Its
+  column: **Guide** (the coach marks), **Keys** (the cheat sheet) and **AI
+  brief** (the setup brief).
 - **Right**: the inspector, below the ?, shown only while something is
   selected: a component, several components, a beam, or a beam being drawn.
   For several it reads "N parts selected", with rotate, duplicate and delete,
@@ -534,14 +548,14 @@ pointer-down outside. One fan is open at a time. The geometry is
   announced. Members of a hidden group draw no ghost when their row selects
   them; the selection and the inspector still show them.
 - **Bottom right**: the camera, a button showing the current view's icon (iso
-  cube or top). Its fan: **Fit**, **Top** and **Iso**, the current view's
-  wedge marked in the accent's wash. Right of it, outside the camera's ring,
+  cube or top). Its column: **Fit**, **Top** and **Iso**, the current view's
+  box pressed in. Right of it,
   the day/night switch: a plain icon with no plate, so it reads as the page's
   own switch rather than a table tool. There is no readout: the inspector and
   the beams box already carry every number worth reading.
-- **Quick guide**, in two sizes, both from the ? fan. **Guide** opens *coach
+- **Quick guide**, in two sizes, both from the ? menu. **Guide** opens *coach
   marks*: the builder dims and each control on screen is ringed and tagged in
-  place with what its fan or slots hold, in their own words ("Home · .json ·
+  place with what its menu or slots hold, in their own words ("Home · .json ·
   .png · example · clear", "Camera: fit · top · iso"), with the camera and
   selection keys in a card. A control under another island, or with no free
   spot for its tag, goes untagged; its tooltip still names it. Any click, Esc
@@ -691,8 +705,8 @@ The render-style exploration that led here is kept on the
 
 ## Sharing
 
-**Share**, the icon beside the QUOP mark, sends a setup on as a link instead
-of a `.json` file. Its popover offers **Copy link** first (confirmed in the
+**Share**, the icon left of the ? at the top right, sends a setup on as a link instead
+of a `.json` file. Its column of boxes offers **Copy link** first (confirmed in the
 status line), **Share…** where the browser has a system share sheet, **Email**
 (a `mailto:` with the link in its body) and **Download .json**.
 
@@ -734,11 +748,12 @@ file in another wrapping.
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: the QUOP and + fans, the dock, the ? fan, mode badge, lists, the panel rail, the camera, the setup brief and JSON panels |
-| `src/components/builder/corner-fan.tsx` | The corner fan: a quarter ring of petal wedges from a workspace corner, a keyboard menu |
-| `src/components/builder/file-fan.tsx` | The QUOP mark's file fan |
+| `src/components/builder/builder-hud.tsx` | The floating islands: the QUOP and + menus, the dock and Show, Share and the ? menu, mode badge, lists, the panel rail, the camera, the setup brief and JSON panels |
+| `src/components/builder/corner-fan.tsx` | A corner menu: a column of boxes that unfolds from its trigger along the edge, a keyboard menu |
+| `src/components/builder/file-fan.tsx` | The QUOP mark's file menu |
+| `src/components/builder/show-boxes.tsx` | Show's row of boxes under the eye, and the slider each box pops |
 | `src/components/builder/share-link.ts` | A setup to and from a share link's `#s=` hash |
-| `src/components/builder/share-menu.tsx` | The Share button and its popover |
+| `src/components/builder/share-menu.tsx` | The Share button and its column of boxes |
 | `src/components/builder/panel-rail.tsx` | The panel rail's slots; what a press does is `rail-slots.ts`, group mode `group-mode.ts` |
 | `src/components/builder/setup-brief.ts` | The setup brief: Markdown for an AI assistant to write a setup file, built from `types.ts` |
 | `src/components/builder/builder-guide.tsx` | The quick guide: the coach marks and the cheat sheet |

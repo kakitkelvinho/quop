@@ -1374,7 +1374,7 @@ export default function BuilderCanvas({
             key={frame.id}
             frame={frame}
             selected={frame.id === selectedFrameId}
-            // PROTOTYPE: a faded group's frame borrows the hidden frame's ghost look
+            // a faded group's frame borrows the hidden frame's ghost look
             ghost={ghost || shown.faded.has(frame.id)}
             showLabel={showLabels}
             interactive={framesInteractive}
@@ -1449,7 +1449,7 @@ export default function BuilderCanvas({
               points={points}
               color={beam.color}
               width={beam.width}
-              // PROTOTYPE: a beam through faded parts only fades with them
+              // a beam through faded parts only fades with them
               opacity={drawn && isBeamFaded(beam, shown) ? (beam.opacity ?? 1) * 0.25 : beam.opacity}
               selected={selected}
               core={beam.arrows !== false}

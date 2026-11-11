@@ -222,7 +222,7 @@ export type Group = {
   color: string;
   /** true takes its members out of the drawing, unless another group shows them; stored only when true */
   hidden?: true;
-  /** PROTOTYPE: true draws its members faint, unless another group shows them fully; stored only when true */
+  /** true draws its members faint, unless another group shows them fully; stored only when true */
   faded?: true;
   /** component and frame ids, each once */
   members: string[];

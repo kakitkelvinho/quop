@@ -1,18 +1,12 @@
 "use client";
 
-// PROTOTYPE (prototype/status-row-fade): the Show wheel as boxes. A row of the
-// dock's square buttons fans out under the eye, each its own island, each name
-// floating under its box. A box with a slider (Labels: their size; Lighting:
-// the brightness) pops that slider out under itself when pressed.
-
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 
 import { Icon, type IconName } from "@/components/builder/builder-icons";
-import { percent, type DialRange } from "@/components/builder/rim-dial";
 
 export type BoxSlider = {
   label: string;
-  range: DialRange;
+  range: readonly [number, number];
   step?: number;
   value: number;
   onBegin?: () => void;
@@ -26,14 +20,20 @@ export type ShowBox = {
   /** its tooltip and accessible name */
   description: string;
   icon: IconName;
-  /** drawn instead of `icon` while the item is off */
-  iconOff?: IconName;
   /** a toggle has a state; a box that only holds a slider has none */
   on?: boolean;
   onToggle?: () => void;
-  /** popped out under the box when it is pressed (and, for a toggle, turned on) */
+  /** a toggle's slider shows under it while it is on; a plain box's, while pressed */
   slider?: BoxSlider;
 };
+
+/** A value as a percentage, for a slider's readout. */
+function percent(value: number) {
+  return `${Math.round(value * 100)}%`;
+}
+
+// the keys a slider keeps for itself, away from the row and the table
+const SLIDER_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]);
 
 /** A slider that takes one undo snapshot per gesture, like the inspector's. */
 function BoxSliderPop({ slider, id }: { slider: BoxSlider; id: string }) {
@@ -43,7 +43,7 @@ function BoxSliderPop({ slider, id }: { slider: BoxSlider; id: string }) {
   };
   const { label, range, step = 0.05, value, onBegin, onChange } = slider;
   return (
-    <div className="builderIsland showBoxes__pop" id={id} role="group" aria-label={label}>
+    <div className="builderIsland showBoxes__pop" id={id}>
       <input
         className="builderSlider"
         type="range"
@@ -62,6 +62,9 @@ function BoxSliderPop({ slider, id }: { slider: BoxSlider; id: string }) {
         onPointerUp={end}
         onKeyUp={end}
         onBlur={end}
+        onKeyDown={(event) => {
+          if (SLIDER_KEYS.has(event.key)) event.stopPropagation();
+        }}
       />
       <span className="builderReadout">{percent(value)}</span>
     </div>
@@ -69,9 +72,14 @@ function BoxSliderPop({ slider, id }: { slider: BoxSlider; id: string }) {
 }
 
 /**
- * A menu of boxes with one roving tab stop: the arrows walk the row, Home/End
- * jump to its ends, Enter or Space presses, Esc closes (an open slider first).
- * `breakAfter` puts a wider gap after that many boxes.
+ * Show, as boxes: a toolbar of the dock's square buttons that fans out under
+ * the eye, each its own island, each name floating under its box. Toggles are
+ * pressed in while on. One slider shows at a time, under its box: a plain box
+ * (Lighting) pops its own while pressed, and otherwise a toggle that is on
+ * (Labels) shows its own. One roving tab stop: Left/Right walk the row,
+ * Home/End jump to its ends, Enter or Space presses, Esc closes (a popped
+ * slider first). Only those keys are kept off the table; the rest (undo, say)
+ * still reach it. `breakAfter` puts a wider gap after that many boxes.
  */
 export function ShowBoxes({
   items,
@@ -100,20 +108,20 @@ export function ShowBoxes({
   const press = (item: ShowBox, i: number) => {
     setFocus(i);
     if (item.onToggle) {
-      // a toggle with a slider shows it once turned on, and hides it once turned off
-      const turningOn = !item.on;
       item.onToggle();
-      setPopped(item.slider && turningOn ? item.id : null);
+      setPopped(null);
     } else {
       setPopped((current) => (current === item.id ? null : item.id));
     }
   };
 
+  // the one slider showing: a popped box's, else the first toggle with a slider that is on
+  const sliding = popped ?? items.find((item) => item.onToggle && item.slider && item.on)?.id ?? null;
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    // keep every key off the table while the row is open
-    event.stopPropagation();
     if (event.key === "Escape") {
       event.preventDefault();
+      event.stopPropagation();
       if (popped) {
         const at = items.findIndex((item) => item.id === popped);
         setPopped(null);
@@ -122,6 +130,11 @@ export function ShowBoxes({
       return;
     }
     if (!refs.current.some((node) => node === event.target)) return;
+    if (event.key === "Enter" || event.key === " ") {
+      // the box clicks itself; the table mustn't also act on the key
+      event.stopPropagation();
+      return;
+    }
     const keys: Record<string, () => void> = {
       ArrowRight: () => move(focus + 1),
       ArrowLeft: () => move(focus - 1),
@@ -131,22 +144,24 @@ export function ShowBoxes({
     const run = keys[event.key];
     if (!run) return;
     event.preventDefault();
+    event.stopPropagation();
     run();
   };
 
   return (
     <div
       className="showBoxes"
-      role="menu"
+      role="toolbar"
       aria-label="Show"
       aria-orientation="horizontal"
       style={{ "--n": n } as CSSProperties}
       onKeyDown={onKeyDown}
     >
       {items.map((item, i) => {
-        const open = popped === item.id && item.slider;
-        const shown = item.on ?? popped === item.id;
+        const open = sliding === item.id && item.slider;
         const popId = `show-box-${item.id}`;
+        const toggle = Boolean(item.onToggle);
+        const shown = toggle ? Boolean(item.on) : popped === item.id;
         return (
           <div
             key={item.id}
@@ -159,9 +174,8 @@ export function ShowBoxes({
                   refs.current[i] = node;
                 }}
                 type="button"
-                role={item.onToggle ? "menuitemcheckbox" : "menuitem"}
-                aria-checked={item.onToggle ? Boolean(item.on) : undefined}
-                aria-expanded={!item.onToggle && item.slider ? Boolean(open) : undefined}
+                aria-pressed={toggle ? shown : undefined}
+                aria-expanded={!toggle && item.slider ? shown : undefined}
                 aria-controls={open ? popId : undefined}
                 aria-label={item.description}
                 className={`builderIconBtn showBoxes__box${shown ? " is-shown" : ""}`}

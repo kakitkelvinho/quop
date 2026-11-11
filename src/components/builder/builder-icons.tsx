@@ -52,7 +52,7 @@ const ICONS = {
     </>
   ),
   fit: <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" />,
-  // the Show wheel's overlays: a grid, a part label, a ruler, a post
+  // Show's overlays: a grid, a part label, a ruler, a post
   grid: <path d="M4 4h16v16H4zM4 9.33h16M4 14.67h16M9.33 4v16M14.67 4v16" />,
   labels: (
     <>
@@ -90,7 +90,7 @@ const ICONS = {
       <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
     </>
   ),
-  // a bulb: the brightness, on its knob in the Show wheel
+  // a bulb: the brightness, Show's Lighting box
   light: (
     <>
       <path d="M9 17.5h6M10 20.5h4" />
@@ -138,7 +138,7 @@ const ICONS = {
       <circle cx="12" cy="12" r="2.8" />
     </>
   ),
-  // PROTOTYPE: a faded group's eye, its outline broken
+  // a faded group's eye, its outline broken
   eyeFaded: (
     <>
       <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" strokeDasharray="2.6 2.2" />
@@ -216,7 +216,7 @@ const ICONS = {
       <path d="M9 12h6M9 16h4" />
     </>
   ),
-  // PROTOTYPE: an envelope, for the share boxes' Email
+  // an envelope, for the share boxes' Email
   mail: (
     <>
       <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
@@ -242,14 +242,14 @@ const ICONS = {
       <rect x="12.5" y="12.5" width="5" height="5" rx="1" />
     </>
   ),
-  // a ball and the shadow it casts on the table: the Show wheel's Shadows
+  // a ball and the shadow it casts on the table: Show's Shadows
   shadow: (
     <>
       <circle cx="12" cy="9.5" r="5" />
       <ellipse cx="13.5" cy="19" rx="6" ry="1.6" fill="currentColor" opacity="0.45" stroke="none" />
     </>
   ),
-  // a gauge with its needle turned down low: the Show wheel's Light graphics
+  // a gauge with its needle turned down low: Show's Simple (light graphics)
   gauge: (
     <>
       <path d="M4.5 17a8 8 0 1 1 15 0" />

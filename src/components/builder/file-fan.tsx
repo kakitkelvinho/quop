@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/builder/builder-icons";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
 
-/** The islands in the top-left corner: the QUOP and + fans both clear both, so they lie on one ring. */
-export const TOP_LEFT_ISLANDS = ".builderHud__file, .builderHud__add";
-
 /**
- * The QUOP mark, top left, is the file menu, as a logo menu is: a quarter fan
- * from the workspace's corner with Home (the site, through the router so the
+ * The QUOP mark, top left, is the file menu, as a logo menu is: a column of
+ * boxes opening to its right with Home (the site, through the router so the
  * base path holds), .json (the Setup JSON panel, which saves, opens and
  * imports), .png (export the view), Example and Clear.
  */
@@ -37,7 +34,6 @@ export function FileFan({
   return (
     <CornerFan
       corner="tl"
-      clearOf={TOP_LEFT_ISLANDS}
       label="QUOP"
       title="QUOP: home and file"
       items={items}

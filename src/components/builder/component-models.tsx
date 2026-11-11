@@ -2267,7 +2267,7 @@ function BeamOrderBadge({ order, height }: { order: number; height: number }) {
   );
 }
 
-/** PROTOTYPE: how much of a faded part's opacity is left */
+/** how much of a faded part's opacity is left */
 const FADED_OPACITY = 0.18;
 
 export type ComponentMeshProps = {
@@ -2284,7 +2284,7 @@ export type ComponentMeshProps = {
   stubTaken?: boolean;
   /** a periscope mirror's other mirror, if it has one */
   partner?: BuilderComponent;
-  /** PROTOTYPE: drawn faint, as a member of a faded group */
+  /** drawn faint, as a member of a faded group */
   faded?: boolean;
   /**
    * Handed the part's id, so one stable handler serves every part and a
@@ -2451,7 +2451,7 @@ export const ComponentMesh = memo(function ComponentMesh({
     });
   }, [signature]);
 
-  // PROTOTYPE: a faded part wears see-through copies of its materials and casts
+  // a faded part wears see-through copies of its materials and casts
   // no shadow; the originals come back when it is shown again. Rerun whenever
   // the meshes or their materials may have changed.
   const invalidate = useThree((state) => state.invalidate);

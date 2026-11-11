@@ -2747,7 +2747,7 @@ html[data-theme="dark"] .fitsColorControl__select {
    =========================================================================== */
 
 /* the builder follows the site's one radius (--radius); things round by
-   meaning (colour dots, swatches, the wheels' ring geometry) keep their own.
+   meaning (colour dots, swatches) keep their own.
    On :root because the coach marks are portalled out of the workspace. */
 :root {
   --builder-radius: var(--radius);
@@ -2906,24 +2906,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   display: flex;
 }
 
-.builderShare__list {
-  width: 14rem;
-}
-
-.builderShare__list .builderShare__primary {
-  font-weight: 700;
-}
-
-.builderShare__note {
-  margin: 0.25rem 0 0;
-  padding: 0.45rem 0.6rem 0.2rem;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-/* under it, on its own: the +, whose fan lies on the QUOP fan's ring */
+/* under it, on its own: the +; its menu opens to the right, as QUOP's does */
 .builderHud__add {
   top: 4.1rem;
   left: 0.9rem;
@@ -2933,6 +2916,12 @@ html[data-theme="dark"] .fitsColorControl__select {
 .builderHud__help {
   top: 0.9rem;
   right: 0.9rem;
+}
+
+/* and Share left of it, an island and a gap in from the edge */
+.builderHud__share {
+  top: 0.9rem;
+  right: calc(0.9rem + 2.5rem + 2px + 0.6rem);
 }
 
 /* the wordmark: heavy and tracked, as the site's own */
@@ -3005,302 +2994,16 @@ html[data-theme="dark"] .fitsColorControl__select {
   border-top: 1px solid var(--border);
 }
 
-/* the eye's button: its Show wheel hangs from the middle of the dock */
+/* the eye's button: Show's row of boxes hangs from the middle of the dock */
 .builderLighting {
   position: relative;
   display: flex;
 }
 
-/* the eye's Show wheel: a half ring of wedges dropping out of the button, with
-   the label size dial round its outside and the brightness dial round the eye */
-.showWheel {
-  position: absolute;
-  top: calc(100% + 0.45rem);
-  left: 50%;
-  z-index: 50;
-  display: grid;
-  justify-items: center;
-  gap: 0.4rem;
-  translate: -50% 0;
-  pointer-events: none;
-}
-
-/* the open wheel spreads over the islands and panels round the dock */
-.builderHud__dock:has(.showWheel) {
-  position: relative;
-  z-index: 6;
-}
-
-/* on a phone the wheel is wider than the window: it shrinks to fit, and slides in from the edge */
-.showWheel__ring {
-  max-width: calc(100vw - 16px);
-  height: auto;
-  overflow: visible;
-  transform-origin: 50% 0;
-  animation: showWheelOpen 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.showWheel__segment {
-  color: var(--muted);
-  outline: none;
-  cursor: pointer;
-  pointer-events: auto;
-  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-/* the wedges are cut by the islands' hairline, which also edges the flat ring
-   against the scene (opaque, so a seam doesn't double where two strokes meet) */
-.showWheel__wedge {
-  fill: var(--surface-strong);
-  stroke: color-mix(in srgb, var(--foreground) 22%, var(--surface-strong));
-  stroke-width: 1;
-  transition: fill 120ms ease;
-}
-
-.showWheel__name {
-  fill: currentColor;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.showWheel__state {
-  fill: currentColor;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.7;
-}
-
-.showWheel__segment:hover {
-  color: var(--foreground);
-}
-
-.showWheel__segment:hover .showWheel__wedge {
-  fill: var(--background-muted);
-}
-
-.showWheel__segment.is-on {
-  color: var(--focus-ring);
-}
-
-.showWheel__segment.is-on .showWheel__wedge {
-  fill: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-strong));
-}
-
-.showWheel__segment:focus-visible .showWheel__wedge {
-  stroke: var(--focus-ring);
-  stroke-width: 2.5;
-}
-
-/* a rim dial: a track bent round the ring, its filled part up to a knob */
-.showWheel__dial {
-  color: var(--focus-ring);
-  outline: none;
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-  animation: showWheelFade 260ms 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-.showWheel__dial:active {
-  cursor: grabbing;
-}
-
-/* a wide, unseen stroke along the track: what a finger grabs */
-.showWheel__dialHit {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 24;
-}
-
-.showWheel__dialTrack,
-.showWheel__dialFill {
-  fill: none;
-  stroke-width: 8;
-  stroke-linecap: round;
-}
-
-.showWheel__dialTrack {
-  stroke: var(--surface-strong);
-}
-
-.showWheel__dialFill {
-  stroke: color-mix(in srgb, var(--focus-ring) 55%, var(--surface-strong));
-}
-
-.showWheel__dialKnob {
-  fill: var(--surface-strong);
-  stroke: var(--focus-ring);
-  stroke-width: 2;
-  transition: fill 120ms ease;
-}
-
-.showWheel__dial:hover .showWheel__dialKnob {
-  fill: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-strong));
-}
-
-.showWheel__dial:focus-visible .showWheel__dialKnob {
-  stroke: var(--focus-ring);
-  stroke-width: 3;
-}
-
-.showWheel__dialIcon {
-  pointer-events: none;
-}
-
-.showWheel__dialReadout {
-  fill: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  /* a halo in the ring's colour keeps the label size's % legible over the table */
-  stroke: var(--surface-strong);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-  paint-order: stroke;
-  pointer-events: none;
-}
-
-/* the label size rests while labels are off */
-.showWheel__dial.is-disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-@keyframes showWheelOpen {
-  from {
-    opacity: 0;
-    transform: scale(0.55);
-  }
-}
-
-@keyframes showWheelFade {
-  from {
-    opacity: 0;
-  }
-}
-
-/* The corner fans: a quarter ring of wedges from a corner of the workspace,
-   flush with its edges, its hole clear of the islands there. The QUOP mark and
-   the + share the top left's ring; the ? opens from the top right, the camera
-   from the bottom right. The layer sits on the corner (placed from the
-   script); the wedges are petals, parted by a gap that widens outward. */
+/* a corner menu's trigger: its column of boxes is placed from here */
 .cornerFan__anchor {
   position: relative;
   display: inline-grid;
-}
-
-.cornerFan {
-  position: absolute;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.cornerFan__ring {
-  display: block;
-  overflow: visible;
-  animation: cornerFanOpen 240ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.cornerFan__item {
-  color: var(--muted);
-  outline: none;
-  cursor: pointer;
-  pointer-events: auto;
-  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-/* each petal is a plate of its own, edged in the islands' hairline */
-.cornerFan__wedge {
-  fill: var(--surface-strong);
-  stroke: color-mix(in srgb, var(--foreground) 22%, var(--surface-strong));
-  stroke-width: 1;
-  transition: fill 120ms ease;
-}
-
-.cornerFan__name {
-  fill: var(--foreground);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.cornerFan__item.is-file .cornerFan__name {
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-}
-
-.cornerFan__item:hover,
-.cornerFan__item:focus-visible {
-  color: var(--foreground);
-}
-
-/* hovers stay neutral: the ink is spent on what's live */
-.cornerFan__item:hover .cornerFan__wedge,
-.cornerFan__item:focus-visible .cornerFan__wedge {
-  fill: color-mix(in srgb, var(--foreground) 9%, var(--surface-strong));
-}
-
-/* the current one (the camera's view, an open panel): the accent's wash, its icon in the ink */
-.cornerFan__item.is-on {
-  color: var(--accent-strong);
-}
-
-.cornerFan__item.is-on .cornerFan__wedge {
-  fill: var(--accent-soft);
-}
-
-.cornerFan__item.is-disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.cornerFan__item.is-disabled:hover .cornerFan__wedge {
-  fill: var(--surface-strong);
-}
-
-/* Clear empties the table: orange, not the accent */
-.cornerFan__item.is-danger:hover,
-.cornerFan__item.is-danger:focus-visible {
-  color: #c2410c;
-}
-
-html[data-theme="dark"] .cornerFan__item.is-danger:hover,
-html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
-  color: #fb8c4a;
-}
-
-.cornerFan__item.is-danger:hover .cornerFan__wedge,
-.cornerFan__item.is-danger:focus-visible .cornerFan__wedge {
-  fill: color-mix(in srgb, #ea580c 14%, var(--surface-strong));
-}
-
-.cornerFan__item.is-danger:hover .cornerFan__name,
-.cornerFan__item.is-danger:focus-visible .cornerFan__name {
-  fill: currentColor;
-}
-
-.cornerFan__item:focus-visible .cornerFan__wedge {
-  stroke: var(--focus-ring);
-  stroke-width: 2.5;
-}
-
-@keyframes cornerFanOpen {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cornerFan__ring,
-  .cornerFan__item {
-    animation: none;
-  }
-
-  .cornerFan__wedge {
-    transition: none;
-  }
 }
 
 /* top centre: the dock (undo, the eye, redo), the cheat sheet, and the mode badge */
@@ -4952,9 +4655,6 @@ body[data-panel-gesture="se"] * {
   .builderParts,
   .builderAbout,
   .builderMenu__list,
-  .showWheel__ring,
-  .showWheel__segment,
-  .showWheel__dial,
   .builderHud__inspector {
     animation: none;
   }
@@ -6039,33 +5739,20 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   color: inherit;
 }
 
-/* a fan's current petal and the Show wheel's lit segments are plates too;
-   their hovers stay neutral, like the rest of the HUD */
-:is(.cornerFan__item.is-on, .showWheel__segment.is-on) {
-  color: var(--on-accent);
-}
-
-:is(.cornerFan__item.is-on, .showWheel__segment.is-on) :is(.cornerFan__wedge, .showWheel__wedge) {
-  fill: var(--accent);
-}
-
-.cornerFan__item.is-on .cornerFan__name {
-  fill: currentColor;
-}
-
 /* ---------------------------------------------------------------------------
-   PROTOTYPE (status row + group fade): throwaway, see prototype/status-row-fade
+   Show's status strip, and faded groups
    --------------------------------------------------------------------------- */
 
-/* the Show wheel's state at a glance: faint and small, in the weight of the old
-   "⇧ drag orbit" hint, centred right under the eye it opens */
+/* Show's state at a glance: faint and small, in the weight of the old
+   "⇧ drag orbit" hint, centred right under the eye it opens. A full 2rem to
+   press; the margin draws it up, so the icons sit just under the dock */
 .builderShowStatus {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  height: 1.5rem;
-  margin-top: -0.2rem;
-  padding: 0 0.35rem;
+  height: 2rem;
+  margin-top: -0.45rem;
+  padding: 0 0.4rem;
   border: 0;
   border-radius: var(--builder-radius);
   background: transparent;
@@ -6083,15 +5770,16 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   background: var(--builder-hover);
 }
 
-/* the open wheel drops over this spot and says it all: step aside, keep the space */
+/* the open row drops over this spot and says it all: step aside, keep the space */
 .builderShowStatus.is-open {
   visibility: hidden;
 }
 
+/* off: grey, slashed, still readable */
 .builderShowStatus__icon {
   display: inline-grid;
   place-items: center;
-  opacity: 0.45;
+  opacity: 0.65;
 }
 
 /* on: full ink, white at night */
@@ -6117,9 +5805,9 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 /* ---------------------------------------------------------------------------
-   PROTOTYPE: menus as boxes. The dock's own islands and square buttons, with
-   each name floating beside its box, plateless, over the table. The eye drops
-   a row; the corner fans drop a column along the workspace's edge.
+   The HUD's menus, as boxes: the dock's own islands and square buttons, each
+   name floating beside its box, plateless, over the table. Show drops a row
+   under the eye; the corner menus and Share unfold a column along the edge.
    --------------------------------------------------------------------------- */
 
 /* a name floating over the table: no plate, a halo of the page so it reads on any part */
@@ -6359,29 +6047,24 @@ html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
   opacity: 0.35;
 }
 
-/* PROTOTYPE: the boxes / ring switch, right of the dock and plainly a test control */
-.builderShowCompare {
+/* a caution under a column (Share's, for a setup too large for a safe link):
+   floating as the names do, its right edge on the column's */
+.fanBoxes__note {
   position: absolute;
-  top: 0.45rem;
-  left: calc(100% + 0.75rem);
-  display: flex;
-  border: 1px dashed var(--builder-hairline);
-  border-radius: var(--builder-radius);
-}
-
-.builderShowCompare button {
-  padding: 0.2rem 0.5rem;
-  border: 0;
-  background: transparent;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: 13rem;
+  margin: 0;
   color: var(--muted);
-  font: inherit;
-  font-size: 0.72rem;
-  cursor: pointer;
-}
-
-.builderShowCompare button.is-on {
-  background: var(--builder-hover);
-  color: var(--foreground);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  text-align: right;
+  text-shadow:
+    1px 0 0 var(--background),
+    -1px 0 0 var(--background),
+    0 1px 0 var(--background),
+    0 -1px 0 var(--background),
+    0 0 5px var(--background);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6390,19 +6073,13 @@ html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
   .fanBoxes .fanBoxes__island {
     animation: none;
   }
-}
 
-/* PROTOTYPE: as boxes, Share sits top right, left of the ? (an island and a gap in from the edge) */
-.builderHud__share--right {
-  top: 0.9rem;
-  right: calc(0.9rem + 2.5rem + 2px + 0.6rem);
+  .builderShowStatus {
+    transition: none;
+  }
 }
 
 @media (max-width: 40rem) {
-  .builderShowCompare {
-    display: none;
-  }
-
   /* seven boxes in a row are wider than a phone: two rows, what's on the
      table over how it's drawn, four boxes (and three gaps) wide, centred */
   .showBoxes {

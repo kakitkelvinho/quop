@@ -32,11 +32,11 @@ export type Visibility = {
   components: Set<string>;
   /** ids of the frames drawn */
   frames: Set<string>;
-  /** PROTOTYPE: ids (components and frames) drawn only through faded groups, so drawn faint */
+  /** ids (components and frames) drawn only through faded groups, so drawn faint */
   faded: Set<string>;
 };
 
-/** PROTOTYPE: how a group is drawn; its eye button steps shown → faded → hidden. */
+/** how a group is drawn; its eye button steps shown → faded → hidden. */
 export type GroupShow = "shown" | "faded" | "hidden";
 
 export function groupShow(group: Pick<Group, "hidden" | "faded">): GroupShow {
@@ -94,7 +94,7 @@ export function visibility(scene: Pick<BuilderSceneData, "components" | "frames"
   };
 }
 
-/** PROTOTYPE: a drawn beam is faint when every shown stop on it is faint. */
+/** a drawn beam is faint when every shown stop on it is faint. */
 export function isBeamFaded(beam: Beam, shown: Visibility): boolean {
   const stops = beam.path.filter((id) => shown.components.has(id));
   return stops.length > 0 && stops.every((id) => shown.faded.has(id));
@@ -209,7 +209,7 @@ export function setGroupHidden(scene: BuilderSceneData, id: string, hidden: bool
   });
 }
 
-/** PROTOTYPE: show, fade or hide a group. Each flag is stored only when true. */
+/** show, fade or hide a group. Each flag is stored only when true. */
 export function setGroupShow(scene: BuilderSceneData, id: string, show: GroupShow): BuilderSceneData {
   return editGroup(scene, id, (group) => {
     if (groupShow(group) === show) return group;

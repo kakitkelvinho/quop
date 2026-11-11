@@ -14,17 +14,14 @@ import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside, panelState, setPanelView } from "@/components/builder/panel-store";
-import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
 import { ShowBoxes, type ShowBox } from "@/components/builder/show-boxes";
-import { setMenuLook, useMenuLook, type MenuLook } from "@/components/builder/menu-look";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
-import { FileFan, TOP_LEFT_ISLANDS } from "@/components/builder/file-fan";
+import { FileFan } from "@/components/builder/file-fan";
 import { ShareMenu } from "@/components/builder/share-menu";
 import { PanelRail, type RailSlot } from "@/components/builder/panel-rail";
 import { toggleListPanel } from "@/components/builder/rail-slots";
 import { groupModeHints, groupSlotLabel, type ModeHint } from "@/components/builder/group-mode";
 import { JsonPanelFiles } from "@/components/builder/json-panel-files";
-import { ShowWheelDial } from "@/components/builder/show-wheel-dial";
 import {
   BeamDraftInspector,
   BeamInspector,
@@ -156,7 +153,7 @@ export type BuilderHudProps = {
   onRenameGroup: (id: string, name: string | null) => void;
   /** unrecorded: a colour pick is made one undo step by onCheckpoint at its start */
   onSetGroupColor: (id: string, color: string) => void;
-  /** PROTOTYPE: the group's eye steps shown → faded → hidden */
+  /** the group's eye steps shown → faded → hidden */
   onSetGroupHidden: (id: string, show: GroupShow) => void;
   onDeleteGroup: (id: string) => void;
   /** ⌘G: the selection as a new group */
@@ -681,7 +678,7 @@ function GroupList({
               </button>
             )}
             <span className="builderBeamRow__actions">
-              {/* PROTOTYPE: one eye, three steps; the label says what the next click does */}
+              {/* one eye, three steps; the label says what the next click does */}
               <IconButton
                 icon={show === "hidden" ? "eyeOff" : show === "faded" ? "eyeFaded" : "eye"}
                 label={`${next === "faded" ? "Fade" : next === "hidden" ? "Hide" : "Show"} ${group.name}`}
@@ -1062,17 +1059,15 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
   return ref;
 }
 
-/** the boxes' and the strip's order: what's on the table, a hairline, how it's drawn */
+/** Show's order, in its row and in the strip: what's on the table, a wider gap, how it's drawn. */
 const SHOW_ORDER = ["grid", "labels", "posts", "distances", "shadows", "light-graphics"];
 const SHOW_BREAK = 4;
-/** the word under a box, where the full name is too long for one */
-const BOX_WORD: Record<string, string> = { distances: "Lengths", "light-graphics": "Simple" };
 
 /**
- * PROTOTYPE: what the Show wheel has on, at a glance. A faint row of small
- * icons under the eye, in the old controls hint's weight: grey when off,
- * full ink when on. The whole row is one button that opens the wheel, as the
- * eye does.
+ * What Show has on, at a glance: a faint row of small icons under the eye, in
+ * the weight of the old controls hint. An icon is full ink while its thing is
+ * on, grey and slashed while off. The whole strip is one button that opens
+ * Show, as the eye does; it steps aside while Show is open.
  */
 function ShowStatusRow({
   ref,
@@ -1083,7 +1078,7 @@ function ShowStatusRow({
 }: {
   ref: RefObject<HTMLButtonElement | null>;
   items: { id: string; label: string; icon: IconName; on: boolean }[];
-  /** a hairline after this many icons, where the plate draws its rule */
+  /** a hairline after this many icons, where Show's row has its wider gap */
   breakAfter?: number;
   open: boolean;
   onClick: () => void;
@@ -1112,13 +1107,14 @@ function ShowStatusRow({
 }
 
 /**
- * Show: a half ring that drops out of the eye with one wedge for each thing
- * drawn on the table besides the setup, and for how it is drawn: posts, grid,
- * labels, beam distances, shadows and light graphics. Two rim dials hug the
- * ring. Round its outside, the label size, which is saved with the setup: a
- * drag previews as it moves and is one undo step (its first change takes the
- * snapshot), and it rests while labels are off. Round the eye inside it, the
- * brightness, which is neither saved nor undone.
+ * Show: the eye, and the row of boxes that fans out under it, one for each
+ * thing drawn on the table besides the setup and for how it is drawn: grid,
+ * labels, posts, beam lengths, then lighting, shadows and simple graphics.
+ * While labels are on, their size slider shows under Labels; it is saved with
+ * the setup, and a drag previews as it moves and is one undo step (its first
+ * change takes the snapshot). Lighting pops the brightness slider, which is
+ * neither saved nor undone. `open` is held by the HUD, so the status strip
+ * opens Show too; `also` is that strip, so a press on it isn't a press outside.
  */
 function ShowMenu({
   posts,
@@ -1139,14 +1135,9 @@ function ShowMenu({
   open,
   setOpen,
   also,
-  look,
 }: {
-  /** PROTOTYPE: the half ring, or the boxes it is compared with */
-  look: MenuLook;
-  /** PROTOTYPE: held by the HUD, so the status row can open the wheel too */
   open: boolean;
   setOpen: (open: boolean) => void;
-  /** the status row: a press on it isn't a press outside the wheel */
   also: RefObject<HTMLElement | null>;
   posts: boolean;
   grid: boolean;
@@ -1166,33 +1157,27 @@ function ShowMenu({
 }) {
   const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), [setOpen]), also);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const items: WheelItem[] = [
-    {
-      id: "posts",
-      label: "Posts",
-      description: "Posts under the parts",
-      icon: "posts",
-      on: posts,
-      onToggle: onTogglePosts,
-    },
-    { id: "grid", label: "Grid", description: "The grid on the table", icon: "grid", on: grid, onToggle: onToggleGrid },
-    {
+  const toggles: Record<string, ShowBox> = {
+    grid: { id: "grid", label: "Grid", description: "The grid holes on the table", icon: "grid", on: grid, onToggle: onToggleGrid },
+    labels: {
       id: "labels",
       label: "Labels",
-      description: "Part names on the table",
+      description: "Part names on the table, and their size",
       icon: "labels",
       on: labels,
       onToggle: onToggleLabels,
+      slider: { label: "Label size", range: LABEL_SCALE_RANGE, value: scale, onBegin, onChange },
     },
-    {
+    posts: { id: "posts", label: "Posts", description: "Posts under the parts", icon: "posts", on: posts, onToggle: onTogglePosts },
+    distances: {
       id: "distances",
-      label: "Beam distances",
+      label: "Lengths",
       description: "Lengths along each beam",
       icon: "ruler",
       on: distances,
       onToggle: onToggleDistances,
     },
-    {
+    shadows: {
       id: "shadows",
       label: "Shadows",
       description: "Shadows cast by the key light",
@@ -1200,14 +1185,31 @@ function ShowMenu({
       on: lighting.shadows,
       onToggle: () => onLightingChange({ shadows: !lighting.shadows }),
     },
-    {
+    "light-graphics": {
       id: "light-graphics",
-      label: "Light graphics",
+      label: "Simple",
       description: "Simpler drawing, for a slow computer",
       icon: "gauge",
       on: lightGraphics,
       onToggle: onToggleQuality,
     },
+  };
+  const lightingBox: ShowBox = {
+    id: "lighting",
+    label: "Lighting",
+    description: "Brightness of the light",
+    icon: "light",
+    slider: {
+      label: "Brightness",
+      range: BRIGHTNESS_RANGE,
+      value: lighting.brightness,
+      onChange: (brightness) => onLightingChange({ brightness }),
+    },
+  };
+  const items = [
+    ...SHOW_ORDER.slice(0, SHOW_BREAK).map((id) => toggles[id]),
+    lightingBox,
+    ...SHOW_ORDER.slice(SHOW_BREAK).map((id) => toggles[id]),
   ];
 
   return (
@@ -1218,80 +1220,19 @@ function ShowMenu({
         className={`builderIconBtn${open ? " is-active" : ""}`}
         aria-label="Show"
         aria-expanded={open}
-        aria-haspopup="menu"
         title="Show"
         onClick={() => setOpen(!open)}
       >
         <Icon name="eye" />
       </button>
-      {open && look === "boxes" ? (
+      {open ? (
         <ShowBoxes
-          items={[
-            ...SHOW_ORDER.slice(0, SHOW_BREAK).map((id): ShowBox => {
-              const item = items.find((candidate) => candidate.id === id)!;
-              return {
-                ...item,
-                label: BOX_WORD[id] ?? item.label,
-                ...(id === "labels"
-                  ? { slider: { label: "Label size", range: LABEL_SCALE_RANGE, value: scale, onBegin, onChange } }
-                  : {}),
-              };
-            }),
-            {
-              id: "lighting",
-              label: "Lighting",
-              description: "Brightness of the light",
-              icon: "light",
-              slider: {
-                label: "Brightness",
-                range: BRIGHTNESS_RANGE,
-                value: lighting.brightness,
-                onChange: (brightness) => onLightingChange({ brightness }),
-              },
-            },
-            ...SHOW_ORDER.slice(SHOW_BREAK).map((id): ShowBox => {
-              const item = items.find((candidate) => candidate.id === id)!;
-              return { ...item, label: BOX_WORD[id] ?? item.label };
-            }),
-          ]}
+          items={items}
           breakAfter={SHOW_BREAK}
           onClose={() => {
             setOpen(false);
             buttonRef.current?.focus();
           }}
-        />
-      ) : open ? (
-        <ShowWheel
-          items={items}
-          onClose={() => {
-            setOpen(false);
-            buttonRef.current?.focus();
-          }}
-          rims={
-            <>
-              <ShowWheelDial
-                label="Label size"
-                icon="labels"
-                arc={{ r: RING.outer + 14, from: Math.PI, to: 0 }}
-                side={1}
-                range={LABEL_SCALE_RANGE}
-                value={scale}
-                disabled={!labels}
-                disabledHint="turn labels on first"
-                onBegin={onBegin}
-                onChange={onChange}
-              />
-              <ShowWheelDial
-                label="Brightness"
-                icon="light"
-                arc={{ r: RING.inner - 18, from: Math.PI, to: 0 }}
-                side={-1}
-                range={BRIGHTNESS_RANGE}
-                value={lighting.brightness}
-                onChange={(brightness) => onLightingChange({ brightness })}
-              />
-            </>
-          }
         />
       ) : null}
     </div>
@@ -1318,11 +1259,9 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
-  // PROTOTYPE: the Show wheel's open state, shared by the eye and the status row
+  // whether Show is open: held here, so the eye and the status strip both open it
   const [showOpen, setShowOpen] = useState(false);
   const statusRowRef = useRef<HTMLButtonElement>(null);
-  // PROTOTYPE: every menu as boxes or as rings, one switch for all
-  const menuLook = useMenuLook();
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
@@ -1646,8 +1585,7 @@ export default function BuilderHud(props: BuilderHudProps) {
 
   return (
     <>
-      {/* top left: the QUOP mark is the file menu, and the + under it adds; their fans share one ring.
-          Share sits beside the mark, outside the ring. */}
+      {/* top left: the QUOP mark is the file menu, and the + under it adds; both menus open sideways, to the right */}
       <div className="builderHud__topLeft">
         <div className="builderIsland builderHud__file">
           <FileFan
@@ -1657,26 +1595,13 @@ export default function BuilderHud(props: BuilderHudProps) {
             onClear={props.onClear}
           />
         </div>
-        {menuLook === "ring" ? (
-          <div className="builderIsland builderHud__share">
-            <ShareMenu getShareUrl={props.getShareUrl} onCopyLink={props.onCopyLink} onDownload={props.onSave} />
-          </div>
-        ) : null}
       </div>
-
-      {/* PROTOTYPE: as boxes, QUOP's column opens to its right, so Share moves top right, left of the ? */}
-      {menuLook === "boxes" ? (
-        <div className="builderIsland builderHud__share builderHud__share--right">
-          <ShareMenu getShareUrl={props.getShareUrl} onCopyLink={props.onCopyLink} onDownload={props.onSave} />
-        </div>
-      ) : null}
 
       {panelsMove ? null : aboutPanels}
 
       <div className="builderIsland builderHud__add">
         <CornerFan
           corner="tl"
-          clearOf={TOP_LEFT_ISLANDS}
           label={adding ? "Stop adding" : "Add"}
           title={adding ? "Stop adding (Esc)" : "Add"}
           items={addItems}
@@ -1688,14 +1613,17 @@ export default function BuilderHud(props: BuilderHudProps) {
         </CornerFan>
       </div>
 
-      {/* top right: help, out of the way until it's wanted */}
+      {/* top right: Share, and help out of the way until it's wanted; both menus run down the edge */}
+      <div className="builderIsland builderHud__share">
+        <ShareMenu getShareUrl={props.getShareUrl} onCopyLink={props.onCopyLink} onDownload={props.onSave} />
+      </div>
       <div className="builderIsland builderHud__help">
-        <CornerFan corner="tr" clearOf=".builderHud__help" label="Help" items={helpItems} guide="help">
+        <CornerFan corner="tr" label="Help" items={helpItems} guide="help">
           <Icon name="info" />
         </CornerFan>
       </div>
 
-      {/* top centre: the dock, with the eye between undo and redo so its wheel drops from the middle */}
+      {/* top centre: the dock, with the eye between undo and redo so Show's row drops from the middle */}
       <div className="builderHud__center">
         <div className="builderIsland builderHud__dock" role="toolbar" aria-label="Undo, show, redo" data-guide="dock">
           <IconButton icon="undo" label="Undo (⌘Z)" onClick={props.onUndo} disabled={!props.canUndo} />
@@ -1718,24 +1646,8 @@ export default function BuilderHud(props: BuilderHudProps) {
             open={showOpen}
             setOpen={setShowOpen}
             also={statusRowRef}
-            look={menuLook}
           />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
-        </div>
-
-        {/* PROTOTYPE: flip every menu between boxes and rings to compare them */}
-        <div className="builderShowCompare" role="group" aria-label="Prototype: menu look">
-          {(["boxes", "ring"] as const).map((look) => (
-            <button
-              key={look}
-              type="button"
-              className={menuLook === look ? "is-on" : undefined}
-              aria-pressed={menuLook === look}
-              onClick={() => setMenuLook(look)}
-            >
-              {look}
-            </button>
-          ))}
         </div>
 
         <ShowStatusRow
@@ -1854,12 +1766,11 @@ export default function BuilderHud(props: BuilderHudProps) {
       {/* bottom left: the panel rail, the same three slots every time */}
       <PanelRail slots={railSlots} />
 
-      {/* bottom right: the camera, and the page's own day / night switch, plateless, outside the camera's ring */}
+      {/* bottom right: the camera, its menu running up the edge, and the page's own day / night switch, plateless */}
       <div className="builderHud__viewRow">
         <div className="builderIsland builderHud__view">
           <CornerFan
             corner="br"
-            clearOf=".builderHud__viewRow"
             label="Camera"
             title={`Camera: ${view === "top" ? "top" : "iso"}`}
             items={cameraItems}
