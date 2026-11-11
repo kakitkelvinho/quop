@@ -68,12 +68,12 @@ const ICONS = {
       <path d="M4 4l16 16" />
     </>
   ),
-  // a ruler laid at a slant, with its ticks
+  // a ruler laid at a slant, with its ticks; it leans \ so the off slash (/) crosses it
   ruler: (
-    <>
+    <g transform="matrix(-1 0 0 1 24 0)">
       <path d="m3.5 15.5 12-12 5 5-12 12z" />
       <path d="m7.5 11.5 2 2M10.5 8.5 12 10M13.5 5.5l2 2M6 13l1.5 1.5" />
-    </>
+    </g>
   ),
   // a fluted classical column: abacus and echinus, three flutes, base and plinth
   posts: (
