@@ -15,7 +15,8 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import { PANEL_LAYER_CLASS, usePanel, usePanelsMove, useRememberedPanels } from "@/components/builder/use-panel-drag";
 import { keepPanelsInside, panelState, setPanelView } from "@/components/builder/panel-store";
 import { RING, ShowWheel, type WheelItem } from "@/components/builder/show-wheel";
-import { ShowPlate } from "@/components/builder/show-plate";
+import { ShowBoxes } from "@/components/builder/show-boxes";
+import { setMenuLook, useMenuLook, type MenuLook } from "@/components/builder/menu-look";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
 import { FileFan, TOP_LEFT_ISLANDS } from "@/components/builder/file-fan";
 import { ShareMenu } from "@/components/builder/share-menu";
@@ -1061,10 +1062,7 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
   return ref;
 }
 
-/** PROTOTYPE: the Show menu as the half ring, or as the square plate. */
-type ShowLook = "plate" | "wheel";
-const SHOW_LOOK_KEY = "quop.prototype.showLook";
-/** the plate's and the strip's order: what's on the table, a hairline, how it's drawn */
+/** the boxes' and the strip's order: what's on the table, a hairline, how it's drawn */
 const SHOW_ORDER = ["grid", "labels", "posts", "distances", "shadows", "light-graphics"];
 const SHOW_BREAK = 4;
 
@@ -1141,8 +1139,8 @@ function ShowMenu({
   also,
   look,
 }: {
-  /** PROTOTYPE: the half ring, or the square plate it is compared with */
-  look: ShowLook;
+  /** PROTOTYPE: the half ring, or the boxes it is compared with */
+  look: MenuLook;
   /** PROTOTYPE: held by the HUD, so the status row can open the wheel too */
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -1225,8 +1223,8 @@ function ShowMenu({
       >
         <Icon name="eye" />
       </button>
-      {open && look === "plate" ? (
-        <ShowPlate
+      {open && look === "boxes" ? (
+        <ShowBoxes
           items={SHOW_ORDER.map((id) => items.find((item) => item.id === id)!)}
           breakAfter={SHOW_BREAK}
           onClose={() => {
@@ -1237,6 +1235,7 @@ function ShowMenu({
             {
               id: "label-size",
               label: "Label size",
+              icon: "labels",
               range: LABEL_SCALE_RANGE,
               value: scale,
               disabled: !labels,
@@ -1247,6 +1246,7 @@ function ShowMenu({
             {
               id: "brightness",
               label: "Brightness",
+              icon: "light",
               range: BRIGHTNESS_RANGE,
               value: lighting.brightness,
               onChange: (brightness) => onLightingChange({ brightness }),
@@ -1314,25 +1314,8 @@ export default function BuilderHud(props: BuilderHudProps) {
   // PROTOTYPE: the Show wheel's open state, shared by the eye and the status row
   const [showOpen, setShowOpen] = useState(false);
   const statusRowRef = useRef<HTMLButtonElement>(null);
-  // PROTOTYPE: plate or wheel, remembered in this browser; ?show=wheel or ?show=plate picks one
-  // (the builder renders on the client only, so the window is there to read)
-  const [showLook, setShowLookState] = useState<ShowLook>(() => {
-    try {
-      const asked = new URLSearchParams(window.location.search).get("show");
-      const look = asked === "wheel" || asked === "plate" ? asked : window.localStorage.getItem(SHOW_LOOK_KEY);
-      return look === "wheel" ? "wheel" : "plate";
-    } catch {
-      return "plate";
-    }
-  });
-  const setShowLook = (look: ShowLook) => {
-    setShowLookState(look);
-    try {
-      window.localStorage.setItem(SHOW_LOOK_KEY, look);
-    } catch {
-      // not remembered, still switched
-    }
-  };
+  // PROTOTYPE: every menu as boxes or as rings, one switch for all
+  const menuLook = useMenuLook();
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
@@ -1719,20 +1702,20 @@ export default function BuilderHud(props: BuilderHudProps) {
             open={showOpen}
             setOpen={setShowOpen}
             also={statusRowRef}
-            look={showLook}
+            look={menuLook}
           />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
         </div>
 
-        {/* PROTOTYPE: flip between the two Show menus to compare them */}
-        <div className="builderShowCompare" role="group" aria-label="Prototype: Show menu look">
-          {(["plate", "wheel"] as const).map((look) => (
+        {/* PROTOTYPE: flip every menu between boxes and rings to compare them */}
+        <div className="builderShowCompare" role="group" aria-label="Prototype: menu look">
+          {(["boxes", "ring"] as const).map((look) => (
             <button
               key={look}
               type="button"
-              className={showLook === look ? "is-on" : undefined}
-              aria-pressed={showLook === look}
-              onClick={() => setShowLook(look)}
+              className={menuLook === look ? "is-on" : undefined}
+              aria-pressed={menuLook === look}
+              onClick={() => setMenuLook(look)}
             >
               {look}
             </button>

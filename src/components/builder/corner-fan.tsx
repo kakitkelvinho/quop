@@ -14,6 +14,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { Icon, type IconName } from "@/components/builder/builder-icons";
+import { useMenuLook } from "@/components/builder/menu-look";
 import {
   type Corner,
   cornerClear,
@@ -226,6 +227,94 @@ function FanRing({
 }
 
 /**
+ * PROTOTYPE: the fan as boxes. A column of the dock's square buttons beside the
+ * trigger, running along the workspace's edge away from its corner (down from
+ * the top corners, up from the bottom one), each name floating on the side
+ * towards the table. Keys as the ring: the arrows walk it, Home/End, Esc.
+ */
+function FanBoxes({
+  corner,
+  label,
+  items,
+  onPick,
+  onClose,
+}: {
+  corner: Corner;
+  label: string;
+  items: CornerFanItem[];
+  onPick: (item: CornerFanItem) => void;
+  onClose: () => void;
+}) {
+  const first = Math.max(
+    0,
+    items.findIndex((item) => !item.disabled),
+  );
+  const [focus, setFocus] = useState(first);
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const n = items.length;
+
+  useEffect(() => {
+    refs.current[first]?.focus();
+  }, [first]);
+
+  const move = (to: number) => {
+    const next = (to + n) % n;
+    setFocus(next);
+    refs.current[next]?.focus();
+  };
+  // the bottom corner's column runs up: there Up walks away from the trigger
+  const forward = corner === "br" ? "ArrowUp" : "ArrowDown";
+  const back = corner === "br" ? "ArrowDown" : "ArrowUp";
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    let run: (() => void) | undefined;
+    if (event.key === forward) run = () => move(focus + 1);
+    else if (event.key === back) run = () => move(focus - 1);
+    else if (event.key === "Home") run = () => move(0);
+    else if (event.key === "End") run = () => move(n - 1);
+    else if (event.key === "Escape" || event.key === "Tab") run = onClose;
+    // Enter and Space click the box themselves; keep every key off the table
+    event.stopPropagation();
+    if (!run) return;
+    event.preventDefault();
+    run();
+  };
+
+  return (
+    <div
+      className={`builderIsland fanBoxes fanBoxes--${corner}`}
+      role="menu"
+      aria-label={label}
+      aria-orientation="vertical"
+      onKeyDown={onKeyDown}
+    >
+      {items.map((item, i) => (
+        <button
+          key={item.id}
+          ref={(node) => {
+            refs.current[i] = node;
+          }}
+          type="button"
+          role="menuitem"
+          className={`builderIconBtn fanBoxes__box${item.on ? " is-shown" : ""}${item.danger ? " is-danger" : ""}${item.file ? " is-file" : ""}`}
+          aria-label={item.hint ? `${item.label}: ${item.hint}` : item.label}
+          aria-current={item.on || undefined}
+          disabled={item.disabled}
+          tabIndex={i === focus ? 0 : -1}
+          title={item.hint}
+          onFocus={() => setFocus(i)}
+          onClick={() => onPick(item)}
+        >
+          <Icon name={item.icon} />
+          <span className="fanBoxes__name" aria-hidden="true">
+            {item.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
  * A trigger and its corner fan. Picking a wedge runs it and closes the fan;
  * Esc closes it and hands focus back to the trigger; a pointer-down outside
  * closes it and lets its click land where it was aimed. With `onTrigger`, a
@@ -269,7 +358,8 @@ export function CornerFan({
     setOpen(false);
     triggerRef.current?.focus();
   }, []);
-  const geo = useCornerRing(triggerRef, corner, clearOf, open);
+  const look = useMenuLook();
+  const geo = useCornerRing(triggerRef, corner, clearOf, open && look === "ring");
 
   useEffect(() => {
     if (!open) return;
@@ -320,7 +410,10 @@ export function CornerFan({
       >
         {children}
       </button>
-      {geo
+      {open && look === "boxes" ? (
+        <FanBoxes corner={corner} label={label} items={items} onPick={pick} onClose={close} />
+      ) : null}
+      {geo && look === "ring"
         ? createPortal(
             <div
               ref={layerRef}

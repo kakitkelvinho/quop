@@ -6116,126 +6116,197 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   }
 }
 
-/* PROTOTYPE: the Show plate, the square sign the half ring is compared with.
-   One row per item (pictogram, name, state square), a hairline between what is
-   on the table and how it is drawn, then two straight sliders. */
-.builderHud__dock:has(.showPlate) {
+/* ---------------------------------------------------------------------------
+   PROTOTYPE: menus as boxes. The dock's own islands and square buttons, with
+   each name floating beside its box, plateless, over the table. The eye drops
+   a row; the corner fans drop a column along the workspace's edge.
+   --------------------------------------------------------------------------- */
+
+/* a name floating over the table: no plate, a halo of the page so it reads on any part */
+.showBoxes__name,
+.fanBoxes__name {
+  position: absolute;
+  color: var(--foreground);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-shadow:
+    0 0 2px var(--background),
+    0 0 3px var(--background),
+    0 0 6px var(--background);
+  pointer-events: none;
+}
+
+/* a box that's on is pressed in, neutral, as a rail slot whose list shows: the accent is for what's live */
+.showBoxes__box.is-shown,
+.fanBoxes__box.is-shown {
+  background: var(--builder-hover);
+  color: var(--foreground);
+  background-image: linear-gradient(var(--foreground), var(--foreground));
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+}
+
+/* --- the eye's row ------------------------------------------------------- */
+
+.builderHud__dock:has(.showBoxes) {
   position: relative;
   z-index: 6;
 }
 
-.showPlate {
+.showBoxes {
   position: absolute;
-  top: calc(100% + 0.55rem);
+  top: calc(100% + 0.5rem);
   left: 50%;
   z-index: 50;
-  width: 15rem;
-  padding: 0.3rem;
-  border: 1px solid var(--builder-hairline);
-  border-radius: var(--builder-radius);
-  background: var(--surface-strong);
-  color: var(--foreground);
+  display: grid;
+  justify-items: center;
+  gap: 1.45rem;
   translate: -50% 0;
-  animation: showPlateOpen 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  animation: boxesOpen 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.showPlate__rows {
-  display: grid;
+.showBoxes .builderIsland {
+  position: static;
 }
 
-.showPlate__row {
-  display: grid;
-  grid-template-columns: 1.5rem 1fr auto;
-  align-items: center;
-  gap: 0.55rem;
-  width: 100%;
-  height: 2rem;
-  padding: 0 0.5rem 0 0.4rem;
-  border: 0;
-  border-radius: var(--builder-radius);
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: 0.82rem;
-  text-align: left;
-  cursor: pointer;
-  transition:
-    background-color 120ms ease,
-    color 120ms ease;
+/* the boxes sit apart by about a name's width, so the names under the row never touch */
+.showBoxes__row {
+  gap: 0;
 }
 
-.showPlate__row:hover {
-  background: var(--builder-hover);
-  color: var(--foreground);
-}
-
-.showPlate__row:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
-
-.showPlate__row.is-on {
-  color: var(--foreground);
-}
-
-.showPlate__icon {
-  display: inline-grid;
-  place-items: center;
-}
-
-/* the state: an empty square when off, a filled blue one with a tick when on */
-.showPlate__state {
-  display: inline-grid;
-  place-items: center;
-  width: 0.95rem;
-  height: 0.95rem;
-  border: 1px solid var(--border);
-  border-radius: var(--builder-radius);
-  color: #fff;
-}
-
-.showPlate__row.is-on .showPlate__state {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-
-.showPlate__rule {
-  height: 1px;
-  margin: 0.3rem 0.4rem;
-  border: 0;
-  background: var(--builder-hairline);
-}
-
-.showPlate__slider {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.25rem 0.5rem 0.35rem;
-  color: var(--foreground);
-  font-size: 0.82rem;
-}
-
-.showPlate__sliderHead {
+.showBoxes__cell {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
 }
 
-.showPlate__slider.is-disabled {
+.showBoxes__box {
+  position: relative;
+  margin: 0 0.6rem;
+}
+
+.showBoxes__cell:first-child .showBoxes__box {
+  margin-left: 0;
+}
+
+.showBoxes__cell:last-child .showBoxes__box {
+  margin-right: 0;
+}
+
+.showBoxes__name {
+  top: calc(100% + 0.55rem);
+  left: 50%;
+  translate: -50% 0;
+}
+
+.showBoxes__box:not(.is-shown) .showBoxes__name {
   color: var(--muted);
 }
 
-.showPlate__slider.is-disabled .builderSlider {
+.showBoxes__sep {
+  margin: 0 0.1rem 0 -0.1rem;
+}
+
+/* the sliders: a slim island of their own under the names */
+.showBoxes__sliders {
+  gap: 0.9rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.showBoxes__slider {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted);
+}
+
+.showBoxes__slider .builderSlider {
+  width: 6.5rem;
+}
+
+.showBoxes__slider .builderReadout {
+  min-width: 2.6em;
+  text-align: right;
+}
+
+.showBoxes__slider.is-disabled {
   opacity: 0.45;
 }
 
-@keyframes showPlateOpen {
+/* --- a corner fan's column --------------------------------------------- */
+
+.fanBoxes {
+  z-index: 50;
+  flex-direction: column;
+  animation: boxesOpen 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* top left: beside the trigger, so it clears the + under it; names on the right */
+.fanBoxes--tl {
+  top: -0.25rem;
+  left: calc(100% + 0.6rem);
+}
+
+/* top right: under the trigger, down the edge; names on the left */
+.fanBoxes--tr {
+  top: calc(100% + 0.6rem);
+  right: -0.25rem;
+}
+
+/* bottom right: over the trigger, up the edge, the first item nearest it; names on the left */
+.fanBoxes--br {
+  bottom: calc(100% + 0.6rem);
+  right: -0.25rem;
+  flex-direction: column-reverse;
+}
+
+.fanBoxes__box {
+  position: relative;
+}
+
+.fanBoxes__name {
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.fanBoxes--tl .fanBoxes__name {
+  left: calc(100% + 0.65rem);
+}
+
+.fanBoxes--tr .fanBoxes__name,
+.fanBoxes--br .fanBoxes__name {
+  right: calc(100% + 0.65rem);
+}
+
+.fanBoxes__box.is-file .fanBoxes__name {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Clear: orange on hover and focus, as its wedge */
+.fanBoxes__box.is-danger:hover:not(:disabled),
+.fanBoxes__box.is-danger:focus-visible,
+.fanBoxes__box.is-danger:hover .fanBoxes__name,
+.fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
+  color: #c2410c;
+}
+
+html[data-theme="dark"] .fanBoxes__box.is-danger:hover:not(:disabled),
+html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible,
+html[data-theme="dark"] .fanBoxes__box.is-danger:hover .fanBoxes__name,
+html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
+  color: #fb8c4a;
+}
+
+@keyframes boxesOpen {
   from {
     opacity: 0;
-    translate: -50% -0.3rem;
   }
 }
 
-/* the strip's hairline, where the plate draws its rule */
+/* the strip's hairline, where the boxes put theirs */
 .builderShowStatus__sep {
   width: 1px;
   height: 0.8rem;
@@ -6244,7 +6315,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   opacity: 0.35;
 }
 
-/* PROTOTYPE: the plate / wheel switch, right of the dock and plainly a test control */
+/* PROTOTYPE: the boxes / ring switch, right of the dock and plainly a test control */
 .builderShowCompare {
   position: absolute;
   top: 0.45rem;
@@ -6270,12 +6341,9 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .showPlate {
+  .showBoxes,
+  .fanBoxes {
     animation: none;
-  }
-
-  .showPlate__row {
-    transition: none;
   }
 }
 
@@ -6284,3 +6352,4 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
     display: none;
   }
 }
+
