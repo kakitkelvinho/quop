@@ -61,7 +61,7 @@ import { StageHandle } from "@/components/builder/stage-handle";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import HoleGrid from "@/components/builder/hole-grid";
-import { isBeamDrawn, isConnectionDrawn, isFrameDrawn, visibility } from "@/components/builder/groups";
+import { isBeamDrawn, isBeamFaded, isConnectionDrawn, isFrameDrawn, visibility } from "@/components/builder/groups";
 import type { FrameGrip } from "@/components/builder/frame-reshape";
 import {
   FRESH_WATCH,
@@ -1374,7 +1374,8 @@ export default function BuilderCanvas({
             key={frame.id}
             frame={frame}
             selected={frame.id === selectedFrameId}
-            ghost={ghost}
+            // PROTOTYPE: a faded group's frame borrows the hidden frame's ghost look
+            ghost={ghost || shown.faded.has(frame.id)}
             showLabel={showLabels}
             interactive={framesInteractive}
             onPointerDown={handleFrameDown}
@@ -1397,6 +1398,7 @@ export default function BuilderCanvas({
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
           partner={partner}
+          faded={shown.faded.has(component.id)}
           onPointerDown={handlePartDown}
           onPointerOver={handlePartOver}
           onPointerOut={handlePartOut}
@@ -1447,7 +1449,8 @@ export default function BuilderCanvas({
               points={points}
               color={beam.color}
               width={beam.width}
-              opacity={beam.opacity}
+              // PROTOTYPE: a beam through faded parts only fades with them
+              opacity={drawn && isBeamFaded(beam, shown) ? (beam.opacity ?? 1) * 0.25 : beam.opacity}
               selected={selected}
               core={beam.arrows !== false}
               ghost={ghost}

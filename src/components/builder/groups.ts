@@ -32,7 +32,21 @@ export type Visibility = {
   components: Set<string>;
   /** ids of the frames drawn */
   frames: Set<string>;
+  /** PROTOTYPE: ids (components and frames) drawn only through faded groups, so drawn faint */
+  faded: Set<string>;
 };
+
+/** PROTOTYPE: how a group is drawn; its eye button steps shown → faded → hidden. */
+export type GroupShow = "shown" | "faded" | "hidden";
+
+export function groupShow(group: Pick<Group, "hidden" | "faded">): GroupShow {
+  return group.hidden ? "hidden" : group.faded ? "faded" : "shown";
+}
+
+/** The next state on a click of a group's eye. */
+export function nextGroupShow(show: GroupShow): GroupShow {
+  return show === "shown" ? "faded" : show === "faded" ? "hidden" : "shown";
+}
 
 /** The groups each component or frame id belongs to. */
 function groupsByMember(groups: Group[]): Map<string, Group[]> {
@@ -52,6 +66,13 @@ function shownByGroups(held: Group[] | undefined): boolean {
   return !held || held.some((group) => !group.hidden);
 }
 
+/** Drawn, but only by faded groups: in some faded group and in no fully shown one. */
+function fadedByGroups(held: Group[] | undefined): boolean {
+  if (!held) return false;
+  const shows = held.map(groupShow);
+  return shows.includes("faded") && !shows.includes("shown");
+}
+
 /**
  * A component is shown when it is in no group, or any of its groups is shown.
  * A frame is shown when it isn't hidden itself and, by the same rule, by its
@@ -67,7 +88,16 @@ export function visibility(scene: Pick<BuilderSceneData, "components" | "frames"
     frames: new Set(
       scene.frames.filter((frame) => !frame.hidden && shownByGroups(byMember.get(frame.id))).map(({ id }) => id),
     ),
+    faded: new Set(
+      [...scene.components, ...scene.frames].filter(({ id }) => fadedByGroups(byMember.get(id))).map(({ id }) => id),
+    ),
   };
+}
+
+/** PROTOTYPE: a drawn beam is faint when every shown stop on it is faint. */
+export function isBeamFaded(beam: Beam, shown: Visibility): boolean {
+  const stops = beam.path.filter((id) => shown.components.has(id));
+  return stops.length > 0 && stops.every((id) => shown.faded.has(id));
 }
 
 /** A beam is drawn, whole, when it isn't hidden itself and any of its stops is shown. */
@@ -175,6 +205,19 @@ export function setGroupHidden(scene: BuilderSceneData, id: string, hidden: bool
     const next = { ...group };
     if (hidden) next.hidden = true;
     else delete next.hidden;
+    return next;
+  });
+}
+
+/** PROTOTYPE: show, fade or hide a group. Each flag is stored only when true. */
+export function setGroupShow(scene: BuilderSceneData, id: string, show: GroupShow): BuilderSceneData {
+  return editGroup(scene, id, (group) => {
+    if (groupShow(group) === show) return group;
+    const next = { ...group };
+    delete next.hidden;
+    delete next.faded;
+    if (show === "hidden") next.hidden = true;
+    if (show === "faded") next.faded = true;
     return next;
   });
 }

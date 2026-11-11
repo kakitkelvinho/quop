@@ -4,11 +4,11 @@ import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, ty
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
-import { Icon, IconButton } from "@/components/builder/builder-icons";
+import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
-import { selectedGroup } from "@/components/builder/groups";
+import { groupShow, nextGroupShow, selectedGroup, type GroupShow } from "@/components/builder/groups";
 import { setupBrief } from "@/components/builder/setup-brief";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
@@ -154,7 +154,8 @@ export type BuilderHudProps = {
   onRenameGroup: (id: string, name: string | null) => void;
   /** unrecorded: a colour pick is made one undo step by onCheckpoint at its start */
   onSetGroupColor: (id: string, color: string) => void;
-  onSetGroupHidden: (id: string, hidden: boolean) => void;
+  /** PROTOTYPE: the group's eye steps shown → faded → hidden */
+  onSetGroupHidden: (id: string, show: GroupShow) => void;
   onDeleteGroup: (id: string) => void;
   /** ⌘G: the selection as a new group */
   onGroupSelected: () => void;
@@ -613,7 +614,7 @@ function GroupList({
   /** unrecorded: a picker's drag is one undo step by onCheckpoint at its start */
   onSetColor: (id: string, color: string) => void;
   onCheckpoint: () => void;
-  onSetHidden: (id: string, hidden: boolean) => void;
+  onSetHidden: (id: string, show: GroupShow) => void;
   /** download the group as its own setup file */
   onExport: (id: string) => void;
   onDelete: (id: string) => void;
@@ -635,10 +636,13 @@ function GroupList({
         </h2>
       )}
       <ul role="list" className="builderHud__frameRows" onPointerLeave={() => onHover(null)}>
-        {groups.map((group) => (
+        {groups.map((group) => {
+          const show = groupShow(group);
+          const next = nextGroupShow(show);
+          return (
           <li
             key={group.id}
-            className={`builderBeamRow builderGroupRow${group.hidden ? " is-hidden" : ""}`}
+            className={`builderBeamRow builderGroupRow${show === "hidden" ? " is-hidden" : show === "faded" ? " is-faded" : ""}`}
             onPointerEnter={() => onHover(group.id)}
             onFocus={() => onHover(group.id)}
             onBlur={() => onHover(null)}
@@ -675,12 +679,12 @@ function GroupList({
               </button>
             )}
             <span className="builderBeamRow__actions">
+              {/* PROTOTYPE: one eye, three steps; the label says what the next click does */}
               <IconButton
-                icon={group.hidden ? "eyeOff" : "eye"}
-                // a toggle: the label stays put and aria-pressed carries the state
-                label={`Hide ${group.name}`}
-                active={Boolean(group.hidden)}
-                onClick={() => onSetHidden(group.id, !group.hidden)}
+                icon={show === "hidden" ? "eyeOff" : show === "faded" ? "eyeFaded" : "eye"}
+                label={`${next === "faded" ? "Fade" : next === "hidden" ? "Hide" : "Show"} ${group.name}`}
+                active={show !== "shown"}
+                onClick={() => onSetHidden(group.id, next)}
               />
               <GroupRowMenu
                 name={group.name}
@@ -690,7 +694,8 @@ function GroupList({
               />
             </span>
           </li>
-        ))}
+          );
+        })}
       </ul>
       {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
@@ -1056,6 +1061,43 @@ function useBubbleDismiss<T extends HTMLElement = HTMLDivElement>(
 }
 
 /**
+ * PROTOTYPE: what the Show wheel has on, at a glance. A faint row of small
+ * icons right of the dock, in the old controls hint's weight: grey when off,
+ * full ink when on. The whole row is one button that opens the wheel, as the
+ * eye does.
+ */
+function ShowStatusRow({
+  ref,
+  items,
+  open,
+  onClick,
+}: {
+  ref: RefObject<HTMLButtonElement | null>;
+  items: { id: string; label: string; icon: IconName; on: boolean }[];
+  open: boolean;
+  onClick: () => void;
+}) {
+  const summary = items.map((item) => `${item.label} ${item.on ? "on" : "off"}`).join(" · ");
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={`builderShowStatus${open ? " is-open" : ""}`}
+      aria-label={`Show: ${summary}`}
+      aria-expanded={open}
+      title={`${summary}\nClick to change`}
+      onClick={onClick}
+    >
+      {items.map((item) => (
+        <span key={item.id} className={`builderShowStatus__icon${item.on ? " is-on" : ""}`}>
+          <Icon name={item.icon} size={13} />
+        </span>
+      ))}
+    </button>
+  );
+}
+
+/**
  * Show: a half ring that drops out of the eye with one wedge for each thing
  * drawn on the table besides the setup, and for how it is drawn: posts, grid,
  * labels, beam distances, shadows and light graphics. Two rim dials hug the
@@ -1080,7 +1122,15 @@ function ShowMenu({
   onLightingChange,
   lightGraphics,
   onToggleQuality,
+  open,
+  setOpen,
+  also,
 }: {
+  /** PROTOTYPE: held by the HUD, so the status row can open the wheel too */
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  /** the status row: a press on it isn't a press outside the wheel */
+  also: RefObject<HTMLElement | null>;
   posts: boolean;
   grid: boolean;
   labels: boolean;
@@ -1097,8 +1147,7 @@ function ShowMenu({
   lightGraphics: boolean;
   onToggleQuality: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), []));
+  const ref = useBubbleDismiss(open, useCallback(() => setOpen(false), [setOpen]), also);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const items: WheelItem[] = [
     {
@@ -1155,7 +1204,7 @@ function ShowMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         title="Show"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => setOpen(!open)}
       >
         <Icon name="eye" />
       </button>
@@ -1217,6 +1266,9 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // PROTOTYPE: the Show wheel's open state, shared by the eye and the status row
+  const [showOpen, setShowOpen] = useState(false);
+  const statusRowRef = useRef<HTMLButtonElement>(null);
   const closeCoach = useCallback(() => setCoachOpen(false), []);
   const showSheet = useCallback(() => setSheetOpen(true), []);
   const closeBrief = useCallback(() => setBriefOpen(false), []);
@@ -1600,9 +1652,26 @@ export default function BuilderHud(props: BuilderHudProps) {
             onLightingChange={props.onLightingChange}
             lightGraphics={props.quality === "light"}
             onToggleQuality={props.onToggleQuality}
+            open={showOpen}
+            setOpen={setShowOpen}
+            also={statusRowRef}
           />
           <IconButton icon="redo" label="Redo (⇧⌘Z)" onClick={props.onRedo} disabled={!props.canRedo} />
         </div>
+
+        <ShowStatusRow
+          ref={statusRowRef}
+          open={showOpen}
+          onClick={() => setShowOpen(!showOpen)}
+          items={[
+            { id: "posts", label: "Posts", icon: "posts", on: props.showPosts },
+            { id: "grid", label: "Grid holes", icon: "grid", on: props.showGrid },
+            { id: "labels", label: "Labels", icon: "labels", on: props.showLabels },
+            { id: "distances", label: "Beam distances", icon: "ruler", on: props.showDistances },
+            { id: "shadows", label: "Shadows", icon: "shadow", on: props.lighting.shadows },
+            { id: "light-graphics", label: "Light graphics", icon: "gauge", on: props.quality === "light" },
+          ]}
+        />
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
 

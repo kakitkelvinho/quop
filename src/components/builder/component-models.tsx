@@ -12,6 +12,7 @@ import {
   Vector2,
   Vector3,
   type Group,
+  type Material,
   type Side,
 } from "three";
 import {
@@ -24,7 +25,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import type { ThreeEvent } from "@react-three/fiber";
+import { useThree, type ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import {
@@ -2266,6 +2267,9 @@ function BeamOrderBadge({ order, height }: { order: number; height: number }) {
   );
 }
 
+/** PROTOTYPE: how much of a faded part's opacity is left */
+const FADED_OPACITY = 0.18;
+
 export type ComponentMeshProps = {
   component: BuilderComponent;
   palette: ScenePalette;
@@ -2280,6 +2284,8 @@ export type ComponentMeshProps = {
   stubTaken?: boolean;
   /** a periscope mirror's other mirror, if it has one */
   partner?: BuilderComponent;
+  /** PROTOTYPE: drawn faint, as a member of a faded group */
+  faded?: boolean;
   /**
    * Handed the part's id, so one stable handler serves every part and a
    * part re-renders only when its own props change.
@@ -2416,6 +2422,7 @@ export const ComponentMesh = memo(function ComponentMesh({
   beamOrder,
   stubTaken = false,
   partner,
+  faded = false,
   onPointerDown,
   onPointerOver,
   onPointerOut,
@@ -2443,6 +2450,36 @@ export const ComponentMesh = memo(function ComponentMesh({
       object.receiveShadow = solid;
     });
   }, [signature]);
+
+  // PROTOTYPE: a faded part wears see-through copies of its materials and casts
+  // no shadow; the originals come back when it is shown again. Rerun whenever
+  // the meshes or their materials may have changed.
+  const invalidate = useThree((state) => state.invalidate);
+  useLayoutEffect(() => {
+    const root = group.current;
+    if (!faded || !root) return;
+    const swapped: { mesh: Mesh; material: Material; castShadow: boolean }[] = [];
+    root.traverse((object) => {
+      if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
+      const material = object.material as Material;
+      const faint = material.clone();
+      faint.transparent = true;
+      faint.opacity = material.opacity * FADED_OPACITY;
+      faint.depthWrite = false;
+      swapped.push({ mesh: object, material, castShadow: object.castShadow });
+      object.material = faint;
+      object.castShadow = false;
+    });
+    invalidate();
+    return () => {
+      for (const { mesh, material, castShadow } of swapped) {
+        (mesh.material as Material).dispose();
+        mesh.material = material;
+        mesh.castShadow = castShadow;
+      }
+      invalidate();
+    };
+  }, [faded, signature, modelProps, selected, hovered, invalidate]);
 
   const { id } = component;
   const handlePointerDown = useCallback(
@@ -2490,7 +2527,7 @@ export const ComponentMesh = memo(function ComponentMesh({
             zIndexRange={[0, 0]}
             className="builderHtmlLayer"
           >
-            <span className={`builderLabel${selected ? " is-selected" : ""}`}>
+            <span className={`builderLabel${selected ? " is-selected" : ""}${faded ? " is-faded" : ""}`}>
               {componentDisplayName(component)}
             </span>
           </Html>

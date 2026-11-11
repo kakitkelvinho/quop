@@ -117,6 +117,7 @@ A named set of parts, and of frames, such as the parts of one experiment when th
 - `name`: text shown in the Groups box, such as `HOM interferometer`.
 - `color`: a hex colour for its row and the outline round its members; such as `"#7c3aed"`.
 - `hidden`: `true` takes its members out of the drawing; leave it out otherwise.
+- `faded`: `true` draws its members faint; leave it out otherwise, and never with `hidden`.
 - `members`: the ids of the parts and frames in it. A part may be in several groups, such as a mirror two experiments share; never list a beam or a connection.
 
 Older files give a frame as `position` (its centre, `[x, z]`), `width` and `depth` instead of `corners`. The builder still reads that form, but don't write it: always write `corners`.

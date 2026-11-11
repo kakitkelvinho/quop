@@ -6052,3 +6052,66 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 .cornerFan__item.is-on .cornerFan__name {
   fill: currentColor;
 }
+
+/* ---------------------------------------------------------------------------
+   PROTOTYPE (status row + group fade): throwaway, see prototype/status-row-fade
+   --------------------------------------------------------------------------- */
+
+/* the Show wheel's state at a glance: faint and small, in the weight of the old
+   "⇧ drag orbit" hint, centred right under the eye it opens */
+.builderShowStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 1.5rem;
+  margin-top: -0.2rem;
+  padding: 0 0.35rem;
+  border: 0;
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.8;
+  cursor: pointer;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease;
+}
+
+.builderShowStatus:hover,
+.builderShowStatus:focus-visible {
+  opacity: 1;
+  background: var(--builder-hover);
+}
+
+/* the open wheel drops over this spot and says it all: step aside, keep the space */
+.builderShowStatus.is-open {
+  visibility: hidden;
+}
+
+.builderShowStatus__icon {
+  display: inline-grid;
+  place-items: center;
+  opacity: 0.45;
+}
+
+/* on: full ink, white at night */
+.builderShowStatus__icon.is-on {
+  color: var(--foreground);
+  opacity: 1;
+}
+
+/* a faded part's label fades with it */
+.builderLabel.is-faded {
+  opacity: 0.35;
+}
+
+/* a faded group's row: dimmed less than a hidden one, its eye kept in view */
+.builderBeamRow.is-faded .builderBeamRow__select {
+  opacity: 0.75;
+}
+
+@media (hover: hover) {
+  .builderBeamRow.is-faded .builderBeamRow__actions > :first-child {
+    opacity: 1;
+  }
+}

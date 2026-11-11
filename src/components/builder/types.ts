@@ -222,6 +222,8 @@ export type Group = {
   color: string;
   /** true takes its members out of the drawing, unless another group shows them; stored only when true */
   hidden?: true;
+  /** PROTOTYPE: true draws its members faint, unless another group shows them fully; stored only when true */
+  faded?: true;
   /** component and frame ids, each once */
   members: string[];
 };
@@ -2252,6 +2254,7 @@ function parseGroup(value: unknown, memberIds: Set<string>): Group | null {
     name: labelText(raw.name)?.trim() || "Group",
     color: cssColor(raw.color, BEAM_COLORS[0]),
     ...(raw.hidden === true ? { hidden: true } : {}),
+    ...(raw.faded === true && raw.hidden !== true ? { faded: true } : {}),
     members,
   };
 }
