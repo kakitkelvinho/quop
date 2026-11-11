@@ -6127,15 +6127,23 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 .fanBoxes__name {
   position: absolute;
   color: var(--foreground);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  /* a solid 1px outline of the page all round, then a soft glow: the name reads on any part, plateless */
   text-shadow:
-    0 0 2px var(--background),
-    0 0 3px var(--background),
-    0 0 6px var(--background);
+    1px 0 0 var(--background),
+    -1px 0 0 var(--background),
+    0 1px 0 var(--background),
+    0 -1px 0 var(--background),
+    1px 1px 0 var(--background),
+    -1px -1px 0 var(--background),
+    1px -1px 0 var(--background),
+    -1px 1px 0 var(--background),
+    0 0 5px var(--background),
+    0 0 9px var(--background);
   pointer-events: none;
 }
 
@@ -6393,6 +6401,24 @@ html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
 @media (max-width: 40rem) {
   .builderShowCompare {
     display: none;
+  }
+
+  /* seven boxes in a row are wider than a phone: two rows, what's on the
+     table over how it's drawn, four boxes (and three gaps) wide, centred */
+  .showBoxes {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 1.7rem;
+    width: calc(4 * (2.5rem + 2px) + 3 * 0.6rem);
+  }
+
+  .showBoxes__cell.is-break {
+    margin-left: 0;
+  }
+
+  /* a first-row slider opens over the second row */
+  .showBoxes .showBoxes__pop {
+    z-index: 1;
   }
 }
 
