@@ -6093,9 +6093,15 @@ html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
     margin-left: 0;
   }
 
-  /* a first-row slider opens over the second row */
+  /* under its own box a first-row slider would cover the second row: it drops
+     below both rows instead, centred on the row (the cell steps back, so the
+     slider is placed from the row itself) */
+  .showBoxes__cell {
+    position: static;
+  }
+
   .showBoxes .showBoxes__pop {
-    z-index: 1;
+    top: calc(100% + 1.6rem);
   }
 }
 
