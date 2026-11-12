@@ -501,7 +501,8 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
     [commit, preview],
   );
   const setGroupHidden = useCallback(
-    (id: string, hidden: boolean) => commit((current) => groups.setGroupHidden(current, id, hidden)),
+    // three states, shown → faded → hidden
+    (id: string, show: groups.GroupShow) => commit((current) => groups.setGroupShow(current, id, show)),
     [commit],
   );
   const setGroupMembership = useCallback(

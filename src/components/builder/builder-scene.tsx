@@ -29,7 +29,7 @@ import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/b
 import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/components/builder/graphics-quality";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
 import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
-import { groupSubset, leftOutNotice, visibility } from "@/components/builder/groups";
+import { groupSubset, leftOutNotice, visibility, type GroupShow } from "@/components/builder/groups";
 import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
@@ -1328,7 +1328,7 @@ export default function BuilderScene() {
   const handleSlowView = useCallback(() => {
     setQuality("light");
     setAutoQuality(false);
-    announce("Switched to light graphics. Turn it off in the eye's Show wheel.");
+    announce("Switched to light graphics. Turn it off with Simple, under the eye.");
   }, [announce]);
 
   const toggleQuality = useCallback(() => {
@@ -1436,9 +1436,9 @@ export default function BuilderScene() {
   );
 
   const handleSetGroupHidden = useCallback(
-    (id: string, hidden: boolean) => {
-      api.setGroupHidden(id, hidden);
-      announce(`${hidden ? "Hid" : "Showed"} ${groupName(sceneRef.current, id)}.`);
+    (id: string, show: GroupShow) => {
+      api.setGroupHidden(id, show);
+      announce(`${show === "hidden" ? "Hid" : show === "faded" ? "Faded" : "Showed"} ${groupName(sceneRef.current, id)}.`);
     },
     [announce, api],
   );

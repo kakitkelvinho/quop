@@ -53,7 +53,7 @@
         "role": "signal",
         "displayName": "Sign Arrow Orange",
         "canonical": "#fb8c4a",
-        "purpose": "The direction arrow in a sign's lower right corner (.signArrow, .toolCard__arrow, the current nav tab's down arrow). About 3:1 on the blue: a mark to see, not words to read. Same day and night. Also the Tabletop's Clear wedge tint at night (#c2410c by day)."
+        "purpose": "The direction arrow in a sign's lower right corner (.signArrow, .toolCard__arrow, the current nav tab's down arrow). About 3:1 on the blue: a mark to see, not words to read. Same day and night. Also the Tabletop's Clear box tint at night (#c2410c by day)."
       },
       "paper-white": {
         "role": "neutral-bg",
@@ -428,7 +428,7 @@
       },
       {
         "name": "The Square Rule",
-        "body": "One radius, 2px (--radius, which --builder-radius follows), for every button, sign, pictogram square, card, input, menu, popover, badge, tooltip, chart frame and toast. 999px only for things round by meaning: colour dots, swatches and pickers, radio dots, wheel and fan ring geometry, round 3D parts. Tailwind rounded-* utilities are a bug here.",
+        "body": "One radius, 2px (--radius, which --builder-radius follows), for every button, sign, pictogram square, card, input, menu, popover, badge, tooltip, chart frame and toast. 999px only for things round by meaning: colour dots, swatches and pickers, radio dots, round 3D parts. Tailwind rounded-* utilities are a bug here.",
         "section": "shapes"
       },
       {

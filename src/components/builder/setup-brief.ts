@@ -131,6 +131,7 @@ const GROUP_FIELDS: FieldDocs<Group> = {
   name: { text: "text shown in the Groups box, such as `HOM interferometer`." },
   color: { text: `a hex colour for its row and the outline round its members; such as ${code(BEAM_COLORS[0])}.` },
   hidden: { text: "`true` takes its members out of the drawing; leave it out otherwise." },
+  faded: { text: "`true` draws its members faint; leave it out otherwise, and never with `hidden`." },
   members: {
     text: "the ids of the parts and frames in it. A part may be in several groups, such as a mirror two experiments share; never list a beam or a connection.",
   },

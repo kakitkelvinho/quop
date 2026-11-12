@@ -2747,7 +2747,7 @@ html[data-theme="dark"] .fitsColorControl__select {
    =========================================================================== */
 
 /* the builder follows the site's one radius (--radius); things round by
-   meaning (colour dots, swatches, the wheels' ring geometry) keep their own.
+   meaning (colour dots, swatches) keep their own.
    On :root because the coach marks are portalled out of the workspace. */
 :root {
   --builder-radius: var(--radius);
@@ -2906,24 +2906,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   display: flex;
 }
 
-.builderShare__list {
-  width: 14rem;
-}
-
-.builderShare__list .builderShare__primary {
-  font-weight: 700;
-}
-
-.builderShare__note {
-  margin: 0.25rem 0 0;
-  padding: 0.45rem 0.6rem 0.2rem;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-/* under it, on its own: the +, whose fan lies on the QUOP fan's ring */
+/* under it, on its own: the +; its menu opens to the right, as QUOP's does */
 .builderHud__add {
   top: 4.1rem;
   left: 0.9rem;
@@ -2933,6 +2916,12 @@ html[data-theme="dark"] .fitsColorControl__select {
 .builderHud__help {
   top: 0.9rem;
   right: 0.9rem;
+}
+
+/* and Share left of it, an island and a gap in from the edge */
+.builderHud__share {
+  top: 0.9rem;
+  right: calc(0.9rem + 2.5rem + 2px + 0.6rem);
 }
 
 /* the wordmark: heavy and tracked, as the site's own */
@@ -3005,302 +2994,16 @@ html[data-theme="dark"] .fitsColorControl__select {
   border-top: 1px solid var(--border);
 }
 
-/* the eye's button: its Show wheel hangs from the middle of the dock */
+/* the eye's button: Show's row of boxes hangs from the middle of the dock */
 .builderLighting {
   position: relative;
   display: flex;
 }
 
-/* the eye's Show wheel: a half ring of wedges dropping out of the button, with
-   the label size dial round its outside and the brightness dial round the eye */
-.showWheel {
-  position: absolute;
-  top: calc(100% + 0.45rem);
-  left: 50%;
-  z-index: 50;
-  display: grid;
-  justify-items: center;
-  gap: 0.4rem;
-  translate: -50% 0;
-  pointer-events: none;
-}
-
-/* the open wheel spreads over the islands and panels round the dock */
-.builderHud__dock:has(.showWheel) {
-  position: relative;
-  z-index: 6;
-}
-
-/* on a phone the wheel is wider than the window: it shrinks to fit, and slides in from the edge */
-.showWheel__ring {
-  max-width: calc(100vw - 16px);
-  height: auto;
-  overflow: visible;
-  transform-origin: 50% 0;
-  animation: showWheelOpen 220ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.showWheel__segment {
-  color: var(--muted);
-  outline: none;
-  cursor: pointer;
-  pointer-events: auto;
-  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-/* the wedges are cut by the islands' hairline, which also edges the flat ring
-   against the scene (opaque, so a seam doesn't double where two strokes meet) */
-.showWheel__wedge {
-  fill: var(--surface-strong);
-  stroke: color-mix(in srgb, var(--foreground) 22%, var(--surface-strong));
-  stroke-width: 1;
-  transition: fill 120ms ease;
-}
-
-.showWheel__name {
-  fill: currentColor;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.showWheel__state {
-  fill: currentColor;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.7;
-}
-
-.showWheel__segment:hover {
-  color: var(--foreground);
-}
-
-.showWheel__segment:hover .showWheel__wedge {
-  fill: var(--background-muted);
-}
-
-.showWheel__segment.is-on {
-  color: var(--focus-ring);
-}
-
-.showWheel__segment.is-on .showWheel__wedge {
-  fill: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-strong));
-}
-
-.showWheel__segment:focus-visible .showWheel__wedge {
-  stroke: var(--focus-ring);
-  stroke-width: 2.5;
-}
-
-/* a rim dial: a track bent round the ring, its filled part up to a knob */
-.showWheel__dial {
-  color: var(--focus-ring);
-  outline: none;
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-  animation: showWheelFade 260ms 120ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-.showWheel__dial:active {
-  cursor: grabbing;
-}
-
-/* a wide, unseen stroke along the track: what a finger grabs */
-.showWheel__dialHit {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 24;
-}
-
-.showWheel__dialTrack,
-.showWheel__dialFill {
-  fill: none;
-  stroke-width: 8;
-  stroke-linecap: round;
-}
-
-.showWheel__dialTrack {
-  stroke: var(--surface-strong);
-}
-
-.showWheel__dialFill {
-  stroke: color-mix(in srgb, var(--focus-ring) 55%, var(--surface-strong));
-}
-
-.showWheel__dialKnob {
-  fill: var(--surface-strong);
-  stroke: var(--focus-ring);
-  stroke-width: 2;
-  transition: fill 120ms ease;
-}
-
-.showWheel__dial:hover .showWheel__dialKnob {
-  fill: color-mix(in srgb, var(--focus-ring) 12%, var(--surface-strong));
-}
-
-.showWheel__dial:focus-visible .showWheel__dialKnob {
-  stroke: var(--focus-ring);
-  stroke-width: 3;
-}
-
-.showWheel__dialIcon {
-  pointer-events: none;
-}
-
-.showWheel__dialReadout {
-  fill: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  /* a halo in the ring's colour keeps the label size's % legible over the table */
-  stroke: var(--surface-strong);
-  stroke-width: 3px;
-  stroke-linejoin: round;
-  paint-order: stroke;
-  pointer-events: none;
-}
-
-/* the label size rests while labels are off */
-.showWheel__dial.is-disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-@keyframes showWheelOpen {
-  from {
-    opacity: 0;
-    transform: scale(0.55);
-  }
-}
-
-@keyframes showWheelFade {
-  from {
-    opacity: 0;
-  }
-}
-
-/* The corner fans: a quarter ring of wedges from a corner of the workspace,
-   flush with its edges, its hole clear of the islands there. The QUOP mark and
-   the + share the top left's ring; the ? opens from the top right, the camera
-   from the bottom right. The layer sits on the corner (placed from the
-   script); the wedges are petals, parted by a gap that widens outward. */
+/* a corner menu's trigger: its column of boxes is placed from here */
 .cornerFan__anchor {
   position: relative;
   display: inline-grid;
-}
-
-.cornerFan {
-  position: absolute;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.cornerFan__ring {
-  display: block;
-  overflow: visible;
-  animation: cornerFanOpen 240ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.cornerFan__item {
-  color: var(--muted);
-  outline: none;
-  cursor: pointer;
-  pointer-events: auto;
-  animation: showWheelFade 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-
-/* each petal is a plate of its own, edged in the islands' hairline */
-.cornerFan__wedge {
-  fill: var(--surface-strong);
-  stroke: color-mix(in srgb, var(--foreground) 22%, var(--surface-strong));
-  stroke-width: 1;
-  transition: fill 120ms ease;
-}
-
-.cornerFan__name {
-  fill: var(--foreground);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.cornerFan__item.is-file .cornerFan__name {
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-}
-
-.cornerFan__item:hover,
-.cornerFan__item:focus-visible {
-  color: var(--foreground);
-}
-
-/* hovers stay neutral: the ink is spent on what's live */
-.cornerFan__item:hover .cornerFan__wedge,
-.cornerFan__item:focus-visible .cornerFan__wedge {
-  fill: color-mix(in srgb, var(--foreground) 9%, var(--surface-strong));
-}
-
-/* the current one (the camera's view, an open panel): the accent's wash, its icon in the ink */
-.cornerFan__item.is-on {
-  color: var(--accent-strong);
-}
-
-.cornerFan__item.is-on .cornerFan__wedge {
-  fill: var(--accent-soft);
-}
-
-.cornerFan__item.is-disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.cornerFan__item.is-disabled:hover .cornerFan__wedge {
-  fill: var(--surface-strong);
-}
-
-/* Clear empties the table: orange, not the accent */
-.cornerFan__item.is-danger:hover,
-.cornerFan__item.is-danger:focus-visible {
-  color: #c2410c;
-}
-
-html[data-theme="dark"] .cornerFan__item.is-danger:hover,
-html[data-theme="dark"] .cornerFan__item.is-danger:focus-visible {
-  color: #fb8c4a;
-}
-
-.cornerFan__item.is-danger:hover .cornerFan__wedge,
-.cornerFan__item.is-danger:focus-visible .cornerFan__wedge {
-  fill: color-mix(in srgb, #ea580c 14%, var(--surface-strong));
-}
-
-.cornerFan__item.is-danger:hover .cornerFan__name,
-.cornerFan__item.is-danger:focus-visible .cornerFan__name {
-  fill: currentColor;
-}
-
-.cornerFan__item:focus-visible .cornerFan__wedge {
-  stroke: var(--focus-ring);
-  stroke-width: 2.5;
-}
-
-@keyframes cornerFanOpen {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cornerFan__ring,
-  .cornerFan__item {
-    animation: none;
-  }
-
-  .cornerFan__wedge {
-    transition: none;
-  }
 }
 
 /* top centre: the dock (undo, the eye, redo), the cheat sheet, and the mode badge */
@@ -4952,9 +4655,6 @@ body[data-panel-gesture="se"] * {
   .builderParts,
   .builderAbout,
   .builderMenu__list,
-  .showWheel__ring,
-  .showWheel__segment,
-  .showWheel__dial,
   .builderHud__inspector {
     animation: none;
   }
@@ -6039,16 +5739,375 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   color: inherit;
 }
 
-/* a fan's current petal and the Show wheel's lit segments are plates too;
-   their hovers stay neutral, like the rest of the HUD */
-:is(.cornerFan__item.is-on, .showWheel__segment.is-on) {
-  color: var(--on-accent);
+/* ---------------------------------------------------------------------------
+   Show's status strip, and faded groups
+   --------------------------------------------------------------------------- */
+
+/* Show's state at a glance: faint and small, in the weight of the old
+   "⇧ drag orbit" hint, centred right under the eye it opens. A full 2rem to
+   press; the margin draws it up, so the icons sit just under the dock */
+.builderShowStatus {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 2rem;
+  margin-top: -0.45rem;
+  padding: 0 0.4rem;
+  border: 0;
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.8;
+  cursor: pointer;
+  transition:
+    opacity 120ms ease,
+    background-color 120ms ease;
 }
 
-:is(.cornerFan__item.is-on, .showWheel__segment.is-on) :is(.cornerFan__wedge, .showWheel__wedge) {
-  fill: var(--accent);
+.builderShowStatus:hover,
+.builderShowStatus:focus-visible {
+  opacity: 1;
+  background: var(--builder-hover);
 }
 
-.cornerFan__item.is-on .cornerFan__name {
-  fill: currentColor;
+/* the open row drops over this spot and says it all: step aside, keep the space */
+.builderShowStatus.is-open {
+  visibility: hidden;
 }
+
+/* off: grey, slashed, still readable */
+.builderShowStatus__icon {
+  display: inline-grid;
+  place-items: center;
+  opacity: 0.65;
+}
+
+/* on: full ink, white at night */
+.builderShowStatus__icon.is-on {
+  color: var(--foreground);
+  opacity: 1;
+}
+
+/* a faded part's label fades with it */
+.builderLabel.is-faded {
+  opacity: 0.35;
+}
+
+/* a faded group's row: dimmed less than a hidden one, its eye kept in view */
+.builderBeamRow.is-faded .builderBeamRow__select {
+  opacity: 0.75;
+}
+
+@media (hover: hover) {
+  .builderBeamRow.is-faded .builderBeamRow__actions > :first-child {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The HUD's menus, as boxes: the dock's own islands and square buttons, each
+   name floating beside its box, plateless, over the table. Show drops a row
+   under the eye; the corner menus and Share unfold a column along the edge.
+   --------------------------------------------------------------------------- */
+
+/* a name floating over the table: no plate, but a scrim, as a game's HUD text
+   sits on: a soft oval of the page under it, strong at the middle and gone by
+   its edge, so the scene behind is evened out without a box. A background,
+   not a shadow or a blur (the HUD has neither). The padding is the scrim's
+   room; the placements below take it back, so the text sits where it would. */
+.showBoxes__name,
+.fanBoxes__name {
+  --scrim-x: 0.6rem;
+  --scrim-y: 0.4rem;
+  position: absolute;
+  padding: var(--scrim-y) var(--scrim-x);
+  background: radial-gradient(
+    ellipse closest-side,
+    color-mix(in srgb, var(--background) 72%, transparent) 40%,
+    transparent
+  );
+  color: var(--foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  /* and a 1px outline of the page, for the glyphs' own edges */
+  text-shadow:
+    1px 0 0 var(--background),
+    -1px 0 0 var(--background),
+    0 1px 0 var(--background),
+    0 -1px 0 var(--background);
+  pointer-events: none;
+}
+
+/* a box that's on is pressed in, neutral, as a rail slot whose list shows: the accent is for what's live */
+.showBoxes__box.is-shown,
+.fanBoxes__box.is-shown {
+  background: var(--builder-hover);
+  color: var(--foreground);
+  background-image: linear-gradient(var(--foreground), var(--foreground));
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+}
+
+/* --- the eye's row ------------------------------------------------------- */
+/* each box its own island, apart as the QUOP and + islands are (0.6rem); the
+   pitch, an island and a gap, is 3.2rem: room for a name under each */
+
+.builderHud__dock:has(.showBoxes) {
+  position: relative;
+  z-index: 6;
+}
+
+.showBoxes {
+  --box-pitch: 3.2rem;
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  translate: -50% 0;
+}
+
+.showBoxes .builderIsland {
+  position: static;
+}
+
+/* the row fans out from under the eye: each box starts at the middle and slides to its place */
+.showBoxes__cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  animation: showBoxOut 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i) * 22ms);
+}
+
+/* the wider gap between what's on the table and how it's drawn */
+.showBoxes__cell.is-break {
+  margin-left: 0.7rem;
+}
+
+.showBoxes__box {
+  position: relative;
+}
+
+.showBoxes__name {
+  top: calc(100% + 0.6rem - var(--scrim-y));
+  left: 50%;
+  translate: -50% 0;
+}
+
+.showBoxes__box:not(.is-shown) .showBoxes__name {
+  color: var(--muted);
+}
+
+/* a box's slider pops out under its name */
+.showBoxes__pop {
+  position: absolute;
+  top: calc(100% + 1.6rem);
+  left: 50%;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  translate: -50% 0;
+  animation: boxPop 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.showBoxes .showBoxes__pop {
+  position: absolute;
+}
+
+.showBoxes__pop .builderSlider {
+  width: 7rem;
+}
+
+.showBoxes__pop .builderReadout {
+  min-width: 2.6em;
+  text-align: right;
+}
+
+@keyframes showBoxOut {
+  from {
+    opacity: 0;
+    /* from the row's middle, under the eye: the row is about n boxes wide */
+    translate: calc((var(--n, 7) - 1) / 2 * var(--box-pitch) - var(--i) * var(--box-pitch)) -0.8rem;
+    scale: 0.7;
+  }
+}
+
+@keyframes boxPop {
+  from {
+    opacity: 0;
+    translate: -50% -0.4rem;
+  }
+}
+
+/* --- a corner fan's column --------------------------------------------- */
+/* each box its own island, 0.6rem apart, 3.2rem a step; the column unfolds
+   out of its trigger along the edge, the boxes sliding out one behind another */
+
+.fanBoxes {
+  --box-pitch: 3.2rem;
+  position: absolute;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.fanBoxes .fanBoxes__island {
+  position: static;
+  animation: fanBoxOut 260ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i) * 25ms);
+}
+
+/* the trigger sits in its own island, 0.25rem padding and a 1px hairline in: line up with that island */
+/* top left: beside the trigger, clear of the + under it; names on the right */
+.fanBoxes--tl {
+  top: calc(-0.25rem - 1px);
+  left: calc(100% + 0.25rem + 1px + 0.6rem);
+  --fan-axis: -1;
+}
+
+/* top right: under the trigger, down the edge; names on the left */
+.fanBoxes--tr {
+  top: calc(100% + 0.25rem + 1px + 0.6rem);
+  right: calc(-0.25rem - 1px);
+  --fan-axis: -1;
+}
+
+/* bottom right: over the trigger, up the edge, the first item nearest it; names on the left */
+.fanBoxes--br {
+  bottom: calc(100% + 0.25rem + 1px + 0.6rem);
+  right: calc(-0.25rem - 1px);
+  flex-direction: column-reverse;
+  --fan-axis: 1;
+}
+
+/* the top left column slides out sideways from the mark; the others from their trigger along the edge */
+.fanBoxes--tl .fanBoxes__island {
+  animation-name: fanBoxOutSide;
+}
+
+.fanBoxes__box {
+  position: relative;
+}
+
+.fanBoxes__name {
+  top: 50%;
+  translate: 0 -50%;
+}
+
+.fanBoxes--tl .fanBoxes__name {
+  left: calc(100% + 0.9rem - var(--scrim-x));
+}
+
+.fanBoxes--tr .fanBoxes__name,
+.fanBoxes--br .fanBoxes__name {
+  right: calc(100% + 0.9rem - var(--scrim-x));
+}
+
+.fanBoxes__box.is-file .fanBoxes__name {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Clear: orange on hover and focus, as its wedge */
+.fanBoxes__box.is-danger:hover:not(:disabled),
+.fanBoxes__box.is-danger:focus-visible,
+.fanBoxes__box.is-danger:hover .fanBoxes__name,
+.fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
+  color: #c2410c;
+}
+
+html[data-theme="dark"] .fanBoxes__box.is-danger:hover:not(:disabled),
+html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible,
+html[data-theme="dark"] .fanBoxes__box.is-danger:hover .fanBoxes__name,
+html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
+  color: #fb8c4a;
+}
+
+/* each box starts tucked behind the trigger, (i + 1) steps back, and slides out */
+@keyframes fanBoxOut {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--fan-axis) * (var(--i) + 1) * var(--box-pitch));
+  }
+}
+
+@keyframes fanBoxOutSide {
+  from {
+    opacity: 0;
+    translate: calc(-1 * var(--box-pitch)) calc(-1 * var(--i) * var(--box-pitch));
+  }
+}
+
+/* the strip's hairline, where the boxes put theirs */
+.builderShowStatus__sep {
+  width: 1px;
+  height: 0.8rem;
+  margin: 0 0.1rem;
+  background: currentColor;
+  opacity: 0.35;
+}
+
+/* a caution under a column (Share's, for a setup too large for a safe link):
+   floating as the names do, its right edge on the column's */
+.fanBoxes__note {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: 13rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  text-align: right;
+  text-shadow:
+    1px 0 0 var(--background),
+    -1px 0 0 var(--background),
+    0 1px 0 var(--background),
+    0 -1px 0 var(--background),
+    0 0 5px var(--background);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showBoxes__cell,
+  .showBoxes__pop,
+  .fanBoxes .fanBoxes__island {
+    animation: none;
+  }
+
+  .builderShowStatus {
+    transition: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  /* seven boxes in a row are wider than a phone: two rows, what's on the
+     table over how it's drawn, four boxes (and three gaps) wide, centred */
+  .showBoxes {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 1.7rem;
+    width: calc(4 * (2.5rem + 2px) + 3 * 0.6rem);
+  }
+
+  .showBoxes__cell.is-break {
+    margin-left: 0;
+  }
+
+  /* under its own box a first-row slider would cover the second row: it drops
+     below both rows instead, centred on the row (the cell steps back, so the
+     slider is placed from the row itself) */
+  .showBoxes__cell {
+    position: static;
+  }
+
+  .showBoxes .showBoxes__pop {
+    top: calc(100% + 1.6rem);
+  }
+}
+
