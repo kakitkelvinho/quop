@@ -51,6 +51,21 @@ export type ComponentType =
 
 export type LensShape = "plano-convex" | "biconvex";
 
+export const BLOCK_SYMBOLS = ["rf-source", "mixer", "amplifier", "low-pass", "high-pass", "band-pass", "phase-shifter", "sum", "pid", "splitter", "bias-tee", "scope", "driver"] as const;
+export type BlockSymbol = (typeof BLOCK_SYMBOLS)[number];
+export const SYMBOL_BLOCK_SIZE_MM: Vec3 = [60, 30, 60];
+export const SCOPE_BLOCK_SIZE_MM: Vec3 = [200, 120, 120];
+export const BLOCK_SYMBOL_LABELS: Record<BlockSymbol, string> = {
+  "rf-source": "RF source", mixer: "Mixer", amplifier: "Amplifier",
+  "low-pass": "Low-pass filter", "high-pass": "High-pass filter", "band-pass": "Band-pass filter",
+  "phase-shifter": "Phase shifter", sum: "Sum", pid: "PID", splitter: "Splitter",
+  "bias-tee": "Bias tee", scope: "Scope", driver: "Driver",
+};
+
+export function blockSize(component: BuilderComponent): Vec3 {
+  return component.size ?? (component.symbol === "scope" ? SCOPE_BLOCK_SIZE_MM : component.symbol ? SYMBOL_BLOCK_SIZE_MM : BLOCK_SIZE_MM);
+}
+
 /** The light inside a cavity or delay line, unless its colour is set. */
 export const DEFAULT_LIGHT_COLOR = "#ff5a36";
 
@@ -135,6 +150,8 @@ export type BuilderComponent = {
   particleRadius?: number;
   /** block only, mm along [beam (x), height (y), across (z)]; missing means BLOCK_SIZE_MM */
   size?: Vec3;
+  /** block only: a diagram symbol on its top and front faces */
+  symbol?: BlockSymbol;
   /**
    * laser source only, mm: light the laser adds before it leaves the aperture
    * (a folded or internal delay path); missing or 0 means none. A beam that
@@ -231,7 +248,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 13 as const;
+export const SCENE_VERSION = 14 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -530,7 +547,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 15,
     minHeight: 15,
     radius: 26,
-    fields: ["size"],
+    fields: ["size", "symbol"],
     created: { size: BLOCK_SIZE_MM, color: DEFAULT_BLOCK_COLOR },
   },
   aom: {
@@ -855,7 +872,12 @@ export const COMPONENT_FIELDS = {
   size: {
     read: { as: "vec3", range: BLOCK_SIZE_RANGE_MM },
     default: BLOCK_SIZE_MM,
-    brief: `\`[along x, height, along z]\`, mm, each ${briefRange(BLOCK_SIZE_RANGE_MM)}; default ${briefCode(BLOCK_SIZE_MM)}. Its height (y) is the block's centre, so one resting on the table has y = half its height.`,
+    brief: `\`[along x, height, along z]\`, mm, each ${briefRange(BLOCK_SIZE_RANGE_MM)}; default ${briefCode(BLOCK_SIZE_MM)} for a plain block, ${briefCode(SYMBOL_BLOCK_SIZE_MM)} with a symbol, or ${briefCode(SCOPE_BLOCK_SIZE_MM)} for a scope. Its height (y) is the block's centre, so one resting on the table has y = half its height.`,
+  },
+  symbol: {
+    read: { as: "enum", options: BLOCK_SYMBOLS },
+    since: 14,
+    brief: `optional diagram symbol: ${BLOCK_SYMBOLS.map(briefCode).join(", ")}. Unknown values are dropped and leave a plain block.`,
   },
   internalPathMm: {
     read: { as: "number", range: INTERNAL_PATH_RANGE_MM },
@@ -965,18 +987,19 @@ export function newComponent(
   id: string,
   x: number,
   z: number,
-  extra?: { label?: string; host?: string },
+  extra?: { label?: string; host?: string; symbol?: BlockSymbol },
 ): BuilderComponent {
   const created = { ...COMPONENT_SPECS[type].created };
   if (created.size) created.size = [...created.size];
   return {
     id,
     type,
-    position: [x, defaultHeight(type), z],
+    position: [x, type === "block" && extra?.symbol ? (extra.symbol === "scope" ? SCOPE_BLOCK_SIZE_MM[1] : SYMBOL_BLOCK_SIZE_MM[1]) / 2 : defaultHeight(type), z],
     rotation: 0,
     color: undefined,
     label: extra?.label,
     ...created,
+    ...(type === "block" && extra?.symbol ? { symbol: extra.symbol, size: [...(extra.symbol === "scope" ? SCOPE_BLOCK_SIZE_MM : SYMBOL_BLOCK_SIZE_MM)] as Vec3, color: undefined } : {}),
     ...(extra?.host ? { host: extra.host } : {}),
   };
 }
@@ -1193,7 +1216,7 @@ export function componentRadius(component: BuilderComponent): number {
     return Math.max(COMPONENT_SPECS["delay-line"].radius, delayRailMm(component) / 2 + 12);
   }
   if (component.type === "block") {
-    const [dx, , dz] = fieldValue(component, "size");
+    const [dx, , dz] = blockSize(component);
     return Math.hypot(dx, dz) / 2 + 6;
   }
   if (component.type === "particle") {
@@ -1204,7 +1227,7 @@ export function componentRadius(component: BuilderComponent): number {
 
 /** How far the part reaches above its optical centre, mm: where its label sits. */
 export function componentTop(component: BuilderComponent): number {
-  if (component.type === "block") return fieldValue(component, "size")[1] / 2;
+  if (component.type === "block") return blockSize(component)[1] / 2;
   if (component.type === "particle") {
     return Math.max(COMPONENT_SPECS.particle.top, fieldValue(component, "particleRadius") + 4);
   }
@@ -1947,13 +1970,16 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   if (!KNOWN_TYPES.has(type)) return null;
   if (!isVec3(raw.position)) return null;
   const [x, z] = clampToTable(raw.position[0], raw.position[2]);
+  const symbol = version >= 14 && type === "block" && BLOCK_SYMBOLS.includes(raw.symbol as BlockSymbol)
+    ? raw.symbol as BlockSymbol : undefined;
+  const symbolHeight = symbol === "scope" ? SCOPE_BLOCK_SIZE_MM[1] / 2 : SYMBOL_BLOCK_SIZE_MM[1] / 2;
 
   const component: BuilderComponent = {
     id: raw.id,
     type: type as ComponentType,
     position: [
       x,
-      version >= 2 ? clampHeight(type as ComponentType, raw.position[1]) : defaultHeight(type as ComponentType),
+      version >= 2 ? Math.max(clampHeight(type as ComponentType, raw.position[1]), symbol && raw.size === undefined ? symbolHeight : 0) : defaultHeight(type as ComponentType),
       z,
     ],
     rotation: finiteNumber(raw.rotation) ?? 0,

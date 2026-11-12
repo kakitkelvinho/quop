@@ -44,6 +44,7 @@ const GOOD: Record<KindField, unknown> = {
   sampleStageLeft: true,
   particleRadius: 5,
   size: [40, 50, 60],
+  symbol: "mixer",
   internalPathMm: 500,
 };
 
@@ -129,6 +130,7 @@ describe("COMPONENT_FIELDS", () => {
       particleRadius: Infinity,
       size: [1, 2],
       internalPathMm: "0",
+      symbol: "not-a-symbol",
     };
     for (const [field, value] of Object.entries(unusable) as [KindField, unknown][]) {
       for (const type of kindsWith(field)) {
@@ -164,7 +166,7 @@ describe("COMPONENT_FIELDS", () => {
 
   it("ignores a field in a file from before its version, and reads it from that version on", () => {
     const versioned = FIELDS.filter((field) => "since" in COMPONENT_FIELDS[field]);
-    assert.deepEqual(versioned, ["objectiveLength", "sampleStage", "stageColor", "sampleStageLeft"]);
+    assert.deepEqual(versioned, ["objectiveLength", "sampleStage", "stageColor", "sampleStageLeft", "symbol"]);
     for (const field of versioned) {
       const { since } = COMPONENT_FIELDS[field] as { since: number };
       const extra = field === "sampleStageLeft" ? { sampleStage: "side", [field]: GOOD[field] } : { [field]: GOOD[field] };

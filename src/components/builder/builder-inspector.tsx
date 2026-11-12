@@ -14,6 +14,12 @@ import {
   BEAM_WIDTH_MM,
   BEAM_WIDTH_RANGE_MM,
   BLOCK_SIZE_RANGE_MM,
+  BLOCK_SYMBOLS,
+  BLOCK_SYMBOL_LABELS,
+  BLOCK_SIZE_MM,
+  SYMBOL_BLOCK_SIZE_MM,
+  SCOPE_BLOCK_SIZE_MM,
+  blockSize,
   COMPONENT_SPECS,
   CONNECTION_KINDS,
   CONNECTION_KIND_IDS,
@@ -647,6 +653,7 @@ export function ComponentInspector({
   onDelete: () => void;
 }) {
   const spec = COMPONENT_SPECS[component.type];
+  const palette = useScenePalette();
   const [x, , z] = component.position;
   const host = component.host ? componentById(components, component.host) : undefined;
   // a periscope shows both its mirrors' heights, and its top mirror moves it by its lower one
@@ -840,9 +847,26 @@ export function ComponentInspector({
       ) : null}
       {component.type === "block" ? (
         <>
+          <label className="builderField">
+            <span className="builderField__label">Symbol</span>
+            <span className="builderField__control">
+              <select
+                value={component.symbol ?? ""}
+                onChange={(event) => {
+                  const symbol = event.target.value || undefined;
+                  const defaultSize = !component.size || component.size.every((side, index) => side === BLOCK_SIZE_MM[index]);
+                  const size = symbol === "scope" ? SCOPE_BLOCK_SIZE_MM : SYMBOL_BLOCK_SIZE_MM;
+                  onUpdate(symbol && defaultSize ? { symbol: symbol as BuilderComponent["symbol"], size: [...size] as Vec3, color: component.color === DEFAULT_BLOCK_COLOR ? undefined : component.color, position: [component.position[0], size[1] / 2, component.position[2]] } : { symbol: symbol as BuilderComponent["symbol"] });
+                }}
+              >
+                <option value="">Plain block</option>
+                {BLOCK_SYMBOLS.map((symbol) => <option key={symbol} value={symbol}>{BLOCK_SYMBOL_LABELS[symbol]}</option>)}
+              </select>
+            </span>
+          </label>
           <div className="builderFieldRow">
             {(["Length", "Height", "Width"] as const).map((name, axisIndex) => {
-              const size = fieldValue(component, "size");
+              const size = blockSize(component);
               return (
                 <NumberField
                   key={name}
@@ -861,7 +885,7 @@ export function ComponentInspector({
           </div>
           <ColorField
             label="Colour"
-            value={component.color ?? DEFAULT_BLOCK_COLOR}
+            value={component.color ?? (component.symbol ? palette.body : DEFAULT_BLOCK_COLOR)}
             onChange={(color) => onUpdate({ color })}
           />
         </>

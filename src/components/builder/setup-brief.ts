@@ -145,6 +145,7 @@ function fieldList<T>(fields: FieldDocs<T>): string {
 const KIND_FIELDS = Object.keys(COMPONENT_FIELDS) as KindField[];
 
 function heightLine(type: ComponentType): string {
+  if (type === "block") return "Height 15–300 mm; a new plain block starts at 100 mm, a symbol tile at 15 mm, and a scope at 60 mm.";
   const [min, max] = heightRange(type);
   return min === max ? `Height fixed at ${min} mm.` : `Height ${min}–${max} mm, default ${defaultHeight(type)}.`;
 }
@@ -301,6 +302,22 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 \`\`\`json
 ${exampleJson()}
+\`\`\`
+
+For an electronics chain, place a mixer and a scope as symbol blocks, then connect them with a cable:
+
+\`\`\`json
+{
+  "version": ${SCENE_VERSION},
+  "components": [
+    { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "rotation": 0 },
+    { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "rotation": 0 }
+  ],
+  "beams": [],
+  "connections": [{ "id": "if-cable", "kind": "cable", "from": "mixer", "to": "scope" }],
+  "frames": [],
+  "groups": []
+}
 \`\`\`
 `;
 }

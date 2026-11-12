@@ -156,7 +156,7 @@ describe("the kind table", () => {
       cavity: ["cavityLength", "lightColor", "lightHidden"],
       particle: ["host", "particleRadius"],
       objective: ["objectiveLength", "stageColor"],
-      block: ["size"],
+      block: ["size", "symbol"],
       "periscope-top": ["periscope"],
       "delay-line": ["delayMinPathMm", "delayStageMm", "delayTravelMm", "lightColor", "lightHidden"],
     });

@@ -23,6 +23,7 @@ const FIXTURES = [
   "setup-v11.json",
   "setup-v12.json",
   "setup-v13.json",
+  "setup-v14.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -71,7 +72,9 @@ for (const name of FIXTURES) {
     });
 
     it("keeps a trapped particle in its trap", () => {
-      assert.equal(open(name).components.find(({ id }) => id === "ion")?.host, "trap");
+      if (saved.components.some(({ id }) => id === "ion")) {
+        assert.equal(open(name).components.find(({ id }) => id === "ion")?.host, "trap");
+      }
     });
 
     it("gives the same setup when saved and opened again", () => {
@@ -370,7 +373,7 @@ describe("setup-v11.json, the first version with labelScale", () => {
 describe("setup-v12.json, the first version with groups", () => {
   it("is saved exactly as it opens, but for the version", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
-    const saved = serializeScene(open("setup-v12.json")).replace('"version": 13,', '"version": 12,');
+    const saved = serializeScene(open("setup-v12.json")).replace('"version": 14,', '"version": 12,');
     assert.equal(`${saved}\n`, text);
   });
 
@@ -419,7 +422,7 @@ describe("setup-v13.json, the first version with a sample's stage style", () => 
 
   it("is saved exactly as it opens", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v13.json", import.meta.url), "utf8");
-    assert.equal(`${serializeScene(open("setup-v13.json"))}\n`, text);
+    assert.equal(`${serializeScene(open("setup-v13.json")).replace('"version": 14,', '"version": 13,')}\n`, text);
   });
 
   it("is v12's setup with the sample on a side stage, on its left, and the objective's stage coloured", () => {

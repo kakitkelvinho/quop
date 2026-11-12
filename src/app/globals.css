@@ -3611,6 +3611,16 @@ html[data-theme="dark"] .builderCoach {
   font: inherit;
 }
 
+.builderField__control select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+}
+
 .builderField__control input[type="number"] {
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;

@@ -30,7 +30,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 13. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 14. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: the light paths, in order. The first beam through a mirror sets its angle.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -67,7 +67,8 @@ Some types read fields of their own; leave them out to take the default:
 - `stageColor` (`objective` and `sample` only): a hex colour for the plates of the translation stage it stands on (the micrometers stay silver). Leave it out for the theme's own: near-black by day, dark grey at night.
 - `sampleStageLeft` (`sample` only): `true` puts a `"side"` stage on the sample's left (−z, looking along +x) instead of its right; leave it out otherwise.
 - `particleRadius` (`particle` only): mm, 0.5–15; default 3.
-- `size` (`block` only): `[along x, height, along z]`, mm, each 2–300; default `[30,30,30]`. Its height (y) is the block's centre, so one resting on the table has y = half its height.
+- `size` (`block` only): `[along x, height, along z]`, mm, each 2–300; default `[30,30,30]` for a plain block, `[60,30,60]` with a symbol, or `[200,120,120]` for a scope. Its height (y) is the block's centre, so one resting on the table has y = half its height.
+- `symbol` (`block` only): optional diagram symbol: `"rf-source"`, `"mixer"`, `"amplifier"`, `"low-pass"`, `"high-pass"`, `"band-pass"`, `"phase-shifter"`, `"sum"`, `"pid"`, `"splitter"`, `"bias-tee"`, `"scope"`, `"driver"`. Unknown values are dropped and leave a plain block.
 - `internalPathMm` (`laser-source` only): mm of light path inside the laser before it leaves, such as a folded delay, 0–100000; default 0. A beam that starts at this laser counts it in its path length.
 
 ### A beam
@@ -171,7 +172,7 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 ### Other
 
-- `block`: Block. Height 15–300 mm, default 100. Its own fields: `size`.
+- `block`: Block. Height 15–300 mm; a new plain block starts at 100 mm, a symbol tile at 15 mm, and a scope at 60 mm. Its own fields: `size`, `symbol`.
 
 ## Example
 
@@ -179,7 +180,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 13,
+  "version": 14,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "rotation": 0, "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "rotation": 135, "color": "#8b1e3f", "label": "M1" },
@@ -196,5 +197,21 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
   "groups": [
     { "id": "probe-arm", "name": "Probe arm", "color": "#dc2626", "members": ["laser", "m1", "lens", "pd", "board"] }
   ]
+}
+```
+
+For an electronics chain, place a mixer and a scope as symbol blocks, then connect them with a cable:
+
+```json
+{
+  "version": 14,
+  "components": [
+    { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "rotation": 0 },
+    { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "rotation": 0 }
+  ],
+  "beams": [],
+  "connections": [{ "id": "if-cable", "kind": "cable", "from": "mixer", "to": "scope" }],
+  "frames": [],
+  "groups": []
 }
 ```
