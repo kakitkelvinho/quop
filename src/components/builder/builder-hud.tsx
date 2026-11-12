@@ -799,7 +799,7 @@ function useEscapeCloses(onClose: () => void) {
   }, [onClose]);
 }
 
-/** The setup brief, to copy into an AI assistant or save; it opens where the about panel does. */
+/** The setup brief, to copy into an AI assistant or save. */
 function BriefPanel({
   onCopy,
   onDownload,
@@ -816,7 +816,7 @@ function BriefPanel({
   return (
     <aside
       {...panel.frame}
-      className={`builderIsland builderAbout builderBrief${panel.className}`}
+      className={`builderIsland builderAbout builderBrief builderBrief--right${panel.className}`}
       aria-labelledby="builder-brief-title"
     >
       {panel.moves ? (
@@ -862,8 +862,9 @@ const JSON_SETTLE_MS = 120;
 /**
  * The setup as JSON, to read, tweak, copy, paste over or fill from a file,
  * in the parts panel's place. The box follows the table until the author
- * edits it; then it holds their draft (see json-panel-text). Nothing reaches
- * the table until Apply, and Apply only takes text checkSceneText passed:
+ * edits it; then it holds their draft (see json-panel-text). Typed or pasted
+ * edits reach the table through Apply; opening a valid file replaces it at once.
+ * Both paths take only text checkSceneText passed:
  * within its size, valid JSON, a setup's shape and counts, colours and labels
  * made safe by parseScene.
  */
@@ -932,14 +933,23 @@ function JsonPanel({
       setNote("Paste blocked: use ⌘V.");
     }
   };
-  // the folder's Replace: the file fills the box as a draft, for Apply
+  // the folder's Replace applies a checked file in one undo step
   const replaceFrom = async (file: File) => {
     if (file.size > SCENE_TEXT_MAX_BYTES) {
       setNote(`${file.name} is over ${SCENE_TEXT_MAX_BYTES / 1_000_000} MB.`);
       return;
     }
-    edit(await file.text());
-    setNote(`Read ${file.name}.`);
+    const fileText = await file.text();
+    const opened = checkSceneText(fileText);
+    if (!opened.ok) {
+      edit(fileText);
+      setNote(`Couldn't open ${file.name}: ${opened.error}`);
+      return;
+    }
+    setLive(serializeScene(opened.scene));
+    setDraft(null);
+    setNote(`Opened ${file.name}.`);
+    onApply(opened.scene, opened.summary);
   };
   // the folder's Add: merged into the table as it stands (merge-setup)
   const addFrom = async (file: File) => {
@@ -1256,7 +1266,7 @@ export default function BuilderHud(props: BuilderHudProps) {
     view,
   } = props;
   const mode = modeHints(props);
-  // the brief and the JSON panel share the parts panel's spot, so opening one closes the others
+  // the brief and JSON panel open one at a time
   const [briefOpen, setBriefOpen] = useState(false);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
@@ -1285,8 +1295,8 @@ export default function BuilderHud(props: BuilderHudProps) {
     observer.observe(layer);
     return () => observer.disconnect();
   }, [panelsMove]);
-  // the brief and the JSON panel take the parts panel's place and size, so the lists step aside for them
-  const besideParts = trayOpen || briefOpen || jsonOpen;
+  // the JSON panel takes the parts panel's place, so the lists step aside for it
+  const besideParts = trayOpen || jsonOpen;
   const toggleBrief = useCallback(() => {
     onCloseTray();
     setJsonOpen(false);

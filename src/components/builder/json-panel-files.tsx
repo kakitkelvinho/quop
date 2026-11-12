@@ -7,7 +7,7 @@ import { IconButton } from "@/components/builder/builder-icons";
 
 /**
  * Asked once a .json is picked in the JSON panel: replace the table with it
- * (as a draft in the box, for Apply) or add it to the table as it stands.
+ * or add it to the table as it stands.
  * Esc cancels.
  */
 function OpenChoiceDialog({
@@ -40,7 +40,7 @@ function OpenChoiceDialog({
           Open {fileName}
         </h2>
         <p id="builderOpenChoiceText" className="builderAbout__description">
-          Replace the table: the file fills the box, and Apply puts it on the table. Add to the table: it joins
+          Replace the table: open the file on the table now. Add to the table: it joins
           what is there, as a group saved with Export group… does.
         </p>
         <div className="builderBrief__actions">
@@ -60,9 +60,9 @@ function OpenChoiceDialog({
 }
 
 /**
- * The JSON panel's icon row, after Apply: copy, paste, save the table as a
+ * The JSON panel's icon row: copy, paste, save the table as a
  * .json, and open one. An opened file asks whether it replaces the table, as
- * a draft in the box (`onReplace`), or is added to it (`onAdd`, the merge,
+ * immediately (`onReplace`), or is added to it (`onAdd`, the merge,
  * which asks again about a group already on the table). A file over the size
  * limit goes to either without its text, for the same message as before.
  */
