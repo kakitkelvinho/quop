@@ -3217,7 +3217,7 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
   color: #9b1c1c;
 }
 
-/* left, where the parts panel opens: the brief and JSON panels */
+/* left, where the parts panel opens: the JSON panel */
 .builderAbout {
   top: 7.3rem;
   left: 0.9rem;
@@ -3602,6 +3602,16 @@ html[data-theme="dark"] .builderCoach {
 
 .builderField__control input {
   flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+}
+
+.builderField__control select {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -4506,8 +4516,7 @@ body[data-panel-gesture="se"] * {
   line-height: 1;
 }
 
-/* the brief: the parts panel's spot and size, so the beams and frames boxes
-   move beside it as they do for the parts; the Markdown scrolls in its box */
+/* The brief and JSON panel share a size; their text scrolls inside the box. */
 .builderBrief {
   bottom: 3.8rem;
   display: flex;
@@ -4516,6 +4525,13 @@ body[data-panel-gesture="se"] * {
   width: clamp(16rem, 25vw, 24rem);
   max-height: none;
   overflow: hidden;
+}
+
+/* The AI brief opens by Help on the right; the JSON panel keeps the left side. */
+.builderBrief--right {
+  left: auto;
+  right: 0.9rem;
+  animation-name: builderSlide;
 }
 
 .builderBrief__actions {
