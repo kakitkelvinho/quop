@@ -1,6 +1,6 @@
 "use client";
 
-import { Html, RoundedBox } from "@react-three/drei";
+import { Edges, Html, RoundedBox } from "@react-three/drei";
 import {
   CatmullRomCurve3,
   DoubleSide,
@@ -28,6 +28,7 @@ import {
 import { useThree, type ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
+import { BlockSymbolFaces } from "@/components/builder/block-symbol";
 import {
   CAVITY_LENGTH_RANGE_MM,
   DEFAULT_BLOCK_COLOR,
@@ -40,6 +41,7 @@ import {
   FOCAL_LENGTH_RANGE_MM,
   OBJECTIVE_LENGTH_RANGE_MM,
   clamp,
+  blockSize,
   componentDisplayName,
   componentRadius,
   componentReferenceX,
@@ -50,6 +52,7 @@ import {
   type BuilderComponent,
   type ComponentType,
   type LensShape,
+  type BlockSymbol,
   type Vec3,
 } from "@/components/builder/types";
 import {
@@ -1833,8 +1836,18 @@ function Objective({
  * dimensions, colour and label. A Faraday rotator is this block between two
  * beam cubes.
  */
-function GenericBlock({ palette, color, axis, size }: ModelProps & { size: Vec3 }) {
+function GenericBlock({ palette, color, axis, size, symbol, rotation }: ModelProps & { size: Vec3; symbol?: BlockSymbol; rotation?: number }) {
   const [dx, dy, dz] = size;
+  if (symbol) return (
+    <group>
+      <Pillar palette={palette} top={axis - dy / 2} />
+      <RoundedBox args={[dx, dy, dz]} radius={Math.min(1.2, Math.min(dx, dy, dz) / 4)} smoothness={3} position={[0, axis, 0]}>
+        <Enamel color={color ?? palette.body} />
+        <Edges color={palette.anodise} threshold={18} />
+      </RoundedBox>
+      <BlockSymbolFaces symbol={symbol} size={size} axis={axis} color={palette.anodise} rotation={rotation ?? 0} />
+    </group>
+  );
   return (
     <group>
       <Pillar palette={palette} top={axis - dy / 2} />
@@ -2306,7 +2319,7 @@ function modelSignature(
   stubTaken: boolean,
   hasPartner: boolean,
 ): string {
-  const placed = { ...component, position: component.position[1], rotation: undefined };
+  const placed = { ...component, position: component.position[1], rotation: component.symbol ? component.rotation : undefined };
   return JSON.stringify([placed, showPosts, stubTaken, hasPartner]);
 }
 
@@ -2379,7 +2392,7 @@ const COMPONENT_MODELS: Record<
     />
   ),
   block: (component, { modelProps }) => (
-    <GenericBlock {...modelProps} size={fieldValue(component, "size")} />
+    <GenericBlock {...modelProps} size={blockSize(component)} symbol={component.symbol} rotation={component.rotation} />
   ),
   aom: (_, { modelProps }) => <Aom {...modelProps} />,
   eom: (_, { modelProps }) => <Eom {...modelProps} />,

@@ -7,6 +7,9 @@ import { PanelBar, PanelResize } from "@/components/builder/panel-frame";
 import {
   PART_CATEGORIES,
   COMPONENT_SPECS,
+  BLOCK_SYMBOLS,
+  BLOCK_SYMBOL_LABELS,
+  type BlockSymbol,
   type ComponentType,
 } from "@/components/builder/types";
 import { usePanel } from "@/components/builder/use-panel-drag";
@@ -24,11 +27,13 @@ function matches(type: ComponentType, query: string): boolean {
  */
 export default function PartsPanel({
   placingType,
+  placingSymbol,
   onPick,
   onClose,
 }: {
   placingType: ComponentType | null;
-  onPick: (type: ComponentType) => void;
+  placingSymbol?: BlockSymbol | null;
+  onPick: (type: ComponentType, symbol?: BlockSymbol) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -36,10 +41,12 @@ export default function PartsPanel({
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
     // a part that comes with another (a periscope's top mirror) is never placed alone
-    return PART_CATEGORIES.map((group) => ({
+    const standard = PART_CATEGORIES.map((group) => ({
       ...group,
-      types: group.types.filter((type) => !COMPONENT_SPECS[type].partOf && (!needle || matches(type, needle))),
-    })).filter((group) => group.types.length);
+      entries: group.types.filter((type) => !COMPONENT_SPECS[type].partOf && (!needle || matches(type, needle))).map((type) => ({ type, label: COMPONENT_SPECS[type].label, symbol: undefined as BlockSymbol | undefined })),
+    }));
+    const electronics = { name: "Electronics", entries: BLOCK_SYMBOLS.filter((symbol) => !needle || `${BLOCK_SYMBOL_LABELS[symbol]} ${symbol}`.toLowerCase().includes(needle)).map((symbol) => ({ type: "block" as ComponentType, label: BLOCK_SYMBOL_LABELS[symbol], symbol })) };
+    return [...standard.slice(0, -1), electronics, ...standard.slice(-1)].filter((group) => group.entries.length);
   }, [query]);
 
   return (
@@ -60,8 +67,8 @@ export default function PartsPanel({
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={(event) => {
             // Enter picks the only match, so "trap ⏎" is enough
-            const only = groups.length === 1 && groups[0].types.length === 1;
-            if (event.key === "Enter" && only) onPick(groups[0].types[0]);
+            const only = groups.length === 1 && groups[0].entries.length === 1;
+            if (event.key === "Enter" && only) onPick(groups[0].entries[0].type, groups[0].entries[0].symbol);
             // the builder's own keys skip text fields, so Esc is handled here:
             // clear the search first, then close the panel
             if (event.key === "Escape") {
@@ -78,18 +85,18 @@ export default function PartsPanel({
         {groups.map((group) => (
           <section key={group.name} className="builderParts__group">
             <p className="builderParts__groupName">{group.name}</p>
-            {group.types.map((type) => (
+            {group.entries.map(({ type, label, symbol }) => (
               <button
-                key={type}
+                key={symbol ?? type}
                 type="button"
-                className={`builderPart${placingType === type ? " is-active" : ""}`}
-                aria-pressed={placingType === type}
-                onClick={() => onPick(type)}
+                className={`builderPart${placingType === type && placingSymbol === (symbol ?? null) ? " is-active" : ""}`}
+                aria-pressed={placingType === type && placingSymbol === (symbol ?? null)}
+                onClick={() => onPick(type, symbol)}
               >
                 <span className="builderPart__icon">
-                  <PartIcon type={type} />
+                  {symbol ? <span aria-hidden="true">{symbol === "mixer" ? "×" : symbol === "phase-shifter" ? "φ" : symbol === "sum" ? "Σ" : symbol === "rf-source" ? "~" : symbol === "amplifier" ? "▷" : symbol === "scope" ? "▣" : symbol === "pid" ? "PID" : symbol === "driver" ? "DRV" : symbol === "splitter" ? "T" : symbol === "bias-tee" ? "⊥" : "≈"}</span> : <PartIcon type={type} />}
                 </span>
-                <span className="builderPart__name">{COMPONENT_SPECS[type].label}</span>
+                <span className="builderPart__name">{label}</span>
               </button>
             ))}
           </section>

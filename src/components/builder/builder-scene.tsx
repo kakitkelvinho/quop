@@ -75,6 +75,7 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
+  type BlockSymbol,
   type Corner,
   type Vec3,
 } from "@/components/builder/types";
@@ -323,6 +324,7 @@ export default function BuilderScene() {
   // counts plain clicks on empty table, so the HUD can close what they should dismiss
   const [emptyClicks, setEmptyClicks] = useState(0);
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
+  const [placingSymbol, setPlacingSymbol] = useState<BlockSymbol | null>(null);
   const [beamMode, setBeamMode] = useState(false);
   const [beamDraft, setBeamDraft] = useState<string[]>([]);
   const [connectDraft, setConnectDraft] = useState<ConnectDraft | null>(null);
@@ -470,12 +472,13 @@ export default function BuilderScene() {
         const id = api.addComponent(
           placingType,
           [snapToGrid(x), 0, snapToGrid(z)],
-          host ? { host: host.id } : undefined,
+          { ...(host ? { host: host.id } : {}), ...(placingSymbol ? { symbol: placingSymbol } : {}) },
         );
         setSelection([id]);
         setSelectedConnectionId(null);
         setSelectedFrameId(null);
         setPlacingType(null);
+        setPlacingSymbol(null);
         return;
       }
       setSelection([]);
@@ -484,7 +487,7 @@ export default function BuilderScene() {
       setSelectedConnectionId(null);
       setEmptyClicks((count) => count + 1);
     },
-    [addingStops, api, beamMode, connectDraft, drawing, placingType],
+    [addingStops, api, beamMode, connectDraft, drawing, placingType, placingSymbol],
   );
 
   const handleComponentPointerDown = useCallback(
@@ -1754,6 +1757,7 @@ export default function BuilderScene() {
         selectedConnection={selectedConnection}
         connectDraft={connectDraft}
         placingType={placingType}
+        placingSymbol={placingSymbol}
         trayOpen={trayOpen}
         beamMode={beamMode}
         drawingFrame={drawing !== null}
@@ -1776,12 +1780,13 @@ export default function BuilderScene() {
           setGroupPicking(false);
           setTrayOpen((open) => !open);
         }}
-        onPickType={(type) => {
+        onPickType={(type, symbol) => {
           // the panel stays open, so a run of parts goes down without reopening it
           cancelBeam();
           cancelConnect();
           cancelFrame();
           setPlacingType(type);
+          setPlacingSymbol(symbol ?? null);
         }}
         onCloseTray={() => setTrayOpen(false)}
         onDeselect={() => {

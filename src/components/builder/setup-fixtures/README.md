@@ -31,6 +31,8 @@ v13 is the first with a sample's stage style: v12's setup with the sample saved
 coloured, `"stageColor": "#8a6d3b"`; v1 to v12 open with every sample on the
 stage below it and every stage in the theme's colour. The first v13 builds (never released) saved a
 floating sample as `"stageHidden": true`, which still opens as `"none"`.
+v14 adds optional `symbol` on blocks. Its PDH example has every electronics
+symbol, including a larger scope, and leaves `size` out so symbol defaults apply.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

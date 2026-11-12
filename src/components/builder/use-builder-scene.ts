@@ -35,6 +35,7 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
+  type BlockSymbol,
   type Connection,
   type ConnectionKind,
   type Corner,
@@ -206,7 +207,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
      * `x` and `z` place it; it always starts at its default height. A
      * periscope comes with its top mirror, PERISCOPE_RISE_MM above it.
      */
-    (type: ComponentType, [x, , z]: Vec3, extra?: { label?: string; host?: string }): string => {
+    (type: ComponentType, [x, , z]: Vec3, extra?: { label?: string; host?: string; symbol?: BlockSymbol }): string => {
       const id = createComponentId(type);
       const top: BuilderComponent[] =
         type === "periscope"
