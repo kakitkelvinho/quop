@@ -47,7 +47,6 @@ import {
   type Beam,
   type BuilderComponent,
   type ComponentType,
-  type BlockSymbol,
   type Connection,
   type ConnectionKind,
   type Frame,
@@ -78,7 +77,6 @@ export type BuilderHudProps = {
   /** set while the Connect tool is on */
   connectDraft: ConnectDraft | null;
   placingType: ComponentType | null;
-  placingSymbol: BlockSymbol | null;
   trayOpen: boolean;
   beamMode: boolean;
   /** "Add a frame" is drawing one */
@@ -103,7 +101,7 @@ export type BuilderHudProps = {
   /** goes up on each plain click on empty table */
   emptyClicks: number;
   onToggleTray: () => void;
-  onPickType: (type: ComponentType, symbol?: BlockSymbol) => void;
+  onPickType: (type: ComponentType) => void;
   onCloseTray: () => void;
   onDeselect: () => void;
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
@@ -1698,7 +1696,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           old place in the page, so the stacking is today's. */}
       <div ref={panelLayerRef} className={`${PANEL_LAYER_CLASS}${panelsMove ? " is-on" : ""}`}>
         {panelsMove ? aboutPanels : null}
-        {trayOpen ? <PartsPanel placingType={placingType} placingSymbol={props.placingSymbol} onPick={props.onPickType} onClose={props.onCloseTray} /> : null}
+        {trayOpen ? <PartsPanel placingType={placingType} onPick={props.onPickType} onClose={props.onCloseTray} /> : null}
 
         {inspector ? (
           <aside
