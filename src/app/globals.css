@@ -5810,28 +5810,34 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
    under the eye; the corner menus and Share unfold a column along the edge.
    --------------------------------------------------------------------------- */
 
-/* a name floating over the table: no plate, a halo of the page so it reads on any part */
+/* a name floating over the table: no plate, but a scrim, as a game's HUD text
+   sits on: a soft oval of the page under it, strong at the middle and gone by
+   its edge, so the scene behind is evened out without a box. A background,
+   not a shadow or a blur (the HUD has neither). The padding is the scrim's
+   room; the placements below take it back, so the text sits where it would. */
 .showBoxes__name,
 .fanBoxes__name {
+  --scrim-x: 0.6rem;
+  --scrim-y: 0.4rem;
   position: absolute;
+  padding: var(--scrim-y) var(--scrim-x);
+  background: radial-gradient(
+    ellipse closest-side,
+    color-mix(in srgb, var(--background) 72%, transparent) 40%,
+    transparent
+  );
   color: var(--foreground);
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  /* a solid 1px outline of the page all round, then a soft glow: the name reads on any part, plateless */
+  /* and a 1px outline of the page, for the glyphs' own edges */
   text-shadow:
     1px 0 0 var(--background),
     -1px 0 0 var(--background),
     0 1px 0 var(--background),
-    0 -1px 0 var(--background),
-    1px 1px 0 var(--background),
-    -1px -1px 0 var(--background),
-    1px -1px 0 var(--background),
-    -1px 1px 0 var(--background),
-    0 0 5px var(--background),
-    0 0 9px var(--background);
+    0 -1px 0 var(--background);
   pointer-events: none;
 }
 
@@ -5890,7 +5896,7 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 .showBoxes__name {
-  top: calc(100% + 0.6rem);
+  top: calc(100% + 0.6rem - var(--scrim-y));
   left: 50%;
   translate: -50% 0;
 }
@@ -5996,12 +6002,12 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
 }
 
 .fanBoxes--tl .fanBoxes__name {
-  left: calc(100% + 0.9rem);
+  left: calc(100% + 0.9rem - var(--scrim-x));
 }
 
 .fanBoxes--tr .fanBoxes__name,
 .fanBoxes--br .fanBoxes__name {
-  right: calc(100% + 0.9rem);
+  right: calc(100% + 0.9rem - var(--scrim-x));
 }
 
 .fanBoxes__box.is-file .fanBoxes__name {

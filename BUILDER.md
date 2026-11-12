@@ -444,7 +444,7 @@ button each, in the spirit of a game's minimal HUD.
 **One menu idiom: boxes.** Every menu is made of the dock's own parts: square
 buttons, each in its own island (`builderIsland`), 0.6 rem apart as the QUOP
 and + islands are, each name floating beside its box with no plate, over the
-table (a 1 px outline of the page colour keeps it legible on any part). A box
+table (a scrim, a soft oval of the page colour fading to nothing, and a 1 px outline keep it legible on any part). A box
 that is on is pressed in, neutral, with a bar along its foot, as a rail slot
 whose list shows; the accent stays for what is live. The corner menus
 (`corner-fan.tsx`, `CornerFan` and `FanBoxes`) are columns that unfold from
