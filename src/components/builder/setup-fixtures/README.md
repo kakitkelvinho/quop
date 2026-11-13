@@ -33,6 +33,8 @@ stage below it and every stage in the theme's colour. The first v13 builds (neve
 floating sample as `"stageHidden": true`, which still opens as `"none"`.
 v14 adds optional `symbol` on blocks. Its PDH example has every electronics
 symbol, including a larger scope, and leaves `size` out so symbol defaults apply.
+v15 adds a standalone translation stage and gives the pickoff cube its
+`mountStage` id; v1 to v14 open with no standalone stages or attachments.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

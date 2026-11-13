@@ -24,6 +24,7 @@ const FIXTURES = [
   "setup-v12.json",
   "setup-v13.json",
   "setup-v14.json",
+  "setup-v15.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -87,6 +88,21 @@ for (const name of FIXTURES) {
 describe("setup-v2.json, the first version with heights", () => {
   it("keeps each component at the height it was saved at", () => {
     assert.equal(open("setup-v2.json").components.find(({ id }) => id === "cam")?.position[1], 125);
+  });
+});
+
+describe("setup-v15.json, the first version with a standalone translation stage", () => {
+  it("keeps the mounted optic and its stage through a save", () => {
+    const setup = open("setup-v15.json");
+    const stage = setup.components.find(({ id }) => id === "stage-pickoff");
+    const lens = setup.components.find(({ id }) => id === "pickoff");
+    assert.ok(stage);
+    assert.ok(lens);
+    assert.equal(stage.type, "translation-stage");
+    assert.equal(stage.position[1], 0);
+    assert.equal(lens.mountStage, stage.id);
+    assert.deepEqual([lens.position[0], lens.position[2]], [stage.position[0], stage.position[2]]);
+    assert.deepEqual(parseScene(JSON.parse(serializeScene(setup))), setup);
   });
 });
 
@@ -373,7 +389,7 @@ describe("setup-v11.json, the first version with labelScale", () => {
 describe("setup-v12.json, the first version with groups", () => {
   it("is saved exactly as it opens, but for the version", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
-    const saved = serializeScene(open("setup-v12.json")).replace('"version": 14,', '"version": 12,');
+    const saved = serializeScene(open("setup-v12.json")).replace('"version": 15,', '"version": 12,');
     assert.equal(`${saved}\n`, text);
   });
 
@@ -422,7 +438,7 @@ describe("setup-v13.json, the first version with a sample's stage style", () => 
 
   it("is saved exactly as it opens", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v13.json", import.meta.url), "utf8");
-    assert.equal(`${serializeScene(open("setup-v13.json")).replace('"version": 14,', '"version": 13,')}\n`, text);
+    assert.equal(`${serializeScene(open("setup-v13.json")).replace('"version": 15,', '"version": 13,')}\n`, text);
   });
 
   it("is v12's setup with the sample on a side stage, on its left, and the objective's stage coloured", () => {

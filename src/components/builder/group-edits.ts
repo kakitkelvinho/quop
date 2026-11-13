@@ -228,6 +228,7 @@ export function duplicateComponents(
     const host = source.host === undefined ? undefined : copyOf.get(source.host);
     if (host) copy.host = host;
     else delete copy.host;
+    if (source.mountStage !== undefined) copy.mountStage = copyOf.get(source.mountStage);
     if (source.periscope !== undefined) copy.periscope = copyOf.get(source.periscope);
     return copy;
   });

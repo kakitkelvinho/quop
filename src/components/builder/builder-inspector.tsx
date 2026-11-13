@@ -47,6 +47,7 @@ import {
   LIT_TYPES,
   ROTATION_STEP_DEG,
   SAMPLE_OPACITY_RANGE,
+  STAGE_MOUNTABLE_TYPES,
   clampHeight,
   heightRange,
   beamDisplayName,
@@ -630,6 +631,7 @@ export function ComponentInspector({
   partnerAngleBeam,
   onUpdate,
   onUpdateOther,
+  onSelectComponent,
   onCheckpoint,
   onRotate,
   onDuplicate,
@@ -647,6 +649,7 @@ export function ComponentInspector({
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
   /** edits another part: a periscope mirror's other mirror */
   onUpdateOther: (id: string, patch: ComponentPatch, record?: boolean) => void;
+  onSelectComponent: (id: string) => void;
   onCheckpoint: () => void;
   onRotate: (direction: 1 | -1) => void;
   onDuplicate: () => void;
@@ -656,6 +659,9 @@ export function ComponentInspector({
   const palette = useScenePalette();
   const [x, , z] = component.position;
   const host = component.host ? componentById(components, component.host) : undefined;
+  const mountedPart = component.type === "translation-stage"
+    ? components.find((part) => part.mountStage === component.id)
+    : undefined;
   // a periscope shows both its mirrors' heights, and its top mirror moves it by its lower one
   const partner = periscopePartner(components, component);
   const [lower, upper] = component.type === "periscope-top" ? [partner, component] : [component, partner];
@@ -693,7 +699,7 @@ export function ComponentInspector({
         <NumberField label="x" unit="mm" step={5} value={x} disabled={Boolean(host)} onChange={(next) => moveTo(next, z)} />
         <NumberField label="z" unit="mm" step={5} value={z} disabled={Boolean(host)} onChange={(next) => moveTo(x, next)} />
       </div>
-      {lower && upper ? (
+      {component.type === "translation-stage" ? null : lower && upper ? (
         <div className="builderFieldRow">
           <HeightField key={lower.id} component={lower} label="Bottom mirror" onChange={(height) => setHeight(lower, height)} />
           <HeightField key={upper.id} component={upper} label="Top mirror" onChange={(height) => setHeight(upper, height)} />
@@ -713,6 +719,34 @@ export function ComponentInspector({
           <button type="button" className="builderButton" onClick={() => onUpdate({ host: undefined })}>
             Take out
           </button>
+        </div>
+      ) : null}
+      {component.type === "translation-stage" ? (
+        <div className="builderInspector__host">
+          <span>Mounted part: <strong>{mountedPart ? componentDisplayName(mountedPart) : "None"}</strong></span>
+          {mountedPart ? <>
+            <button type="button" className="builderButton" onClick={() => onSelectComponent(mountedPart.id)}>Select</button>
+            <button type="button" className="builderButton" onClick={() => onUpdateOther(mountedPart.id, { mountStage: undefined })}>Detach</button>
+          </> : null}
+        </div>
+      ) : null}
+      {STAGE_MOUNTABLE_TYPES.has(component.type) && components.some((part) => part.type === "translation-stage") ? (
+        <div className="builderField">
+          <span className="builderField__label">Mount on stage</span>
+          <span className="builderField__control">
+            <select
+              aria-label="Mount on stage"
+              value={component.mountStage ?? ""}
+              onChange={(event) => onUpdate({ mountStage: event.target.value || undefined })}
+            >
+              <option value="">None</option>
+              {components.filter((part) => part.type === "translation-stage").map((stage) => {
+                const taken = components.some((part) => part.id !== component.id && part.mountStage === stage.id);
+                return <option key={stage.id} value={stage.id} disabled={taken}>{componentDisplayName(stage)}</option>;
+              })}
+            </select>
+          </span>
+          {component.mountStage ? <button type="button" className="builderButton" onClick={() => onSelectComponent(component.mountStage!)}>Select stage</button> : null}
         </div>
       ) : null}
       <YawRow
@@ -799,7 +833,7 @@ export function ComponentInspector({
           </span>
         </label>
       ) : null}
-      {hasStage(component) ? (
+      {hasStage(component) && !component.mountStage ? (
         <StageColorField component={component} onUpdate={onUpdate} onCheckpoint={onCheckpoint} />
       ) : null}
       {component.type === "sample" ? (
@@ -824,7 +858,7 @@ export function ComponentInspector({
             onBegin={onCheckpoint}
             onChange={(next) => onUpdate({ opacity: next }, false)}
           />
-          <SampleStageFields component={component} onUpdate={onUpdate} />
+          {!component.mountStage ? <SampleStageFields component={component} onUpdate={onUpdate} /> : null}
         </>
       ) : null}
       {component.type === "particle" ? (

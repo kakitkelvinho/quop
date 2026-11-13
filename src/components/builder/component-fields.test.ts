@@ -9,6 +9,7 @@ import {
   DELAY_MIN_PATH_RANGE_MM,
   DELAY_TRAVEL_RANGE_MM,
   type KindField,
+  STAGE_MOUNTABLE_TYPES,
   SCENE_VERSION,
   fieldValue,
   parseScene,
@@ -34,6 +35,7 @@ const GOOD: Record<KindField, unknown> = {
   opacity: 0.5,
   host: "host",
   periscope: "host",
+  mountStage: "host",
   delayMinPathMm: 120,
   delayTravelMm: 300,
   delayStageMm: 40,
@@ -50,6 +52,7 @@ const GOOD: Record<KindField, unknown> = {
 
 /** What a part refers to by id: a cavity for a particle's host, a periscope for its top mirror. */
 function partner(type: ComponentType): Record<string, unknown>[] {
+  if (STAGE_MOUNTABLE_TYPES.has(type)) return [{ id: "host", type: "translation-stage", position: [0, 0, 0], rotation: 0 }];
   if (type === "particle") return [{ id: "host", type: "cavity", position: [0, 100, 0], rotation: 0 }];
   if (type === "periscope-top") return [{ id: "host", type: "periscope", position: [0, 100, 0], rotation: 0 }];
   return [];
@@ -119,6 +122,7 @@ describe("COMPONENT_FIELDS", () => {
       opacity: "half",
       host: 7,
       periscope: ["host"],
+      mountStage: 7,
       delayMinPathMm: "50",
       delayTravelMm: {},
       delayStageMm: false,
@@ -166,7 +170,7 @@ describe("COMPONENT_FIELDS", () => {
 
   it("ignores a field in a file from before its version, and reads it from that version on", () => {
     const versioned = FIELDS.filter((field) => "since" in COMPONENT_FIELDS[field]);
-    assert.deepEqual(versioned, ["objectiveLength", "sampleStage", "stageColor", "sampleStageLeft", "symbol"]);
+    assert.deepEqual(versioned, ["objectiveLength", "mountStage", "sampleStage", "stageColor", "sampleStageLeft", "symbol"]);
     for (const field of versioned) {
       const { since } = COMPONENT_FIELDS[field] as { since: number };
       const extra = field === "sampleStageLeft" ? { sampleStage: "side", [field]: GOOD[field] } : { [field]: GOOD[field] };

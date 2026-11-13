@@ -240,6 +240,19 @@ stays perpendicular to the light through its port, on whichever side of the
 line it already faces, so turning it 180° by hand puts the rail on the other
 side.
 
+**A translation stage is a fixed mount.** The standalone translation stage in
+Other uses the same compact XY stage drawing as the one under an objective. It
+stands on the table and has no travel or carriage control; it adds nothing to
+a beam's path. Place the stage, then select a mirror, beam cube, lens,
+waveplate, filter, iris, fibre collimator, objective or sample and choose it in
+**Mount on stage**. The optic moves over the stage, keeps its height and yaw,
+and uses the stage instead of its own post or built-in stage. One stage carries
+one optic. Moving the stage or the optic moves the pair; turning the stage
+turns the optic with it, while the optic can still turn on its own. The stage's
+inspector names its mounted part and offers Select and Detach; deleting the
+stage leaves the optic where it stood. Attachments are saved in the setup as
+the optic's `mountStage` id.
+
 **Light inside a part.** A cavity's mode and a delay line's internal beam
 (a faint glow from its fold mirrors down to the carriage and back,
 which follows the carriage) are drawn in the same red by default. Each part's inspector can
@@ -624,6 +637,7 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
 | Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
 | Slide a delay line's stage | Select it and drag the bubble on its carriage's thumbscrew along the rail, or set Position in its inspector |
+| Mount an optic on a translation stage | Place the stage from Other, select the optic, then choose the stage under Mount on stage in its inspector |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | + → Beam at the top left, or the empty Beams slot on the rail; click parts in order, `Enter`. The + (or the slot) pressed again stops |
 | Select a beam | Click its row in the beams box, bottom left |

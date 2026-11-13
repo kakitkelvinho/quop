@@ -109,6 +109,7 @@ export type BuilderHudProps = {
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   /** any one part by id: a periscope mirror's inspector edits its other mirror too */
   onUpdateComponent: (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
+  onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
@@ -1390,6 +1391,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         partnerAngleBeam={partnerAngleBeam(components, beams, selected[0])}
         onUpdate={props.onUpdateSelected}
         onUpdateOther={props.onUpdateComponent}
+        onSelectComponent={props.onSelectComponent}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}

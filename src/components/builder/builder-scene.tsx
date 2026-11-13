@@ -495,15 +495,18 @@ export default function BuilderScene() {
       // middle and right drags orbit the camera, even when they start on a part;
       // while a frame is drawn, a click on a part puts a corner on the table under it
       if (event.nativeEvent.button !== 0 || drawing) return;
+      const pressed = componentById(sceneRef.current.components, id);
+      if (!pressed) return;
       if (beamMode) {
+        if (pressed.type === "translation-stage") {
+          announce("A translation stage is a mount, not a beam stop.");
+          return;
+        }
         setBeamDraft((current) =>
           current[current.length - 1] === id ? current : [...current, id],
         );
         return;
       }
-      const pressed = componentById(sceneRef.current.components, id);
-      if (!pressed) return;
-
       if (connectDraft) {
         // an undo may have taken away the part clicked first; then this click starts over
         const from = connectDraft.from && componentById(sceneRef.current.components, connectDraft.from);
@@ -520,6 +523,10 @@ export default function BuilderScene() {
       }
 
       if (addingStops && selectedBeamId) {
+        if (pressed.type === "translation-stage") {
+          announce("A translation stage is a mount, not a beam stop.");
+          return;
+        }
         // onto the end, in click order, one undo step per stop
         const beam = sceneRef.current.beams.find((entry) => entry.id === selectedBeamId);
         if (!beam) return;
@@ -1797,6 +1804,12 @@ export default function BuilderScene() {
         }}
         onUpdateSelected={updateSelected}
         onUpdateComponent={api.updateComponent}
+        onSelectComponent={(id) => {
+          setSelection([id]);
+          setSelectedBeamId(null);
+          setSelectedFrameId(null);
+          setSelectedConnectionId(null);
+        }}
         onRotateSelected={rotateSelected}
         onDuplicateSelected={duplicateSelected}
         onDeleteSelected={deleteSelected}
