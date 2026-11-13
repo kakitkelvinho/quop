@@ -49,9 +49,11 @@ import {
   delayArmMm,
   delayRailMm,
   fieldValue,
+  stageAxes,
   type BuilderComponent,
   type ComponentType,
   type LensShape,
+  type StageAxisSelection,
   type BlockSymbol,
   type Vec3,
 } from "@/components/builder/types";
@@ -114,6 +116,7 @@ type ModelProps = { palette: ScenePalette; color?: string; axis: number };
  * it through to their `Pillar`.
  */
 const PostsVisible = createContext(true);
+const MountedOnStage = createContext<number | null>(null);
 
 /** Glow and the parts inside a host must not catch the pointer. */
 const NO_RAYCAST = () => null;
@@ -298,15 +301,18 @@ const PILLAR_RADIUS = 9;
 const PILLAR_BASE_HEIGHT = 6;
 
 function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
-  const length = Math.max(1, top - PILLAR_BASE_HEIGHT);
+  const mountedHeight = useContext(MountedOnStage);
+  const mounted = mountedHeight !== null;
+  const base = mountedHeight ?? PILLAR_BASE_HEIGHT;
+  const length = Math.max(1, top - base);
   if (!useContext(PostsVisible)) return null;
   return (
     <group>
-      <mesh position={[0, PILLAR_BASE_HEIGHT / 2, 0]}>
+      {!mounted ? <mesh position={[0, PILLAR_BASE_HEIGHT / 2, 0]}>
         <cylinderGeometry args={[13, 14.5, PILLAR_BASE_HEIGHT, 36]} />
         <Enamel color={palette.post} />
-      </mesh>
-      <mesh position={[0, PILLAR_BASE_HEIGHT + length / 2, 0]}>
+      </mesh> : null}
+      <mesh position={[0, base + length / 2, 0]}>
         <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
         <Enamel color={palette.post} />
       </mesh>
@@ -319,15 +325,18 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
  * hide the glass, and the rod still makes the height read as a post.
  */
 function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
+  const mountedHeight = useContext(MountedOnStage);
+  const mounted = mountedHeight !== null;
+  const base = mountedHeight ?? 0;
   if (!useContext(PostsVisible)) return null;
   return (
     <group>
-      <mesh position={[0, 2.5, 0]}>
+      {!mounted ? <mesh position={[0, 2.5, 0]}>
         <cylinderGeometry args={[9.5, 11, 5, 28]} />
         <Hardware palette={palette} />
-      </mesh>
-      <mesh position={[0, top / 2, 0]}>
-        <cylinderGeometry args={[3, 3, top, 16]} />
+      </mesh> : null}
+      <mesh position={[0, (base + top) / 2, 0]}>
+        <cylinderGeometry args={[3, 3, Math.max(1, top - base), 16]} />
         <Hardware palette={palette} />
       </mesh>
       {/* the collar that grips the lens edge */}
@@ -360,8 +369,12 @@ const STAGE_HOLE_PITCH = 15;
 export type StageAxes = 2 | 3;
 
 /** How tall a stage with this many axes stands, mm: base plus one plate per axis. */
-export function stageHeight(axes: StageAxes): number {
+export function stageHeight(axes: 1 | StageAxes): number {
   return STAGE_BASE_MM + axes * STAGE_PLATE_MM;
+}
+
+function standaloneStageHeight(stage: BuilderComponent): number {
+  return stageHeight(stageAxes(stage).length as 1 | StageAxes);
 }
 
 /**
@@ -407,10 +420,12 @@ function StageSeam({ palette }: { palette: ScenePalette }) {
   return <meshStandardMaterial color={palette.stageSeam} roughness={0.35} metalness={0.5} />;
 }
 
-function TranslationStage({ palette, axes, color }: { palette: ScenePalette; axes: StageAxes; color: string }) {
-  if (!useContext(PostsVisible)) return null;
+function TranslationStage({ palette, axes, color, standalone = false }: { palette: ScenePalette; axes: StageAxes | StageAxisSelection; color: string; standalone?: boolean }) {
+  const posts = useContext(PostsVisible);
+  if (!posts && !standalone) return null;
+  const enabled = typeof axes === "number" ? (axes === 2 ? "xy" : "xyz") : axes;
   const half = STAGE_SIZE / 2;
-  const top = stageHeight(axes);
+  const top = stageHeight(enabled.length as 1 | StageAxes);
   // carriage n (0 = X, 1 = Y, 2 = Z) sits on the base, one plate above another
   const carriageY = (index: number) => STAGE_BASE_MM + (index + 0.5) * STAGE_PLATE_MM;
   return (
@@ -423,7 +438,7 @@ function TranslationStage({ palette, axes, color }: { palette: ScenePalette; axe
       >
         <StageFinish color={color} />
       </RoundedBox>
-      {Array.from({ length: axes }, (_, index) => (
+      {Array.from({ length: enabled.length }, (_, index) => (
         <RoundedBox
           key={index}
           args={[STAGE_SIZE, STAGE_PLATE_MM - 0.8, STAGE_SIZE]}
@@ -435,7 +450,7 @@ function TranslationStage({ palette, axes, color }: { palette: ScenePalette; axe
         </RoundedBox>
       ))}
       {/* the bearing gap under each carriage: a bright seam that splits the stack into plates */}
-      {Array.from({ length: axes }, (_, index) => (
+      {Array.from({ length: enabled.length }, (_, index) => (
         <mesh key={`seam${index}`} position={[0, STAGE_BASE_MM + index * STAGE_PLATE_MM + 0.4, 0]}>
           <boxGeometry args={[STAGE_SIZE - 0.6, 0.8, STAGE_SIZE - 0.6]} />
           <StageSeam palette={palette} />
@@ -459,13 +474,13 @@ function TranslationStage({ palette, axes, color }: { palette: ScenePalette; axe
         <meshBasicMaterial color="#0b0d10" />
       </mesh>
       {/* X out of the -x side, Y out of the +z side, each at its own carriage */}
-      <group position={[-half, carriageY(0), 4]} rotation={[0, Math.PI, 0]}>
+      {enabled.includes("x") ? <group position={[-half, carriageY(enabled.indexOf("x")), 4]} rotation={[0, Math.PI, 0]}>
         <Micrometer palette={palette} />
-      </group>
-      <group position={[-4, carriageY(1), half]} rotation={[0, -Math.PI / 2, 0]}>
+      </group> : null}
+      {enabled.includes("y") ? <group position={[-4, carriageY(enabled.indexOf("y")), half]} rotation={[0, -Math.PI / 2, 0]}>
         <Micrometer palette={palette} />
-      </group>
-      {axes === 3 ? (
+      </group> : null}
+      {enabled.includes("z") ? (
         // Z stands upright on a corner, away from the post in the middle
         <group position={[half - 7, top, -(half - 7)]} rotation={[0, 0, Math.PI / 2]}>
           <Micrometer palette={palette} />
@@ -511,6 +526,8 @@ function StageBase({
   top: number;
   fallback: ReactNode;
 }) {
+  const mountedHeight = useContext(MountedOnStage);
+  if (mountedHeight !== null) return <StagePost palette={palette} from={mountedHeight} top={top} />;
   const from = stageHeight(axes);
   if (top < from) return <>{fallback}</>;
   return (
@@ -1435,12 +1452,15 @@ function Sample({
   left: boolean;
   stageColor: string;
 }) {
+  const mountedHeight = useContext(MountedOnStage);
+  const mounted = mountedHeight !== null;
   return (
     <group>
+      {mountedHeight !== null ? <StagePost palette={palette} from={mountedHeight} top={axis - 14} /> : null}
       {/* the sample's own choice, drawn whatever the Posts toggle says */}
       <PostsVisible.Provider value>
-        {stage === "below" ? <SampleStageBelow palette={palette} axis={axis} color={stageColor} /> : null}
-        {stage === "side" ? <SampleStageSide palette={palette} axis={axis} left={left} color={stageColor} /> : null}
+        {!mounted && stage === "below" ? <SampleStageBelow palette={palette} axis={axis} color={stageColor} /> : null}
+        {!mounted && stage === "side" ? <SampleStageSide palette={palette} axis={axis} left={left} color={stageColor} /> : null}
       </PostsVisible.Provider>
       <mesh position={[0, axis, 0]}>
         <boxGeometry args={[3, OPTIC_D, OPTIC_D]} />
@@ -2297,6 +2317,8 @@ export type ComponentMeshProps = {
   stubTaken?: boolean;
   /** a periscope mirror's other mirror, if it has one */
   partner?: BuilderComponent;
+  /** the standalone stage carrying this optic, if any */
+  mountedStage?: BuilderComponent;
   /** drawn faint, as a member of a faded group */
   faded?: boolean;
   /**
@@ -2318,9 +2340,10 @@ function modelSignature(
   showPosts: boolean,
   stubTaken: boolean,
   hasPartner: boolean,
+  mountedHeight: number | null,
 ): string {
   const placed = { ...component, position: component.position[1], rotation: component.symbol ? component.rotation : undefined };
-  return JSON.stringify([placed, showPosts, stubTaken, hasPartner]);
+  return JSON.stringify([placed, showPosts, stubTaken, hasPartner, mountedHeight]);
 }
 
 /** What a model is drawn from beyond the component itself. */
@@ -2405,6 +2428,9 @@ const COMPONENT_MODELS: Record<
       light={innerLight(component)}
     />
   ),
+  "translation-stage": (component, { modelProps: { palette } }) => (
+    <TranslationStage palette={palette} axes={stageAxes(component)} color={component.stageColor ?? palette.stage} standalone />
+  ),
   periscope: (component, { modelProps, partner }) => (
     <>
       <PeriscopeStand
@@ -2435,6 +2461,7 @@ export const ComponentMesh = memo(function ComponentMesh({
   beamOrder,
   stubTaken = false,
   partner,
+  mountedStage,
   faded = false,
   onPointerDown,
   onPointerOver,
@@ -2443,6 +2470,7 @@ export const ComponentMesh = memo(function ComponentMesh({
   const top = componentTop(component);
   const radius = componentRadius(component);
   const [x, axis, z] = component.position;
+  const mountedHeight = mountedStage?.type === "translation-stage" ? standaloneStageHeight(mountedStage) : null;
   const modelProps = useMemo<ModelProps>(
     () => ({ palette, color: component.color, axis }),
     [palette, component.color, axis],
@@ -2452,7 +2480,7 @@ export const ComponentMesh = memo(function ComponentMesh({
   // flat selection rings don't (a transmissive optic throwing a solid shadow
   // is exactly the fake look the glass is there to avoid).
   const group = useRef<Group>(null);
-  const signature = modelSignature(component, showPosts, stubTaken, partner !== undefined);
+  const signature = modelSignature(component, showPosts, stubTaken, partner !== undefined, mountedHeight);
   useLayoutEffect(() => {
     group.current?.traverse((object) => {
       if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
@@ -2521,7 +2549,9 @@ export const ComponentMesh = memo(function ComponentMesh({
     >
       {/* the group stands at the part's port; its body is drawn behind it */}
       <group position={[-componentReferenceX(component), 0, 0]}>
-        {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken, partner })}
+        <MountedOnStage.Provider value={mountedHeight}>
+          {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken, partner })}
+        </MountedOnStage.Provider>
 
         {hovered && !selected ? (
           <HoverRing radius={radius} color={palette.hover} />

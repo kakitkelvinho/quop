@@ -73,6 +73,9 @@ _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 A translation stage with a V of two mirrors on its carriage, standing across a beam line: two fold mirrors at its port send the light down the rail to the carriage's mirrors, across and back, and it leaves along the line it came in on. The beam is drawn through its port; its minimum delay (the path with the stage at 0, not drawn, like a laser's built-in path) plus twice its position (how far the stage has travelled) is added to the beam's path length.
 _Avoid_: delay stage, translation stage, retro
 
+**Translation stage**:
+A fixed visual mount for one optic, placed separately on the table. Its selected X, Y and Z axes determine the visible plates and thumbscrews, not travel. Moving or turning it carries the mounted optic. It adds no beam path length; use a delay line for optical delay.
+
 **Periscope**:
 A pair of mirrors on one rod that takes a beam up or down to a new height: a lower mirror and a top mirror straight above it, each its own component and its own stop on a beam. They move, copy and go together.
 _Avoid_: beam elevator, riser

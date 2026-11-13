@@ -109,12 +109,14 @@ export type BuilderHudProps = {
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   /** any one part by id: a periscope mirror's inspector edits its other mirror too */
   onUpdateComponent: (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
+  onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
   /** several parts: one height for all, or one mount colour for those with a mount */
   onSetSelectedHeight: (height: number) => void;
   onSetSelectedMountColor: (color: string) => void;
+  onSetStageMount: (opticId: string, stageId: string | undefined) => void;
   onStartBeam: () => void;
   onFinishBeam: () => void;
   onCancelBeam: () => void;
@@ -1359,11 +1361,13 @@ export default function BuilderHud(props: BuilderHudProps) {
     inspector = (
       <GroupInspector
         selected={selected}
+        allComponents={components}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
         onSetHeight={props.onSetSelectedHeight}
         onSetMountColor={props.onSetSelectedMountColor}
+        onSetStageMount={props.onSetStageMount}
         group={selectedGroup({ components, groups: props.groups }, selected.map((component) => component.id))}
         canGroup={!drawingFrame && !placingType}
         onGroup={props.onGroupSelected}
@@ -1390,6 +1394,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         partnerAngleBeam={partnerAngleBeam(components, beams, selected[0])}
         onUpdate={props.onUpdateSelected}
         onUpdateOther={props.onUpdateComponent}
+        onSelectComponent={props.onSelectComponent}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
