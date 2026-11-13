@@ -28,6 +28,7 @@ import {
   settleAngles,
   settleHosts,
   settleStageMounts,
+  setStageMount as setStageMountInScene,
   settlePeriscopes,
   snapToGrid,
   clampHeight,
@@ -248,6 +249,12 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       else preview(apply);
     },
     [commit, preview],
+  );
+
+  const setStageMount = useCallback(
+    (opticId: string, stageId: string | undefined) =>
+      commit((current) => setStageMountInScene(current, opticId, stageId)),
+    [commit],
   );
 
   const moveComponent = useCallback(
@@ -588,6 +595,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       commitCheckpoint,
       addComponent,
       updateComponent,
+      setStageMount,
       moveComponent,
       translateComponents,
       nudgeComponents,
@@ -632,6 +640,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       commitCheckpoint,
       addComponent,
       updateComponent,
+      setStageMount,
       moveComponent,
       translateComponents,
       nudgeComponents,

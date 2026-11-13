@@ -48,6 +48,9 @@ import {
   ROTATION_STEP_DEG,
   SAMPLE_OPACITY_RANGE,
   STAGE_MOUNTABLE_TYPES,
+  stageAxes,
+  toggleStageAxis,
+  type StageAxis,
   clampHeight,
   heightRange,
   beamDisplayName,
@@ -730,6 +733,33 @@ export function ComponentInspector({
           </> : null}
         </div>
       ) : null}
+      {component.type === "translation-stage" && !mountedPart ? (
+        <p className="builderInspector__hint">Ctrl/⌘ click a compatible optic to select both, then press Mount.</p>
+      ) : null}
+      {component.type === "translation-stage" ? (
+        <div className="builderField">
+          <span className="builderField__label" id={`stage-axes-${component.id}`}>Axes</span>
+          <div className="builderChoice builderChoice--three" role="group" aria-labelledby={`stage-axes-${component.id}`}>
+            {(["x", "y", "z"] as const).map((axis: StageAxis) => {
+              const selected = stageAxes(component);
+              const next = toggleStageAxis(selected, axis);
+              return (
+                <button
+                  key={axis}
+                  type="button"
+                  className="builderButton"
+                  aria-pressed={selected.includes(axis)}
+                  disabled={next === selected}
+                  onClick={() => onUpdate({ stageAxes: next === "xy" ? undefined : next })}
+                >
+                  {axis.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+          <p className="builderInspector__hint">X and Y run across the table; Z stands upright.</p>
+        </div>
+      ) : null}
       {STAGE_MOUNTABLE_TYPES.has(component.type) && components.some((part) => part.type === "translation-stage") ? (
         <div className="builderField">
           <span className="builderField__label">Mount on stage</span>
@@ -969,11 +999,13 @@ export function ComponentInspector({
  */
 export function GroupInspector({
   selected,
+  allComponents,
   onRotate,
   onDuplicate,
   onDelete,
   onSetHeight,
   onSetMountColor,
+  onSetStageMount,
   group,
   canGroup,
   onGroup,
@@ -983,11 +1015,13 @@ export function GroupInspector({
   groupsMenu,
 }: {
   selected: BuilderComponent[];
+  allComponents: BuilderComponent[];
   onRotate: (direction: 1 | -1) => void;
   onDuplicate: () => void;
   onDelete: () => void;
   onSetHeight: (height: number) => void;
   onSetMountColor: (color: string) => void;
+  onSetStageMount: (opticId: string, stageId: string | undefined) => void;
   /** the group these parts are, exactly, if any: Ungroup in place of Group */
   group: Group | null;
   /** false while a tool (a beam, a frame, a part to place) holds the table, as for ⌘G */
@@ -1008,6 +1042,10 @@ export function GroupInspector({
   const max = Math.max(...ranges.map(([, high]) => high));
   const mounted = selected.filter((component) => MOUNTED_TYPES.has(component.type));
   const mountColors = new Set(mounted.map((component) => component.color ?? DEFAULT_MOUNT_COLOR));
+  const selectedStage = selected.length === 2 ? selected.find((component) => component.type === "translation-stage") : undefined;
+  const selectedOptic = selected.length === 2 ? selected.find((component) => STAGE_MOUNTABLE_TYPES.has(component.type)) : undefined;
+  const pairAttached = selectedOptic?.mountStage === selectedStage?.id;
+  const stageTaken = selectedStage && allComponents.some((component) => component.id !== selectedOptic?.id && component.mountStage === selectedStage.id);
 
   return (
     <div className="builderInspector">
@@ -1023,6 +1061,20 @@ export function GroupInspector({
           <IconButton icon="rotateRight" label="Rotate +15° (R)" onClick={() => onRotate(1)} />
         </span>
       </div>
+      {selectedStage && selectedOptic ? (
+        <div className="builderInspector__turn">
+          <span>Optic on stage</span>
+          <button
+            type="button"
+            className="builderButton"
+            disabled={!canGroup || Boolean(stageTaken)}
+            title={stageTaken ? "This stage already carries another optic" : pairAttached ? "Detach the optic from this stage" : "Mount the optic on this stage"}
+            onClick={() => onSetStageMount(selectedOptic.id, pairAttached ? undefined : selectedStage.id)}
+          >
+            {pairAttached ? "Detach" : "Mount"}
+          </button>
+        </div>
+      ) : null}
       <div className="builderInspector__turn">
         {group ? (
           <>

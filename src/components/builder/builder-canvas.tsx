@@ -1398,6 +1398,7 @@ export default function BuilderCanvas({
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
           partner={partner}
+          mountedStage={component.mountStage ? componentById(components, component.mountStage) : undefined}
           faded={shown.faded.has(component.id)}
           onPointerDown={handlePartDown}
           onPointerOver={handlePartOver}

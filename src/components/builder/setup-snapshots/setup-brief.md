@@ -22,7 +22,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 - A **laser** or **fibre collimator** emits along its own +x: rotation 0 fires toward +x, 90 toward −z, 180 toward −x, 270 toward +z.
 - A part the beam passes through (a lens, waveplate, filter, iris, sample, objective, AOM, EOM, Faraday isolator or cavity) has its optical axis along its own x: rotation 0 for a beam along x, 90 for a beam along z. A **Faraday isolator** lets light through travelling along its +x, and its rejection port is on its +z side: draw light leaving that port as its own beam, starting at the isolator.
 - A **delay line** stands across a beam line: its port, at its position, holds two fold mirrors on the line that send the light down the rail to a V of two mirrors on the carriage, across and back, so it leaves along the line it came in on. Put it in the middle of a straight beam, `[..., "m1", "delay", "m2", ...]` with m1, delay and m2 in a line, and the builder turns it so its rail (along its −x) is perpendicular to the beam, on the side its rotation already faces: rotation 90 puts the rail toward +z, 270 toward −z, for a beam along x. The beam is drawn through the port; `delayMinPathMm` plus twice `delayStageMm` is added to its path length.
-- A **translation stage** is a fixed visual mount on the table, separate from the delay line. Give a supported optic its id as `mountStage` to place the optic over it. Moving or turning the stage carries the optic; the stage adds no beam path length and has no travel setting. Only one optic can use each stage.
+- A **translation stage** is a fixed visual mount on the table, separate from the delay line. Give a supported optic its id as `mountStage` to place the optic over it. Moving or turning the stage carries the optic; the stage adds no beam path length and has no travel setting. Only one optic can use each stage. Its optional `stageAxes` chooses the visible plates and thumbscrews, not motion.
 - A **periscope** is two parts: a `periscope` (its lower mirror, on the rod) and a `periscope-top` (its upper mirror) whose `periscope` field names it. Give both the same x and z and their own heights, and put both in the beam's path, one after the other: `[..., "peri", "peri-top", ...]`. The beam runs straight up (or down) between them, and that rise counts in its path length. Each mirror is turned by the builder to face its neighbour off to the side, like a mirror in the middle of a beam. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the rotation of the beam's direction of travel.
 - A **mirror** in the middle of a beam, and a **photodiode**, **camera**, **spectrometer** or **single-photon detector** at the end of one, are turned by the builder: the mirror to reflect the beam from the stop before it to the stop after, the detector to face the stop before it. Any rotation you write for them is replaced, so 0 will do. A mirror at either end of a path keeps the rotation you give it; its reflecting face looks along its +x.
 - A **beam cube**'s reflecting diagonal runs from its −x−z corner to its +x+z corner: at rotation 0, light travelling +x carries on along +x and is reflected toward +z; at rotation 90, light travelling +x is reflected toward −z. Draw the reflected arm as its own beam, starting at the cube.
@@ -31,7 +31,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 15. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 16. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: the light paths, in order. The first beam through a mirror sets its angle.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -67,6 +67,7 @@ Some types read fields of their own; leave them out to take the default:
 - `lightHidden` (`cavity` and `delay-line` only): `true` leaves the light inside it out of the drawing; leave it out otherwise.
 - `sampleStage` (`sample` only): `"side"` draws its XYZ stage beside it, across the beam, holding it on an arm; `"none"` draws it floating. Leave it out for the default, the stage under it on a post.
 - `stageColor` (`objective`, `sample` and `translation-stage` only): a hex colour for a stage's plates (the micrometers stay silver). On an objective or sample this colours its built-in stage; on a `translation-stage` it colours the standalone mount. Leave it out for the theme's own: near-black by day, dark grey at night.
+- `stageAxes` (`translation-stage` only): the axes drawn on a standalone translation stage: `x`, `y`, `z`, `xy` (the default), `xz`, `yz` or `xyz`. Each selected axis adds its plate and thumbscrew. X and Y lie along the table; Z is vertical. This only changes the hardware drawing, not optical path length or travel.
 - `sampleStageLeft` (`sample` only): `true` puts a `"side"` stage on the sample's left (−z, looking along +x) instead of its right; leave it out otherwise.
 - `particleRadius` (`particle` only): mm, 0.5–15; default 3.
 - `size` (`block` only): `[along x, height, along z]`, mm, each 2–300; default `[30,30,30]` for a plain block, `[60,30,60]` with a symbol, or `[200,120,120]` for a scope. Its height (y) is the block's centre, so one resting on the table has y = half its height.
@@ -174,7 +175,7 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 ### Other
 
-- `translation-stage`: Translation stage. Height fixed at 0 mm. Its own fields: `stageColor`.
+- `translation-stage`: Translation stage. Height fixed at 0 mm. Its own fields: `stageColor`, `stageAxes`.
 - `block`: Block. Height 15–300 mm; a new plain block starts at 100 mm, a symbol tile at 15 mm, and a scope at 60 mm. Its own fields: `size`, `symbol`.
 
 ## Example
@@ -183,7 +184,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 15,
+  "version": 16,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "rotation": 0, "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "rotation": 135, "color": "#8b1e3f", "label": "M1" },
@@ -207,7 +208,7 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 
 ```json
 {
-  "version": 15,
+  "version": 16,
   "components": [
     { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "rotation": 0 },
     { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "rotation": 0 }

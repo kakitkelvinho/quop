@@ -116,6 +116,7 @@ export type BuilderHudProps = {
   /** several parts: one height for all, or one mount colour for those with a mount */
   onSetSelectedHeight: (height: number) => void;
   onSetSelectedMountColor: (color: string) => void;
+  onSetStageMount: (opticId: string, stageId: string | undefined) => void;
   onStartBeam: () => void;
   onFinishBeam: () => void;
   onCancelBeam: () => void;
@@ -1360,11 +1361,13 @@ export default function BuilderHud(props: BuilderHudProps) {
     inspector = (
       <GroupInspector
         selected={selected}
+        allComponents={components}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
         onSetHeight={props.onSetSelectedHeight}
         onSetMountColor={props.onSetSelectedMountColor}
+        onSetStageMount={props.onSetStageMount}
         group={selectedGroup({ components, groups: props.groups }, selected.map((component) => component.id))}
         canGroup={!drawingFrame && !placingType}
         onGroup={props.onGroupSelected}

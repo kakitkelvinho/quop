@@ -52,6 +52,22 @@ export type ComponentType =
 
 export type LensShape = "plano-convex" | "biconvex";
 
+export const STAGE_AXIS_OPTIONS = ["x", "y", "z", "xy", "xz", "yz", "xyz"] as const;
+export type StageAxis = "x" | "y" | "z";
+export type StageAxisSelection = (typeof STAGE_AXIS_OPTIONS)[number];
+
+/** A standalone stage starts as XY; at least one axis stays selected. */
+export function stageAxes(component: BuilderComponent): StageAxisSelection {
+  return component.stageAxes ?? "xy";
+}
+
+export function toggleStageAxis(current: StageAxisSelection, axis: StageAxis): StageAxisSelection {
+  const next = (["x", "y", "z"] as const).filter((candidate) =>
+    candidate === axis ? !current.includes(candidate) : current.includes(candidate),
+  ).join("");
+  return (next || current) as StageAxisSelection;
+}
+
 export const BLOCK_SYMBOLS = ["rf-source", "mixer", "amplifier", "low-pass", "high-pass", "band-pass", "phase-shifter", "sum", "pid", "splitter", "bias-tee", "scope", "driver"] as const;
 export type BlockSymbol = (typeof BLOCK_SYMBOLS)[number];
 export const SYMBOL_BLOCK_SIZE_MM: Vec3 = [60, 30, 60];
@@ -113,6 +129,8 @@ export type BuilderComponent = {
    * only when set. Missing in setups from before version 13.
    */
   stageColor?: string;
+  /** standalone translation stage only: visible hardware axes; missing means XY */
+  stageAxes?: StageAxisSelection;
   /** an optic's fixed visual mount; its x/z follows this stage */
   mountStage?: string;
   label?: string;
@@ -251,7 +269,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 15 as const;
+export const SCENE_VERSION = 16 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -619,7 +637,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 0,
     fixedHeight: 0,
     radius: 39,
-    fields: ["stageColor"],
+    fields: ["stageColor", "stageAxes"],
     staged: true,
   },
 };
@@ -876,6 +894,11 @@ export const COMPONENT_FIELDS = {
     since: 13,
     brief:
       "a hex colour for a stage's plates (the micrometers stay silver). On an objective or sample this colours its built-in stage; on a `translation-stage` it colours the standalone mount. Leave it out for the theme's own: near-black by day, dark grey at night.",
+  },
+  stageAxes: {
+    read: { as: "enum", options: STAGE_AXIS_OPTIONS },
+    since: 16,
+    brief: "the axes drawn on a standalone translation stage: `x`, `y`, `z`, `xy` (the default), `xz`, `yz` or `xyz`. Each selected axis adds its plate and thumbscrew. X and Y lie along the table; Z is vertical. This only changes the hardware drawing, not optical path length or travel.",
   },
   sampleStageLeft: {
     read: { as: "with", field: "sampleStage" },
@@ -1330,6 +1353,21 @@ export function settleStageMounts(previous: BuilderSceneData | null, scene: Buil
   });
   const synced = components.map((part) => part.type === "translation-stage" ? stages.get(part.id)! : part);
   return changed || synced.some((part, index) => part !== scene.components[index]) ? { ...scene, components: synced } : scene;
+}
+
+/** Attach or detach one optic in a single edit. An occupied stage is left alone. */
+export function setStageMount(scene: BuilderSceneData, opticId: string, stageId: string | undefined): BuilderSceneData {
+  const optic = componentById(scene.components, opticId);
+  if (!optic || !STAGE_MOUNTABLE_TYPES.has(optic.type) || optic.mountStage === stageId) return scene;
+  if (stageId !== undefined) {
+    const stage = componentById(scene.components, stageId);
+    if (stage?.type !== "translation-stage") return scene;
+    if (scene.components.some((part) => part.id !== opticId && part.mountStage === stageId)) return scene;
+  }
+  return {
+    ...scene,
+    components: scene.components.map((part) => part.id === opticId ? { ...part, mountStage: stageId } : part),
+  };
 }
 
 /**
@@ -2266,7 +2304,8 @@ export function labelText(raw: unknown): string | undefined {
  * those from before version 11 open with labels at their standard size;
  * those from before version 12 have no groups and open with none;
  * those from before version 13 open with every sample on its stage;
- * those from before version 15 have no standalone translation stages or mounts.
+ * those from before version 15 have no standalone translation stages or mounts;
+ * those from before version 16 draw every standalone stage with XY axes.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;

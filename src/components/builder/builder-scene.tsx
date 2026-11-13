@@ -1815,6 +1815,12 @@ export default function BuilderScene() {
         onDeleteSelected={deleteSelected}
         onSetSelectedHeight={(height) => api.setComponentsHeight(selectedIds, height)}
         onSetSelectedMountColor={(color) => api.setMountColor(selectedIds, color)}
+        onSetStageMount={(opticId, stageId) => {
+          api.setStageMount(opticId, stageId);
+          const optic = componentById(sceneRef.current.components, opticId);
+          const stage = stageId && componentById(sceneRef.current.components, stageId);
+          if (optic) announce(stage ? `${componentDisplayName(optic)} mounted on ${componentDisplayName(stage)}.` : `${componentDisplayName(optic)} detached from its stage.`);
+        }}
         onStartBeam={startBeam}
         onFinishBeam={finishBeam}
         onCancelBeam={cancelBeam}

@@ -166,7 +166,7 @@ describe("the kind table", () => {
       block: ["size", "symbol"],
       "periscope-top": ["periscope"],
       "delay-line": ["delayMinPathMm", "delayStageMm", "delayTravelMm", "lightColor", "lightHidden"],
-      "translation-stage": ["stageColor"],
+      "translation-stage": ["stageAxes", "stageColor"],
     });
   });
 

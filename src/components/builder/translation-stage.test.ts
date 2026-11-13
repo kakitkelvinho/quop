@@ -8,7 +8,10 @@ import {
   EMPTY_SCENE,
   parseScene,
   serializeScene,
+  setStageMount,
   settleStageMounts,
+  stageAxes,
+  toggleStageAxis,
   type BuilderComponent,
   type BuilderSceneData,
 } from "./types.ts";
@@ -18,6 +21,42 @@ const lens: BuilderComponent = { id: "lens", type: "lens", position: [100, 100, 
 const scene: BuilderSceneData = { ...EMPTY_SCENE, components: [stage, lens] };
 
 describe("fixed translation stage", () => {
+  it("offers each nonempty axis combination, with XY as the old setup default", () => {
+    assert.equal(stageAxes(stage), "xy");
+    const selections = new Set(["x", "y", "z", "xy", "xz", "yz", "xyz"]);
+    for (const selection of selections) {
+      const parsed = parseScene({ version: 16, components: [{ ...stage, stageAxes: selection }] });
+      assert.equal(stageAxes(parsed!.components[0]), selection);
+      assert.equal(stageAxes(parseScene(JSON.parse(serializeScene(parsed!)))!.components[0]), selection);
+    }
+    assert.equal(toggleStageAxis("xy", "z"), "xyz");
+    assert.equal(toggleStageAxis("xyz", "x"), "yz");
+    assert.equal(toggleStageAxis("y", "y"), "y");
+    assert.equal(stageAxes(parseScene({ version: 15, components: [{ ...stage, stageAxes: "xyz" }] })!.components[0]), "xy");
+  });
+
+  it("mounts a selected optic in one edit while preserving its height, yaw, and groups", () => {
+    const loose = { ...lens, position: [300, 100, 75] as [number, number, number], mountStage: undefined };
+    const before = { ...scene, components: [stage, loose], groups: [{ id: "pair", name: "Pair", color: "#ffffff", members: ["stage", "lens"] }] };
+    const mounted = settleStageMounts(before, setStageMount(before, "lens", "stage"));
+    assert.equal(mounted.components[1].mountStage, "stage");
+    assert.deepEqual(mounted.components[1].position, [100, 100, 50]);
+    assert.equal(mounted.components[1].rotation, 90);
+    assert.deepEqual(mounted.groups, before.groups);
+    const detached = settleStageMounts(mounted, setStageMount(mounted, "lens", undefined));
+    assert.equal(detached.components[1].mountStage, undefined);
+    assert.deepEqual(detached.components[1].position, [100, 100, 50]);
+  });
+
+  it("leaves incompatible parts and occupied stages alone", () => {
+    const other = { id: "other", type: "lens" as const, position: [100, 100, 50] as [number, number, number], rotation: 0 };
+    const occupied = { ...scene, components: [...scene.components, other] };
+    assert.equal(setStageMount(occupied, "other", "stage"), occupied);
+    assert.equal(setStageMount(occupied, "stage", "stage"), occupied);
+    assert.equal(setStageMount(occupied, "lens", "other"), occupied);
+    assert.equal(setStageMount(occupied, "lens", "stage"), occupied);
+  });
+
   it("places a newly mounted optic on the stage without changing its height or yaw", () => {
     const next = { ...scene, components: [stage, { ...lens, position: [300, 100, 75] as [number, number, number] }] };
     const settled = settleStageMounts(null, next);

@@ -74,7 +74,7 @@ A translation stage with a V of two mirrors on its carriage, standing across a b
 _Avoid_: delay stage, translation stage, retro
 
 **Translation stage**:
-A fixed visual mount for one optic, placed separately on the table. Moving or turning it carries the mounted optic. It has no travel control and adds no beam path length; use a delay line for optical delay.
+A fixed visual mount for one optic, placed separately on the table. Its selected X, Y and Z axes determine the visible plates and thumbscrews, not travel. Moving or turning it carries the mounted optic. It adds no beam path length; use a delay line for optical delay.
 
 **Periscope**:
 A pair of mirrors on one rod that takes a beam up or down to a new height: a lower mirror and a top mirror straight above it, each its own component and its own stop on a beam. They move, copy and go together.
