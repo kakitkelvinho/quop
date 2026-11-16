@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { measureBeam } from "./beam-measurement.ts";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
@@ -26,7 +27,6 @@ import { checkSceneText, SCENE_LIMITS } from "./scene-text.ts";
 import {
   GROUP_LIMIT,
   SCENE_VERSION,
-  beamLengthMm,
   parseScene,
   serializeScene,
   type Beam,
@@ -37,6 +37,8 @@ import {
   type Frame,
   type Group,
 } from "./types.ts";
+
+const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
 // #213: groups in the setup file. A group is a named set of parts and frames
 // that hide together; a part shared by two groups stays drawn while either is
@@ -152,7 +154,7 @@ describe("which beams, connections and frames are drawn", () => {
     const shown = table();
     const hidden = table([left({ hidden: true }), right({ hidden: true })]);
     for (const [index, entry] of shown.beams.entries()) {
-      assert.equal(beamLengthMm(hidden.components, hidden.beams[index]), beamLengthMm(shown.components, entry));
+      assert.equal(lengthMm(hidden.components, hidden.beams[index]), lengthMm(shown.components, entry));
     }
   });
 });

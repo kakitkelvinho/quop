@@ -1070,16 +1070,6 @@ export function componentById(
 }
 
 /**
- * The built-in path of the laser a beam starts at, mm; 0 when its first stop is
- * not a laser or the laser has none. A laser later in a path adds nothing: the
- * light it passes was not made there.
- */
-export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): number {
-  const first = beam.path.length ? componentById(components, beam.path[0]) : undefined;
-  return first?.type === "laser-source" ? fieldValue(first, "internalPathMm") : 0;
-}
-
-/**
  * A delay line's setting, mm: its minimum delay, its travel, how far its
  * stage has travelled, and so the path a beam through it gains, the minimum
  * delay plus twice the stage's travel, out and back.
@@ -1113,20 +1103,6 @@ export function delayRailOffset(component: BuilderComponent, x: number, z: numbe
   const yaw = (component.rotation * Math.PI) / 180;
   // local +x points along (cos, −sin) in (x, z); the rail runs the other way
   return -(x - component.position[0]) * Math.cos(yaw) + (z - component.position[2]) * Math.sin(yaw);
-}
-
-/**
- * The path a beam picks up inside delay lines, mm: down to the carriage and
- * back, each time it passes through one (a stop in the middle of it).
- */
-export function beamDelayMm(components: BuilderComponent[], beam: Beam): number {
-  let total = 0;
-  beam.path.forEach((id, index) => {
-    if (index === 0 || index === beam.path.length - 1) return;
-    const component = componentById(components, id);
-    if (component?.type === "delay-line") total += delaySetting(component).path;
-  });
-  return total;
 }
 
 /**
@@ -1171,55 +1147,6 @@ export function bodyCentre(component: BuilderComponent): Vec3 {
   const [x, y, z] = component.position;
   const [dx, dz] = portShift(component);
   return [x - dx, y, z - dz];
-}
-
-/** The reference points a beam runs through, skipping stops whose part is gone. */
-export function beamPoints(components: BuilderComponent[], path: string[]): Vec3[] {
-  return path
-    .map((id) => componentById(components, id))
-    .filter((component): component is BuilderComponent => Boolean(component))
-    .map(referencePoint);
-}
-
-/**
- * Length of the beam, mm: the straight 3D run through its reference points,
- * plus the built-in path of the laser it starts at and the round trip in
- * every delay line it passes through.
- */
-export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
-  const points = beamPoints(components, beam.path);
-
-  let total = beamInternalPathMm(components, beam) + beamDelayMm(components, beam);
-  for (let index = 1; index < points.length; index += 1) {
-    const [ax, ay, az] = points[index - 1];
-    const [bx, by, bz] = points[index];
-    total += Math.hypot(bx - ax, by - ay, bz - az);
-  }
-  return total;
-}
-
-/**
- * The length of each leg of a beam, mm, for the distance labels along it: the
- * straight 3D run between consecutive reference points (skipping stops whose
- * part is gone, as beamPoints does). A leg into a delay line the beam passes
- * through adds that delay line's minimum delay, not its current setting; one the beam ends at adds nothing, as in
- * beamDelayMm. A laser's built-in path is in no leg: it counts toward the
- * beam's total only.
- */
-export function beamLegLengthsMm(components: BuilderComponent[], beam: Beam): number[] {
-  const stops = beam.path
-    .map((id) => componentById(components, id))
-    .filter((component): component is BuilderComponent => Boolean(component));
-  const legs: number[] = [];
-  for (let index = 1; index < stops.length; index += 1) {
-    const [ax, ay, az] = referencePoint(stops[index - 1]);
-    const end = stops[index];
-    const [bx, by, bz] = referencePoint(end);
-    const passed = index < stops.length - 1;
-    const delay = passed && end.type === "delay-line" ? delaySetting(end).minPath : 0;
-    legs.push(Math.hypot(bx - ax, by - ay, bz - az) + delay);
-  }
-  return legs;
 }
 
 /** Vacuum time-of-flight along a path length, in picoseconds. */

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { measureBeam } from "./beam-measurement.ts";
 import { describe, it } from "node:test";
 
 import {
@@ -6,7 +7,6 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   type ComponentType,
-  beamLengthMm,
   parseScene,
   SCENE_VERSION,
   serializeScene,
@@ -82,7 +82,10 @@ describe("a hidden beam in a setup", () => {
 
   it("keeps its path length: 200 mm in from the laser's opening and 200 mm out", () => {
     const hidden = bench([{ ...probe, hidden: true }]);
-    assert.equal(beamLengthMm(hidden.components, hidden.beams[0]), 400);
+    const result = measureBeam(hidden.components, hidden.beams[0]);
+    assert.equal(result.lengthMm, 400);
+    assert.deepEqual(result.legLengthsMm, [200, 200]);
+    assert.equal(result.timeOfFlightPs, (400 / 299.792458) * 1000);
   });
 
   it("is hidden still after saving and opening, and the others are not", () => {
