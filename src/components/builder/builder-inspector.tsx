@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Icon, IconButton } from "@/components/builder/builder-icons";
+import { measureBeam } from "@/components/builder/beam-measurement";
 import { joinsOnToggle, membership } from "@/components/builder/groups";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useRowDrag } from "@/components/builder/use-row-drag";
@@ -54,12 +55,9 @@ import {
   clampHeight,
   heightRange,
   beamDisplayName,
-  beamInternalPathMm,
-  beamDelayMm,
   delaySetting,
   DELAY_MIN_PATH_RANGE_MM,
   DELAY_TRAVEL_RANGE_MM,
-  beamLengthMm,
   componentById,
   periscopePartner,
   componentDisplayName,
@@ -69,7 +67,6 @@ import {
   rectangleCorners,
   connectionDelayPs,
   connectionIndex,
-  lengthToPicoseconds,
   moveStopTo,
   removeStop,
   switchConnectionKind,
@@ -1204,9 +1201,7 @@ export function BeamInspector({
   addingStops: boolean;
   onToggleAddStops: () => void;
 }) {
-  const length = beamLengthMm(components, beam);
-  const insideLaser = beamInternalPathMm(components, beam);
-  const inDelayLines = beamDelayMm(components, beam);
+  const { lengthMm: length, laserInternalMm: insideLaser, delayLineMm: inDelayLines, timeOfFlightPs } = measureBeam(components, beam);
   const width = beam.width ?? BEAM_WIDTH_MM;
   const opacity = beam.opacity ?? 1;
 
@@ -1271,7 +1266,7 @@ export function BeamInspector({
         </div>
         <div>
           <dt>Time of flight</dt>
-          <dd>{lengthToPicoseconds(length).toFixed(1)} ps</dd>
+          <dd>{timeOfFlightPs.toFixed(1)} ps</dd>
         </div>
       </dl>
       {insideLaser > 0 ? (

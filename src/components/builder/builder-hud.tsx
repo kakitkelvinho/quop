@@ -4,6 +4,7 @@ import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, us
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
+import { measureBeam } from "@/components/builder/beam-measurement";
 import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
@@ -40,7 +41,6 @@ import {
   LABEL_MAX_LENGTH,
   LABEL_SCALE_RANGE,
   beamDisplayName,
-  beamLengthMm,
   derivedAngleBeam,
   frameDisplayName,
   periscopePartner,
@@ -353,7 +353,7 @@ function BeamList({
             >
               <span className="builderBeamRow__dot" style={{ background: beam.color }} />
               <span className="builderBeamRow__name">{name}</span>
-              <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
+              <span className="builderReadout">{Math.round(measureBeam(components, beam).lengthMm)} mm</span>
             </button>
             <span className="builderBeamRow__actions" data-no-drag>
               <IconButton

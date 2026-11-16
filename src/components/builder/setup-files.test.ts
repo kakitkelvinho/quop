@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { measureBeam } from "./beam-measurement.ts";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { visibility } from "./groups.ts";
-import { beamLengthMm, DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene } from "./types.ts";
+import { DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene, type Beam, type BuilderComponent } from "./types.ts";
+
+const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
 // ADR 0001: a setup file saved by a release keeps opening, with nothing
 // dropped, in every later release. Each fixture is a setup file in the shape
@@ -140,7 +143,7 @@ describe("setup-v3.json, a laser with a built-in path", () => {
   it("opens with the path and counts it in its beam: 4000 mm inside plus 394 mm on the table from its opening", () => {
     const setup = open("setup-v3.json");
     assert.equal(setup.components.find(({ id }) => id === "laser-folded")?.internalPathMm, 4000);
-    assert.equal(beamLengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4394);
+    assert.equal(lengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4394);
   });
 
   it("is on no laser in older setups", () => {
@@ -423,7 +426,7 @@ describe("setup-v12.json, the first version with groups", () => {
     assert.ok(shown.has("m1") && shown.has("laser"));
     const all = open("setup-v11.json");
     for (const [index, beam] of setup.beams.entries()) {
-      assert.equal(beamLengthMm(setup.components, beam), beamLengthMm(all.components, all.beams[index]));
+      assert.equal(lengthMm(setup.components, beam), lengthMm(all.components, all.beams[index]));
     }
   });
 
