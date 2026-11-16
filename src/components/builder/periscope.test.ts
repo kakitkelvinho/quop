@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { measureBeam } from "./beam-measurement.ts";
 import { describe, it } from "node:test";
 
 import { deleteComponents, duplicateComponents, nudgeComponents, rotateComponents } from "./group-edits.ts";
@@ -6,7 +7,6 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
   SCENE_VERSION,
-  beamLengthMm,
   parseScene,
   periscopePartner,
   selectableId,
@@ -35,7 +35,11 @@ const byId = (scene: BuilderSceneData, id: string) => scene.components.find((com
 
 describe("a periscope", () => {
   it("adds its rise to the path length of a beam through both mirrors", () => {
-    assert.equal(beamLengthMm(bench().components, bench().beams[0]), 200 + 150 + 200);
+    const scene = bench();
+    const result = measureBeam(scene.components, scene.beams[0]);
+    assert.deepEqual(result.legLengthsMm, [200, 150, 200]);
+    assert.equal(result.lengthMm, 200 + 150 + 200);
+    assert.equal(result.timeOfFlightPs, (550 / 299.792458) * 1000);
   });
 
   it("keeps its top mirror over its lower one, at the top mirror's own height", () => {

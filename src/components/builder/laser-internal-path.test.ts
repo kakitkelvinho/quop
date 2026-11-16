@@ -1,13 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { measureBeam } from "./beam-measurement.ts";
 
 import {
   type Beam,
   type BuilderComponent,
   type ComponentType,
-  beamInternalPathMm,
-  beamLengthMm,
-  lengthToPicoseconds,
   parseScene,
 } from "./types.ts";
 
@@ -32,37 +30,43 @@ describe("a laser's built-in path", () => {
   const mirror = part("m", "mirror-mount", 300);
 
   it("adds to a beam that starts at the laser: 4000 mm inside plus 300 mm on the table is 4300", () => {
-    assert.equal(beamLengthMm([laser, mirror], beam(["laser", "m"])), 4300);
-    assert.equal(beamInternalPathMm([laser, mirror], beam(["laser", "m"])), 4000);
+    const result = measureBeam([laser, mirror], beam(["laser", "m"]));
+    assert.equal(result.lengthMm, 4300);
+    assert.equal(result.laserInternalMm, 4000);
+    assert.equal(result.delayLineMm, 0);
+    assert.deepEqual(result.legLengthsMm, [300]);
   });
 
   it("follows into the time of flight", () => {
-    assert.equal(lengthToPicoseconds(beamLengthMm([laser, mirror], beam(["laser", "m"]))).toFixed(1), "14343.3");
+    assert.equal(measureBeam([laser, mirror], beam(["laser", "m"])).timeOfFlightPs.toFixed(1), "14343.3");
   });
 
   it("adds nothing when the laser is a later stop", () => {
     const first = part("first", "mirror-mount", -300);
     const later = part("laser", "laser-source", 0, { internalPathMm: 4000 });
     // through a laser later in a path, the beam still meets it at its opening
-    assert.equal(beamLengthMm([first, later], beam(["first", "laser"])), 300);
-    assert.equal(beamLengthMm([first, later, mirror], beam(["first", "laser", "m"])), 600);
-    assert.equal(beamInternalPathMm([first, later], beam(["first", "laser"])), 0);
+    assert.equal(measureBeam([first, later], beam(["first", "laser"])).lengthMm, 300);
+    assert.equal(measureBeam([first, later, mirror], beam(["first", "laser", "m"])).lengthMm, 600);
+    assert.equal(measureBeam([first, later], beam(["first", "laser"])).laserInternalMm, 0);
   });
 
   it("adds once, to a beam that is only a laser", () => {
-    assert.equal(beamLengthMm([laser], beam(["laser"])), 4000);
+    const result = measureBeam([laser], beam(["laser"]));
+    assert.equal(result.lengthMm, 4000);
+    assert.deepEqual(result.legLengthsMm, []);
+    assert.equal(result.laserInternalMm, 4000);
   });
 
   it("starts on the table at the opening, the laser's position, however it is turned", () => {
     const bare = part("laser", "laser-source", 0);
-    assert.equal(beamLengthMm([bare, part("m", "mirror-mount", 300)], beam(["laser", "m"])), 300);
+    assert.equal(measureBeam([bare, part("m", "mirror-mount", 300)], beam(["laser", "m"])).lengthMm, 300);
     const turned = { ...bare, rotation: 90 };
-    assert.equal(beamLengthMm([turned, { ...part("m", "mirror-mount", 0), position: [0, 100, -300] }], beam(["laser", "m"])), 300);
+    assert.equal(measureBeam([turned, { ...part("m", "mirror-mount", 0), position: [0, 100, -300] }], beam(["laser", "m"])).lengthMm, 300);
   });
 
   it("is nothing when missing or 0", () => {
-    assert.equal(beamLengthMm([part("laser", "laser-source", 0), mirror], beam(["laser", "m"])), 300);
-    assert.equal(beamLengthMm([{ ...laser, internalPathMm: 0 }, mirror], beam(["laser", "m"])), 300);
+    assert.equal(measureBeam([part("laser", "laser-source", 0), mirror], beam(["laser", "m"])).lengthMm, 300);
+    assert.equal(measureBeam([{ ...laser, internalPathMm: 0 }, mirror], beam(["laser", "m"])).lengthMm, 300);
   });
 });
 

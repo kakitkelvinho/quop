@@ -36,7 +36,7 @@ export const BeamDistances = memo(function BeamDistances({
 }: {
   /** the beam's reference points */
   points: Vector3[];
-  /** each leg's length, mm (beamLegLengthsMm), one fewer than the points */
+  /** each measured leg's length, mm, one fewer than the points */
   lengths: number[];
   /** the beam's colour, which the numbers take */
   color: string;

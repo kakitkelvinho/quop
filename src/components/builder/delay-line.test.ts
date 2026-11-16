@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { measureBeam } from "./beam-measurement.ts";
 
 import {
   type Beam,
@@ -8,8 +9,6 @@ import {
   DELAY_MIN_PATH_MM,
   DELAY_TRAVEL_MM,
   SCENE_VERSION,
-  beamDelayMm,
-  beamLengthMm,
   bodyCentre,
   delayArmMm,
   delayLineYaw,
@@ -34,17 +33,25 @@ const components = [m1, delay, m2];
 
 describe("a delay line", () => {
   it("adds its minimum delay and twice its stage's travel to a beam through it", () => {
-    assert.equal(beamDelayMm(components, beam), 100 + 2 * 40);
+    const result = measureBeam(components, beam);
+    assert.equal(result.delayLineMm, 100 + 2 * 40);
     const toPort = Math.hypot(200, 50);
-    assert.ok(Math.abs(beamLengthMm(components, beam) - (2 * toPort + 180)) < 1e-9);
+    assert.ok(Math.abs(result.lengthMm - (2 * toPort + 180)) < 1e-9);
+    assert.deepEqual(result.legLengthsMm, [toPort + 100, toPort]);
+    assert.equal(result.timeOfFlightPs, (result.lengthMm / 299.792458) * 1000);
   });
 
   it("adds nothing to a beam that only starts or ends at it", () => {
-    assert.equal(beamDelayMm(components, { ...beam, path: ["m1", "delay"] }), 0);
+    const result = measureBeam(components, { ...beam, path: ["m1", "delay"] });
+    assert.equal(result.delayLineMm, 0);
+    assert.deepEqual(result.legLengthsMm, [Math.hypot(200, 50)]);
   });
 
   it("counts each pass through it", () => {
-    assert.equal(beamDelayMm(components, { ...beam, path: ["m1", "delay", "m2", "delay", "m1"] }), 360);
+    const result = measureBeam(components, { ...beam, path: ["m1", "delay", "m2", "delay", "m1"] });
+    assert.equal(result.delayLineMm, 360);
+    assert.equal(result.legLengthsMm[0], Math.hypot(200, 50) + 100);
+    assert.equal(result.legLengthsMm[2], Math.hypot(200, 50) + 100);
   });
 
   it("starts with its stage at the start of its travel, and holds the stage within it", () => {

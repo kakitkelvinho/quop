@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { measureBeam } from "./beam-measurement.ts";
 import { describe, it } from "node:test";
 
 import {
@@ -7,12 +8,13 @@ import {
   type ComponentType,
   type Vec3,
   COMPONENT_SPECS,
-  beamLengthMm,
   bodyCentre,
   parseScene,
   SCENE_VERSION,
   settleAngles,
 } from "./types.ts";
+
+const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
 // #125: a beam meets each part at its reference point, the first surface a
 // ruler laid along the beam touches: a laser's opening, a photodiode's chip, a
@@ -53,13 +55,13 @@ describe("a part with a port is placed by it", () => {
   for (const type of PORTED) {
     it(`${type}: 500 mm between positions is 500 mm of beam`, () => {
       const { components, beam: run } = settled([part("m", "mirror-mount", [0, 0]), part("p", type, [300, 400])], ["m", "p"]);
-      assert.equal(Math.round(beamLengthMm(components, run) * 1000) / 1000, 500);
+      assert.equal(Math.round(lengthMm(components, run) * 1000) / 1000, 500);
     });
   }
 
   it("a laser's opening 300 mm from a spectrometer's port is 300 mm of beam, whatever their sizes", () => {
     const components = [part("l", "laser-source", [0, 0]), part("s", "spectrometer", [300, 0])];
-    assert.equal(beamLengthMm(components, beam(["l", "s"])), 300);
+    assert.equal(lengthMm(components, beam(["l", "s"])), 300);
   });
 });
 
@@ -95,7 +97,7 @@ describe("a beam through an objective turns at its threaded plate's outer face, 
         part("obj", "objective", [0, 0], rotation),
         part("out", "mirror-mount", [0, 400]),
       ];
-      assert.equal(beamLengthMm(components, beam(["in", "obj", "out"])), 700, `turned ${rotation}°`);
+      assert.equal(lengthMm(components, beam(["in", "obj", "out"])), 700, `turned ${rotation}°`);
     }
   });
 });
@@ -107,7 +109,7 @@ describe("every other part meets the beam at its optical centre", () => {
       part("lens", "lens", [300, 0], 37),
       part("b", "mirror-mount", [300, 400]),
     ];
-    assert.equal(beamLengthMm(components, beam(["a", "lens", "b"])), 700);
+    assert.equal(lengthMm(components, beam(["a", "lens", "b"])), 700);
   });
 });
 
@@ -140,6 +142,6 @@ describe("a setup saved by its parts' centres, before version 10", () => {
       const opened = scene.components.find((part) => part.id === saved.id)!;
       assert.deepEqual(rounded([bodyCentre(opened)]), rounded([saved.position as Vec3]), saved.id);
     }
-    assert.equal(beamLengthMm(scene.components, scene.beams[0]), 575);
+    assert.equal(lengthMm(scene.components, scene.beams[0]), 575);
   });
 });
