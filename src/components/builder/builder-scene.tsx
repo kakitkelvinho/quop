@@ -512,13 +512,17 @@ export default function BuilderScene() {
       // middle and right drags orbit the camera, even when they start on a part;
       // while a frame is drawn, a click on a part puts a corner on the table under it
       if (event.nativeEvent.button !== 0 || editMode.kind === "frame") return;
+      const pressed = componentById(sceneRef.current.components, id);
+      if (!pressed) return;
       if (editMode.kind === "beam") {
+        if (pressed.type === "translation-stage") {
+          announce("A translation stage is a mount, not a beam stop.");
+          return;
+        }
         setEditMode((current) => current.kind !== "beam" || current.stops.at(-1) === id
           ? current : { ...current, stops: [...current.stops, id] });
         return;
       }
-      const pressed = componentById(sceneRef.current.components, id);
-      if (!pressed) return;
 
       if (editMode.kind === "connection") {
         const { draft } = editMode;
@@ -537,6 +541,10 @@ export default function BuilderScene() {
       }
 
       if (editMode.kind === "add-stops") {
+        if (pressed.type === "translation-stage") {
+          announce("A translation stage is a mount, not a beam stop.");
+          return;
+        }
         // onto the end, in click order, one undo step per stop
         const beam = sceneRef.current.beams.find((entry) => entry.id === editMode.beamId);
         if (!beam) return;
@@ -1773,11 +1781,23 @@ export default function BuilderScene() {
         }}
         onUpdateSelected={updateSelected}
         onUpdateComponent={api.updateComponent}
+        onSelectComponent={(id) => {
+          setSelection([id]);
+          setSelectedBeamId(null);
+          setSelectedFrameId(null);
+          setSelectedConnectionId(null);
+        }}
         onRotateSelected={rotateSelected}
         onDuplicateSelected={duplicateSelected}
         onDeleteSelected={deleteSelected}
         onSetSelectedHeight={(height) => api.setComponentsHeight(selectedIds, height)}
         onSetSelectedMountColor={(color) => api.setMountColor(selectedIds, color)}
+        onSetStageMount={(opticId, stageId) => {
+          api.setStageMount(opticId, stageId);
+          const optic = componentById(sceneRef.current.components, opticId);
+          const stage = stageId && componentById(sceneRef.current.components, stageId);
+          if (optic) announce(stage ? `${componentDisplayName(optic)} mounted on ${componentDisplayName(stage)}.` : `${componentDisplayName(optic)} detached from its stage.`);
+        }}
         onStartBeam={startBeam}
         onFinishBeam={finishBeam}
         onCancelBeam={cancelBeam}

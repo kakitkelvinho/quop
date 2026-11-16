@@ -75,6 +75,7 @@ const BUILT: Record<ComponentType, BuilderComponent> = {
   periscope: { id: "p", type: "periscope", position: [10, 100, 20], rotation: 0, color: MOUNT, label: undefined },
   "periscope-top": { id: "p", type: "periscope-top", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
   "delay-line": { id: "p", type: "delay-line", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
+  "translation-stage": { id: "p", type: "translation-stage", position: [10, 0, 20], rotation: 0, color: undefined, label: undefined },
 };
 
 const KINDS = Object.keys(COMPONENT_SPECS) as ComponentType[];
@@ -134,7 +135,7 @@ describe("the kind table", () => {
       "periscope",
       "periscope-top",
     ]);
-    sameSet(STAGED_TYPES, ["objective", "sample"]);
+    sameSet(STAGED_TYPES, ["objective", "sample", "translation-stage"]);
     sameSet(MIRROR_LIKE, ["mirror-mount", "delay-line"]);
     sameSet(PERISCOPE_MIRRORS, ["periscope", "periscope-top"]);
     sameSet(AIMED_DETECTORS, ["photodiode", "camera", "spectrometer", "single-photon-detector"]);
@@ -151,14 +152,21 @@ describe("the kind table", () => {
     );
     assert.deepStrictEqual(fields, {
       "laser-source": ["internalPathMm"],
-      lens: ["focalLength", "lensShape"],
-      sample: ["opacity", "sampleStage", "sampleStageLeft", "stageColor"],
+      "mirror-mount": ["mountStage"],
+      "beam-splitter": ["mountStage"],
+      lens: ["focalLength", "lensShape", "mountStage"],
+      waveplate: ["mountStage"],
+      filter: ["mountStage"],
+      iris: ["mountStage"],
+      "fiber-collimator": ["mountStage"],
+      sample: ["mountStage", "opacity", "sampleStage", "sampleStageLeft", "stageColor"],
       cavity: ["cavityLength", "lightColor", "lightHidden"],
       particle: ["host", "particleRadius"],
-      objective: ["objectiveLength", "stageColor"],
+      objective: ["mountStage", "objectiveLength", "stageColor"],
       block: ["size", "symbol"],
       "periscope-top": ["periscope"],
       "delay-line": ["delayMinPathMm", "delayStageMm", "delayTravelMm", "lightColor", "lightHidden"],
+      "translation-stage": ["stageAxes", "stageColor"],
     });
   });
 

@@ -27,6 +27,8 @@ import {
   setFrameHidden as setFrameHiddenInList,
   settleAngles,
   settleHosts,
+  settleStageMounts,
+  setStageMount as setStageMountInScene,
   settlePeriscopes,
   snapToGrid,
   clampHeight,
@@ -59,7 +61,7 @@ type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 function settled(mutate: Mutation): Mutation {
   return (scene) => {
     const next = mutate(scene);
-    return next === scene ? scene : settleAngles(settlePeriscopes(settleHosts(next)));
+    return next === scene ? scene : settleAngles(settlePeriscopes(settleHosts(settleStageMounts(scene, next))));
   };
 }
 
@@ -247,6 +249,12 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       else preview(apply);
     },
     [commit, preview],
+  );
+
+  const setStageMount = useCallback(
+    (opticId: string, stageId: string | undefined) =>
+      commit((current) => setStageMountInScene(current, opticId, stageId)),
+    [commit],
   );
 
   const moveComponent = useCallback(
@@ -587,6 +595,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       commitCheckpoint,
       addComponent,
       updateComponent,
+      setStageMount,
       moveComponent,
       translateComponents,
       nudgeComponents,
@@ -631,6 +640,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       commitCheckpoint,
       addComponent,
       updateComponent,
+      setStageMount,
       moveComponent,
       translateComponents,
       nudgeComponents,

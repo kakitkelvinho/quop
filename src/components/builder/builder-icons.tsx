@@ -337,6 +337,13 @@ export function IconButton({
 
 /** One small glyph per part, in the same stroke family, for the parts panel. */
 const PART_ICONS: Record<ComponentType, ReactNode> = {
+  "translation-stage": (
+    <>
+      <rect x="4" y="14" width="16" height="5" rx="1" />
+      <rect x="6" y="9" width="12" height="5" rx="1" />
+      <path d="M4 21h16M18 11h3" />
+    </>
+  ),
   "laser-source": (
     <>
       <rect x="3" y="8.5" width="12" height="7" rx="1.2" />
