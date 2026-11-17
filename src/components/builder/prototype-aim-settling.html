@@ -64,6 +64,9 @@
         <button id="snap">Snap 45° to the light</button><button id="clearAim">Clear aim</button><button id="del">Delete</button>
         <span class="hint" id="selInfo"></span>
       </div>
+      <div class="row"><span class="lbl">Options</span>
+        <label><input type="checkbox" id="catchBox" checked> Light catches aims: a 45° mirror or cube aims at what its light lands on (not while dragging)</label>
+      </div>
       <div class="row"><span class="lbl">Stress</span>
         <button id="drop">Drop</button><input type="number" id="dropN" value="100" min="1" max="5000"> random components
         <button id="clear">Clear table</button>
@@ -90,6 +93,7 @@
 <script>
 /* ---------- The logic under test: pure, no DOM. Lift this into the real module once settled. ---------- */
 const Aim = (() => {
+  const REDIRECTS = new Set(["mirror", "cube"]);
   const R = 12.7, EPS = 1e-9, MISS_MM = 900, MAX_SEGMENTS = 20000, PER_LASER = 300, MAX_DEPTH = 40;
   const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
   const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
@@ -125,7 +129,7 @@ const Aim = (() => {
     const segments = [], arrivals = {};
     let order = 0, tests = 0;
     for (const laser of comps.filter((c) => c.kind === "laser")) {
-      const stack = [{ o: laser.pos, d: fromDeg(laser.angle), from: laser.id, depth: 0, laser: laser.id }];
+      const stack = [{ o: laser.pos, d: fromDeg(laser.angle), from: laser.id, depth: 0, laser: laser.id, arm: "t" }];
       const start = segments.length;
       while (stack.length && segments.length < MAX_SEGMENTS && segments.length - start < PER_LASER) {
         const ray = stack.pop();
@@ -136,15 +140,15 @@ const Aim = (() => {
           const h = hit(ray, c, settling);
           if (h && (!best || h.t < best.h.t)) best = { c, h };
         }
-        if (!best) { segments.push({ a: ray.o, b: add(ray.o, scale(ray.d, MISS_MM)), miss: true }); continue; }
+        if (!best) { segments.push({ a: ray.o, b: add(ray.o, scale(ray.d, MISS_MM)), miss: true, from: ray.from, arm: ray.arm }); continue; }
         const { c, h } = best;
-        segments.push({ a: ray.o, b: h.p });
+        segments.push({ a: ray.o, b: h.p, from: ray.from, to: c.id, arm: ray.arm });
         if (c.id in arrivals) { if (settling) continue; } else arrivals[c.id] = { from: ray.from, order: order++ };
         if (ray.depth >= MAX_DEPTH) continue;
-        const next = (d) => ({ o: h.p, d, from: c.id, depth: ray.depth + 1, laser: ray.laser });
-        if (c.kind === "mirror") stack.push(next(reflect(ray.d, fromDeg(c.angle))));
-        else if (c.kind === "cube") { stack.push(next(reflect(ray.d, fromDeg(c.angle)))); stack.push(next(ray.d)); }
-        else if (c.kind === "delay") { if (Math.abs(dot(ray.d, fromDeg(c.angle))) > Math.cos(5 * Math.PI / 180)) stack.push(next(ray.d)); }
+        const next = (d, arm) => ({ o: h.p, d, from: c.id, depth: ray.depth + 1, laser: ray.laser, arm });
+        if (c.kind === "mirror") stack.push(next(reflect(ray.d, fromDeg(c.angle)), "r"));
+        else if (c.kind === "cube") { stack.push(next(reflect(ray.d, fromDeg(c.angle)), "r")); stack.push(next(ray.d, "t")); }
+        else if (c.kind === "delay") { if (Math.abs(dot(ray.d, fromDeg(c.angle))) > Math.cos(5 * Math.PI / 180)) stack.push(next(ray.d, "t")); }
       }
     }
     return { segments, arrivals, tests };
@@ -165,10 +169,10 @@ const Aim = (() => {
     const aimersOf = new Map();
     for (const c of comps) if (c.aim) { if (!aimersOf.has(c.aim)) aimersOf.set(c.aim, []); aimersOf.get(c.aim).push(c); }
     return comps.map((c) => {
-      const turnsItself = (c.kind === "mirror" && (c.aim || !c.free)) || c.kind === "delay";
+      const turnsItself = (REDIRECTS.has(c.kind) && (c.aim || !c.free)) || c.kind === "delay";
       if (!turnsItself) return { ...c, status: "hand", why: "turned by hand" };
       const { prev, how } = preceding(c, aimersOf, byId, arrivals);
-      if (!prev) return { ...c, status: "waiting", why: c.kind === "mirror" && !c.aim ? "no aim, and no light reaches it yet" : "nothing comes before it yet", prevId: null };
+      if (!prev) return { ...c, status: "waiting", why: REDIRECTS.has(c.kind) && !c.aim ? "no aim, and no light reaches it yet" : "nothing comes before it yet", prevId: null };
       const dIn = norm(sub(c.pos, prev.pos));
       if (!dIn) return { ...c, status: "waiting", why: "on top of the one before it", prevId: prev.id };
       if (c.kind === "delay") return { ...c, angle: toDeg(dIn), status: "aimed", why: how, prevId: prev.id };
@@ -181,8 +185,33 @@ const Aim = (() => {
       const dOut = norm(sub(target.pos, c.pos));
       const n = dOut && norm(sub(dOut, dIn));
       if (!n) return { ...c, status: "waiting", why: "no angle sends light that way", prevId: prev.id };
-      return { ...c, angle: toDeg(n), status: "aimed", why: how, prevId: prev.id };
+      return { ...c, angle: toDeg(n), status: "aimed", why: c.caught ? "caught " + c.aim + " when the light landed on it" : how, prevId: prev.id };
     });
+  }
+
+  /** A 45° mirror or beam cube whose reflected light lands on a Component takes that Component as its aim, so it follows it from then on. Not during a drag: the light would catch whatever it sweeps across. */
+  function catchAims(comps) {
+    const tr = trace(comps), byId = new Map(comps.map((c) => [c.id, c]));
+    let caught = false;
+    const next = comps.map((c) => {
+      if (c.status !== "snapped") return c;
+      const s = tr.segments.find((s) => s.from === c.id && s.arm === "r" && s.to && byId.get(s.to).kind !== "laser");
+      if (!s) return c;
+      caught = true;
+      return { ...c, aim: s.to, caught: true };
+    });
+    return caught ? next : null;
+  }
+
+  /** Settle, then let light catch aims, until nothing changes. */
+  function settleAndCatch(comps, withCatch) {
+    let r = settle(comps), passes = r.passes;
+    for (let i = 0; withCatch && i < 6; i++) {
+      const caught = catchAims(r.comps);
+      if (!caught) break;
+      r = settle(caught); passes += r.passes;
+    }
+    return { comps: r.comps, passes };
   }
 
   /** Settle until nothing turns (or 8 passes). Each pass may let light reach further, so a chain can take several. */
@@ -200,22 +229,23 @@ const Aim = (() => {
 
   /** Beam mode: clicking a component after the previous one makes the previous one (if a mirror) aim at it. */
   function beamClick(comps, prevId, id) {
-    return comps.map((c) => (c.id === prevId && c.kind === "mirror" && prevId !== id ? { ...c, aim: id } : c));
+    return comps.map((c) => (c.id === prevId && REDIRECTS.has(c.kind) && prevId !== id ? { ...c, aim: id, free: false, caught: false } : c));
   }
 
-  function flip(comps, id) { return comps.map((c) => (c.id === id ? { ...c, fold: -(c.fold || 1) } : c)); }
-  function aimAt(comps, id, target) { return comps.map((c) => (c.id === id && id !== target ? { ...c, aim: target, free: false } : c)); }
+  /** F: flip to the other 45° fold; an aimed redirector lets go of its aim first. */
+  function flip(comps, id) { return comps.map((c) => (c.id === id ? { ...c, fold: -(c.fold || 1), aim: undefined, caught: false, free: false } : c)); }
+  function aimAt(comps, id, target) { return comps.map((c) => (c.id === id && id !== target ? { ...c, aim: target, free: false, caught: false } : c)); }
   function remove(comps, id) {
     return comps.filter((c) => c.id !== id).map((c) => (c.aim === id ? { ...c, aim: undefined } : c));
   }
 
-  return { trace, settle, beamClick, remove, flip, aimAt, angleDiff, fromDeg, rot90 };
+  return { trace, settle, settleAndCatch, beamClick, remove, flip, aimAt, angleDiff, fromDeg, rot90, REDIRECTS };
 })();
 
 /* ---------- Throwaway page ---------- */
 const S = {
   comps: [], mode: "idle", placeKind: null, beamPrev: null, when: "live", sel: null,
-  drag: null, aimDrag: null, hover: null, changed: new Set(), lastSettle: null, lastTrace: null, dirty: false,
+  catch: true, drag: null, aimDrag: null, hover: null, changed: new Set(), lastSettle: null, lastTrace: null, dirty: false,
 };
 let nextId = 1;
 const counters = {};
@@ -223,21 +253,21 @@ const NAMES = { laser: "Laser", mirror: "Mirror", cube: "Beam cube", delay: "Del
 const PREFIX = { laser: "L", mirror: "M", cube: "C", delay: "D", detector: "Det" };
 function mk(kind, x, y, angle = 0, aim) {
   counters[kind] = (counters[kind] || 0) + 1;
-  return { id: PREFIX[kind] + counters[kind], kind, pos: [x, y], angle, aim, fold: kind === "mirror" ? 1 : undefined, uid: nextId++ };
+  return { id: PREFIX[kind] + counters[kind], kind, pos: [x, y], angle, aim, fold: kind === "mirror" || kind === "cube" ? 1 : undefined, uid: nextId++ };
 }
 function resetIds() { for (const k in counters) delete counters[k]; }
 
-function doSettle() {
+function doSettle(withCatch = S.catch) {
   const before = new Map(S.comps.map((c) => [c.id, c.angle]));
   const t0 = performance.now();
-  const r = Aim.settle(S.comps);
+  const r = Aim.settleAndCatch(S.comps, withCatch);
   S.lastSettle = { ms: performance.now() - t0, passes: r.passes };
   S.comps = r.comps;
   S.changed = new Set(S.comps.filter((c) => before.has(c.id) && Aim.angleDiff(before.get(c.id), c.angle) > 0.01).map((c) => c.id));
   S.dirty = false;
 }
 /** After any edit: settle now if the chosen timing says so, else mark the table as not yet re-aimed. */
-function edited() { doSettle(); render(); }
+function edited(kind) { doSettle(S.catch && kind !== "dragmove"); render(); }
 
 /* rendering */
 const svg = document.getElementById("table");
@@ -259,7 +289,8 @@ function render() {
   }
   for (const s of tr.segments) el("line", { x1: s.a[0], y1: Y(s.a[1]), x2: s.b[0], y2: Y(s.b[1]), stroke: "#d62828", "stroke-width": big ? 1 : 2, "stroke-opacity": s.miss ? 0.35 : 0.9 });
   for (const c of S.comps) drawComp(c, big);
-  for (const c of S.comps) if (c.kind === "mirror" && !big && (c.id === S.sel || c.id === S.hover || (S.changed.has(c.id) && c.status === "snapped"))) drawRing(c, byId);
+  for (const c of S.comps) if (Aim.REDIRECTS.has(c.kind) && !big && (c.id === S.sel || c.id === S.hover || (S.changed.has(c.id) && c.status === "snapped"))) drawRing(c, byId);
+  if (!big) for (const s of tr.segments) { const f = byId.get(s.from); if (f && f.aim && s.arm === "r" && s.to && s.to !== f.aim) { const t = el("text", { x: s.b[0] + 8, y: Y(s.b[1]) + 18, "font-size": 11, fill: "#b91c1c" }); t.textContent = "blocked by " + s.to; } }
   if (S.aimDrag) { const c = byId.get(S.aimDrag.id); el("line", { x1: c.pos[0], y1: Y(c.pos[1]), x2: S.aimDrag.to[0], y2: Y(S.aimDrag.to[1]), stroke: "var(--accent)", "stroke-width": 1.5, "stroke-dasharray": "6 4", "pointer-events": "none" }); }
   if (S.mode === "beam" && S.beamPrev && byId.get(S.beamPrev)) {
     const p = byId.get(S.beamPrev).pos;
@@ -282,7 +313,8 @@ function drawRing(c, byId) {
     const k = el("circle", { cx: cx + d[0] * RING, cy: cy - d[1] * RING, r: 6, fill: "var(--accent)", stroke: "#fff", "stroke-width": 2, style: "cursor:crosshair" });
     k.dataset.knob = c.id;
   }
-  if (c.status === "snapped") {
+  const flippable = c.status === "snapped" || (c.status === "aimed" && !c.free);
+  if (flippable) {
     const x = cx + RING * 0.75, y = cy + RING * 0.75;
     el("rect", { x: x - 1, y: y - 1, width: 15, height: 16, rx: 2, fill: "#fff", stroke: "var(--accent)", "pointer-events": "none" });
     const t1 = el("text", { x: x + 6.5, y: y + 11, "font-size": 11, "font-weight": 600, "text-anchor": "middle", fill: "var(--accent)", "pointer-events": "none" }); t1.textContent = "F";
@@ -313,9 +345,9 @@ function renderPanels() {
     (S.dirty ? ' · <span style="color:var(--warn)">not re-aimed since the last edit</span>' : "");
   document.getElementById("changes").textContent = S.changed.size ? "Re-aimed by the last action: " + [...S.changed].join(", ") : "";
   const sel = S.comps.find((c) => c.id === S.sel);
-  document.getElementById("selInfo").textContent = sel ? sel.id + (sel.status === "aimed" ? ": angle set by its aim (turning is locked)" : sel.status === "snapped" ? ": 45° to the light (F flips; turning sets it free)" : "") : "click a component";
+  document.getElementById("selInfo").textContent = sel ? sel.id + (sel.status === "aimed" ? ": angle set by its aim" + (Aim.REDIRECTS.has(sel.kind) ? " (F lets go of the aim and flips)" : "") : sel.status === "snapped" ? ": 45° to the light (F flips; turning sets it free)" : "") : "click a component";
   document.getElementById("turnL").disabled = document.getElementById("turnR").disabled = !sel || sel.status === "aimed";
-  document.getElementById("snap").disabled = !sel || sel.kind !== "mirror" || !sel.free;
+  document.getElementById("snap").disabled = !sel || !Aim.REDIRECTS.has(sel.kind) || !sel.free;
   document.getElementById("clearAim").disabled = !sel || !sel.aim;
   document.getElementById("del").disabled = !sel;
   const rows = S.comps.slice(0, 200).map((c) =>
@@ -330,7 +362,7 @@ function compAt(ev) { const g = ev.target.closest && ev.target.closest("g[data-i
 svg.addEventListener("pointerdown", (ev) => {
   const id = compAt(ev), pt = svgPoint(ev);
   if (ev.target.dataset && ev.target.dataset.knob) { S.aimDrag = { id: ev.target.dataset.knob, to: pt }; svg.setPointerCapture(ev.pointerId); render(); return; }
-  if (S.mode === "place") { const c = mk(S.placeKind, Math.round(pt[0]), Math.round(pt[1]), S.placeKind === "cube" ? 45 : S.placeKind === "laser" || S.placeKind === "detector" ? 0 : 135); S.comps = [...S.comps, c]; S.sel = c.id; S.mode = "idle"; edited("place"); return; }
+  if (S.mode === "place") { const c = mk(S.placeKind, Math.round(pt[0]), Math.round(pt[1]), S.placeKind === "cube" ? 315 : S.placeKind === "laser" || S.placeKind === "detector" ? 0 : 135); S.comps = [...S.comps, c]; S.sel = c.id; S.mode = "idle"; edited("place"); return; }
   if (S.mode === "beam") { if (!id) return; if (S.beamPrev) S.comps = Aim.beamClick(S.comps, S.beamPrev, id); S.beamPrev = id; S.sel = id; edited("aim"); return; }
   S.sel = id;
   if (id) { const c = S.comps.find((x) => x.id === id); S.drag = { id, off: [c.pos[0] - pt[0], c.pos[1] - pt[1]] }; svg.setPointerCapture(ev.pointerId); }
@@ -355,18 +387,19 @@ svg.addEventListener("pointerup", (ev) => {
 });
 svg.addEventListener("wheel", (ev) => {
   const id = compAt(ev); if (!id) return; ev.preventDefault();
-  const c = S.comps.find((x) => x.id === id); if (c.status === "aimed") return;
-  if (c.status === "snapped") { const now = performance.now(); if (now - (S.lastFlip || 0) > 350) { S.lastFlip = now; S.comps = Aim.flip(S.comps, id); edited(); } return; }
+  const c = S.comps.find((x) => x.id === id);
+  if (Aim.REDIRECTS.has(c.kind) && (c.status === "snapped" || c.status === "aimed")) { const now = performance.now(); if (now - (S.lastFlip || 0) > 350) { S.lastFlip = now; S.comps = Aim.flip(S.comps, id); edited(); } return; }
   turn(id, ev.deltaY > 0 ? -5 : 5);
 }, { passive: false });
-function turn(id, deg) { S.comps = S.comps.map((c) => (c.id === id ? { ...c, angle: ((c.angle + deg) % 360 + 360) % 360, free: c.kind === "mirror" && !c.aim ? true : c.free } : c)); edited("turn"); }
+function turn(id, deg) { S.comps = S.comps.map((c) => (c.id === id ? { ...c, angle: ((c.angle + deg) % 360 + 360) % 360, free: Aim.REDIRECTS.has(c.kind) && !c.aim ? true : c.free } : c)); edited("turn"); }
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") setMode("idle");
-  if (ev.key === "f" || ev.key === "F") { const id = S.hover || S.sel, c = S.comps.find((x) => x.id === id); if (c && c.status === "snapped") { S.comps = Aim.flip(S.comps, id); edited(); } }
+  if (ev.key === "f" || ev.key === "F") { const id = S.hover || S.sel, c = S.comps.find((x) => x.id === id); if (c && Aim.REDIRECTS.has(c.kind) && (c.status === "snapped" || c.status === "aimed")) { S.comps = Aim.flip(S.comps, id); edited(); } }
 });
 function setMode(m) { S.mode = m; S.beamPrev = null; render(); }
 document.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
 document.querySelectorAll("[data-place]").forEach((b) => (b.onclick = () => { S.mode = "place"; S.placeKind = b.dataset.place; render(); }));
+document.getElementById("catchBox").onchange = (ev) => { S.catch = ev.target.checked; edited(); };
 document.getElementById("snap").onclick = () => { S.comps = S.comps.map((c) => (c.id === S.sel ? { ...c, free: false } : c)); edited(); };
 document.getElementById("turnL").onclick = () => S.sel && turn(S.sel, -15);
 document.getElementById("turnR").onclick = () => S.sel && turn(S.sel, 15);
@@ -389,8 +422,10 @@ function aimedPath() { const c = path(); c[1].aim = "M2"; c[2].aim = "Det1"; ret
 function move(id, dx, dy) { return () => { S.comps = S.comps.map((c) => (c.id === id ? { ...c, pos: [c.pos[0] + dx, c.pos[1] + dy] } : c)); edited("release"); }; }
 function click(id) { return () => { if (S.beamPrev) S.comps = Aim.beamClick(S.comps, S.beamPrev, id); S.beamPrev = id; S.sel = id; edited("aim"); }; }
 const SCENARIOS = [
-  { name: "Fold with F", desc: "A mirror dropped into the light, with no aim, sits at 45° to it. Here it folds the light up, but the detector is below. Flip it with F (the step does the same), then aim it at a second detector at an odd angle by dragging the knob on its ring.", init: () => { resetIds(); return [mk("laser", 100, 350, 0), mk("mirror", 500, 350, 0), mk("detector", 500, 60, 90), mk("detector", 900, 120, 150)]; },
-    steps: [["Show what happens (M1 folds the light up: wrong side)", () => { doSettle(); S.sel = "M1"; render(); }], ["Flip M1 (same as pressing F)", () => { S.comps = Aim.flip(S.comps, "M1"); edited(); }], ["Aim M1 at Det2 (same as dragging its knob onto Det2)", () => { S.comps = Aim.aimAt(S.comps, "M1", "Det2"); edited(); }]] },
+  { name: "Fold with F", desc: "A mirror dropped into the light, with no aim, sits at 45° to it. Here it folds the light up, to nothing. Flip it with F: the light lands on the detector below, and M1 catches it as its aim, so dragging the detector now makes M1 follow. Last, aim it at a second detector by dragging the knob on its ring.", init: () => { resetIds(); return [mk("laser", 100, 350, 0), mk("mirror", 500, 350, 0), mk("detector", 500, 60, 90), mk("detector", 900, 120, 150)]; },
+    steps: [["Show what happens (M1 folds the light up: wrong side)", () => { doSettle(); S.sel = "M1"; render(); }], ["Flip M1 (same as pressing F)", () => { S.comps = Aim.flip(S.comps, "M1"); edited(); }], ["Move Det1 left 200 mm (M1 follows: it caught Det1)", move("Det1", -200, 0)], ["Aim M1 at Det2 (same as dragging its knob onto Det2)", () => { S.comps = Aim.aimAt(S.comps, "M1", "Det2"); edited(); }]] },
+  { name: "Beam cube", desc: "A beam cube splits the light: the straight-through arm goes on, the reflected arm folds at 45°. It folds up here, to nothing; F flips it down onto the detector, which it catches. Drag the detector and the cube turns to follow it, while the straight-through arm stays put.", init: () => { resetIds(); return [mk("laser", 100, 350, 0), mk("cube", 500, 350, 315), mk("detector", 1000, 350, 180), mk("detector", 500, 80, 90)]; },
+    steps: [["Show what happens (the reflected arm goes up: wrong side)", () => { doSettle(); S.sel = "C1"; render(); }], ["Flip C1 (same as pressing F)", () => { S.comps = Aim.flip(S.comps, "C1"); edited(); }], ["Move Det2 right 150 mm (C1 turns to follow; the straight-through arm still reaches Det1)", move("Det2", 150, 0)]] },
   { name: "Lay out a path", desc: "A laser, two mirrors and a detector, placed but not aimed. Draw a Beam through them in Beam mode and watch each mirror turn the moment it knows both neighbours.", init: path,
     steps: [["Enter Beam mode", () => setMode("beam")], ["Click the laser L1", click("L1")], ["Click mirror M1 (nothing turns yet: M1 has no aim)", click("M1")], ["Click mirror M2 (M1 now aims at M2 and turns)", click("M2")], ["Click detector Det1 (M2 aims at Det1 and turns)", click("Det1")], ["Leave Beam mode", () => setMode("idle")]] },
   { name: "Drag along a path", desc: "An aimed path. Move M2 and the detector and watch M1 and M2 follow. Then switch 'Mirrors re-aim' to 'When I let go' and drag by hand to compare how it feels.", init: aimedPath,
