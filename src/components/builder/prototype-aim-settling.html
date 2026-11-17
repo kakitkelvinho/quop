@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE — how aims settle while laying out a Setup (#369)</title>
+<style>
+  :root { --accent:#1a5fb4; --ink:#1b1f24; --mute:#6b7280; --line:#d6dae0; --bg:#f7f8fa; --warn:#b45309; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:16px 24px 8px; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  header p { margin:0; color:var(--mute); max-width:980px; }
+  .tag { display:inline-block; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:#fff; background:var(--warn); padding:1px 6px; margin-right:6px; }
+  main { display:grid; grid-template-columns: 1fr 380px; gap:16px; padding:8px 24px 24px; }
+  .card { background:#fff; border:1px solid var(--line); padding:12px; }
+  .row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:8px; }
+  .row .lbl { color:var(--mute); font-size:12px; margin-right:4px; min-width:92px; }
+  button { font:inherit; font-size:13px; border:1px solid var(--line); background:#fff; padding:4px 10px; cursor:pointer; }
+  button:hover { border-color:var(--accent); }
+  button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button:disabled { opacity:.4; cursor:default; }
+  input[type=number] { width:70px; font:inherit; padding:3px; }
+  svg { width:100%; height:auto; background:#fff; border:1px solid var(--line); display:block; touch-action:none; }
+  .readout { font-variant-numeric: tabular-nums; color:var(--mute); font-size:12px; margin-top:6px; }
+  .readout b { color:var(--ink); font-weight:600; }
+  .readout .slow { color:#b91c1c; }
+  table { width:100%; border-collapse:collapse; font-size:12px; }
+  th, td { text-align:left; padding:3px 4px; border-bottom:1px solid #eef0f3; vertical-align:top; }
+  th { color:var(--mute); font-weight:500; }
+  tr.changed td { background:#eef4fc; }
+  tr.sel td { outline:1px solid var(--accent); }
+  .st-aimed { color:var(--accent); } .st-waiting { color:var(--warn); } .st-hand { color:var(--mute); }
+  .tabs { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px; }
+  .steps button { display:block; width:100%; text-align:left; margin-bottom:4px; }
+  .steps button.next { border-color:var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .steps button.done { color:var(--mute); }
+  .desc { color:var(--ink); margin:0 0 8px; }
+  .hint { color:var(--mute); font-size:12px; }
+  .changes { font-size:12px; color:var(--accent); min-height:18px; }
+  .scroll { max-height:340px; overflow:auto; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="tag">Prototype · throwaway</span>How aims settle while laying out a Setup</h1>
+  <p><b>Question (#369):</b> while you place, draw and drag, should mirrors re-aim <i>continuously</i>, only <i>when you let go</i>, or only <i>when asked</i>, and does a rough, half-laid-out table behave sensibly?
+  Rules on trial: a mirror's angle comes from the <b>positions</b> of the Component before it and the one it aims at (n ∝ d_out − d_in); the one before it is worked out (whatever aims at it, else whatever light reaches it from, first in list on a tie); when it can't be worked out the mirror keeps its last angle and shows a hollow marker.
+  Drawing a Beam in Beam mode sets the aims. The traced beam (red) is only a check and is always live. Top view only: heights and pitch are left out here.</p>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <div class="row"><span class="lbl">Editing mode</span>
+        <button data-mode="idle">Select &amp; drag</button>
+        <button data-place="laser">Place laser</button>
+        <button data-place="mirror">Place mirror</button>
+        <button data-place="cube">Place beam cube</button>
+        <button data-place="delay">Place delay line</button>
+        <button data-place="detector">Place detector</button>
+        <button data-mode="beam">Beam (sets aims)</button>
+      </div>
+      <div class="row"><span class="lbl">Mirrors re-aim</span>
+        <button data-when="live">Continuously</button>
+        <button data-when="release">When I let go</button>
+        <button data-when="manual">Only when asked</button>
+        <button id="settleNow">Re-aim now</button>
+      </div>
+      <div class="row"><span class="lbl">Selected</span>
+        <button id="turnL">Turn −15°</button><button id="turnR">Turn +15°</button>
+        <button id="clearAim">Clear aim</button><button id="del">Delete</button>
+        <span class="hint" id="selInfo"></span>
+      </div>
+      <div class="row"><span class="lbl">Stress</span>
+        <button id="drop">Drop</button><input type="number" id="dropN" value="100" min="1" max="5000"> random components
+        <button id="clear">Clear table</button>
+      </div>
+      <svg id="table" viewBox="0 0 1200 700"></svg>
+      <div class="readout" id="readout"></div>
+      <div class="changes" id="changes"></div>
+      <div class="hint">Drag a component in Select mode. Mouse wheel over a component turns it. In Beam mode click components in order; Esc or "Select &amp; drag" leaves it.</div>
+    </div>
+  </section>
+  <aside>
+    <div class="card" style="margin-bottom:12px">
+      <div class="tabs" id="tabs"></div>
+      <p class="desc" id="scDesc"></p>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="card">
+      <b>Components</b> <span class="hint">(blue = re-aimed by the last action)</span>
+      <div class="scroll"><table id="state"></table></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+/* ---------- The logic under test: pure, no DOM. Lift this into the real module once settled. ---------- */
+const Aim = (() => {
+  const R = 12.7, EPS = 1e-9, MISS_MM = 900, MAX_SEGMENTS = 20000, PER_LASER = 300, MAX_DEPTH = 40;
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+  const scale = (a, k) => [a[0] * k, a[1] * k];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
+  const len = (a) => Math.hypot(a[0], a[1]);
+  const norm = (a) => { const l = len(a); return l < EPS ? null : [a[0] / l, a[1] / l]; };
+  const fromDeg = (d) => [Math.cos(d * Math.PI / 180), Math.sin(d * Math.PI / 180)];
+  const toDeg = (v) => ((Math.atan2(v[1], v[0]) * 180 / Math.PI) + 360) % 360;
+  const reflect = (d, n) => sub(d, scale(n, 2 * dot(d, n)));
+  const angleDiff = (a, b) => { const d = ((a - b) % 360 + 540) % 360 - 180; return Math.abs(d); };
+
+  /** Where a ray first meets a component's surface, or null. When settling, an aimed mirror is met as a 25.4 mm disc facing the ray, so light finds it by position even while it is frozen edge-on. */
+  function hit(ray, c, settling) {
+    const toC = sub(c.pos, ray.o);
+    if (c.kind === "mirror" && !(settling && c.aim)) {
+      const n = fromDeg(c.angle), den = dot(ray.d, n);
+      if (Math.abs(den) < EPS) return null;
+      const t = dot(toC, n) / den;
+      if (t < 1e-6) return null;
+      const p = add(ray.o, scale(ray.d, t));
+      return len(sub(p, c.pos)) > R ? null : { t, p };
+    }
+    const t = dot(toC, ray.d);
+    if (t < 1e-6) return null;
+    const p = add(ray.o, scale(ray.d, t));
+    return len(sub(p, c.pos)) > R ? null : { t, p: c.pos };
+  }
+
+  /** The traced beam tree, as segments, plus which component light first reaches each component from. Trace order: lasers in list order, depth-first, transmitted before reflected. */
+  function trace(comps, settling = false) {
+    const segments = [], arrivals = {};
+    let order = 0, tests = 0;
+    for (const laser of comps.filter((c) => c.kind === "laser")) {
+      const stack = [{ o: laser.pos, d: fromDeg(laser.angle), from: laser.id, depth: 0, laser: laser.id }];
+      const start = segments.length;
+      while (stack.length && segments.length < MAX_SEGMENTS && segments.length - start < PER_LASER) {
+        const ray = stack.pop();
+        let best = null;
+        for (const c of comps) {
+          if (c.id === ray.from) continue;
+          tests++;
+          const h = hit(ray, c, settling);
+          if (h && (!best || h.t < best.h.t)) best = { c, h };
+        }
+        if (!best) { segments.push({ a: ray.o, b: add(ray.o, scale(ray.d, MISS_MM)), miss: true }); continue; }
+        const { c, h } = best;
+        segments.push({ a: ray.o, b: h.p });
+        if (c.id in arrivals) { if (settling) continue; } else arrivals[c.id] = { from: ray.from, order: order++ };
+        if (ray.depth >= MAX_DEPTH) continue;
+        const next = (d) => ({ o: h.p, d, from: c.id, depth: ray.depth + 1, laser: ray.laser });
+        if (c.kind === "mirror") stack.push(next(reflect(ray.d, fromDeg(c.angle))));
+        else if (c.kind === "cube") { stack.push(next(reflect(ray.d, fromDeg(c.angle)))); stack.push(next(ray.d)); }
+        else if (c.kind === "delay") { if (Math.abs(dot(ray.d, fromDeg(c.angle))) > Math.cos(5 * Math.PI / 180)) stack.push(next(ray.d)); }
+      }
+    }
+    return { segments, arrivals, tests };
+  }
+
+  /** Who comes before c: whatever aims at it (first in list on a tie), else whatever light reaches it from. */
+  function preceding(c, aimersOf, byId, arrivals) {
+    const aimers = aimersOf.get(c.id) || [];
+    if (aimers.length) return { prev: aimers[0], how: aimers.length > 1 ? "aimed at by " + aimers.length + "; first in list wins" : "aims at it" };
+    const a = arrivals[c.id];
+    if (a && byId.get(a.from)) return { prev: byId.get(a.from), how: "light reaches it from" };
+    return { prev: null };
+  }
+
+  /** One settling pass: new angles from neighbours' positions; anything that can't be worked out keeps its angle. */
+  function settleOnce(comps, arrivals) {
+    const byId = new Map(comps.map((c) => [c.id, c]));
+    const aimersOf = new Map();
+    for (const c of comps) if (c.aim) { if (!aimersOf.has(c.aim)) aimersOf.set(c.aim, []); aimersOf.get(c.aim).push(c); }
+    return comps.map((c) => {
+      const turnsItself = (c.kind === "mirror" && c.aim) || c.kind === "delay";
+      if (!turnsItself) return { ...c, status: "hand", why: c.kind === "mirror" ? "no aim: turned by hand" : "turned by hand" };
+      const { prev, how } = preceding(c, aimersOf, byId, arrivals);
+      if (!prev) return { ...c, status: "waiting", why: "nothing comes before it yet", prevId: null };
+      const dIn = norm(sub(c.pos, prev.pos));
+      if (!dIn) return { ...c, status: "waiting", why: "on top of the one before it", prevId: prev.id };
+      if (c.kind === "delay") return { ...c, angle: toDeg(dIn), status: "aimed", why: how, prevId: prev.id };
+      const target = byId.get(c.aim);
+      if (!target) return { ...c, status: "waiting", why: "aim target is gone", prevId: prev.id };
+      const dOut = norm(sub(target.pos, c.pos));
+      const n = dOut && norm(sub(dOut, dIn));
+      if (!n) return { ...c, status: "waiting", why: "no angle sends light that way", prevId: prev.id };
+      return { ...c, angle: toDeg(n), status: "aimed", why: how, prevId: prev.id };
+    });
+  }
+
+  /** Settle until nothing turns (or 8 passes). Each pass may let light reach further, so a chain can take several. */
+  function settle(comps) {
+    let cur = comps, passes = 0;
+    while (passes < 8) {
+      passes++;
+      const next = settleOnce(cur, trace(cur, true).arrivals);
+      const turned = next.some((c, i) => angleDiff(c.angle, cur[i].angle) > 1e-6);
+      cur = next;
+      if (!turned) break;
+    }
+    return { comps: cur, passes };
+  }
+
+  /** Beam mode: clicking a component after the previous one makes the previous one (if a mirror) aim at it. */
+  function beamClick(comps, prevId, id) {
+    return comps.map((c) => (c.id === prevId && c.kind === "mirror" && prevId !== id ? { ...c, aim: id } : c));
+  }
+
+  function remove(comps, id) {
+    return comps.filter((c) => c.id !== id).map((c) => (c.aim === id ? { ...c, aim: undefined } : c));
+  }
+
+  return { trace, settle, beamClick, remove, angleDiff, fromDeg };
+})();
+
+/* ---------- Throwaway page ---------- */
+const S = {
+  comps: [], mode: "idle", placeKind: null, beamPrev: null, when: "live", sel: null,
+  drag: null, changed: new Set(), lastSettle: null, lastTrace: null, dirty: false,
+};
+let nextId = 1;
+const counters = {};
+const NAMES = { laser: "Laser", mirror: "Mirror", cube: "Beam cube", delay: "Delay line", detector: "Detector" };
+const PREFIX = { laser: "L", mirror: "M", cube: "C", delay: "D", detector: "Det" };
+function mk(kind, x, y, angle = 0, aim) {
+  counters[kind] = (counters[kind] || 0) + 1;
+  return { id: PREFIX[kind] + counters[kind], kind, pos: [x, y], angle, aim, uid: nextId++ };
+}
+function resetIds() { for (const k in counters) delete counters[k]; }
+
+function doSettle() {
+  const before = new Map(S.comps.map((c) => [c.id, c.angle]));
+  const t0 = performance.now();
+  const r = Aim.settle(S.comps);
+  S.lastSettle = { ms: performance.now() - t0, passes: r.passes };
+  S.comps = r.comps;
+  S.changed = new Set(S.comps.filter((c) => before.has(c.id) && Aim.angleDiff(before.get(c.id), c.angle) > 0.01).map((c) => c.id));
+  S.dirty = false;
+}
+/** After any edit: settle now if the chosen timing says so, else mark the table as not yet re-aimed. */
+function edited(kind) {
+  if (S.when === "live" || (S.when === "release" && kind !== "dragmove")) doSettle();
+  else { S.dirty = true; S.changed = new Set(); }
+  render();
+}
+
+/* rendering */
+const svg = document.getElementById("table");
+const NS = "http://www.w3.org/2000/svg";
+const Y = (y) => 700 - y;
+function el(tag, attrs, parent = svg) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; }
+function render() {
+  svg.textContent = "";
+  for (let x = 0; x <= 1200; x += 100) el("line", { x1: x, y1: 0, x2: x, y2: 700, stroke: "#f1f3f6" });
+  for (let y = 0; y <= 700; y += 100) el("line", { x1: 0, y1: y, x2: 1200, y2: y, stroke: "#f1f3f6" });
+  const t0 = performance.now();
+  const tr = Aim.trace(S.comps);
+  S.lastTrace = { ms: performance.now() - t0, segs: tr.segments.length, tests: tr.tests };
+  const byId = new Map(S.comps.map((c) => [c.id, c]));
+  const big = S.comps.length > 150;
+  if (!big) for (const c of S.comps) if (c.aim && byId.get(c.aim)) {
+    const t = byId.get(c.aim);
+    el("line", { x1: c.pos[0], y1: Y(c.pos[1]), x2: t.pos[0], y2: Y(t.pos[1]), stroke: "#9db7dc", "stroke-dasharray": "4 5" });
+  }
+  for (const s of tr.segments) el("line", { x1: s.a[0], y1: Y(s.a[1]), x2: s.b[0], y2: Y(s.b[1]), stroke: "#d62828", "stroke-width": big ? 1 : 2, "stroke-opacity": s.miss ? 0.35 : 0.9 });
+  for (const c of S.comps) drawComp(c, big);
+  if (S.mode === "beam" && S.beamPrev && byId.get(S.beamPrev)) {
+    const p = byId.get(S.beamPrev).pos;
+    el("circle", { cx: p[0], cy: Y(p[1]), r: 20, fill: "none", stroke: "var(--accent)", "stroke-width": 2 });
+  }
+  renderPanels();
+}
+function drawComp(c, big) {
+  const g = el("g", { transform: "translate(" + c.pos[0] + " " + Y(c.pos[1]) + ") rotate(" + (-c.angle) + ")", "data-id": c.id, style: "cursor:pointer" });
+  const sel = c.id === S.sel, col = sel ? "var(--accent)" : "#222";
+  if (c.kind === "laser") { el("rect", { x: -30, y: -9, width: 30, height: 18, fill: "#333" }, g); el("rect", { x: -2, y: -4, width: 4, height: 8, fill: "#d62828" }, g); }
+  else if (c.kind === "mirror") { el("line", { x1: 0, y1: -12.7, x2: 0, y2: 12.7, stroke: col, "stroke-width": 4 }, g); el("line", { x1: -4, y1: -12.7, x2: -4, y2: 12.7, stroke: "#999", "stroke-width": 3 }, g); }
+  else if (c.kind === "cube") { el("rect", { x: -12.7, y: -12.7, width: 25.4, height: 25.4, fill: "#e8f0fb", stroke: col }, g); el("line", { x1: 0, y1: -12.7, x2: 0, y2: 12.7, stroke: col }, g); }
+  else if (c.kind === "delay") { el("rect", { x: -12.7, y: -12.7, width: 25.4, height: 25.4, fill: "#fff", stroke: col }, g); el("rect", { x: -8, y: 12.7, width: 16, height: 60, fill: "#eef0f3", stroke: "#999" }, g); }
+  else if (c.kind === "detector") { el("rect", { x: 0, y: -12.7, width: 16, height: 25.4, fill: "#555" }, g); el("line", { x1: 0, y1: -12.7, x2: 0, y2: 12.7, stroke: col, "stroke-width": 3 }, g); }
+  el("circle", { cx: 0, cy: 0, r: 16, fill: "transparent" }, g);
+  if (c.status === "waiting") el("circle", { cx: c.pos[0], cy: Y(c.pos[1]), r: 18, fill: "none", stroke: "var(--warn)", "stroke-dasharray": "3 3" });
+  if (!big) { const t = el("text", { x: c.pos[0] + 16, y: Y(c.pos[1]) - 16, "font-size": 12, fill: sel ? "var(--accent)" : "#555" }); t.textContent = c.id; }
+  if (S.changed.has(c.id) && !big) el("circle", { cx: c.pos[0], cy: Y(c.pos[1]), r: 22, fill: "none", stroke: "var(--accent)", "stroke-opacity": .5 });
+}
+function renderPanels() {
+  document.querySelectorAll("[data-mode]").forEach((b) => b.classList.toggle("on", S.mode === b.dataset.mode));
+  document.querySelectorAll("[data-place]").forEach((b) => b.classList.toggle("on", S.mode === "place" && S.placeKind === b.dataset.place));
+  document.querySelectorAll("[data-when]").forEach((b) => b.classList.toggle("on", S.when === b.dataset.when));
+  const st = S.lastSettle, tr = S.lastTrace;
+  const slow = (ms) => (ms > 4 ? ' class="slow"' : "");
+  document.getElementById("readout").innerHTML =
+    "<b>" + S.comps.length + "</b> components · trace <b" + slow(tr.ms) + ">" + tr.ms.toFixed(2) + " ms</b> (" + tr.segs + " segments, " + tr.tests.toLocaleString() + " ray–surface tests)" +
+    (st ? " · last re-aim <b" + slow(st.ms) + ">" + st.ms.toFixed(2) + " ms</b> in " + st.passes + " pass" + (st.passes > 1 ? "es" : "") : "") +
+    (S.dirty ? ' · <span style="color:var(--warn)">not re-aimed since the last edit</span>' : "");
+  document.getElementById("changes").textContent = S.changed.size ? "Re-aimed by the last action: " + [...S.changed].join(", ") : "";
+  const sel = S.comps.find((c) => c.id === S.sel);
+  document.getElementById("selInfo").textContent = sel ? sel.id + (sel.status === "aimed" ? ": angle set by its aim (turning is locked)" : "") : "click a component";
+  document.getElementById("turnL").disabled = document.getElementById("turnR").disabled = !sel || sel.status === "aimed";
+  document.getElementById("clearAim").disabled = !sel || !sel.aim;
+  document.getElementById("del").disabled = !sel;
+  const rows = S.comps.slice(0, 200).map((c) =>
+    "<tr class='" + (S.changed.has(c.id) ? "changed " : "") + (c.id === S.sel ? "sel" : "") + "'><td>" + c.id + "</td><td>" + NAMES[c.kind] + "</td><td>" + c.angle.toFixed(1) + "°</td><td>" + (c.aim || "") +
+    "</td><td class='st-" + (c.status || "hand") + "'>" + ({ aimed: "aimed", waiting: "waiting", hand: "by hand" }[c.status || "hand"]) + (c.status && c.status !== "hand" && c.prevId ? " · after " + c.prevId : "") + "<br><span class='hint'>" + (c.why || "") + "</span></td></tr>").join("");
+  document.getElementById("state").innerHTML = "<tr><th>Id</th><th>Kind</th><th>Angle</th><th>Aims at</th><th>Status</th></tr>" + rows + (S.comps.length > 200 ? "<tr><td colspan=5 class='hint'>…and " + (S.comps.length - 200) + " more</td></tr>" : "");
+}
+
+/* interaction */
+function svgPoint(ev) { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return [q.x, 700 - q.y]; }
+function compAt(ev) { const g = ev.target.closest && ev.target.closest("g[data-id]"); return g ? g.dataset.id : null; }
+svg.addEventListener("pointerdown", (ev) => {
+  const id = compAt(ev), pt = svgPoint(ev);
+  if (S.mode === "place") { const c = mk(S.placeKind, Math.round(pt[0]), Math.round(pt[1]), S.placeKind === "cube" ? 45 : S.placeKind === "laser" || S.placeKind === "detector" ? 0 : 135); S.comps = [...S.comps, c]; S.sel = c.id; S.mode = "idle"; edited("place"); return; }
+  if (S.mode === "beam") { if (!id) return; if (S.beamPrev) S.comps = Aim.beamClick(S.comps, S.beamPrev, id); S.beamPrev = id; S.sel = id; edited("aim"); return; }
+  S.sel = id;
+  if (id) { const c = S.comps.find((x) => x.id === id); S.drag = { id, off: [c.pos[0] - pt[0], c.pos[1] - pt[1]] }; svg.setPointerCapture(ev.pointerId); }
+  render();
+});
+let raf = 0;
+svg.addEventListener("pointermove", (ev) => {
+  if (!S.drag) return;
+  const pt = svgPoint(ev), d = S.drag;
+  S.comps = S.comps.map((c) => (c.id === d.id ? { ...c, pos: [Math.round(pt[0] + d.off[0]), Math.round(pt[1] + d.off[1])] } : c));
+  if (!raf) raf = requestAnimationFrame(() => { raf = 0; edited("dragmove"); });
+});
+svg.addEventListener("pointerup", () => { if (S.drag) { S.drag = null; edited("release"); } });
+svg.addEventListener("wheel", (ev) => {
+  const id = compAt(ev); if (!id) return; ev.preventDefault();
+  const c = S.comps.find((x) => x.id === id); if (c.status === "aimed") return;
+  turn(id, ev.deltaY > 0 ? -5 : 5);
+}, { passive: false });
+function turn(id, deg) { S.comps = S.comps.map((c) => (c.id === id ? { ...c, angle: ((c.angle + deg) % 360 + 360) % 360 } : c)); edited("turn"); }
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") setMode("idle"); });
+function setMode(m) { const wasBeam = S.mode === "beam"; S.mode = m; S.beamPrev = null; if (wasBeam && m !== "beam" && S.when === "release") doSettle(); render(); }
+document.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
+document.querySelectorAll("[data-place]").forEach((b) => (b.onclick = () => { S.mode = "place"; S.placeKind = b.dataset.place; render(); }));
+document.querySelectorAll("[data-when]").forEach((b) => (b.onclick = () => { S.when = b.dataset.when; render(); }));
+document.getElementById("settleNow").onclick = () => { doSettle(); render(); };
+document.getElementById("turnL").onclick = () => S.sel && turn(S.sel, -15);
+document.getElementById("turnR").onclick = () => S.sel && turn(S.sel, 15);
+document.getElementById("clearAim").onclick = () => { S.comps = S.comps.map((c) => (c.id === S.sel ? { ...c, aim: undefined } : c)); edited("aim"); };
+document.getElementById("del").onclick = () => { S.comps = Aim.remove(S.comps, S.sel); S.sel = null; edited("delete"); };
+document.getElementById("clear").onclick = () => { S.comps = []; resetIds(); S.sel = null; S.lastSettle = null; edited("clear"); };
+document.getElementById("drop").onclick = () => {
+  const n = Math.max(1, Math.min(5000, +document.getElementById("dropN").value || 100));
+  const kinds = ["laser", "mirror", "mirror", "mirror", "mirror", "mirror", "mirror", "mirror", "mirror", "mirror", "mirror", "cube", "cube", "delay", "detector", "detector", "detector", "detector", "detector", "detector"];
+  const added = [];
+  for (let i = 0; i < n; i++) { const k = kinds[Math.floor(Math.random() * kinds.length)]; added.push(mk(k, 20 + Math.random() * 1160, 20 + Math.random() * 660, Math.floor(Math.random() * 24) * 15)); }
+  const all = [...S.comps, ...added];
+  for (const c of added) if (c.kind === "mirror" && Math.random() < 0.6) { const t = all[Math.floor(Math.random() * all.length)]; if (t.id !== c.id) c.aim = t.id; }
+  S.comps = all; edited("drop");
+};
+
+/* guided walkthroughs */
+function path() { resetIds(); return [mk("laser", 100, 350, 0), mk("mirror", 500, 350, 0), mk("mirror", 500, 150, 0), mk("detector", 900, 150, 180)]; }
+function aimedPath() { const c = path(); c[1].aim = "M2"; c[2].aim = "Det1"; return c; }
+function move(id, dx, dy) { return () => { S.comps = S.comps.map((c) => (c.id === id ? { ...c, pos: [c.pos[0] + dx, c.pos[1] + dy] } : c)); edited("release"); }; }
+function click(id) { return () => { if (S.beamPrev) S.comps = Aim.beamClick(S.comps, S.beamPrev, id); S.beamPrev = id; S.sel = id; edited("aim"); }; }
+const SCENARIOS = [
+  { name: "Lay out a path", desc: "A laser, two mirrors and a detector, placed but not aimed. Draw a Beam through them in Beam mode and watch each mirror turn the moment it knows both neighbours.", init: path,
+    steps: [["Enter Beam mode", () => setMode("beam")], ["Click the laser L1", click("L1")], ["Click mirror M1 (nothing turns yet: M1 has no aim)", click("M1")], ["Click mirror M2 (M1 now aims at M2 and turns)", click("M2")], ["Click detector Det1 (M2 aims at Det1 and turns)", click("Det1")], ["Leave Beam mode", () => setMode("idle")]] },
+  { name: "Drag along a path", desc: "An aimed path. Move M2 and the detector and watch M1 and M2 follow. Then switch 'Mirrors re-aim' to 'When I let go' and drag by hand to compare how it feels.", init: aimedPath,
+    steps: [["Move M2 up 100 mm", move("M2", 0, 100)], ["Move M2 right 150 mm", move("M2", 150, 0)], ["Move the detector down 250 mm", move("Det1", 0, -250)], ["Move M1 off the laser's line, up 60 mm", move("M1", 0, 60)]] },
+  { name: "Rough layout", desc: "Mirrors already aimed in a chain, but the laser points the wrong way. M2 and M3 come 'after' the mirror that aims at them, so they turn even with no light; M1 waits for light. Turn the laser and watch the chain settle (see the pass count).", init: () => { resetIds(); const c = [mk("laser", 100, 350, 180), mk("mirror", 400, 350, 30), mk("mirror", 400, 600, 200), mk("mirror", 800, 600, 10), mk("detector", 800, 150, 90)]; c[1].aim = "M2"; c[2].aim = "M3"; c[3].aim = "Det1"; return c; },
+    steps: [["Re-aim now", () => { doSettle(); render(); }], ["Turn the laser 90°", () => turn("L1", 90)], ["Turn the laser 90° more, toward M1", () => turn("L1", 90)]] },
+  { name: "Delete an aim target", desc: "Delete the mirror another mirror aims at. Its aim is cleared and it keeps the angle it had: nothing jumps.", init: aimedPath,
+    steps: [["Re-aim now", () => { doSettle(); render(); }], ["Delete M2", () => { S.comps = Aim.remove(S.comps, "M2"); edited("delete"); }], ["Move M1 (it is turned by hand now, so it stays put)", move("M1", 0, 40)]] },
+  { name: "Two feed one", desc: "M1 and M2 both aim at M3. Which one is 'before' M3? The first in the list. Swap their order and M3 re-aims for the other.", init: () => { resetIds(); const c = [mk("laser", 100, 200, 0), mk("laser", 100, 500, 0), mk("mirror", 400, 200, 0), mk("mirror", 400, 500, 0), mk("mirror", 750, 350, 0), mk("detector", 1050, 350, 180)]; c[2].aim = "M3"; c[3].aim = "M3"; c[4].aim = "Det1"; return c; },
+    steps: [["Re-aim now", () => { doSettle(); render(); }], ["Swap M1 and M2 in the list", () => { const i = S.comps.findIndex((c) => c.id === "M1"), j = S.comps.findIndex((c) => c.id === "M2"); const a = [...S.comps]; [a[i], a[j]] = [a[j], a[i]]; S.comps = a; edited("order"); }]] },
+  { name: "Delay line", desc: "Laser → M1 → delay line → M2 → detector. The delay line turns across the line from M1. Move M1 and it follows; move M2 off its line and M2 loses its light and freezes.", init: () => { resetIds(); const c = [mk("laser", 100, 150, 0), mk("mirror", 350, 150, 0), mk("delay", 350, 450, 0), mk("mirror", 350, 650, 0), mk("detector", 800, 650, 180)]; c[1].aim = "D1"; c[3].aim = "Det1"; return c; },
+    steps: [["Re-aim now", () => { doSettle(); render(); }], ["Move M1 right 60 mm", move("M1", 60, 0)], ["Move M2 right 100 mm, off the delay line's output", move("M2", 100, 0)], ["Move M2 back", move("M2", -100, 0)]] },
+  { name: "Many components", desc: "Random tables. Watch the trace and re-aim times in the readout (red above 4 ms). Drag one component around with 'Continuously' on to feel it.", init: () => { resetIds(); return []; },
+    steps: [["Drop 100", () => { document.getElementById("dropN").value = 100; document.getElementById("drop").onclick(); }], ["Drop 400 more (500 total)", () => { document.getElementById("dropN").value = 400; document.getElementById("drop").onclick(); }], ["Drop 1500 more (2000 total)", () => { document.getElementById("dropN").value = 1500; document.getElementById("drop").onclick(); }]] },
+];
+let sc = 0, step = 0;
+function startScenario(i) { sc = i; step = 0; S.comps = SCENARIOS[i].init(); S.mode = "idle"; S.beamPrev = null; S.sel = null; S.lastSettle = null; S.changed = new Set(); S.dirty = false; render(); renderScenario(); }
+function renderScenario() {
+  document.getElementById("tabs").innerHTML = SCENARIOS.map((s, i) => "<button class='" + (i === sc ? "on" : "") + "' data-sc='" + i + "'>" + s.name + "</button>").join("");
+  document.querySelectorAll("[data-sc]").forEach((b) => (b.onclick = () => startScenario(+b.dataset.sc)));
+  document.getElementById("scDesc").textContent = SCENARIOS[sc].desc;
+  const box = document.getElementById("steps"); box.textContent = "";
+  SCENARIOS[sc].steps.forEach(([label, fn], i) => {
+    const b = document.createElement("button"); b.textContent = (i + 1) + ". " + label;
+    b.className = i < step ? "done" : i === step ? "next" : ""; b.disabled = i !== step;
+    b.onclick = () => { fn(); step = i + 1; renderScenario(); };
+    box.appendChild(b);
+  });
+  const r = document.createElement("button"); r.textContent = "↺ Restart this scenario"; r.onclick = () => startScenario(sc); box.appendChild(r);
+}
+startScenario(0);
+</script>
+</body>
+</html>
