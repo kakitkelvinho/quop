@@ -1,0 +1,240 @@
+--- a/src/components/builder/types.ts
++++ b/src/components/builder/types.ts
+@@ -62,7 +62,7 @@
+   "bias-tee": "Bias tee", scope: "Scope", driver: "Driver",
+ };
+ 
+-export function blockSize(component: BuilderComponent): Vec3 {
++export function blockSize(component: ComponentOf<"block">): Vec3 {
+   return component.size ?? (component.symbol === "scope" ? SCOPE_BLOCK_SIZE_MM : component.symbol ? SYMBOL_BLOCK_SIZE_MM : BLOCK_SIZE_MM);
+ }
+ 
+@@ -83,7 +83,8 @@
+  * COMPONENT_FIELDS says how a file's value for each is read and held, and
+  * what a missing one means.
+  */
+-export type BuilderComponent = {
++/** Every field any kind can have, flat. Kept for COMPONENT_FIELDS and readers of raw files. */
++export type AnyComponentFields = {
+   id: string;
+   type: ComponentType;
+   /** millimetres; table plane is XZ, Y is the component's height (its optical centre above the breadboard) */
+@@ -160,6 +161,17 @@
+   internalPathMm?: number;
+ };
+ 
++/** Which optional fields each kind owns, read off COMPONENT_SPECS[kind].fields: one source. */
++export type KindFieldsOf = { [T in ComponentType]: (typeof SPEC_TABLE)[T]["fields"][number] };
++
++type CommonFields = Pick<AnyComponentFields, "id" | "position" | "rotation" | "color" | "label">;
++
++/** One kind of component: the shared fields plus only the ones that kind owns. */
++export type ComponentOf<T extends ComponentType> = { type: T } & CommonFields & Pick<AnyComponentFields, KindFieldsOf[T]>;
++
++/** A part on the table (discriminated union on `type`). */
++export type BuilderComponent = { [T in ComponentType]: ComponentOf<T> }[ComponentType];
++
+ export type Beam = {
+   id: string;
+   /** ordered component ids the beam visits, source to end */
+@@ -340,9 +352,9 @@
+ };
+ 
+ /** The optional BuilderComponent fields that belong to some kinds and not others. */
+-export type KindField = Exclude<keyof BuilderComponent, "id" | "type" | "position" | "rotation" | "color" | "label">;
++export type KindField = Exclude<keyof AnyComponentFields, "id" | "type" | "position" | "rotation" | "color" | "label">;
+ 
+-type Created = Partial<Pick<BuilderComponent, KindField | "color">>;
++type Created = Partial<Pick<AnyComponentFields, KindField | "color">>;
+ 
+ /**
+  * Keyed by type id. The ids are what setup files store, so they keep their old
+@@ -350,7 +362,7 @@
+  * The kind sets below list kinds in this order, and the setup brief names them
+  * in it, so moving an entry rewords the brief.
+  */
+-export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
++const SPEC_TABLE = {
+   "laser-source": {
+     label: "Laser source",
+     tag: "Laser",
+@@ -609,7 +621,9 @@
+     lit: true,
+     angle: "mirror",
+   },
+-};
++} as const satisfies Record<ComponentType, ComponentSpec>;
++
++export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = SPEC_TABLE;
+ 
+ /** The kinds whose spec in COMPONENT_SPECS passes `test`, in the table's order. */
+ export function kindsWhere(test: (spec: ComponentSpec) => boolean): ReadonlySet<ComponentType> {
+@@ -753,17 +767,17 @@
+ type FieldRead<K extends KindField> =
+   | { as: "number"; range: [number, number] }
+   | { as: "color" }
+-  | { as: "enum"; options: readonly NonNullable<BuilderComponent[K]>[] }
++  | { as: "enum"; options: readonly NonNullable<AnyComponentFields[K]>[] }
+   | { as: "vec3"; range: [number, number] }
+   | { as: "id" }
+   | { as: "flag" }
+-  | { as: "own"; read: (raw: Record<string, unknown>) => Partial<BuilderComponent> }
++  | { as: "own"; read: (raw: Record<string, unknown>) => Partial<AnyComponentFields> }
+   | { as: "with"; field: KindField };
+ 
+ type FieldSpec<K extends KindField> = {
+   read: FieldRead<K>;
+   /** what a missing value means; see fieldValue */
+-  default?: NonNullable<BuilderComponent[K]>;
++  default?: NonNullable<AnyComponentFields[K]>;
+   /** the scene version it was added in: a file from before it has the field ignored. Missing means read from any version. */
+   since?: number;
+   /** its line in the setup brief */
+@@ -888,17 +902,17 @@
+ 
+ /** A field's value, or its default when it has one and the component has no value of its own. */
+ type FieldValue<K extends KindField> = (typeof COMPONENT_FIELDS)[K] extends { default: unknown }
+-  ? NonNullable<BuilderComponent[K]>
+-  : BuilderComponent[K];
++  ? NonNullable<AnyComponentFields[K]>
++  : AnyComponentFields[K];
+ 
+ /** The component's own value for `field`, or the field's default (see COMPONENT_FIELDS); not clamped. */
+ export function fieldValue<K extends KindField>(component: BuilderComponent, field: K): FieldValue<K> {
+   const spec: FieldSpec<KindField> = COMPONENT_FIELDS[field];
+-  return (component[field] ?? spec.default) as FieldValue<K>;
++  return ((component as AnyComponentFields)[field] ?? spec.default) as FieldValue<K>;
+ }
+ 
+ /** A file's value for one field, as COMPONENT_FIELDS reads it: the field, or nothing when the value is unusable. */
+-function readField(field: KindField, raw: Record<string, unknown>): Partial<BuilderComponent> {
++function readField(field: KindField, raw: Record<string, unknown>): Partial<AnyComponentFields> {
+   const spec: FieldSpec<KindField> = COMPONENT_FIELDS[field];
+   const value = raw[field];
+   let read: unknown;
+@@ -2170,7 +2184,7 @@
+  * delayMaxMm, delayMm). Such a file opens with the same path through it:
+  * twice the shortest arm is the minimum delay, and the arm's range its travel.
+  */
+-function parseDelay(raw: Record<string, unknown>): Partial<BuilderComponent> {
++function parseDelay(raw: Record<string, unknown>): Partial<AnyComponentFields> {
+   let minPath = finiteNumber(raw.delayMinPathMm);
+   let travel = finiteNumber(raw.delayTravelMm);
+   let stage = finiteNumber(raw.delayStageMm);
+--- a/src/components/builder/builder-hud.tsx
++++ b/src/components/builder/builder-hud.tsx
+@@ -45,7 +45,7 @@
+   frameDisplayName,
+   periscopePartner,
+   type Beam,
+-  type BuilderComponent,
++  type BuilderComponent, AnyComponentFields,
+   type ComponentType,
+   type BlockSymbol,
+   type Connection,
+@@ -106,9 +106,9 @@
+   onPickType: (type: ComponentType, symbol?: BlockSymbol) => void;
+   onCloseTray: () => void;
+   onDeselect: () => void;
+-  onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
++  onUpdateSelected: (patch: Partial<Omit<AnyComponentFields, "id" | "type">>, record?: boolean) => void;
+   /** any one part by id: a periscope mirror's inspector edits its other mirror too */
+-  onUpdateComponent: (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
++  onUpdateComponent: (id: string, patch: Partial<Omit<AnyComponentFields, "id" | "type">>, record?: boolean) => void;
+   onRotateSelected: (direction: 1 | -1) => void;
+   onDuplicateSelected: () => void;
+   onDeleteSelected: () => void;
+--- a/src/components/builder/builder-inspector.tsx
++++ b/src/components/builder/builder-inspector.tsx
+@@ -70,7 +70,7 @@
+   removeStop,
+   switchConnectionKind,
+   type Beam,
+-  type BuilderComponent,
++  type BuilderComponent, AnyComponentFields,
+   type Connection,
+   type ConnectionKind,
+   type Frame,
+@@ -83,7 +83,7 @@
+   { value: "biconvex", label: "Biconvex" },
+ ];
+ 
+-type ComponentPatch = Partial<Omit<BuilderComponent, "id" | "type">>;
++type ComponentPatch = Partial<Omit<AnyComponentFields, "id" | "type">>;
+ 
+ /**
+  * What is typed stays a draft until it is a number, and applies on Enter or
+--- a/src/components/builder/builder-scene.tsx
++++ b/src/components/builder/builder-scene.tsx
+@@ -72,7 +72,7 @@
+   beamLineSnap,
+   snapToGrid,
+   translateCorners,
+-  type BuilderComponent,
++  type BuilderComponent, AnyComponentFields,
+   type BuilderSceneData,
+   type ComponentType,
+   type BlockSymbol,
+@@ -1644,7 +1644,7 @@
+   ]);
+ 
+   const updateSelected = useCallback(
+-    (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => {
++    (patch: Partial<Omit<AnyComponentFields, "id" | "type">>, record?: boolean) => {
+       if (selectedIds.length !== 1) return;
+       api.updateComponent(selectedIds[0], patch, record);
+     },
+--- a/src/components/builder/use-builder-scene.ts
++++ b/src/components/builder/use-builder-scene.ts
+@@ -32,7 +32,7 @@
+   clampHeight,
+   translateCorners,
+   type Beam,
+-  type BuilderComponent,
++  type BuilderComponent, AnyComponentFields,
+   type BuilderSceneData,
+   type ComponentType,
+   type BlockSymbol,
+@@ -236,7 +236,7 @@
+   );
+ 
+   const updateComponent = useCallback(
+-    (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record = true) => {
++    (id: string, patch: Partial<Omit<AnyComponentFields, "id" | "type">>, record = true) => {
+       const apply: Mutation = (current) => ({
+         ...current,
+         components: current.components.map((component) =>
+--- a/src/components/builder/component-models.tsx
++++ b/src/components/builder/component-models.tsx
+@@ -49,7 +49,7 @@
+   delayArmMm,
+   delayRailMm,
+   fieldValue,
+-  type BuilderComponent,
++  type BuilderComponent, ComponentOf,
+   type ComponentType,
+   type LensShape,
+   type BlockSymbol,
+@@ -2336,10 +2336,9 @@
+  * Each kind's 3D model. A Record, so a kind added to ComponentType without
+  * a model here fails to compile rather than drawing nothing.
+  */
+-const COMPONENT_MODELS: Record<
+-  ComponentType,
+-  (component: BuilderComponent, context: ModelContext) => ReactNode
+-> = {
++const COMPONENT_MODELS: {
++  [K in ComponentType]: (component: ComponentOf<K>, context: ModelContext) => ReactNode;
++} = {
+   "laser-source": (_, { modelProps }) => <LaserSource {...modelProps} />,
+   "fiber-collimator": (_, { modelProps, stubTaken }) => (
+     <FiberCollimator {...modelProps} stub={!stubTaken} />
+@@ -2521,7 +2520,7 @@
+     >
+       {/* the group stands at the part's port; its body is drawn behind it */}
+       <group position={[-componentReferenceX(component), 0, 0]}>
+-        {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken, partner })}
++        {(COMPONENT_MODELS[component.type] as (c: BuilderComponent, x: ModelContext) => ReactNode)(component, { modelProps, stubTaken, partner })}
+ 
+         {hovered && !selected ? (
+           <HoverRing radius={radius} color={palette.hover} />

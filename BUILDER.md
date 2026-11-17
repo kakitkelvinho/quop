@@ -324,7 +324,10 @@ no path length.
 fibre coupler to a single-photon detector, a detector's coax to a time
 tagger. It is drawn as a tube that leaves one part, drops to the table, lies
 on it in a loose bend, and rises into the other, with no arrows and no glow,
-so it never reads as light in free space. A fibre at a fibre collimator, and
+so it never reads as light in free space. Any two different components can be
+connected, including ones without a modelled physical connector. Where there
+is no known jack or stub, the tube leaves from the component's side facing the
+other end. A fibre at a fibre collimator, and
 any connection at a photodiode (fibre or coax: its one jack is on the back of
 the head), takes the place of the yellow stub the part draws: it leaves from
 the same connector along the same curve, curling to whichever side the other
