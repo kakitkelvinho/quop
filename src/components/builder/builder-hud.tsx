@@ -105,6 +105,7 @@ export type BuilderHudProps = {
   onToggleTray: () => void;
   onPickType: (type: ComponentType, symbol?: BlockSymbol) => void;
   onCloseTray: () => void;
+  onCancelPlace: () => void;
   onDeselect: () => void;
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   /** any one part by id: a periscope mirror's inspector edits its other mirror too */
@@ -1703,7 +1704,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           old place in the page, so the stacking is today's. */}
       <div ref={panelLayerRef} className={`${PANEL_LAYER_CLASS}${panelsMove ? " is-on" : ""}`}>
         {panelsMove ? aboutPanels : null}
-        {trayOpen ? <PartsPanel placingType={placingType} placingSymbol={props.placingSymbol} onPick={props.onPickType} onClose={props.onCloseTray} /> : null}
+        {trayOpen ? <PartsPanel placingType={placingType} placingSymbol={props.placingSymbol} onPick={props.onPickType} onClose={props.onCloseTray} onCancelPlace={props.onCancelPlace} /> : null}
 
         {inspector ? (
           <aside
