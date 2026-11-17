@@ -4,6 +4,7 @@ import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, us
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
+import { measureBeam } from "@/components/builder/beam-measurement";
 import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
@@ -40,7 +41,6 @@ import {
   LABEL_MAX_LENGTH,
   LABEL_SCALE_RANGE,
   beamDisplayName,
-  beamLengthMm,
   derivedAngleBeam,
   frameDisplayName,
   periscopePartner,
@@ -109,12 +109,14 @@ export type BuilderHudProps = {
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   /** any one part by id: a periscope mirror's inspector edits its other mirror too */
   onUpdateComponent: (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
+  onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
   /** several parts: one height for all, or one mount colour for those with a mount */
   onSetSelectedHeight: (height: number) => void;
   onSetSelectedMountColor: (color: string) => void;
+  onSetStageMount: (opticId: string, stageId: string | undefined) => void;
   onStartBeam: () => void;
   onFinishBeam: () => void;
   onCancelBeam: () => void;
@@ -351,7 +353,7 @@ function BeamList({
             >
               <span className="builderBeamRow__dot" style={{ background: beam.color }} />
               <span className="builderBeamRow__name">{name}</span>
-              <span className="builderReadout">{Math.round(beamLengthMm(components, beam))} mm</span>
+              <span className="builderReadout">{Math.round(measureBeam(components, beam).lengthMm)} mm</span>
             </button>
             <span className="builderBeamRow__actions" data-no-drag>
               <IconButton
@@ -1359,11 +1361,13 @@ export default function BuilderHud(props: BuilderHudProps) {
     inspector = (
       <GroupInspector
         selected={selected}
+        allComponents={components}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}
         onDelete={props.onDeleteSelected}
         onSetHeight={props.onSetSelectedHeight}
         onSetMountColor={props.onSetSelectedMountColor}
+        onSetStageMount={props.onSetStageMount}
         group={selectedGroup({ components, groups: props.groups }, selected.map((component) => component.id))}
         canGroup={!drawingFrame && !placingType}
         onGroup={props.onGroupSelected}
@@ -1390,6 +1394,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         partnerAngleBeam={partnerAngleBeam(components, beams, selected[0])}
         onUpdate={props.onUpdateSelected}
         onUpdateOther={props.onUpdateComponent}
+        onSelectComponent={props.onSelectComponent}
         onCheckpoint={props.onCheckpoint}
         onRotate={props.onRotateSelected}
         onDuplicate={props.onDuplicateSelected}

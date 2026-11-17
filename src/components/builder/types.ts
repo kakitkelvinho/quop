@@ -47,9 +47,26 @@ export type ComponentType =
   | "faraday-isolator"
   | "periscope"
   | "periscope-top"
-  | "delay-line";
+  | "delay-line"
+  | "translation-stage";
 
 export type LensShape = "plano-convex" | "biconvex";
+
+export const STAGE_AXIS_OPTIONS = ["x", "y", "z", "xy", "xz", "yz", "xyz"] as const;
+export type StageAxis = "x" | "y" | "z";
+export type StageAxisSelection = (typeof STAGE_AXIS_OPTIONS)[number];
+
+/** A standalone stage starts as XY; at least one axis stays selected. */
+export function stageAxes(component: BuilderComponent): StageAxisSelection {
+  return component.stageAxes ?? "xy";
+}
+
+export function toggleStageAxis(current: StageAxisSelection, axis: StageAxis): StageAxisSelection {
+  const next = (["x", "y", "z"] as const).filter((candidate) =>
+    candidate === axis ? !current.includes(candidate) : current.includes(candidate),
+  ).join("");
+  return (next || current) as StageAxisSelection;
+}
 
 export const BLOCK_SYMBOLS = ["rf-source", "mixer", "amplifier", "low-pass", "high-pass", "band-pass", "phase-shifter", "sum", "pid", "splitter", "bias-tee", "scope", "driver"] as const;
 export type BlockSymbol = (typeof BLOCK_SYMBOLS)[number];
@@ -107,11 +124,15 @@ export type BuilderComponent = {
    */
   sampleStageLeft?: true;
   /**
-   * objective and sample only: a hex colour for the plates of the
-   * translation stage it stands on; missing means the theme's own, stored
+   * objective, sample or translation-stage: a hex colour for the stage's
+   * plates; missing means the theme's own, stored
    * only when set. Missing in setups from before version 13.
    */
   stageColor?: string;
+  /** standalone translation stage only: visible hardware axes; missing means XY */
+  stageAxes?: StageAxisSelection;
+  /** an optic's fixed visual mount; its x/z follows this stage */
+  mountStage?: string;
   label?: string;
   /** lens only */
   lensShape?: LensShape;
@@ -248,7 +269,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 14 as const;
+export const SCENE_VERSION = 16 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -325,7 +346,7 @@ export type ComponentSpec = {
    * have no holder, so they are left out.
    */
   mounted?: true;
-  /** can stand on a translation stage, so can carry a `stageColor` */
+  /** has translation stage plates, so can carry a `stageColor` */
   staged?: true;
   /**
    * how a beam sets its angle (see settleAngles); missing means it is turned
@@ -368,7 +389,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 27,
     radius: 34,
-    fields: [],
+    fields: ["mountStage"],
     created: { color: DEFAULT_MOUNT_COLOR },
     mounted: true,
     angle: "mirror",
@@ -380,7 +401,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 25,
     radius: 30,
-    fields: [],
+    fields: ["mountStage"],
     mounted: true,
   },
   lens: {
@@ -389,7 +410,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 17,
     radius: 26,
-    fields: ["lensShape", "focalLength"],
+    fields: ["lensShape", "focalLength", "mountStage"],
     created: { lensShape: "plano-convex", focalLength: DEFAULT_FOCAL_LENGTH_MM },
   },
   waveplate: {
@@ -398,7 +419,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 30,
     minHeight: 36,
     radius: 26,
-    fields: [],
+    fields: ["mountStage"],
     mounted: true,
   },
   filter: {
@@ -407,7 +428,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 19,
     minHeight: 25,
     radius: 24,
-    fields: [],
+    fields: ["mountStage"],
     mounted: true,
   },
   iris: {
@@ -416,7 +437,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 20,
     minHeight: 27,
     radius: 24,
-    fields: [],
+    fields: ["mountStage"],
     mounted: true,
   },
   "fiber-collimator": {
@@ -426,7 +447,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 20,
     radius: 30,
     referenceX: 10.5, // the lens window's face, where light leaves or enters: FiberCollimator draws it 0.6 mm thick at x = 10.2
-    fields: [],
+    fields: ["mountStage"],
     mounted: true,
   },
   "paul-trap": {
@@ -529,7 +550,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     minHeight: 24,
     radius: 32,
     referenceX: -29, // the threaded plate's outer face: Objective draws it at x = -23, 6 mm thick
-    fields: ["objectiveLength", "stageColor"],
+    fields: ["objectiveLength", "stageColor", "mountStage"],
     staged: true,
   },
   sample: {
@@ -538,7 +559,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 18,
     minHeight: 13,
     radius: 32, // wide enough to take in the XYZ stage it stands on
-    fields: ["opacity", "sampleStage", "sampleStageLeft", "stageColor"],
+    fields: ["opacity", "sampleStage", "sampleStageLeft", "stageColor", "mountStage"],
     staged: true,
   },
   block: {
@@ -609,6 +630,16 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     lit: true,
     angle: "mirror",
   },
+  "translation-stage": {
+    label: "Translation stage",
+    tag: "Stage",
+    top: 25,
+    minHeight: 0,
+    fixedHeight: 0,
+    radius: 39,
+    fields: ["stageColor", "stageAxes"],
+    staged: true,
+  },
 };
 
 /** The kinds whose spec in COMPONENT_SPECS passes `test`, in the table's order. */
@@ -622,8 +653,9 @@ export const LIT_TYPES = kindsWhere((spec) => spec.lit === true);
 export const HOST_TYPES = kindsWhere((spec) => spec.host === true);
 /** Components held in a coloured mount: see ComponentSpec's `mounted`. */
 export const MOUNTED_TYPES = kindsWhere((spec) => spec.mounted === true);
-/** Components that can stand on a translation stage, so can carry a `stageColor`. */
+/** Components with stage plates that can carry a `stageColor`. */
 export const STAGED_TYPES = kindsWhere((spec) => spec.staged === true);
+export const STAGE_MOUNTABLE_TYPES = kindsWhere((spec) => spec.fields.includes("mountStage"));
 /** A delay line takes its angle from the beam it sits in, like a mirror, but stands across it (see delayLineYaw). */
 export const MIRROR_LIKE = kindsWhere((spec) => spec.angle === "mirror");
 /** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
@@ -641,7 +673,7 @@ export const PART_CATEGORIES: PartCategory[] = [
   { name: "Modulation", types: ["aom", "eom", "faraday-isolator"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
   { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "time-tagger", "beam-block"] },
-  { name: "Other", types: ["block"] },
+  { name: "Other", types: ["translation-stage", "block"] },
 ];
 
 export const COMPONENT_LIBRARY = (
@@ -821,6 +853,11 @@ export const COMPONENT_FIELDS = {
     brief:
       "the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.",
   },
+  mountStage: {
+    read: { as: "id" },
+    since: 15,
+    brief: "the id of a `translation-stage` carrying this optic. Its x and z follow the stage; its height stays its own. A stage carries at most one optic.",
+  },
   delayMinPathMm: {
     read: { as: "own", read: parseDelay },
     default: DELAY_MIN_PATH_MM,
@@ -856,7 +893,12 @@ export const COMPONENT_FIELDS = {
     read: { as: "color" },
     since: 13,
     brief:
-      "a hex colour for the plates of the translation stage it stands on (the micrometers stay silver). Leave it out for the theme's own: near-black by day, dark grey at night.",
+      "a hex colour for a stage's plates (the micrometers stay silver). On an objective or sample this colours its built-in stage; on a `translation-stage` it colours the standalone mount. Leave it out for the theme's own: near-black by day, dark grey at night.",
+  },
+  stageAxes: {
+    read: { as: "enum", options: STAGE_AXIS_OPTIONS },
+    since: 16,
+    brief: "the axes drawn on a standalone translation stage: `x`, `y`, `z`, `xy` (the default), `xz`, `yz` or `xyz`. Each selected axis adds its plate and thumbscrew. X and Y lie along the table; Z is vertical. This only changes the hardware drawing, not optical path length or travel.",
   },
   sampleStageLeft: {
     read: { as: "with", field: "sampleStage" },
@@ -1028,16 +1070,6 @@ export function componentById(
 }
 
 /**
- * The built-in path of the laser a beam starts at, mm; 0 when its first stop is
- * not a laser or the laser has none. A laser later in a path adds nothing: the
- * light it passes was not made there.
- */
-export function beamInternalPathMm(components: BuilderComponent[], beam: Beam): number {
-  const first = beam.path.length ? componentById(components, beam.path[0]) : undefined;
-  return first?.type === "laser-source" ? fieldValue(first, "internalPathMm") : 0;
-}
-
-/**
  * A delay line's setting, mm: its minimum delay, its travel, how far its
  * stage has travelled, and so the path a beam through it gains, the minimum
  * delay plus twice the stage's travel, out and back.
@@ -1071,20 +1103,6 @@ export function delayRailOffset(component: BuilderComponent, x: number, z: numbe
   const yaw = (component.rotation * Math.PI) / 180;
   // local +x points along (cos, −sin) in (x, z); the rail runs the other way
   return -(x - component.position[0]) * Math.cos(yaw) + (z - component.position[2]) * Math.sin(yaw);
-}
-
-/**
- * The path a beam picks up inside delay lines, mm: down to the carriage and
- * back, each time it passes through one (a stop in the middle of it).
- */
-export function beamDelayMm(components: BuilderComponent[], beam: Beam): number {
-  let total = 0;
-  beam.path.forEach((id, index) => {
-    if (index === 0 || index === beam.path.length - 1) return;
-    const component = componentById(components, id);
-    if (component?.type === "delay-line") total += delaySetting(component).path;
-  });
-  return total;
 }
 
 /**
@@ -1129,55 +1147,6 @@ export function bodyCentre(component: BuilderComponent): Vec3 {
   const [x, y, z] = component.position;
   const [dx, dz] = portShift(component);
   return [x - dx, y, z - dz];
-}
-
-/** The reference points a beam runs through, skipping stops whose part is gone. */
-export function beamPoints(components: BuilderComponent[], path: string[]): Vec3[] {
-  return path
-    .map((id) => componentById(components, id))
-    .filter((component): component is BuilderComponent => Boolean(component))
-    .map(referencePoint);
-}
-
-/**
- * Length of the beam, mm: the straight 3D run through its reference points,
- * plus the built-in path of the laser it starts at and the round trip in
- * every delay line it passes through.
- */
-export function beamLengthMm(components: BuilderComponent[], beam: Beam): number {
-  const points = beamPoints(components, beam.path);
-
-  let total = beamInternalPathMm(components, beam) + beamDelayMm(components, beam);
-  for (let index = 1; index < points.length; index += 1) {
-    const [ax, ay, az] = points[index - 1];
-    const [bx, by, bz] = points[index];
-    total += Math.hypot(bx - ax, by - ay, bz - az);
-  }
-  return total;
-}
-
-/**
- * The length of each leg of a beam, mm, for the distance labels along it: the
- * straight 3D run between consecutive reference points (skipping stops whose
- * part is gone, as beamPoints does). A leg into a delay line the beam passes
- * through adds that delay line's minimum delay, not its current setting; one the beam ends at adds nothing, as in
- * beamDelayMm. A laser's built-in path is in no leg: it counts toward the
- * beam's total only.
- */
-export function beamLegLengthsMm(components: BuilderComponent[], beam: Beam): number[] {
-  const stops = beam.path
-    .map((id) => componentById(components, id))
-    .filter((component): component is BuilderComponent => Boolean(component));
-  const legs: number[] = [];
-  for (let index = 1; index < stops.length; index += 1) {
-    const [ax, ay, az] = referencePoint(stops[index - 1]);
-    const end = stops[index];
-    const [bx, by, bz] = referencePoint(end);
-    const passed = index < stops.length - 1;
-    const delay = passed && end.type === "delay-line" ? delaySetting(end).minPath : 0;
-    legs.push(Math.hypot(bx - ax, by - ay, bz - az) + delay);
-  }
-  return legs;
 }
 
 /** Vacuum time-of-flight along a path length, in picoseconds. */
@@ -1275,6 +1244,57 @@ export function settleHosts(scene: BuilderSceneData): BuilderSceneData {
     return { ...component, position: [...host.position] as Vec3 };
   });
   return changed ? { ...scene, components } : scene;
+}
+
+/** Keep a stage and its one mounted optic together without adding optical path. */
+export function settleStageMounts(previous: BuilderSceneData | null, scene: BuilderSceneData): BuilderSceneData {
+  const stages = new Map(scene.components.filter((part) => part.type === "translation-stage").map((part) => [part.id, part]));
+  const occupied = new Set<string>();
+  let changed = false;
+  const components = scene.components.map((part) => {
+    if (!part.mountStage) return part;
+    const stage = stages.get(part.mountStage);
+    if (!stage || !STAGE_MOUNTABLE_TYPES.has(part.type) || occupied.has(stage.id)) {
+      changed = true;
+      return { ...part, mountStage: undefined };
+    }
+    occupied.add(stage.id);
+    const oldStage = previous?.components.find((entry) => entry.id === stage.id);
+    const oldPart = previous?.components.find((entry) => entry.id === part.id);
+    const justAttached = oldPart?.mountStage !== stage.id;
+    const stageMoved = oldStage && (oldStage.position[0] !== stage.position[0] || oldStage.position[2] !== stage.position[2]);
+    const partMoved = oldPart && (oldPart.position[0] !== part.position[0] || oldPart.position[2] !== part.position[2]);
+    // A drag on the optic moves its stage; the stage's own drag moves the optic.
+    if (partMoved && !stageMoved && !justAttached) {
+      const [x, , z] = part.position;
+      stages.set(stage.id, { ...stage, position: [x, 0, z] });
+      return part;
+    }
+    const [x, y, z] = part.position;
+    const rotation = oldStage && oldStage.rotation !== stage.rotation && oldPart?.rotation === part.rotation
+      ? wrapYaw(part.rotation + stage.rotation - oldStage.rotation)
+      : part.rotation;
+    if (x === stage.position[0] && z === stage.position[2] && rotation === part.rotation) return part;
+    changed = true;
+    return { ...part, position: [stage.position[0], y, stage.position[2]] as Vec3, rotation };
+  });
+  const synced = components.map((part) => part.type === "translation-stage" ? stages.get(part.id)! : part);
+  return changed || synced.some((part, index) => part !== scene.components[index]) ? { ...scene, components: synced } : scene;
+}
+
+/** Attach or detach one optic in a single edit. An occupied stage is left alone. */
+export function setStageMount(scene: BuilderSceneData, opticId: string, stageId: string | undefined): BuilderSceneData {
+  const optic = componentById(scene.components, opticId);
+  if (!optic || !STAGE_MOUNTABLE_TYPES.has(optic.type) || optic.mountStage === stageId) return scene;
+  if (stageId !== undefined) {
+    const stage = componentById(scene.components, stageId);
+    if (stage?.type !== "translation-stage") return scene;
+    if (scene.components.some((part) => part.id !== opticId && part.mountStage === stageId)) return scene;
+  }
+  return {
+    ...scene,
+    components: scene.components.map((part) => part.id === opticId ? { ...part, mountStage: stageId } : part),
+  };
 }
 
 /**
@@ -2210,7 +2230,9 @@ export function labelText(raw: unknown): string | undefined {
  * and open with it moved to its port, exactly where it was;
  * those from before version 11 open with labels at their standard size;
  * those from before version 12 have no groups and open with none;
- * those from before version 13 open with every sample on its stage.
+ * those from before version 13 open with every sample on its stage;
+ * those from before version 15 have no standalone translation stages or mounts;
+ * those from before version 16 draw every standalone stage with XY axes.
  */
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
@@ -2223,9 +2245,10 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     .filter((component): component is BuilderComponent => component !== null);
 
   const ids = new Set(components.map((component) => component.id));
+  const beamStopIds = new Set(components.filter((part) => part.type !== "translation-stage").map((part) => part.id));
   const beams = Array.isArray(raw.beams)
     ? raw.beams
-        .map((beam) => parseBeam(beam, ids))
+        .map((beam) => parseBeam(beam, beamStopIds))
         .filter((beam): beam is Beam => beam !== null)
     : [];
   const connections = Array.isArray(raw.connections)
@@ -2250,7 +2273,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
 
   const scene = settleAngles(
     settlePeriscopes(
-      settleHosts({
+      settleStageMounts(null, settleHosts({
         version: SCENE_VERSION,
         components,
         beams,
@@ -2258,7 +2281,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
         frames,
         groups,
         ...(labelScale !== undefined ? { labelScale } : {}),
-      }),
+      })),
     ),
   );
   return version < 10 ? settleAngles(movedToPorts(scene)) : scene;

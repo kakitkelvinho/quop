@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { measureBeam } from "./beam-measurement.ts";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { visibility } from "./groups.ts";
-import { beamLengthMm, DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene } from "./types.ts";
+import { DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene, type Beam, type BuilderComponent } from "./types.ts";
+
+const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
 // ADR 0001: a setup file saved by a release keeps opening, with nothing
 // dropped, in every later release. Each fixture is a setup file in the shape
@@ -24,6 +27,8 @@ const FIXTURES = [
   "setup-v12.json",
   "setup-v13.json",
   "setup-v14.json",
+  "setup-v15.json",
+  "setup-v16.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -90,6 +95,32 @@ describe("setup-v2.json, the first version with heights", () => {
   });
 });
 
+describe("setup-v15.json, the first version with a standalone translation stage", () => {
+  it("keeps the mounted optic and its stage through a save", () => {
+    const setup = open("setup-v15.json");
+    const stage = setup.components.find(({ id }) => id === "stage-pickoff");
+    const lens = setup.components.find(({ id }) => id === "pickoff");
+    assert.ok(stage);
+    assert.ok(lens);
+    assert.equal(stage.type, "translation-stage");
+    assert.equal(stage.position[1], 0);
+    assert.equal(lens.mountStage, stage.id);
+    assert.deepEqual([lens.position[0], lens.position[2]], [stage.position[0], stage.position[2]]);
+    assert.deepEqual(parseScene(JSON.parse(serializeScene(setup))), setup);
+  });
+});
+
+describe("setup-v16.json, the first version with selectable stage axes", () => {
+  it("keeps the chosen axes and mount through a save", () => {
+    const setup = open("setup-v16.json");
+    const stage = setup.components.find(({ id }) => id === "stage-pickoff");
+    assert.equal(stage?.stageAxes, "xyz");
+    assert.equal(setup.components.find(({ id }) => id === "pickoff")?.mountStage, stage?.id);
+    assert.deepEqual(parseScene(JSON.parse(serializeScene(setup))), setup);
+    assert.equal(open("setup-v15.json").components.find(({ id }) => id === "stage-pickoff")?.stageAxes, undefined);
+  });
+});
+
 describe("setup-v3.json, the first version with connections", () => {
   it("opens each fibre and cable with its ends, length and index, and older setups with none", () => {
     assert.deepEqual(
@@ -112,7 +143,7 @@ describe("setup-v3.json, a laser with a built-in path", () => {
   it("opens with the path and counts it in its beam: 4000 mm inside plus 394 mm on the table from its opening", () => {
     const setup = open("setup-v3.json");
     assert.equal(setup.components.find(({ id }) => id === "laser-folded")?.internalPathMm, 4000);
-    assert.equal(beamLengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4394);
+    assert.equal(lengthMm(setup.components, setup.beams.find(({ id }) => id === "folded")!), 4394);
   });
 
   it("is on no laser in older setups", () => {
@@ -373,7 +404,7 @@ describe("setup-v11.json, the first version with labelScale", () => {
 describe("setup-v12.json, the first version with groups", () => {
   it("is saved exactly as it opens, but for the version", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
-    const saved = serializeScene(open("setup-v12.json")).replace('"version": 14,', '"version": 12,');
+    const saved = serializeScene(open("setup-v12.json")).replace('"version": 16,', '"version": 12,');
     assert.equal(`${saved}\n`, text);
   });
 
@@ -395,7 +426,7 @@ describe("setup-v12.json, the first version with groups", () => {
     assert.ok(shown.has("m1") && shown.has("laser"));
     const all = open("setup-v11.json");
     for (const [index, beam] of setup.beams.entries()) {
-      assert.equal(beamLengthMm(setup.components, beam), beamLengthMm(all.components, all.beams[index]));
+      assert.equal(lengthMm(setup.components, beam), lengthMm(all.components, all.beams[index]));
     }
   });
 
@@ -422,7 +453,7 @@ describe("setup-v13.json, the first version with a sample's stage style", () => 
 
   it("is saved exactly as it opens", () => {
     const text = readFileSync(new URL("./setup-fixtures/setup-v13.json", import.meta.url), "utf8");
-    assert.equal(`${serializeScene(open("setup-v13.json")).replace('"version": 14,', '"version": 13,')}\n`, text);
+    assert.equal(`${serializeScene(open("setup-v13.json")).replace('"version": 16,', '"version": 13,')}\n`, text);
   });
 
   it("is v12's setup with the sample on a side stage, on its left, and the objective's stage coloured", () => {

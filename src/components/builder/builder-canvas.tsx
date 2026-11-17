@@ -49,6 +49,7 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
+import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
@@ -74,8 +75,6 @@ import type { Lighting, ScenePalette } from "@/components/builder/scene-theme";
 import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
-  beamLegLengthsMm,
-  beamPoints,
   COMPONENT_SPECS,
   TABLE_GUARD_MM,
   bodyCentre,
@@ -1398,6 +1397,7 @@ export default function BuilderCanvas({
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
           partner={partner}
+          mountedStage={component.mountStage ? componentById(components, component.mountStage) : undefined}
           faded={shown.faded.has(component.id)}
           onPointerDown={handlePartDown}
           onPointerOver={handlePartOver}
@@ -1440,7 +1440,8 @@ export default function BuilderCanvas({
         const drawn = isBeamDrawn(beam, shown);
         const ghost = !drawn && beam.id === ghostBeamId;
         if (!drawn && !ghost) return null;
-        const points = beamVectors(components, beam.path);
+        const measurement = measureBeam(components, beam);
+        const points = measurement.points.map((point) => new Vector3(...point));
         if (points.length < 2) return null;
         const selected = beam.id === selectedBeamId;
         return (
@@ -1461,7 +1462,7 @@ export default function BuilderCanvas({
             {selected || (showDistances && drawn) ? (
               <BeamDistances
                 points={points}
-                lengths={beamLegLengthsMm(components, beam)}
+                lengths={measurement.legLengthsMm}
                 color={beam.color}
                 width={beam.width ?? BEAM_WIDTH_MM}
                 faded={ghost}

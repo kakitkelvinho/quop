@@ -216,6 +216,7 @@ export function mergeSetup(table: BuilderSceneData, file: BuilderSceneData, opti
       const next: BuilderComponent = { ...component, id: partId.get(component.id)! };
       if (component.host !== undefined) next.host = partId.get(component.host) ?? component.host;
       if (component.periscope !== undefined) next.periscope = partId.get(component.periscope) ?? component.periscope;
+      if (component.mountStage !== undefined) next.mountStage = partId.get(component.mountStage) ?? component.mountStage;
       return next;
     });
 

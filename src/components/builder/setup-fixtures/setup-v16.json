@@ -1,0 +1,353 @@
+{
+  "version": 16,
+  "components": [
+    {
+      "id": "laser",
+      "type": "laser-source",
+      "position": [
+        -700,
+        100,
+        -300
+      ],
+      "rotation": 0,
+      "label": "Laser"
+    },
+    {
+      "id": "eom",
+      "type": "eom",
+      "position": [
+        -450,
+        100,
+        -300
+      ],
+      "rotation": 0,
+      "label": "EOM"
+    },
+    {
+      "id": "pickoff",
+      "type": "beam-splitter",
+      "position": [
+        -300,
+        100,
+        -300
+      ],
+      "rotation": 0,
+      "label": "PDH pickoff",
+      "mountStage": "stage-pickoff"
+    },
+    {
+      "id": "cavity",
+      "type": "cavity",
+      "position": [
+        -150,
+        100,
+        -300
+      ],
+      "rotation": 0,
+      "label": "Reference cavity"
+    },
+    {
+      "id": "pd",
+      "type": "photodiode",
+      "position": [
+        -300,
+        100,
+        -550
+      ],
+      "rotation": 0,
+      "label": "Reflection PD"
+    },
+    {
+      "id": "rf",
+      "type": "block",
+      "symbol": "rf-source",
+      "position": [
+        -700,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "RF oscillator"
+    },
+    {
+      "id": "split",
+      "type": "block",
+      "symbol": "splitter",
+      "position": [
+        -450,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "RF split"
+    },
+    {
+      "id": "drv-eom",
+      "type": "block",
+      "symbol": "driver",
+      "position": [
+        -450,
+        15,
+        200
+      ],
+      "rotation": 0,
+      "label": "EOM driver"
+    },
+    {
+      "id": "amp",
+      "type": "block",
+      "symbol": "amplifier",
+      "position": [
+        400,
+        15,
+        -100
+      ],
+      "rotation": 90,
+      "label": "RF amp"
+    },
+    {
+      "id": "phase",
+      "type": "block",
+      "symbol": "phase-shifter",
+      "position": [
+        -150,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "Demod phase"
+    },
+    {
+      "id": "mixer",
+      "type": "block",
+      "symbol": "mixer",
+      "position": [
+        150,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "Mixer"
+    },
+    {
+      "id": "low",
+      "type": "block",
+      "symbol": "low-pass",
+      "position": [
+        400,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "LPF"
+    },
+    {
+      "id": "pid",
+      "type": "block",
+      "symbol": "pid",
+      "position": [
+        650,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "Lock PID"
+    },
+    {
+      "id": "sum",
+      "type": "block",
+      "symbol": "sum",
+      "position": [
+        900,
+        15,
+        0
+      ],
+      "rotation": 0,
+      "label": "Sum"
+    },
+    {
+      "id": "bias",
+      "type": "block",
+      "symbol": "bias-tee",
+      "position": [
+        900,
+        15,
+        200
+      ],
+      "rotation": 0,
+      "label": "Bias tee"
+    },
+    {
+      "id": "scope",
+      "type": "block",
+      "symbol": "scope",
+      "position": [
+        650,
+        60,
+        300
+      ],
+      "rotation": 0,
+      "label": "Error monitor"
+    },
+    {
+      "id": "high",
+      "type": "block",
+      "symbol": "high-pass",
+      "position": [
+        150,
+        15,
+        300
+      ],
+      "rotation": 0,
+      "label": "HPF"
+    },
+    {
+      "id": "band",
+      "type": "block",
+      "symbol": "band-pass",
+      "position": [
+        400,
+        15,
+        300
+      ],
+      "rotation": 0,
+      "label": "BPF"
+    },
+    {
+      "id": "stage-pickoff",
+      "type": "translation-stage",
+      "position": [
+        -300,
+        0,
+        -300
+      ],
+      "rotation": 0,
+      "stageAxes": "xyz"
+    }
+  ],
+  "beams": [
+    {
+      "id": "probe",
+      "path": [
+        "laser",
+        "eom",
+        "pickoff",
+        "cavity"
+      ],
+      "color": "#dc2626",
+      "label": "PDH probe"
+    },
+    {
+      "id": "reflection",
+      "path": [
+        "cavity",
+        "pickoff",
+        "pd"
+      ],
+      "color": "#f97316",
+      "label": "Cavity reflection"
+    }
+  ],
+  "connections": [
+    {
+      "id": "rf-split",
+      "kind": "cable",
+      "from": "rf",
+      "to": "split",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "split-drive",
+      "kind": "cable",
+      "from": "split",
+      "to": "drv-eom",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "drive-eom",
+      "kind": "cable",
+      "from": "drv-eom",
+      "to": "eom",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "split-phase",
+      "kind": "cable",
+      "from": "split",
+      "to": "phase",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "pd-amp",
+      "kind": "cable",
+      "from": "pd",
+      "to": "amp",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "amp-mixer",
+      "kind": "cable",
+      "from": "amp",
+      "to": "mixer",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "phase-mixer",
+      "kind": "cable",
+      "from": "phase",
+      "to": "mixer",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "mixer-low",
+      "kind": "cable",
+      "from": "mixer",
+      "to": "low",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "low-pid",
+      "kind": "cable",
+      "from": "low",
+      "to": "pid",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "pid-sum",
+      "kind": "cable",
+      "from": "pid",
+      "to": "sum",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "sum-bias",
+      "kind": "cable",
+      "from": "sum",
+      "to": "bias",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "low-scope",
+      "kind": "cable",
+      "from": "low",
+      "to": "scope",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "mixer-high",
+      "kind": "cable",
+      "from": "mixer",
+      "to": "high",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "high-band",
+      "kind": "cable",
+      "from": "high",
+      "to": "band",
+      "color": "#38bdf8"
+    }
+  ],
+  "frames": [],
+  "groups": []
+}

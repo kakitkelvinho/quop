@@ -320,7 +320,7 @@ export function joinSourcesGroups(scene: BuilderSceneData, copyOf: Map<string, s
 /** A beam or connection left out of a group's file, and the stops outside the group that kept it out. */
 export type LeftOut = { kind: "beam"; item: Beam; outside: string[] } | { kind: "connection"; item: Connection; outside: string[] };
 
-/** A part saved without the part it hangs on (a particle's host, a periscope top's lower mirror), which isn't in the group. */
+/** A part saved without its host, periscope or mount, which isn't in the group. */
 export type Loosened = { id: string; from: string };
 
 /**
@@ -329,8 +329,8 @@ export type Loosened = { id: string; from: string };
  * and the group itself, shown, with the setup's own settings (`labelScale`).
  * Positions and ids are kept as they are on the table, so the file lines up
  * again when it is brought back in. What a beam or connection through a part
- * outside the group kept out is listed; so is a particle or periscope top
- * whose host or lower mirror is outside, saved where it stands but loose, as
+ * outside the group kept out is listed; so is a particle, periscope top or
+ * mounted optic whose host, lower mirror or stage is outside, saved loose, as
  * the parser would open it. Null when there is no such group.
  */
 export function groupSubset(
@@ -344,12 +344,13 @@ export function groupSubset(
   const components = scene.components
     .filter((component) => members.has(component.id))
     .map((component): BuilderComponent => {
-      const anchor = component.host ?? component.periscope;
+      const anchor = component.host ?? component.periscope ?? component.mountStage;
       if (anchor === undefined || members.has(anchor)) return component;
       loosened.push({ id: component.id, from: anchor });
       const loose = { ...component };
       delete loose.host;
       delete loose.periscope;
+      delete loose.mountStage;
       return loose;
     });
   const leftOut: LeftOut[] = [];
