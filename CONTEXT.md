@@ -62,7 +62,7 @@ _Avoid_: prompt, skill, AI instructions
 The set of mounts serving one beam, marked by tinting those mounts the beam's colour.
 
 **Connection**:
-A fibre (optical) or a cable (electrical, such as coax) from one component to another, drawn as a tube lying on the table. It is not a beam: it adds nothing to any path length, and no mirror or detector takes its angle from it. Its delay comes from the length the author types, never from the drawn route.
+A fibre (optical) or a cable (electrical, such as coax) between any two different components, whether or not they have modelled physical connectors. It is drawn as a tube lying on the table. It is not a beam: it adds nothing to any path length, and no mirror or detector takes its angle from it. Its delay comes from the length the author types, never from the drawn route.
 _Avoid_: link, wire, patch cord, fibre beam
 
 **Beam cube**:

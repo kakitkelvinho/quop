@@ -8,6 +8,15 @@ Issues are tracked in GitHub Issues on kakitkelvinho/quop, via the `gh` CLI. See
 
 Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+### Comments
+
+Write a comment only to say why: a decision, the physics behind a number, a setup-file compatibility constraint, or a link to an ADR. Do not write comments that repeat what the code says.
+
+- When a comment says a field is for some kinds only, or must match something elsewhere, enforce it with a type or a test instead.
+- Put units in names (`delayTravelMm`), not in comments.
+- When you change code, fix or delete any comment it makes wrong.
+- Do not mass-delete existing comments. Tidy them in the files you touch.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
