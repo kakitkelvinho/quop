@@ -235,11 +235,18 @@ const Aim = (() => {
   /** F: flip to the other 45° fold; an aimed redirector lets go of its aim first. */
   function flip(comps, id) { return comps.map((c) => (c.id === id ? { ...c, fold: -(c.fold || 1), aim: undefined, caught: false, free: false } : c)); }
   function aimAt(comps, id, target) { return comps.map((c) => (c.id === id && id !== target ? { ...c, aim: target, free: false, caught: false } : c)); }
+  /** A Component dropped into an aimed redirector's light takes its aim: inserting a mirror into a path re-points the one before it. */
+  function takeLight(comps, id) {
+    const byId = new Map(comps.map((c) => [c.id, c]));
+    const takers = new Set(trace(comps, true).segments.filter((s) => s.to === id && s.arm === "r").map((s) => s.from)
+      .filter((f) => byId.get(f) && REDIRECTS.has(byId.get(f).kind) && byId.get(f).aim && byId.get(f).aim !== id));
+    return takers.size ? comps.map((c) => (takers.has(c.id) ? { ...c, aim: id, caught: true } : c)) : comps;
+  }
   function remove(comps, id) {
     return comps.filter((c) => c.id !== id).map((c) => (c.aim === id ? { ...c, aim: undefined } : c));
   }
 
-  return { trace, settle, settleAndCatch, beamClick, remove, flip, aimAt, angleDiff, fromDeg, rot90, REDIRECTS };
+  return { trace, settle, settleAndCatch, takeLight, beamClick, remove, flip, aimAt, angleDiff, fromDeg, rot90, REDIRECTS };
 })();
 
 /* ---------- Throwaway page ---------- */
@@ -362,7 +369,7 @@ function compAt(ev) { const g = ev.target.closest && ev.target.closest("g[data-i
 svg.addEventListener("pointerdown", (ev) => {
   const id = compAt(ev), pt = svgPoint(ev);
   if (ev.target.dataset && ev.target.dataset.knob) { S.aimDrag = { id: ev.target.dataset.knob, to: pt }; svg.setPointerCapture(ev.pointerId); render(); return; }
-  if (S.mode === "place") { const c = mk(S.placeKind, Math.round(pt[0]), Math.round(pt[1]), S.placeKind === "cube" ? 315 : S.placeKind === "laser" || S.placeKind === "detector" ? 0 : 135); S.comps = [...S.comps, c]; S.sel = c.id; S.mode = "idle"; edited("place"); return; }
+  if (S.mode === "place") { const c = mk(S.placeKind, Math.round(pt[0]), Math.round(pt[1]), S.placeKind === "cube" ? 315 : S.placeKind === "laser" || S.placeKind === "detector" ? 0 : 135); S.comps = [...S.comps, c]; if (S.catch) S.comps = Aim.takeLight(S.comps, c.id); S.sel = c.id; S.mode = "idle"; edited("place"); return; }
   if (S.mode === "beam") { if (!id) return; if (S.beamPrev) S.comps = Aim.beamClick(S.comps, S.beamPrev, id); S.beamPrev = id; S.sel = id; edited("aim"); return; }
   S.sel = id;
   if (id) { const c = S.comps.find((x) => x.id === id); S.drag = { id, off: [c.pos[0] - pt[0], c.pos[1] - pt[1]] }; svg.setPointerCapture(ev.pointerId); }
@@ -383,7 +390,7 @@ svg.addEventListener("pointerup", (ev) => {
     if (g && g.dataset.id !== from) { S.comps = Aim.aimAt(S.comps, from, g.dataset.id); edited(); } else render();
     return;
   }
-  if (S.drag) { S.drag = null; edited("release"); }
+  if (S.drag) { const id = S.drag.id; S.drag = null; if (S.catch) S.comps = Aim.takeLight(S.comps, id); edited("release"); }
 });
 svg.addEventListener("wheel", (ev) => {
   const id = compAt(ev); if (!id) return; ev.preventDefault();
