@@ -30,11 +30,13 @@ export default function PartsPanel({
   placingSymbol,
   onPick,
   onClose,
+  onCancelPlace,
 }: {
   placingType: ComponentType | null;
   placingSymbol?: BlockSymbol | null;
   onPick: (type: ComponentType, symbol?: BlockSymbol) => void;
   onClose: () => void;
+  onCancelPlace: () => void;
 }) {
   const [query, setQuery] = useState("");
   const panel = usePanel("parts", { keepHeight: true, opensRestored: true });
@@ -69,10 +71,13 @@ export default function PartsPanel({
             // Enter picks the only match, so "trap ⏎" is enough
             const only = groups.length === 1 && groups[0].entries.length === 1;
             if (event.key === "Enter" && only) onPick(groups[0].entries[0].type, groups[0].entries[0].symbol);
-            // the builder's own keys skip text fields, so Esc is handled here:
-            // clear the search first, then close the panel
+            // The builder's own keys skip text fields. Cancel Place before
+            // closing Parts, even when the kind was picked from a search.
             if (event.key === "Escape") {
-              if (query) setQuery("");
+              if (placingType) {
+                setQuery("");
+                onCancelPlace();
+              } else if (query) setQuery("");
               else onClose();
             }
           }}

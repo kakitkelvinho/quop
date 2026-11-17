@@ -158,6 +158,17 @@ type FrameDrawing = {
 
 const NEW_DRAWING: FrameDrawing = { corners: [], pointer: null, rectangle: null, refused: false };
 
+type EditMode =
+  | { kind: "idle" }
+  | { kind: "place"; type: ComponentType; symbol: BlockSymbol | null }
+  | { kind: "beam"; stops: string[]; color: string }
+  | { kind: "connection"; draft: ConnectDraft }
+  | { kind: "frame"; drawing: FrameDrawing }
+  | { kind: "add-stops"; beamId: string }
+  | { kind: "group-pick" };
+
+const IDLE: EditMode = { kind: "idle" };
+
 /** How near the first corner, client px, a click closes the outline. */
 const FIRST_CORNER_PX = 10;
 
@@ -323,17 +334,19 @@ export default function BuilderScene() {
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
   // counts plain clicks on empty table, so the HUD can close what they should dismiss
   const [emptyClicks, setEmptyClicks] = useState(0);
-  const [placingType, setPlacingType] = useState<ComponentType | null>(null);
-  const [placingSymbol, setPlacingSymbol] = useState<BlockSymbol | null>(null);
-  const [beamMode, setBeamMode] = useState(false);
-  const [beamDraft, setBeamDraft] = useState<string[]>([]);
-  const [connectDraft, setConnectDraft] = useState<ConnectDraft | null>(null);
-  const [drawing, setDrawing] = useState<FrameDrawing | null>(null);
+  const [editMode, setEditMode] = useState<EditMode>(IDLE);
+  const enterMode = useCallback((mode: EditMode) => setEditMode(mode), []);
+  const endMode = useCallback(() => setEditMode(IDLE), []);
+  // Keep the HUD and canvas interfaces stable while the controller owns one tool.
+  const placingType = editMode.kind === "place" ? editMode.type : null;
+  const placingSymbol = editMode.kind === "place" ? editMode.symbol : null;
+  const beamMode = editMode.kind === "beam";
+  const beamDraft = useMemo(() => editMode.kind === "beam" ? editMode.stops : [], [editMode]);
+  const beamColor = editMode.kind === "beam" ? editMode.color : BEAM_COLORS[0];
+  const connectDraft = editMode.kind === "connection" ? editMode.draft : null;
+  const drawing = editMode.kind === "frame" ? editMode.drawing : null;
   // the frame just drawn, whose label field takes focus as it opens
   const [labelFocusId, setLabelFocusId] = useState<string | null>(null);
-  // the beam "Add stops" is on for; it lapses as soon as another is selected
-  const [addingStopsTo, setAddingStopsTo] = useState<string | null>(null);
-  const [beamColor, setBeamColor] = useState<string>(BEAM_COLORS[0]);
   const [showLabels, setShowLabels] = useState(true);
   const [showDistances, setShowDistances] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
@@ -350,8 +363,6 @@ export default function BuilderScene() {
   const [snapGuide, setSnapGuide] = useState<[Vec3, Vec3] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [trayOpen, setTrayOpen] = useState(false);
-  // group mode, from the panel rail's empty Groups slot: pick parts, Enter groups them
-  const [groupPicking, setGroupPicking] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
   const turnRef = useRef<TurnState | null>(null);
@@ -437,7 +448,13 @@ export default function BuilderScene() {
     [scene.frames, selectedFrameId],
   );
   const ghostFrameId = selectedFrame?.hidden && !exporting ? selectedFrame.id : null;
-  const addingStops = selectedBeam !== null && addingStopsTo === selectedBeam.id;
+  const addingStops = editMode.kind === "add-stops" && selectedBeam?.id === editMode.beamId;
+  // Every path that changes the beam selection (including undo and frame
+  // selection) ends Add stops when its beam is no longer selected.
+  useEffect(() => {
+    if (editMode.kind === "add-stops" &&
+      (selectedBeamId !== editMode.beamId || !scene.beams.some((beam) => beam.id === editMode.beamId))) endMode();
+  }, [editMode, scene.beams, selectedBeamId, endMode]);
   const selectedConnection = useMemo(
     () => scene.connections.find((connection) => connection.id === selectedConnectionId) ?? null,
     [scene.connections, selectedConnectionId],
@@ -462,23 +479,23 @@ export default function BuilderScene() {
 
   const handleSurfaceClick = useCallback(
     (x: number, z: number) => {
-      if (beamMode || connectDraft || addingStops || drawing) return;
-      if (placingType) {
+      if (editMode.kind !== "idle" && editMode.kind !== "place" && editMode.kind !== "group-pick") return;
+      if (editMode.kind === "place") {
         // a particle clicked onto a trap or cavity goes inside it
         const host =
-          placingType === "particle"
+          editMode.type === "particle"
             ? findHost(sceneRef.current.components, x, z)
             : undefined;
         const id = api.addComponent(
-          placingType,
+          editMode.type,
           [snapToGrid(x), 0, snapToGrid(z)],
-          { ...(host ? { host: host.id } : {}), ...(placingSymbol ? { symbol: placingSymbol } : {}) },
+          { ...(host ? { host: host.id } : {}), ...(editMode.symbol ? { symbol: editMode.symbol } : {}) },
         );
         setSelection([id]);
+        setSelectedBeamId(null);
         setSelectedConnectionId(null);
         setSelectedFrameId(null);
-        setPlacingType(null);
-        setPlacingSymbol(null);
+        endMode();
         return;
       }
       setSelection([]);
@@ -487,48 +504,49 @@ export default function BuilderScene() {
       setSelectedConnectionId(null);
       setEmptyClicks((count) => count + 1);
     },
-    [addingStops, api, beamMode, connectDraft, drawing, placingType, placingSymbol],
+    [api, editMode, endMode],
   );
 
   const handleComponentPointerDown = useCallback(
     (id: string, event: ThreeEvent<PointerEvent>) => {
       // middle and right drags orbit the camera, even when they start on a part;
       // while a frame is drawn, a click on a part puts a corner on the table under it
-      if (event.nativeEvent.button !== 0 || drawing) return;
+      if (event.nativeEvent.button !== 0 || editMode.kind === "frame") return;
       const pressed = componentById(sceneRef.current.components, id);
       if (!pressed) return;
-      if (beamMode) {
+      if (editMode.kind === "beam") {
         if (pressed.type === "translation-stage") {
           announce("A translation stage is a mount, not a beam stop.");
           return;
         }
-        setBeamDraft((current) =>
-          current[current.length - 1] === id ? current : [...current, id],
-        );
+        setEditMode((current) => current.kind !== "beam" || current.stops.at(-1) === id
+          ? current : { ...current, stops: [...current.stops, id] });
         return;
       }
-      if (connectDraft) {
+
+      if (editMode.kind === "connection") {
+        const { draft } = editMode;
         // an undo may have taken away the part clicked first; then this click starts over
-        const from = connectDraft.from && componentById(sceneRef.current.components, connectDraft.from);
+        const from = draft.from && componentById(sceneRef.current.components, draft.from);
         if (!from) {
-          setConnectDraft({ ...connectDraft, from: id });
+          setEditMode({ kind: "connection", draft: { ...draft, from: id } });
         } else if (from.id === id) {
           announce(`Can't connect ${componentDisplayName(pressed)} to itself.`);
         } else {
-          setSelectedConnectionId(api.addConnection(connectDraft.kind, from.id, id));
-          setConnectDraft(null);
-          announce(`${CONNECTION_KINDS[connectDraft.kind].label} added.`);
+          setSelectedConnectionId(api.addConnection(draft.kind, from.id, id));
+          endMode();
+          announce(`${CONNECTION_KINDS[draft.kind].label} added.`);
         }
         return;
       }
 
-      if (addingStops && selectedBeamId) {
+      if (editMode.kind === "add-stops") {
         if (pressed.type === "translation-stage") {
           announce("A translation stage is a mount, not a beam stop.");
           return;
         }
         // onto the end, in click order, one undo step per stop
-        const beam = sceneRef.current.beams.find((entry) => entry.id === selectedBeamId);
+        const beam = sceneRef.current.beams.find((entry) => entry.id === editMode.beamId);
         if (!beam) return;
         const edit = appendStop(beam.path, id);
         if (edit.ok) api.updateBeam(beam.id, { path: edit.path });
@@ -536,7 +554,6 @@ export default function BuilderScene() {
         return;
       }
 
-      setPlacingType(null);
       setSelectedBeamId(null);
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
@@ -560,7 +577,7 @@ export default function BuilderScene() {
       };
       setDragging(true);
     },
-    [addingStops, announce, api, beamMode, connectDraft, drawing, selectedBeamId, selectedIds],
+    [announce, api, editMode, endMode, selectedIds],
   );
 
   // ---- the rotation handle --------------------------------------------------
@@ -644,7 +661,7 @@ export default function BuilderScene() {
   }, []);
 
   const selectionBox = useBoxSelect(hostRef, {
-    enabled: !placingType && !beamMode && !connectDraft && !addingStops && !drawing,
+    enabled: editMode.kind === "idle" || editMode.kind === "group-pick",
     onClick: togglePointedPart,
     onBox: selectInBox,
   });
@@ -845,7 +862,7 @@ export default function BuilderScene() {
   const handleConnectionPointerDown = useCallback(
     (id: string, event: ThreeEvent<PointerEvent>) => {
       // while placing or picking parts, the click goes on to the part or the table behind
-      if (event.nativeEvent.button !== 0 || placingType || beamMode || connectDraft || addingStops || drawing) return;
+      if (event.nativeEvent.button !== 0 || (editMode.kind !== "idle" && editMode.kind !== "group-pick")) return;
       event.stopPropagation();
       setSelectedConnectionId(id);
       setSelectedFrameId(null);
@@ -853,7 +870,7 @@ export default function BuilderScene() {
       setSelectedBeamId(null);
       setSelectedFrameId(null);
     },
-    [addingStops, beamMode, connectDraft, drawing, placingType],
+    [editMode.kind],
   );
 
   // ---- frames --------------------------------------------------------------
@@ -903,22 +920,17 @@ export default function BuilderScene() {
     setSelectedConnectionId(null);
   }, []);
 
-  // "Add a frame" draws one: placing, drawing a beam or a frame and connecting are one mode at a time
+  // Entering a tool replaces any unfinished draft.
   const startFrame = useCallback(() => {
-    setDrawing(NEW_DRAWING);
-    setGroupPicking(false);
+    enterMode({ kind: "frame", drawing: NEW_DRAWING });
     setSelection([]);
     setSelectedBeamId(null);
     setSelectedFrameId(null);
     setSelectedConnectionId(null);
-    setBeamMode(false);
-    setBeamDraft([]);
-    setConnectDraft(null);
-    setPlacingType(null);
     setTrayOpen(false);
-  }, []);
+  }, [enterMode]);
 
-  const cancelFrame = useCallback(() => setDrawing(null), []);
+  const cancelFrame = endMode;
 
   /** What a click, a double-click, Enter or a dragged-out rectangle did; true when it finished the frame. */
   const applyDrawing = useCallback(
@@ -928,22 +940,23 @@ export default function BuilderScene() {
         const id = api.addFrame(step.corners);
         setSelectedFrameId(id);
         setLabelFocusId(id);
-        setDrawing(null);
+        endMode();
         announce("Frame added.");
         return true;
       }
       // what the pointer would do is shown beside it; the status line, which is read out, says only what a click did
       if (step.kind === "refused") announce(step.reason);
-      setDrawing((current) =>
-        current && {
-          ...current,
-          corners: step.kind === "corner" ? step.corners : current.corners,
+      setEditMode((current) => current.kind === "frame" ? {
+        ...current,
+        drawing: {
+          ...current.drawing,
+          corners: step.kind === "corner" ? step.corners : current.drawing.corners,
           refused: step.kind === "refused",
         },
-      );
+      } : current);
       return false;
     },
-    [announce, api],
+    [announce, api, endMode],
   );
 
   const isOnFirstCorner = useCallback((corners: Corner[], event: PointerEvent): boolean => {
@@ -958,17 +971,17 @@ export default function BuilderScene() {
     rectangles: drawing?.corners.length === 0,
     tableAt: (clientX, clientY) => tableAtRef.current?.(clientX, clientY) ?? null,
     onHover: (point, event) =>
-      setDrawing(
-        (current) =>
-          current && {
-            ...current,
-            pointer: point && {
-              point,
-              step: event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM,
-              onFirst: isOnFirstCorner(current.corners, event),
-            },
+      setEditMode((current) => current.kind === "frame" ? {
+        ...current,
+        drawing: {
+          ...current.drawing,
+          pointer: point && {
+            point,
+            step: event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM,
+            onFirst: isOnFirstCorner(current.drawing.corners, event),
           },
-      ),
+        },
+      } : current),
     onClick: (point, event, second) => {
       if (!drawing) return false;
       if (second) return drawing.refused ? false : applyDrawing(finishDrawing(drawing.corners));
@@ -980,10 +993,10 @@ export default function BuilderScene() {
       if (!drawing) return;
       const rectangle = dragRectangle(from, to, event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM);
       if (!done) {
-        setDrawing((current) => current && { ...current, rectangle });
+        setEditMode((current) => current.kind === "frame" ? { ...current, drawing: { ...current.drawing, rectangle } } : current);
         return;
       }
-      setDrawing((current) => current && { ...current, rectangle: null });
+      setEditMode((current) => current.kind === "frame" ? { ...current, drawing: { ...current.drawing, rectangle: null } } : current);
       applyDrawing(
         rectangle.reason ? { kind: "refused", reason: rectangle.reason } : { kind: "done", corners: rectangle.corners },
       );
@@ -1041,48 +1054,30 @@ export default function BuilderScene() {
     [announce, api],
   );
 
-  // Placing, drawing a beam or a frame and connecting are one mode at a time.
   const startConnect = useCallback(() => {
-    setGroupPicking(false);
-    setBeamMode(false);
-    setBeamDraft([]);
-    setDrawing(null);
-    setPlacingType(null);
+    // a new connection starts as the kind of the last one drawn
+    enterMode({ kind: "connection", draft: { kind: sceneRef.current.connections.at(-1)?.kind ?? "fiber", from: null } });
     setTrayOpen(false);
     setSelection([]);
     setSelectedBeamId(null);
     setSelectedFrameId(null);
     setSelectedConnectionId(null);
-    // a new connection starts as the kind of the last one drawn
-    setConnectDraft({ kind: sceneRef.current.connections.at(-1)?.kind ?? "fiber", from: null });
-  }, []);
+  }, [enterMode]);
 
-  const cancelConnect = useCallback(() => setConnectDraft(null), []);
+  const cancelConnect = endMode;
 
   // ---- beams ---------------------------------------------------------------
 
   const startBeam = useCallback(() => {
-    setGroupPicking(false);
-    setBeamMode(true);
-    setBeamDraft([]);
-    setConnectDraft(null);
-    setDrawing(null);
-    setPlacingType(null);
+    enterMode({ kind: "beam", stops: [], color: BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length] });
     setTrayOpen(false);
     setSelection([]);
     setSelectedBeamId(null);
     setSelectedFrameId(null);
     setSelectedConnectionId(null);
-    setAddingStopsTo(null);
-    setBeamColor(
-      BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length],
-    );
-  }, []);
+  }, [enterMode]);
 
-  const cancelBeam = useCallback(() => {
-    setBeamMode(false);
-    setBeamDraft([]);
-  }, []);
+  const cancelBeam = endMode;
 
   const finishBeam = useCallback(() => {
     if (beamDraft.length >= 2) {
@@ -1098,12 +1093,11 @@ export default function BuilderScene() {
       api.addBeam(beamDraft, beamColor, label);
       announce("Beam added.");
     }
-    setBeamMode(false);
-    setBeamDraft([]);
-  }, [announce, api, beamColor, beamDraft]);
+    endMode();
+  }, [announce, api, beamColor, beamDraft, endMode]);
 
   const undoBeamStep = useCallback(
-    () => setBeamDraft((current) => current.slice(0, -1)),
+    () => setEditMode((current) => current.kind === "beam" ? { ...current, stops: current.stops.slice(0, -1) } : current),
     [],
   );
 
@@ -1112,10 +1106,11 @@ export default function BuilderScene() {
     (id: string) => {
       const beam = sceneRef.current.beams.find((entry) => entry.id === id);
       api.deleteBeam(id);
+      if (editMode.kind === "add-stops" && editMode.beamId === id) endMode();
       setSelectedBeamId((current) => (current === id ? null : current));
       if (beam) announce(`Deleted ${beamDisplayName(beam)}. ⌘Z undoes.`);
     },
-    [announce, api],
+    [announce, api, editMode, endMode],
   );
 
   const handleMoveBeam = useCallback(
@@ -1247,12 +1242,10 @@ export default function BuilderScene() {
       setSelectedBeamId(null);
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
-      cancelBeam();
-      cancelConnect();
-      cancelFrame();
+      endMode();
       announce(message);
     },
-    [announce, api, cancelBeam, cancelConnect, cancelFrame],
+    [announce, api, endMode],
   );
 
   const handleApplyScene = useCallback(
@@ -1391,25 +1384,18 @@ export default function BuilderScene() {
     setRenamingGroupId(id);
   }, [announce, api, selectedFrame, selectedIds]);
 
-  // group mode is live only while no other mode is: one mode at a time
-  const groupMode = groupPicking && !beamMode && !drawing && !connectDraft && !placingType && !trayOpen;
+  const groupMode = editMode.kind === "group-pick";
 
   const startGroupMode = useCallback(() => {
-    setBeamMode(false);
-    setBeamDraft([]);
-    setConnectDraft(null);
-    setDrawing(null);
-    setPlacingType(null);
+    enterMode({ kind: "group-pick" });
     setTrayOpen(false);
-    setAddingStopsTo(null);
-    setGroupPicking(true);
-  }, []);
+  }, [enterMode]);
 
   /** Enter, or the Groups slot pressed again: two parts or more become a group; fewer, it just stops. */
   const finishGrouping = useCallback(() => {
     if (finishGroupMode(selectedIds.length) === "group") groupSelected();
-    setGroupPicking(false);
-  }, [groupSelected, selectedIds.length]);
+    endMode();
+  }, [endMode, groupSelected, selectedIds.length]);
 
   /** A group's row: select its parts, hidden ones too, so they move, turn, copy or delete together. */
   const handleSelectGroup = useCallback(
@@ -1491,11 +1477,11 @@ export default function BuilderScene() {
       if (meta && event.key.toLowerCase() === "g" && !event.shiftKey && !event.altKey) {
         // the browser's find-next would otherwise take it
         event.preventDefault();
-        if (!beamMode && !drawing && !connectDraft && !placingType) groupSelected();
+        if (editMode.kind === "idle" || editMode.kind === "group-pick" || editMode.kind === "add-stops") groupSelected();
         return;
       }
 
-      if (meta && event.key.toLowerCase() === "a" && !beamMode && !drawing) {
+      if (meta && event.key.toLowerCase() === "a" && editMode.kind !== "beam" && editMode.kind !== "frame") {
         event.preventDefault();
         const shown = visibility(sceneRef.current).components;
         setSelection(sceneRef.current.components.filter(({ id }) => shown.has(id)).map((component) => component.id));
@@ -1513,13 +1499,9 @@ export default function BuilderScene() {
 
       if (event.key === "Escape") {
         // stop placing first, so Esc mid-run keeps the panel for the next part
-        if (placingType) setPlacingType(null);
+        if (editMode.kind === "place") endMode();
         else if (trayOpen) setTrayOpen(false);
-        else if (beamMode) cancelBeam();
-        else if (drawing) cancelFrame();
-        else if (connectDraft) cancelConnect();
-        else if (addingStops) setAddingStopsTo(null);
-        else if (groupMode) setGroupPicking(false);
+        else if (editMode.kind !== "idle") endMode();
         else {
           setSelection([]);
           setSelectedBeamId(null);
@@ -1529,32 +1511,33 @@ export default function BuilderScene() {
         return;
       }
 
-      if (groupMode && event.key === "Enter") {
+      if (editMode.kind === "group-pick" && event.key === "Enter") {
         event.preventDefault();
         finishGrouping();
         return;
       }
 
-      if (beamMode && event.key === "Enter") {
+      if (editMode.kind === "beam" && event.key === "Enter") {
         event.preventDefault();
         finishBeam();
         return;
       }
 
-      if (drawing) {
+      if (editMode.kind === "frame") {
+        const drawing = editMode.drawing;
         if (event.key === "Enter") {
           event.preventDefault();
           applyDrawing(finishDrawing(drawing.corners));
         } else if (event.key === "Backspace" || event.key === "Delete") {
           event.preventDefault();
-          setDrawing({ ...drawing, corners: drawing.corners.slice(0, -1), refused: false });
+          setEditMode({ ...editMode, drawing: { ...drawing, corners: drawing.corners.slice(0, -1), refused: false } });
         }
         return;
       }
 
-      if (addingStops && event.key === "Enter") {
+      if (editMode.kind === "add-stops" && event.key === "Enter") {
         event.preventDefault();
-        setAddingStopsTo(null);
+        endMode();
         return;
       }
 
@@ -1625,23 +1608,16 @@ export default function BuilderScene() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [
-    addingStops,
     api,
     applyDrawing,
-    beamMode,
-    cancelBeam,
-    cancelConnect,
-    cancelFrame,
-    connectDraft,
     deleteSelected,
-    drawing,
     duplicateSelected,
+    editMode,
+    endMode,
     finishBeam,
     finishGrouping,
-    groupMode,
     groupSelected,
     handleDeleteFrame,
-    placingType,
     resetAllPanels,
     rotateSelected,
     selectedConnection,
@@ -1667,6 +1643,7 @@ export default function BuilderScene() {
       const pick = pickBeam(beamPickRef.current, ids, clientX, clientY);
       beamPickRef.current = pick;
       const id = pick.ids[pick.index];
+      if (editMode.kind === "add-stops" && editMode.beamId !== id) endMode();
       setSelectedBeamId(id);
       setSelection([]);
       setSelectedConnectionId(null);
@@ -1676,21 +1653,23 @@ export default function BuilderScene() {
         announce(`${beamDisplayName(beam)}: beam ${pick.index + 1} of ${ids.length} here. Click again for the next.`);
       }
     },
-    [announce],
+    [announce, editMode, endMode],
   );
 
   const handleSelectBeam = useCallback((id: string) => {
-    setSelectedBeamId((current) => (current === id ? null : id));
+    const next = selectedBeamId === id ? null : id;
+    if (editMode.kind === "add-stops" && next !== editMode.beamId) endMode();
+    setSelectedBeamId(next);
     setSelection([]);
     setSelectedConnectionId(null);
     setSelectedFrameId(null);
-  }, []);
+  }, [editMode, endMode, selectedBeamId]);
 
   return (
     <div className="builderWorkspace">
       <div
         ref={hostRef}
-        className={`builderCanvasHost${placingType || beamMode || connectDraft || addingStops || drawing ? " is-picking" : ""}`}
+        className={`builderCanvasHost${editMode.kind !== "idle" && editMode.kind !== "group-pick" ? " is-picking" : ""}`}
         style={{ "--label-scale": scene.labelScale ?? 1 } as CSSProperties}
       >
         <BuilderCanvas
@@ -1710,8 +1689,8 @@ export default function BuilderScene() {
           selectedConnectionId={selectedConnection?.id ?? null}
           selectedFrameId={selectedFrame?.id ?? null}
           ghostFrameId={ghostFrameId}
-          framesInteractive={!placingType && !beamMode && !connectDraft && !addingStops && !drawing}
-          beamsInteractive={!placingType && !beamMode && !connectDraft && !addingStops && !drawing}
+          framesInteractive={editMode.kind === "idle" || editMode.kind === "group-pick"}
+          beamsInteractive={editMode.kind === "idle" || editMode.kind === "group-pick"}
           onBeamClick={handleBeamClick}
           frameDraft={
             drawingView && { ...drawingView, color: FRAME_COLORS[scene.frames.length % FRAME_COLORS.length] }
@@ -1784,19 +1763,17 @@ export default function BuilderScene() {
         status={status}
         emptyClicks={emptyClicks}
         onToggleTray={() => {
-          setGroupPicking(false);
+          if (editMode.kind === "group-pick") endMode();
           setTrayOpen((open) => !open);
         }}
         onPickType={(type, symbol) => {
           // the panel stays open, so a run of parts goes down without reopening it
-          cancelBeam();
-          cancelConnect();
-          cancelFrame();
-          setPlacingType(type);
-          setPlacingSymbol(symbol ?? null);
+          enterMode({ kind: "place", type, symbol: symbol ?? null });
         }}
         onCloseTray={() => setTrayOpen(false)}
+        onCancelPlace={endMode}
         onDeselect={() => {
+          if (editMode.kind === "add-stops") endMode();
           setSelection([]);
           setSelectedBeamId(null);
           setSelectedFrameId(null);
@@ -1825,21 +1802,20 @@ export default function BuilderScene() {
         onFinishBeam={finishBeam}
         onCancelBeam={cancelBeam}
         onUndoBeamStep={undoBeamStep}
-        onBeamColorChange={setBeamColor}
+        onBeamColorChange={(color) => setEditMode((current) => current.kind === "beam" ? { ...current, color } : current)}
         onStartConnect={startConnect}
         onCancelConnect={cancelConnect}
-        onConnectKindChange={(kind) => setConnectDraft((current) => current && { ...current, kind })}
+        onConnectKindChange={(kind) => setEditMode((current) => current.kind === "connection" ? { ...current, draft: { ...current.draft, kind } } : current)}
         onUpdateConnection={api.updateConnection}
         onDeleteConnection={(id) => {
           api.deleteConnection(id);
           setSelectedConnectionId(null);
         }}
         onSelectBeam={handleSelectBeam}
-        onToggleAddStops={() =>
-          setAddingStopsTo((current) =>
-            current === selectedBeamId ? null : selectedBeamId,
-          )
-        }
+        onToggleAddStops={() => {
+          if (editMode.kind === "add-stops") endMode();
+          else if (selectedBeamId) enterMode({ kind: "add-stops", beamId: selectedBeamId });
+        }}
         onUpdateBeam={api.updateBeam}
         onCheckpoint={() => api.commitCheckpoint(sceneRef.current)}
         onDeleteBeam={handleDeleteBeam}
@@ -1899,20 +1875,20 @@ export default function BuilderScene() {
         onDownloadBrief={handleDownloadBrief}
         onResetExample={() => {
           api.resetToExample();
+          endMode();
           setSelection([]);
+          setSelectedBeamId(null);
           setSelectedConnectionId(null);
           setSelectedFrameId(null);
           announce("Example loaded. ⌘Z undoes.");
         }}
         onClear={() => {
           api.clearScene();
+          endMode();
           setSelection([]);
           setSelectedBeamId(null);
           setSelectedFrameId(null);
           setSelectedConnectionId(null);
-          cancelBeam();
-          cancelConnect();
-          cancelFrame();
           announce("Table cleared. ⌘Z undoes.");
         }}
       />
