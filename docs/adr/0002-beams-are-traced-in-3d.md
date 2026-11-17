@@ -26,9 +26,9 @@ _Contradicts the **Beam** entry in `CONTEXT.md` ("It is not a ray trace"); that 
 
 ## Mirrors aim at components
 
-- A mirror stores the component it sends light to, not an angle. Its normal follows from the incoming and outgoing directions, $\hat n \propto \hat d_\text{out} - \hat d_\text{in}$, so both its yaw and its pitch come out of the aim.
-- Only parts turned by hand store an orientation.
-- A **periscope** becomes two ordinary mirrors, each tilted by its aim; the `periscope` and `periscope-top` kinds and their shared-post link go. Whether the **delay line** becomes mirrors on a stage is decided separately.
+- A mirror stores the component it sends light to. Its normal follows from where its neighbours are, $\hat n \propto \hat d_\text{out} - \hat d_\text{in}$, with $\hat d_\text{in}$ pointing from the component before it and $\hat d_\text{out}$ toward the one it aims at, so both its yaw and its pitch come out of the aim. The trace only checks the result.
+- Every component still saves its orientation. An aim updates it whenever both neighbours are known; otherwise it keeps its last value, so a half-laid-out setup behaves as before (see #369).
+- A **periscope** becomes two ordinary mirrors, each tilted by its aim; the `periscope` and `periscope-top` kinds and their shared-post link go. The **delay line** stays one component with a pass-through surface (see #360).
 
 ## The surfaces obey the laws of optics
 
@@ -44,6 +44,6 @@ Each kind's rule is checked by throwing many random beams at it and asserting th
 ## Consequences
 
 - ADR 0001 holds: this is a schema version bump with a migration, and old files are never rejected. The migration turns a yaw into a quaternion about the vertical, turns each drawn beam's stops into mirror aims, merges drawn beams that share a start into one tree with branches (each keeping its colour), and turns periscope pairs into two aimed mirrors.
-- Where the trace and a drawn beam disagree, the drawn beam is kept as a hand-drawn beam and the builder says the file was upgraded. Nothing is dropped. A fixture from schema 14 must open with every component and beam intact, as now.
+- Where the trace and a drawn beam disagree, the drawn beam is kept as a hand-drawn beam and the builder says the file was upgraded. Nothing is dropped. A fixture from schema 16 must open with every component and beam intact, as now.
 - The setup brief describes aims rather than angles, and accepts a plain `yaw` in degrees in place of a quaternion, since an assistant writing quaternions by hand will get them wrong.
 - `host` and `periscope` were already one relationship ("this component rides on that one"); with the periscope kinds gone, `host` is the only one left.
