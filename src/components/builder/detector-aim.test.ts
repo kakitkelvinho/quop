@@ -100,7 +100,7 @@ describe("cameras and spectrometers", () => {
     );
     assert.equal(yawOf(settled, "cam"), 0);
     // the laser is at (−200, 0) from (0, 300): face points west-north-west
-    assert.equal(yawOf(settled, "spec"), 303.69);
+    assert.ok(Math.abs(yawOf(settled, "spec")! - 303.69) < 1e-9);
   });
 });
 

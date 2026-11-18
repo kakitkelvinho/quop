@@ -72,7 +72,7 @@ describe("the JSON panel following the table", () => {
 
 describe("the author's draft in the JSON panel", () => {
   const live = serializeScene(DEFAULT_SCENE);
-  const typed = live.replace('"rotation": 0', '"rotation": 90');
+  const typed = live.replace(/("position": \[\n\s+)-?\d+/, "$1999");
 
   it("keeps what the author typed while the table changes", () => {
     const draft = editJson(live, null, typed);

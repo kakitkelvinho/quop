@@ -102,7 +102,7 @@ describe("newComponent", () => {
       label: "Ion",
       host: "trap",
     });
-    assert.deepStrictEqual(Object.keys(built), ["id", "type", "position", "rotation", "color", "label", "host"]);
+    assert.deepStrictEqual(Object.keys(built), ["id", "type", "position", "orientation", "color", "label", "host"]);
   });
 
   it("leaves an empty host out, as addComponent did", () => {

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { EXAMPLE_SETUP, setupBrief } from "./setup-brief.ts";
-import { COMPONENT_SPECS, SCENE_VERSION, parseScene, serializeScene, type ComponentType } from "./types.ts";
+import type { Quat } from "./quaternion.ts";
+import { COMPONENT_SPECS, SCENE_VERSION, componentYaw, parseScene, serializeScene, type ComponentType } from "./types.ts";
 
 // #143: the setup brief teaches an AI assistant to write a setup file. Its
 // example must be a file the builder opens as written, or the brief would
@@ -44,12 +45,15 @@ describe("the setup brief's example", () => {
   });
 
   it("is what the builder would save: nothing in it is clamped, defaulted or re-angled", () => {
+    // the brief writes \`yaw\`; the builder saves the same turn as \`orientation\`
     const example = exampleFromBrief();
-    assert.deepEqual(JSON.parse(serializeScene(parseScene(example)!)), example);
+    const saved = JSON.parse(serializeScene(parseScene(example)!));
+    const asWritten = saved.components.map(({ orientation, ...rest }: { orientation: Quat }) => ({ ...rest, yaw: componentYaw({ orientation }) }));
+    assert.deepEqual({ ...saved, components: asWritten }, example);
   });
 
   it("is the example the module exports", () => {
-    assert.deepEqual(exampleFromBrief(), JSON.parse(serializeScene(EXAMPLE_SETUP)));
+    assert.equal(serializeScene(parseScene(exampleFromBrief())!), serializeScene(EXAMPLE_SETUP));
   });
 });
 
