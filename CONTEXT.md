@@ -31,6 +31,12 @@ _Avoid_: optical axis
 An author-drawn, ordered path through components, recording where the light is meant to go. It is not a ray trace; a beam between two components at different heights slopes.
 _Avoid_: ray, trace
 
+**Traced beam**:
+Light followed from a Laser source through Component surfaces in 3D. While the traced flag is on, it is drawn as a dashed overlay beside the author's Beams; the Beam list and saved Setup still keep the author's paths.
+
+**Beam tree**:
+The paths one Laser source's traced light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.
+
 **Beam list**:
 A setup's beams in the order the author keeps them, shown in the beams box and saved with the setup. The order is the author's to change; where two beams pass through one mirror, the first in the list sets its angle.
 _Avoid_: beam order, layer order
