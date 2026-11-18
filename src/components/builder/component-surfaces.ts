@@ -1,11 +1,14 @@
 import {
   BEAM_CUBE_EDGE_MM,
   CAMERA_OPENING_RADIUS_MM,
+  AOM_CRYSTAL,
+  EOM_SIDE,
   FC_TIP_RADIUS_MM,
   OPTIC_DIAMETER_MM,
   PD_CHIP_SIDE_MM,
   SPECTROMETER_PORT_RADIUS_MM,
 } from "./model-dimensions.ts";
+import { rotator, waveplate } from "./jones.ts";
 import { makeSurface, type Surface } from "./surface.ts";
 
 const opticRadiusMm = OPTIC_DIAMETER_MM / 2;
@@ -52,3 +55,34 @@ export function detectorSurfaces(kind: "photodiode" | "camera" | "spectrometer" 
     }[kind] };
   return [makeSurface({ positionMm: [0, 0, 0], normal: [1, 0, 0], aperture, rule: { kind: "block" } })];
 }
+
+export function noSurfaces(): Surface[] {
+  return [];
+}
+
+export function circularSurface(radiusMm: number, rule: Surface["rule"] = { kind: "pass" }, extraPathMm?: number): Surface[] {
+  return [makeSurface({ positionMm: [0, 0, 0], normal: [1, 0, 0], aperture: { kind: "circle", radiusMm }, rule, extraPathMm })];
+}
+
+export function rectangularSurface(widthMm: number, heightMm: number, rule: Surface["rule"] = { kind: "block" }): Surface[] {
+  return [makeSurface({
+    positionMm: [0, 0, 0], normal: [1, 0, 0],
+    aperture: { kind: "rect", widthMm, heightMm, widthAxis: [0, 0, 1] }, rule,
+  })];
+}
+
+export const FIBRE_COLLIMATOR_SURFACES = () => circularSurface(4.5);
+export const WAVEPLATE_SURFACES = () => circularSurface(opticRadiusMm, { kind: "pass", jones: waveplate(Math.PI, 0) });
+export const FILTER_SURFACES = () => circularSurface(12);
+export const IRIS_SURFACES = () => circularSurface(5);
+export const TRAP_SURFACES = () => circularSurface(6);
+export const CAVITY_SURFACES = () => circularSurface(opticRadiusMm);
+export const OBJECTIVE_SURFACES = () => circularSurface(10);
+export const AOM_SURFACES = () => rectangularSurface(AOM_CRYSTAL[2], AOM_CRYSTAL[1], { kind: "pass" });
+export const EOM_SURFACES = () => rectangularSurface(EOM_SIDE, EOM_SIDE, { kind: "pass" });
+export const ISOLATOR_SURFACES = () => circularSurface(3.5, { kind: "isolator", jones: rotator(Math.PI / 4) });
+export const DELAY_LINE_SURFACES = (extraPathMm: number) => circularSurface(opticRadiusMm, { kind: "pass" }, extraPathMm);
+export const PARTICLE_SURFACES = (radiusMm: number) => circularSurface(radiusMm, { kind: "block" });
+export const SAMPLE_SURFACES = () => circularSurface(opticRadiusMm, { kind: "block" });
+export const BEAM_BLOCK_SURFACES = () => rectangularSurface(50, 26);
+export const TIME_TAGGER_SURFACES = () => rectangularSurface(120, 50);

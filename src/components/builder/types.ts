@@ -21,7 +21,13 @@ import {
   SPECTROMETER_PORT,
 } from "./model-dimensions.ts";
 import { canonical, compose, fromEulerYXZDeg, fromYawDeg, invert, rotate, toEulerYXZDeg, type Quat } from "./quaternion.ts";
-import { beamCubeSurfaces, detectorSurfaces, lensSurfaces, mirrorSurfaces } from "./component-surfaces.ts";
+import {
+  AOM_SURFACES, BEAM_BLOCK_SURFACES, CAVITY_SURFACES, DELAY_LINE_SURFACES, EOM_SURFACES,
+  FIBRE_COLLIMATOR_SURFACES, FILTER_SURFACES, IRIS_SURFACES, ISOLATOR_SURFACES,
+  OBJECTIVE_SURFACES, PARTICLE_SURFACES, SAMPLE_SURFACES, TIME_TAGGER_SURFACES,
+  TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces,
+  detectorSurfaces, lensSurfaces, mirrorSurfaces, noSurfaces, rectangularSurface,
+} from "./component-surfaces.ts";
 import type { Surface } from "./surface.ts";
 
 export function yawOf(component: Pick<BuilderComponent, "orientation">): number;
@@ -393,6 +399,7 @@ type Created = Partial<Pick<BuilderComponent, KindField | "color">>;
 export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   "laser-source": {
     label: "Laser source",
+    surfaces: noSurfaces,
     tag: "Laser",
     top: 20,
     minHeight: 20,
@@ -437,6 +444,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   waveplate: {
     label: "Waveplate",
+    surfaces: WAVEPLATE_SURFACES,
     tag: "λ/2",
     top: 30,
     minHeight: 36,
@@ -446,6 +454,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   filter: {
     label: "Filter",
+    surfaces: FILTER_SURFACES,
     tag: "Filter",
     top: 19,
     minHeight: 25,
@@ -455,6 +464,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   iris: {
     label: "Iris",
+    surfaces: IRIS_SURFACES,
     tag: "Iris",
     top: 20,
     minHeight: 27,
@@ -464,6 +474,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "fiber-collimator": {
     label: "Fibre collimator",
+    surfaces: FIBRE_COLLIMATOR_SURFACES,
     tag: "Fiber",
     top: 20,
     minHeight: 20,
@@ -474,6 +485,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "paul-trap": {
     label: "Paul trap",
+    surfaces: TRAP_SURFACES,
     tag: "Trap",
     top: 31,
     minHeight: 28,
@@ -483,6 +495,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   cavity: {
     label: "Cavity",
+    surfaces: CAVITY_SURFACES,
     tag: "Cavity",
     top: 20,
     minHeight: 16,
@@ -494,6 +507,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   particle: {
     label: "Particle",
+    surfaces: (component) => PARTICLE_SURFACES(fieldValue(component, "particleRadius")),
     tag: "Particle",
     top: 10,
     minHeight: 5,
@@ -553,6 +567,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "time-tagger": {
     label: "Time tagger",
+    surfaces: TIME_TAGGER_SURFACES,
     tag: "Tagger",
     aliases: ["TDC", "time-to-digital converter", "counter", "coincidence counter"],
     top: 23,
@@ -563,6 +578,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "beam-block": {
     label: "Beam block",
+    surfaces: BEAM_BLOCK_SURFACES,
     tag: "Dump",
     top: 15,
     minHeight: 21,
@@ -571,6 +587,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   objective: {
     label: "Objective",
+    surfaces: OBJECTIVE_SURFACES,
     tag: "Obj",
     top: 17,
     minHeight: 24,
@@ -581,6 +598,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   sample: {
     label: "Sample",
+    surfaces: SAMPLE_SURFACES,
     tag: "Sample",
     top: 18,
     minHeight: 13,
@@ -590,6 +608,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   block: {
     label: "Block",
+    surfaces: (component) => rectangularSurface(blockSize(component)[2], blockSize(component)[1]),
     tag: "Block",
     top: 15,
     minHeight: 15,
@@ -599,6 +618,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   aom: {
     label: "AOM",
+    surfaces: AOM_SURFACES,
     tag: "AOM",
     top: 18,
     minHeight: 24,
@@ -607,6 +627,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   eom: {
     label: "EOM",
+    surfaces: EOM_SURFACES,
     tag: "EOM",
     top: 18,
     minHeight: 24,
@@ -615,6 +636,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "faraday-isolator": {
     label: "Faraday isolator",
+    surfaces: ISOLATOR_SURFACES,
     tag: "FI",
     aliases: ["isolator", "optical isolator", "Faraday rotator", "optical diode"],
     top: 20,
@@ -624,6 +646,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   periscope: {
     label: "Periscope",
+    surfaces: mirrorSurfaces,
     tag: "Peri",
     aliases: ["beam elevator", "beam riser", "periscope mirror"],
     top: 20,
@@ -636,6 +659,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "periscope-top": {
     label: "Periscope top mirror",
+    surfaces: mirrorSurfaces,
     tag: "Peri top",
     partOf: "periscope",
     top: 20,
@@ -647,6 +671,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "delay-line": {
     label: "Delay line",
+    surfaces: (component) => DELAY_LINE_SURFACES(delaySetting(component).path),
     tag: "Delay",
     aliases: ["delay stage", "translation stage", "retroreflector", "corner cube", "optical delay"],
     top: 22,
@@ -658,6 +683,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "translation-stage": {
     label: "Translation stage",
+    surfaces: noSurfaces,
     tag: "Stage",
     top: 25,
     minHeight: 0,
