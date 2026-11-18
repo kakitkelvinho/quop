@@ -83,7 +83,6 @@ import {
   bodyCentre,
   componentById,
   componentRadius,
-  periscopePartner,
   referencePoint,
   type Beam,
   type Frame,
@@ -1395,20 +1394,17 @@ export default function BuilderCanvas({
       })}
 
       {shownComponents.map((component) => {
-        const partner = periscopePartner(components, component);
         return (
         <ComponentMesh
           key={component.id}
           component={component}
           palette={palette}
-          // a periscope is selected whole: its top mirror shows its lower one's selection
-          selected={selected.has(component.id) || (component.type === "periscope-top" && partner !== undefined && selected.has(partner.id))}
+          selected={selected.has(component.id)}
           hovered={component.id === hoveredId}
           showLabel={showLabels}
           showPosts={showPosts}
           beamOrder={draftOrder.get(component.id)}
           stubTaken={stubEnds.has(component.id)}
-          partner={partner}
           mountedStage={component.mountStage ? componentById(components, component.mountStage) : undefined}
           faded={shown.faded.has(component.id)}
           onPointerDown={handlePartDown}

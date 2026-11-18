@@ -11,7 +11,6 @@ import {
   LIT_TYPES,
   MIRROR_LIKE,
   MOUNTED_TYPES,
-  PERISCOPE_MIRRORS,
   STAGED_TYPES,
   kindsWhere,
   newComponent,
@@ -73,8 +72,6 @@ const BUILT: Record<ComponentType, BuilderComponent> = {
   aom: { id: "p", type: "aom", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   eom: { id: "p", type: "eom", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "faraday-isolator": { id: "p", type: "faraday-isolator", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
-  periscope: { id: "p", type: "periscope", position: [10, 100, 20], orientation: fromYawDeg(0), color: MOUNT, label: undefined },
-  "periscope-top": { id: "p", type: "periscope-top", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "delay-line": { id: "p", type: "delay-line", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "translation-stage": { id: "p", type: "translation-stage", position: [10, 0, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
 };
@@ -133,12 +130,9 @@ describe("the kind table", () => {
       "filter",
       "iris",
       "fiber-collimator",
-      "periscope",
-      "periscope-top",
     ]);
     sameSet(STAGED_TYPES, ["objective", "sample", "translation-stage"]);
     sameSet(MIRROR_LIKE, ["mirror-mount", "delay-line"]);
-    sameSet(PERISCOPE_MIRRORS, ["periscope", "periscope-top"]);
     sameSet(AIMED_DETECTORS, ["photodiode", "camera", "spectrometer", "single-photon-detector"]);
     // connection-jacks.ts's stubs that take a cable as well as a fibre
     sameSet(kindsWhere((spec) => spec.stubTakesCable === true), ["photodiode"]);
@@ -165,7 +159,6 @@ describe("the kind table", () => {
       particle: ["host", "particleRadius"],
       objective: ["mountStage", "objectiveLength", "stageColor"],
       block: ["size", "symbol"],
-      "periscope-top": ["periscope"],
       "delay-line": ["delayMinPathMm", "delayStageMm", "delayTravelMm", "lightColor", "lightHidden"],
       "translation-stage": ["stageAxes", "stageColor"],
     });

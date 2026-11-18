@@ -37,10 +37,6 @@ describe("surfaces for every Component kind", () => {
       const [surface] = surfaces(type);
       assert.deepEqual(interact(surface, beam(1))?.outgoing, [], `${type} should block light`);
     }
-    for (const type of ["periscope", "periscope-top"] as ComponentType[]) {
-      const [surface] = surfaces(type);
-      assert.deepEqual(interact(surface, beam(1))?.outgoing[0].direction, [-1, 0, 0]);
-    }
     const cavity = surfaces("cavity")[0];
     assert.deepEqual(interact(cavity, beam(1))?.outgoing.map((branch) => branch.power), [0.5, 0.5]);
   });

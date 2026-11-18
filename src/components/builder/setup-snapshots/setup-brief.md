@@ -23,7 +23,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 - A part the beam passes through (a lens, waveplate, filter, iris, sample, objective, AOM, EOM, Faraday isolator or cavity) has its optical axis along its own x: yaw 0 for a beam along x, 90 for a beam along z. A **Faraday isolator** lets light through travelling along its +x, and its rejection port is on its +z side: draw light leaving that port as its own beam, starting at the isolator.
 - A **delay line** stands across a beam line: its port, at its position, holds two fold mirrors on the line that send the light down the rail to a V of two mirrors on the carriage, across and back, so it leaves along the line it came in on. Put it in the middle of a straight beam, `[..., "m1", "delay", "m2", ...]` with m1, delay and m2 in a line, and the builder turns it so its rail (along its −x) is perpendicular to the beam, on the side its yaw already faces: yaw 90 puts the rail toward +z, 270 toward −z, for a beam along x. The beam is drawn through the port; `delayMinPathMm` plus twice `delayStageMm` is added to its path length.
 - A **translation stage** is a fixed visual mount on the table, separate from the delay line. Give a supported optic its id as `mountStage` to place the optic over it. Moving or turning the stage carries the optic; the stage adds no beam path length and has no travel setting. Only one optic can use each stage. Its optional `stageAxes` chooses the visible plates and thumbscrews, not motion.
-- A **periscope** is two parts: a `periscope` (its lower mirror, on the rod) and a `periscope-top` (its upper mirror) whose `periscope` field names it. Give both the same x and z and their own heights, and put both in the beam's path, one after the other: `[..., "peri", "peri-top", ...]`. The beam runs straight up (or down) between them, and that rise counts in its path length. Each mirror is turned by the builder to face its neighbour off to the side, like a mirror in the middle of a beam. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the yaw of the beam's direction of travel.
+- A **beam elevator** is two ordinary `mirror-mount` Components at the same x and z and different heights. Put both in a Beam's path in order. Give the lower one an `aim` at the upper one's id, and the upper one an `aim` at the next stop. Their height difference counts in Path length. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the yaw of the beam's direction of travel.
 - A **mirror** in the middle of a beam, and a **photodiode**, **camera**, **spectrometer** or **single-photon detector** at the end of one, are turned by the builder: the mirror to reflect the beam from the stop before it to the stop after, the detector to face the stop before it. Any yaw you write for them is replaced, so 0 will do. A mirror at either end of a path keeps the yaw you give it; its reflecting face looks along its +x.
 - A **beam cube**'s reflecting diagonal runs from its −x−z corner to its +x+z corner: at yaw 0, light travelling +x carries on along +x and is reflected toward +z; at yaw 90, light travelling +x is reflected toward −z. Draw the reflected arm as its own beam, starting at the cube.
 
@@ -31,7 +31,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 18. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 19. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: the light paths, in order. The first beam through a mirror sets its angle.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -47,7 +47,7 @@ Every component has:
 - `type`: one of the type ids under **Component types**. A part of another type is dropped.
 - `position`: `[x, y, z]`, mm. x and z place the part on the table (within ±5000): its centre, or for a part with a port (a laser's opening, a fibre collimator's lens, a detector's window, an objective's threaded plate) that port, where the beam meets it, so the distance between two parts' positions is the beam between them. y is its height, its optical centre above the table, held to the type's range.
 - `orientation`: unit quaternion `[x, y, z, w]` with w ≥ 0; default `[0, 0, 0, 1]`. You may write `yaw` in degrees instead. See **Angles**.
-- `color`: a hex colour such as `"#8b1e3f"`; missing means the part's own colour. On a `mirror-mount`, `beam-splitter`, `waveplate`, `filter`, `iris`, `fiber-collimator`, `periscope` or `periscope-top` it tints the mount, to mark the beam line the part serves.
+- `color`: a hex colour such as `"#8b1e3f"`; missing means the part's own colour. On a `mirror-mount`, `beam-splitter`, `waveplate`, `filter`, `iris` or `fiber-collimator` it tints the mount, to mark the beam line the part serves.
 - `label`: text drawn on the part's tag, such as `PBS`, `λ/2` or `780 nm ECDL`; missing shows the type's short name.
 
 Some types read fields of their own; leave them out to take the default:
@@ -61,7 +61,6 @@ Some types read fields of their own; leave them out to take the default:
 - `objectiveLength` (`objective` only): mm from the back of its thread to its nose, 30–130; default 54. Only the barrel stretches.
 - `opacity` (`sample` only): 0.1–1; default 0.8.
 - `host` (`particle` only): the id of the `paul-trap` or `cavity` it sits in. It is then drawn at its host's centre, whatever its own position says, and moves with it.
-- `periscope` (`periscope-top` only): the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.
 - `mountStage` (`mirror-mount`, `beam-splitter`, `lens`, `waveplate`, `filter`, `iris`, `fiber-collimator`, `objective` and `sample` only): the id of a `translation-stage` carrying this optic. Its x and z follow the stage; its height stays its own. A stage carries at most one optic.
 - `delayMinPathMm` (`delay-line` only): mm, its minimum delay: the path a beam through it gains with its stage at 0, like a laser's `internalPathMm`. It is not drawn. 0–100000; default 50.
 - `delayTravelMm` (`delay-line` only): mm, how far its stage can travel, 0–2000; default 50. Its rail is drawn long enough for it.
@@ -142,8 +141,6 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 - `mirror-mount`: Mirror. Height 27–300 mm, default 100. Its own fields: `aim`, `fold`, `free`, `mountStage`.
 - `beam-splitter`: Beam cube. Height 25–300 mm, default 100. Its own fields: `aim`, `fold`, `free`, `mountStage`.
-- `periscope`: Periscope. Height 30–300 mm, default 100.
-- `periscope-top`: Periscope top mirror. Height 30–300 mm, default 100. Its own fields: `periscope`.
 - `delay-line`: Delay line. Height 30–300 mm, default 100. Its own fields: `delayMinPathMm`, `delayTravelMm`, `delayStageMm`, `lightColor`, `lightHidden`.
 
 ### Shaping
@@ -187,7 +184,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 18,
+  "version": 19,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "orientation": [0, 0, 0, 1], "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "orientation": [0, 0.9238795325112867, 0, 0.38268343236508984], "color": "#8b1e3f", "label": "M1" },
@@ -211,7 +208,7 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 
 ```json
 {
-  "version": 18,
+  "version": 19,
   "components": [
     { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "yaw": 0 },
     { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "yaw": 0 }

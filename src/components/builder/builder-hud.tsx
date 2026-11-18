@@ -45,7 +45,6 @@ import {
   beamDisplayName,
   derivedAngleBeam,
   frameDisplayName,
-  periscopePartner,
   type Beam,
   type BuilderComponent,
   type ComponentType,
@@ -58,12 +57,6 @@ import {
   serializeScene,
 } from "@/components/builder/types";
 import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
-
-/** The beam that turns a periscope's top mirror, when the lower one is the part shown. */
-function partnerAngleBeam(components: BuilderComponent[], beams: Beam[], component: BuilderComponent): Beam | undefined {
-  const partner = component.type === "periscope" ? periscopePartner(components, component) : undefined;
-  return partner && derivedAngleBeam(beams, partner);
-}
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
@@ -111,7 +104,7 @@ export type BuilderHudProps = {
   onCancelPlace: () => void;
   onDeselect: () => void;
   onUpdateSelected: (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
-  /** any one part by id: a periscope mirror's inspector edits its other mirror too */
+  /** any one Component by id: the Inspector can edit a mounted optic */
   onUpdateComponent: (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
@@ -1415,7 +1408,6 @@ export default function BuilderHud(props: BuilderHudProps) {
         component={selected[0]}
         components={components}
         angleBeam={props.traced ? undefined : derivedAngleBeam(beams, selected[0])}
-        partnerAngleBeam={partnerAngleBeam(components, beams, selected[0])}
         traced={props.traced}
         aimStatus={props.aimStatuses?.get(selected[0].id)}
         onSetAim={(targetId) => props.onSetAim(selected[0].id, targetId)}

@@ -1,0 +1,96 @@
+{
+  "version": 19,
+  "components": [
+    {
+      "id": "laser",
+      "type": "laser-source",
+      "position": [
+        -200,
+        100,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "lower",
+      "type": "mirror-mount",
+      "position": [
+        0,
+        100,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "color": "#16a34a",
+      "label": "P1",
+      "aim": "upper"
+    },
+    {
+      "id": "upper",
+      "type": "mirror-mount",
+      "position": [
+        0,
+        250,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "color": "#16a34a",
+      "label": "P1 top",
+      "aim": "detector"
+    },
+    {
+      "id": "detector",
+      "type": "photodiode",
+      "position": [
+        0,
+        250,
+        -200
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "beams": [
+    {
+      "id": "path",
+      "path": [
+        "laser",
+        "lower",
+        "upper",
+        "detector"
+      ],
+      "color": "#ffffff"
+    }
+  ],
+  "connections": [],
+  "frames": [],
+  "groups": [
+    {
+      "id": "elevator",
+      "name": "Elevator",
+      "color": "#ffffff",
+      "members": [
+        "lower",
+        "upper"
+      ]
+    }
+  ]
+}

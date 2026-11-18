@@ -3,8 +3,7 @@
 // returns the scene it was given when nothing changes, so a no-op never
 // becomes an undo step. The hook settles hosts and angles after each, as it
 // does after every edit: a particle whose host is in the group is carried by
-// it there, not moved here. A periscope's two mirrors move, copy and go
-// together, whichever of them is in the group.
+// it there, not moved here.
 
 import {
   GRID_SIZE_MM,
@@ -17,7 +16,6 @@ import {
   createComponentId,
   createConnectionId,
   dropComponentFromBeams,
-  withPeriscopePartners,
   type Beam,
   type Connection,
   type BuilderComponent,
@@ -87,7 +85,7 @@ export function nudgeComponents(
   dx: number,
   dz: number,
 ): BuilderSceneData {
-  return editGroup(scene, new Set(withPeriscopePartners(scene.components, ids)), (component) =>
+  return editGroup(scene, new Set(ids), (component) =>
     placedAt(component, component.position[0] + dx, component.position[2] + dz),
   );
 }
@@ -100,9 +98,9 @@ function toHundredth(value: number): number {
 /** Where a part stood and which way it faced when a turn began. */
 export type Pose = { position: Vec3; orientation: Quat };
 
-/** The parts a turn of `ids` carries: a periscope swings round with a group whole; one mirror alone turns in place. */
-function turnGroup(scene: BuilderSceneData, ids: string[]): Set<string> {
-  return new Set(ids.length > 1 ? withPeriscopePartners(scene.components, ids) : ids);
+/** The parts a turn of `ids` carries. */
+function turnGroup(_scene: BuilderSceneData, ids: string[]): Set<string> {
+  return new Set(ids);
 }
 
 /**
@@ -179,7 +177,6 @@ export function rotateComponents(
  * gone too, and so is every fibre or cable to them.
  */
 export function deleteComponents(scene: BuilderSceneData, ids: string[]): BuilderSceneData {
-  ids = withPeriscopePartners(scene.components, ids);
   const gone = new Set(ids);
   const components = scene.components.filter((component) => !gone.has(component.id));
   if (components.length === scene.components.length) return scene;
@@ -206,8 +203,7 @@ const FRESH_IDS: IdMaker = {
 /**
  * A copy of each part, one grid step along x and z, and of every beam, fibre
  * and cable that runs only between them. The copies' ids come back in the order asked for. A
- * copied particle stays in its host only when the host is copied too. A
- * periscope is copied whole, with both mirrors, whichever of them is asked for.
+ * copied particle stays in its host only when the host is copied too.
  * Each copy joins the groups its source is in.
  */
 export function duplicateComponents(
@@ -215,7 +211,7 @@ export function duplicateComponents(
   ids: string[],
   makeId: IdMaker = FRESH_IDS,
 ): { scene: BuilderSceneData; ids: string[] } {
-  const sources = withPeriscopePartners(scene.components, ids)
+  const sources = ids
     .map((id) => componentById(scene.components, id))
     .filter((component): component is BuilderComponent => component !== undefined);
   if (sources.length === 0) return { scene, ids: [] };
@@ -229,7 +225,7 @@ export function duplicateComponents(
     if (host) copy.host = host;
     else delete copy.host;
     if (source.mountStage !== undefined) copy.mountStage = copyOf.get(source.mountStage);
-    if (source.periscope !== undefined) copy.periscope = copyOf.get(source.periscope);
+    if (source.aim !== undefined) copy.aim = copyOf.get(source.aim) ?? source.aim;
     return copy;
   });
   const beams = scene.beams

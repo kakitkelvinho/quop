@@ -9,8 +9,6 @@ import {
   BEAM_COLORS,
   CONNECTION_KINDS,
   FRAME_COLORS,
-  DEFAULT_MOUNT_COLOR,
-  PERISCOPE_RISE_MM,
   DEFAULT_SCENE,
   EMPTY_SCENE,
   clampToTable,
@@ -19,7 +17,6 @@ import {
   createComponentId,
   createConnectionId,
   createFrameId,
-  defaultHeight,
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
   newComponent,
@@ -31,9 +28,7 @@ import {
   settleHosts,
   settleStageMounts,
   setStageMount as setStageMountInScene,
-  settlePeriscopes,
   snapToGrid,
-  clampHeight,
   translateCorners,
   type Beam,
   type BuilderComponent,
@@ -63,7 +58,7 @@ function settled(mutate: Mutation, traced: boolean): Mutation {
   return (scene) => {
     const next = mutate(scene);
     if (next === scene) return scene;
-    const placed = settlePeriscopes(settleHosts(settleStageMounts(scene, next)));
+    const placed = settleHosts(settleStageMounts(scene, next));
     return traced ? settleAims(placed).scene : settleAngles(placed);
   };
 }
@@ -210,33 +205,13 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
   // ---- component edits -----------------------------------------------------
 
   const addComponent = useCallback(
-    /**
-     * `x` and `z` place it; it always starts at its default height. A
-     * periscope comes with its top mirror, PERISCOPE_RISE_MM above it.
-     */
+    /** `x` and `z` place it at its default height. */
     (type: ComponentType, [x, , z]: Vec3, extra?: { label?: string; host?: string; symbol?: BlockSymbol }): string => {
       const id = createComponentId(type);
-      const top: BuilderComponent[] =
-        type === "periscope"
-          ? [
-              {
-                id: createComponentId("periscope-top"),
-                type: "periscope-top",
-                position: [x, clampHeight("periscope-top", defaultHeight(type) + PERISCOPE_RISE_MM), z],
-                orientation: [0, 0, 0, 1],
-                color: DEFAULT_MOUNT_COLOR,
-                periscope: id,
-              },
-            ]
-          : [];
       commit((current) => {
         const placed: BuilderSceneData = {
           ...current,
-          components: [
-            ...current.components,
-            newComponent(type, id, x, z, extra),
-            ...top,
-          ],
+          components: [...current.components, newComponent(type, id, x, z, extra)],
         };
         if (!traced) return placed;
         const aimed = settleAims(placed).scene;

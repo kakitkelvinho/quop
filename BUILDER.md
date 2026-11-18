@@ -262,22 +262,12 @@ hide that light or give it another colour, on screen and in a PNG; both are
 saved with the setup (`lightColor`, `lightHidden`). The light is a drawing
 only: it is not a beam and adds nothing to any path.
 
-**A periscope is two stops.** Placing a periscope puts down its lower mirror
-and, 100 mm above it, its top mirror: two parts, each a stop a beam can pass,
-so a beam runs `… → Peri → Peri top → …` and the rise between them counts in
-its path length. It is one part everywhere but the beam: clicking either
-mirror selects the periscope, and its one inspector sets its label, place
-and mount colour, each mirror's height and each mirror's yaw. The top
-mirror always stands straight above (or below) the lower one and takes its
-label (marked "top") and colour; dragging, nudging, copying or deleting
-either mirror takes the whole periscope. While a beam is drawn, a click on
-a mirror adds that mirror. Each mirror
-is tipped 45° and angles itself like a mirror, turning to face the one
-neighbour that is not straight above or below it; with both neighbours off to
-the side it bisects them as a flat mirror would. Its rod stands to one side,
-away from where the top mirror sends its light. A setup file links the top
-mirror (`periscope-top`) to its lower one (`periscope`) by its `periscope`
-field.
+**A Periscope uses two Mirrors.** Place ordinary Mirrors at the same x and z
+with different heights, and include both as Beam stops. The rise between them
+counts in Path length. Aim the lower Mirror at the upper one and the upper
+Mirror at the next stop. They can be selected, moved, copied and deleted
+independently. Older Setup files convert their linked pair into two Mirrors,
+keeping their ids, heights, labels, groups and Beams.
 
 **A detector at a beam's end faces the light.** A photodiode, camera,
 spectrometer or single-photon detector that is a beam's last stop turns its
@@ -424,8 +414,7 @@ in path lengths and still angle mirrors and detectors, and they can't be
 clicked, box-selected or picked by `⌘A`. A PNG leaves them out. Deleting a
 group ungroups its members, which stay on the table; deleting a part or frame
 takes it out of every group, and a group it empties stays until it is deleted.
-A copy joins its source's groups, and a periscope's two mirrors join and
-leave together. Export group (`groupSubset`) writes a group as a setup of its
+A copy joins its source's groups. Export group (`groupSubset`) writes a group as a setup of its
 own without re-centring or re-IDing anything, so bringing it back in can line
 it up with what is on the table. Parsing drops member ids that name nothing, and duplicates,
 and keeps at most 100 groups. In code the multi-selection editor
@@ -655,7 +644,7 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Select a connection | Click its tube on the table. In its inspector an empty length means unknown, so clearing the field removes the length and the delay |
 | Group parts | Select them and press **Group** in their inspector or `⌘G` (`Ctrl G`), or with no parts selected, `⌘G` on a selected frame; or, with no groups yet, the empty Groups slot on the rail starts group mode: ⌘ click or ⌘ drag to pick, `Enter` to group, `Esc` to cancel. Either way, a "Group n" row appears in the Groups box with its name ready to type. One undo step |
 | Select, hide or ungroup a group | Its row in the Groups box: press it to select its parts, the eye to hide or show it (a part in two groups stays drawn until both are hidden; a beam until all its stops are), ⋯ → Delete group, or **Ungroup** in the inspector while its parts are selected, to ungroup. Hover the row to see its members ringed on the table |
-| Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap, or a periscope top whose lower mirror, is outside is saved loose where it stands, and named too |
+| Save a group as its own file | ⋯ → Export group… on its row downloads `<name>.json`, a setup of its own: its parts and frames, every beam whose every stop is in it and every connection with both ends in it, the group itself (shown, even if hidden on the table) and the setup's label size, all at the same positions and ids. A beam or connection through a part outside the group is left out, and the status line names it and the parts outside; add those parts to the group to keep it. A particle whose trap is outside is saved loose where it stands, and named too |
 | Share a part between groups | Add to group in its inspector, then press each group's row (several parts at once work too) |
 | Undo / redo | `⌘Z` / `⇧⌘Z` |
 | Move a panel | Drag its title bar. `⌥0` puts them all back |

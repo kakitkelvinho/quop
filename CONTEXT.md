@@ -89,7 +89,7 @@ _Avoid_: delay stage, translation stage, retro
 A fixed visual mount for one optic, placed separately on the table. Its selected X, Y and Z axes determine the visible plates and thumbscrews, not travel. Moving or turning it carries the mounted optic. It adds no beam path length; use a delay line for optical delay.
 
 **Periscope**:
-A pair of mirrors on one rod that takes a beam up or down to a new height: a lower mirror and a top mirror straight above it, each its own component and its own stop on a beam. They move, copy and go together.
+A pair of ordinary Mirrors, one above the other, that takes a Beam up or down to a new height. Each is a separate Component and Beam stop; the lower aims at the upper, and the upper aims at the next stop.
 _Avoid_: beam elevator, riser
 
 **Mode**:

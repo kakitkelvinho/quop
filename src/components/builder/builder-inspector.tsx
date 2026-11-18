@@ -48,7 +48,6 @@ import {
   MOUNTED_TYPES,
   hasStage,
   LIT_TYPES,
-  ROTATION_STEP_DEG,
   SAMPLE_OPACITY_RANGE,
   STAGE_MOUNTABLE_TYPES,
   stageAxes,
@@ -63,7 +62,6 @@ import {
   DELAY_MIN_PATH_RANGE_MM,
   DELAY_TRAVEL_RANGE_MM,
   componentById,
-  periscopePartner,
   componentDisplayName,
   componentTag,
   cornerBounds,
@@ -653,7 +651,6 @@ export function ComponentInspector({
   component,
   components,
   angleBeam,
-  partnerAngleBeam,
   traced,
   aimStatus,
   onSetAim,
@@ -674,15 +671,13 @@ export function ComponentInspector({
   components: BuilderComponent[];
   /** set when a beam turns this part; its yaw is then read-only */
   angleBeam?: Beam;
-  /** the same for a periscope's top mirror */
-  partnerAngleBeam?: Beam;
   traced?: boolean;
   aimStatus?: AimStatus;
   onSetAim?: (targetId: string) => void;
   onFlipAim?: () => void;
   onSnapAim?: () => void;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
-  /** edits another part: a periscope mirror's other mirror */
+  /** edits another Component, such as an optic mounted on a stage */
   onUpdateOther: (id: string, patch: ComponentPatch, record?: boolean) => void;
   onSelectComponent: (id: string) => void;
   onCheckpoint: () => void;
@@ -697,19 +692,8 @@ export function ComponentInspector({
   const mountedPart = component.type === "translation-stage"
     ? components.find((part) => part.mountStage === component.id)
     : undefined;
-  // a periscope shows both its mirrors' heights, and its top mirror moves it by its lower one
-  const partner = periscopePartner(components, component);
-  const [lower, upper] = component.type === "periscope-top" ? [partner, component] : [component, partner];
-  const moved = component.type === "periscope-top" && lower ? lower : component;
   const moveTo = (nextX: number, nextZ: number) => {
-    const patch = { position: [nextX, moved.position[1], nextZ] as Vec3 };
-    if (moved === component) onUpdate(patch);
-    else onUpdateOther(moved.id, patch);
-  };
-  const setHeight = (part: BuilderComponent, height: number) => {
-    const [px, , pz] = part.position;
-    if (part === component) onUpdate({ position: [px, height, pz] });
-    else onUpdateOther(part.id, { position: [px, height, pz] });
+    onUpdate({ position: [nextX, component.position[1], nextZ] as Vec3 });
   };
 
   return (
@@ -756,12 +740,7 @@ export function ComponentInspector({
         <NumberField label="x" unit="mm" step={5} value={x} disabled={Boolean(host)} onChange={(next) => moveTo(next, z)} />
         <NumberField label="z" unit="mm" step={5} value={z} disabled={Boolean(host)} onChange={(next) => moveTo(x, next)} />
       </div>
-      {component.type === "translation-stage" ? null : lower && upper ? (
-        <div className="builderFieldRow">
-          <HeightField key={lower.id} component={lower} label="Bottom mirror" onChange={(height) => setHeight(lower, height)} />
-          <HeightField key={upper.id} component={upper} label="Top mirror" onChange={(height) => setHeight(upper, height)} />
-        </div>
-      ) : (
+      {component.type === "translation-stage" ? null : (
         <HeightField
           key={component.id}
           component={component}
@@ -834,24 +813,14 @@ export function ComponentInspector({
         </div>
       ) : null}
       <YawRow
-        label={upper ? "Bottom yaw" : "Yaw"}
+        label="Yaw"
         yaw={yawOf(component)}
         angleBeam={angleBeam}
         keys
         onChange={(yaw) => onUpdate({ orientation: withYaw(component, yaw).orientation })}
         onRotate={onRotate}
       />
-      <PitchRollRows component={component} labelPrefix={upper ? "Bottom " : ""} locked={Boolean(angleBeam)} onChange={(orientation) => onUpdate({ orientation })} />
-      {upper && upper !== component ? (
-        <YawRow
-          label="Top yaw"
-          yaw={yawOf(upper)}
-          angleBeam={partnerAngleBeam}
-          onChange={(yaw) => onUpdateOther(upper.id, { orientation: withYaw(upper, yaw).orientation })}
-          onRotate={(direction) => onUpdateOther(upper.id, { orientation: withYaw(upper, yawOf(upper) + direction * ROTATION_STEP_DEG).orientation })}
-        />
-      ) : null}
-      {upper && upper !== component ? <PitchRollRows component={upper} labelPrefix="Top " locked={Boolean(partnerAngleBeam)} onChange={(orientation) => onUpdateOther(upper.id, { orientation })} /> : null}
+      <PitchRollRows component={component} locked={Boolean(angleBeam)} onChange={(orientation) => onUpdate({ orientation })} />
       {component.type === "laser-source" ? (
         <>
           <NumberField
