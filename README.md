@@ -72,3 +72,5 @@ Open the failed run (the `ci` check on the pull request, then *Summary*), downlo
 ### Reporting problems
 
 Found something broken or confusing? Use the "Report a problem" link in the footer or on any tool page. This lets you email me directly so I can address the problem.
+
+This README was edited by the AFK agent.
