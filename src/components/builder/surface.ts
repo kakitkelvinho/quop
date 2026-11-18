@@ -18,6 +18,7 @@ export type SurfaceRule =
   | { kind: "block" }
   | { kind: "pass" }
   | { kind: "reflect" }
+  | { kind: "thin-lens"; focalLengthMm: number }
   // R and T are power fractions; R + T = 1 when lossless, less when the surface absorbs.
   | { kind: "split"; reflectance: number; transmittance: number };
 
@@ -64,6 +65,9 @@ export function makeSurface(surface: Surface): Surface {
     const { reflectance: r, transmittance: t } = rule;
     if (!(r >= 0 && t >= 0 && r + t <= 1 + UNIT_TOLERANCE)) throw new Error("split needs R, T ≥ 0 and R + T ≤ 1");
   }
+  if (rule.kind === "thin-lens" && !(rule.focalLengthMm > 0 && Number.isFinite(rule.focalLengthMm))) {
+    throw new Error("thin lens needs a finite positive focal length");
+  }
   return surface;
 }
 
@@ -103,7 +107,7 @@ export function reflectDirection(direction: Vec3, normal: Vec3): Vec3 {
 }
 
 /** What a rule does to one beam arriving at `hitMm`: zero, one or two beams leave from there. */
-export function applyRule(rule: SurfaceRule, normal: Vec3, beam: TracedBeam, hitMm: Vec3): TracedBeam[] {
+export function applyRule(rule: SurfaceRule, normal: Vec3, beam: TracedBeam, hitMm: Vec3, centreMm: Vec3 = hitMm): TracedBeam[] {
   const leaving = (direction: Vec3, fraction: number): TracedBeam => ({
     originMm: hitMm,
     direction,
@@ -116,6 +120,11 @@ export function applyRule(rule: SurfaceRule, normal: Vec3, beam: TracedBeam, hit
       return [leaving(beam.direction, 1)];
     case "reflect":
       return [leaving(reflectDirection(beam.direction, normal), 1)];
+    case "thin-lens": {
+      const displacement = subtract(hitMm, centreMm);
+      const bend = Math.abs(dot(beam.direction, normal)) / rule.focalLengthMm;
+      return [leaving(normalize(add(beam.direction, scale(displacement, -bend))), 1)];
+    }
     case "split": {
       // A branch with no power isn't a beam; dropping it keeps "two outgoing" meaning two.
       const branches = [
@@ -131,7 +140,7 @@ export function applyRule(rule: SurfaceRule, normal: Vec3, beam: TracedBeam, hit
 export function interact(surface: Surface, beam: TracedBeam): Hit | null {
   const hitMm = intersect(surface, beam);
   if (hitMm === null) return null;
-  return { hitMm, outgoing: applyRule(surface.rule, surface.normal, beam, hitMm) };
+  return { hitMm, outgoing: applyRule(surface.rule, surface.normal, beam, hitMm, surface.positionMm) };
 }
 
 /** The same light travelling the other way along the same line. */

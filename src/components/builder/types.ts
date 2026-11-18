@@ -21,6 +21,8 @@ import {
   SPECTROMETER_PORT,
 } from "./model-dimensions.ts";
 import { canonical, compose, fromEulerYXZDeg, fromYawDeg, invert, rotate, toEulerYXZDeg, type Quat } from "./quaternion.ts";
+import { beamCubeSurfaces, detectorSurfaces, lensSurfaces, mirrorSurfaces } from "./component-surfaces.ts";
+import type { Surface } from "./surface.ts";
 
 export function yawOf(component: Pick<BuilderComponent, "orientation">): number;
 export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined;
@@ -319,6 +321,7 @@ export const BLOCK_SIZE_MM: Vec3 = [30, 30, 30];
 
 export type ComponentSpec = {
   label: string;
+  surfaces?: (component: BuilderComponent) => Surface[];
   /** short name drawn as the in-scene tag */
   tag: string;
   /** other names a visitor might search for; never shown */
@@ -400,6 +403,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "mirror-mount": {
     label: "Mirror",
+    surfaces: mirrorSurfaces,
     tag: "Mirror",
     aliases: ["mirror mount"],
     top: 25,
@@ -412,6 +416,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "beam-splitter": {
     label: "Beam cube",
+    surfaces: beamCubeSurfaces,
     tag: "Cube",
     aliases: ["beam splitter", "BS", "PBS"],
     top: 13,
@@ -422,6 +427,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   lens: {
     label: "Lens",
+    surfaces: (component) => lensSurfaces(fieldValue(component, "focalLength")),
     tag: "Lens",
     top: 20,
     minHeight: 17,
@@ -496,6 +502,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   photodiode: {
     label: "Photodiode",
+    surfaces: () => detectorSurfaces("photodiode"),
     tag: "PD",
     top: 13,
     minHeight: 20,
@@ -507,6 +514,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   camera: {
     label: "Camera",
+    surfaces: () => detectorSurfaces("camera"),
     tag: "Camera",
     top: 25,
     minHeight: 31,
@@ -518,6 +526,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   spectrometer: {
     label: "Spectrometer",
+    surfaces: () => detectorSurfaces("spectrometer"),
     tag: "Spec",
     top: 22,
     // the box stands on the table and grows with its input port, as a
@@ -531,6 +540,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "single-photon-detector": {
     label: "Single-photon detector",
+    surfaces: () => detectorSurfaces("single-photon-detector"),
     tag: "SPD",
     aliases: ["SPCM", "SNSPD", "APD", "single photon counter"],
     top: 17,

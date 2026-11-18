@@ -64,6 +64,8 @@ import {
   CAMERA_DEPTH_MM,
   CAMERA_FRONT_X,
   CAMERA_MOUNT_RING,
+  CAMERA_OPENING_RADIUS_MM,
+  BEAM_CUBE_EDGE_MM,
   DELAY_DRIVE_MM,
   DELAY_RAIL_DROP_MM,
   EOM_LENGTH,
@@ -71,10 +73,13 @@ import {
   EOM_SMA_RISE_MM,
   FC_BARREL_LENGTH_MM,
   FC_FLANGE_DEPTH_MM,
+  FC_TIP_RADIUS_MM,
   FC_TIP_LENGTH_MM,
   LASER_ARROW,
   LASER_BODY_MM,
   LASER_EMITTER,
+  OPTIC_DIAMETER_MM,
+  PD_CHIP_SIDE_MM,
   PD_RADIUS,
   SPCM_DEPTH_MM,
   SPCM_FACE_X,
@@ -82,6 +87,7 @@ import {
   SPCM_JACK_Z_MM,
   SPECTROMETER_BODY_MM,
   SPECTROMETER_PORT,
+  SPECTROMETER_PORT_RADIUS_MM,
   TAGGER_DEPTH_MM,
   TAGGER_INPUTS,
   TAGGER_NUT_MM,
@@ -138,7 +144,7 @@ const NO_RAYCAST = () => null;
  */
 
 /** Nominal optic size on this bench, mm — everything is drawn around 1 inch. */
-const OPTIC_D = 25.4;
+const OPTIC_D = OPTIC_DIAMETER_MM;
 /** SR100 plate footprint, mm. Roughly 2x the optic. */
 const PLATE = 49;
 
@@ -1048,7 +1054,7 @@ const CUBE_COATING_MM = 1.2;
 
 function BeamSplitter({ palette, color, axis }: ModelProps) {
   const mount = color ?? DEFAULT_MOUNT_COLOR;
-  const cube = 25.4;
+  const cube = BEAM_CUBE_EDGE_MM;
   return (
     <group>
       <Pillar palette={palette} top={axis - cube / 2 - 6} />
@@ -1954,7 +1960,7 @@ function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean
           <meshStandardMaterial color={GOLD} roughness={0.25} metalness={0.9} />
         </mesh>
         <mesh position={[-2.05, 0, 0]}>
-          <boxGeometry args={[0.2, 4.4, 4.4]} />
+          <boxGeometry args={[0.2, PD_CHIP_SIDE_MM, PD_CHIP_SIDE_MM]} />
           <meshStandardMaterial color={SENSOR_SILICON} roughness={0.12} metalness={0.5} />
         </mesh>
         <mesh rotation={[0, 0, -Math.PI / 2]}>
@@ -2092,7 +2098,7 @@ function CameraBody({ palette, color, axis }: ModelProps) {
         <Hardware palette={palette} />
       </mesh>
       <mesh position={[CAMERA_MOUNT_RING.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[11, 11, CAMERA_MOUNT_RING.depth, 28]} />
+        <cylinderGeometry args={[CAMERA_OPENING_RADIUS_MM, CAMERA_OPENING_RADIUS_MM, CAMERA_MOUNT_RING.depth, 28]} />
         <Enamel color="#12161d" />
       </mesh>
     </group>
@@ -2109,7 +2115,7 @@ function Spectrometer({ palette, color, axis }: ModelProps) {
       </mesh>
       {/* input slit / fibre port, on the shared axis */}
       <mesh position={[SPECTROMETER_PORT.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[7, 7, SPECTROMETER_PORT.length, 20]} />
+        <cylinderGeometry args={[SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT.length, 20]} />
         <Enamel color="#1b1f26" />
       </mesh>
       <mesh position={[0, body + 1, 0]}>
@@ -2131,7 +2137,6 @@ const SPCM_HALF_MM = 17;
 const SPCM_WIDTH_MM = 30;
 const FC_FLANGE_MM = 13;
 const FC_BARREL_RADIUS_MM = 4.5;
-const FC_TIP_RADIUS_MM = 2.8;
 /** where the thread ridges sit on the barrel, mm out from the flange */
 const FC_THREAD_MM = [1.5, 3.5, 5.5];
 
