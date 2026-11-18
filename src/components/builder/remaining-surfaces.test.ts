@@ -29,11 +29,11 @@ describe("surfaces for every Component kind", () => {
   });
 
   it("lets light pass through transparent and active optics and blocks it at opaque Components", () => {
-    for (const type of ["fiber-collimator", "waveplate", "filter", "iris", "paul-trap", "cavity", "objective", "aom", "eom", "delay-line"] as ComponentType[]) {
+    for (const type of ["fiber-collimator", "waveplate", "filter", "iris", "paul-trap", "sample", "objective", "aom", "eom", "delay-line"] as ComponentType[]) {
       const [surface] = surfaces(type);
       assert.equal(interact(surface, beam(1))?.outgoing.length, 1, `${type} should pass light`);
     }
-    for (const type of ["particle", "sample", "time-tagger", "beam-block", "block"] as ComponentType[]) {
+    for (const type of ["particle", "time-tagger", "beam-block", "block"] as ComponentType[]) {
       const [surface] = surfaces(type);
       assert.deepEqual(interact(surface, beam(1))?.outgoing, [], `${type} should block light`);
     }
@@ -41,6 +41,8 @@ describe("surfaces for every Component kind", () => {
       const [surface] = surfaces(type);
       assert.deepEqual(interact(surface, beam(1))?.outgoing[0].direction, [-1, 0, 0]);
     }
+    const cavity = surfaces("cavity")[0];
+    assert.deepEqual(interact(cavity, beam(1))?.outgoing.map((branch) => branch.power), [0.5, 0.5]);
   });
 
   it("uses the drawn apertures for the iris and crystal modulators", () => {
