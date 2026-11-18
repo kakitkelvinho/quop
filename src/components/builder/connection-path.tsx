@@ -3,7 +3,7 @@
 import { Html } from "@react-three/drei";
 import type { ThreeEvent } from "@react-three/fiber";
 import { memo, useMemo } from "react";
-import { CatmullRomCurve3, Vector3 } from "three";
+import { CatmullRomCurve3, Quaternion, Vector3 } from "three";
 
 import { FIBER_STUBS, connectionJack, leavesFromStub } from "@/components/builder/connection-jacks";
 import {
@@ -15,7 +15,6 @@ import {
   type ConnectionKind,
 } from "@/components/builder/types";
 
-const UP = new Vector3(0, 1, 0);
 /** how much wider than the drawn tube a click may land and still pick it, mm */
 const HIT_RADIUS_MM = 5;
 
@@ -34,17 +33,19 @@ const HIT_RADIUS_MM = 5;
 function endPoints(part: BuilderComponent, other: BuilderComponent, kind: ConnectionKind, rest: number): Vector3[] {
   // stubs and cables leave the body, which a part with a port is drawn behind
   const [x, height, z] = bodyCentre(part);
-  const yaw = (part.rotation * Math.PI) / 180;
-  const [ox, , oz] = bodyCentre(other);
+  const axis = part.position[1];
+  const [qx, qy, qz, qw] = part.orientation;
+  const orientation = new Quaternion(qx, qy, qz, qw);
+  const [ox, oy, oz] = bodyCentre(other);
   // the other end, in the part's frame
-  const toward = new Vector3(ox - x, 0, oz - z).applyAxisAngle(UP, -yaw);
-  const placed = (point: Vector3) => point.applyAxisAngle(UP, yaw).add(new Vector3(x, 0, z));
+  const toward = new Vector3(ox - x, oy - height, oz - z).applyQuaternion(orientation.clone().invert());
+  const placed = (point: Vector3) => point.sub(new Vector3(0, axis, 0)).applyQuaternion(orientation).add(new Vector3(x, height, z));
 
   const stub = leavesFromStub(part.type, kind) ? FIBER_STUBS[part.type] : undefined;
   if (stub) {
     // the stub curls to the part's +z; mirror it when the other end is on its -z side
     const side = toward.z < 0 ? -1 : 1;
-    return stub(height).map(([px, py, pz]) => placed(new Vector3(px, py, pz * side)));
+    return stub(axis).map(([px, py, pz]) => placed(new Vector3(px, py, pz * side)));
   }
 
   const jack = connectionJack(part, kind, toward.z);

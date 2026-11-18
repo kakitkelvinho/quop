@@ -1,0 +1,448 @@
+{
+  "version": 17,
+  "components": [
+    {
+      "id": "laser",
+      "type": "laser-source",
+      "position": [
+        -700,
+        100,
+        -300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Laser"
+    },
+    {
+      "id": "eom",
+      "type": "eom",
+      "position": [
+        -450,
+        100,
+        -300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "EOM"
+    },
+    {
+      "id": "pickoff",
+      "type": "beam-splitter",
+      "position": [
+        -300,
+        100,
+        -300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "PDH pickoff",
+      "mountStage": "stage-pickoff"
+    },
+    {
+      "id": "cavity",
+      "type": "cavity",
+      "position": [
+        -150,
+        100,
+        -300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Reference cavity"
+    },
+    {
+      "id": "pd",
+      "type": "photodiode",
+      "position": [
+        -300,
+        100,
+        -550
+      ],
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
+      "label": "Reflection PD"
+    },
+    {
+      "id": "rf",
+      "type": "block",
+      "position": [
+        -700,
+        15,
+        0
+      ],
+      "orientation": [
+        0.19266586350799994,
+        0.3614531129266691,
+        0.013098696101331936,
+        0.9121731942755071
+      ],
+      "label": "RF oscillator",
+      "symbol": "rf-source"
+    },
+    {
+      "id": "split",
+      "type": "block",
+      "position": [
+        -450,
+        15,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "RF split",
+      "symbol": "splitter"
+    },
+    {
+      "id": "drv-eom",
+      "type": "block",
+      "position": [
+        -450,
+        15,
+        200
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "EOM driver",
+      "symbol": "driver"
+    },
+    {
+      "id": "amp",
+      "type": "block",
+      "position": [
+        400,
+        15,
+        -100
+      ],
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
+      "label": "RF amp",
+      "symbol": "amplifier"
+    },
+    {
+      "id": "phase",
+      "type": "block",
+      "position": [
+        -150,
+        15,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Demod phase",
+      "symbol": "phase-shifter"
+    },
+    {
+      "id": "mixer",
+      "type": "block",
+      "position": [
+        150,
+        15,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Mixer",
+      "symbol": "mixer"
+    },
+    {
+      "id": "low",
+      "type": "block",
+      "position": [
+        400,
+        15,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "LPF",
+      "symbol": "low-pass"
+    },
+    {
+      "id": "pid",
+      "type": "block",
+      "position": [
+        650,
+        15,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Lock PID",
+      "symbol": "pid"
+    },
+    {
+      "id": "sum",
+      "type": "block",
+      "position": [
+        900,
+        15,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Sum",
+      "symbol": "sum"
+    },
+    {
+      "id": "bias",
+      "type": "block",
+      "position": [
+        900,
+        15,
+        200
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Bias tee",
+      "symbol": "bias-tee"
+    },
+    {
+      "id": "scope",
+      "type": "block",
+      "position": [
+        650,
+        60,
+        300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "Error monitor",
+      "symbol": "scope"
+    },
+    {
+      "id": "high",
+      "type": "block",
+      "position": [
+        150,
+        15,
+        300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "HPF",
+      "symbol": "high-pass"
+    },
+    {
+      "id": "band",
+      "type": "block",
+      "position": [
+        400,
+        15,
+        300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "label": "BPF",
+      "symbol": "band-pass"
+    },
+    {
+      "id": "stage-pickoff",
+      "type": "translation-stage",
+      "position": [
+        -300,
+        0,
+        -300
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "stageAxes": "xyz"
+    }
+  ],
+  "beams": [
+    {
+      "id": "probe",
+      "path": [
+        "laser",
+        "eom",
+        "pickoff",
+        "cavity"
+      ],
+      "color": "#dc2626",
+      "label": "PDH probe"
+    },
+    {
+      "id": "reflection",
+      "path": [
+        "cavity",
+        "pickoff",
+        "pd"
+      ],
+      "color": "#f97316",
+      "label": "Cavity reflection"
+    }
+  ],
+  "connections": [
+    {
+      "id": "rf-split",
+      "kind": "cable",
+      "from": "rf",
+      "to": "split",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "split-drive",
+      "kind": "cable",
+      "from": "split",
+      "to": "drv-eom",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "drive-eom",
+      "kind": "cable",
+      "from": "drv-eom",
+      "to": "eom",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "split-phase",
+      "kind": "cable",
+      "from": "split",
+      "to": "phase",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "pd-amp",
+      "kind": "cable",
+      "from": "pd",
+      "to": "amp",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "amp-mixer",
+      "kind": "cable",
+      "from": "amp",
+      "to": "mixer",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "phase-mixer",
+      "kind": "cable",
+      "from": "phase",
+      "to": "mixer",
+      "color": "#f59e0b"
+    },
+    {
+      "id": "mixer-low",
+      "kind": "cable",
+      "from": "mixer",
+      "to": "low",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "low-pid",
+      "kind": "cable",
+      "from": "low",
+      "to": "pid",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "pid-sum",
+      "kind": "cable",
+      "from": "pid",
+      "to": "sum",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "sum-bias",
+      "kind": "cable",
+      "from": "sum",
+      "to": "bias",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "low-scope",
+      "kind": "cable",
+      "from": "low",
+      "to": "scope",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "mixer-high",
+      "kind": "cable",
+      "from": "mixer",
+      "to": "high",
+      "color": "#38bdf8"
+    },
+    {
+      "id": "high-band",
+      "kind": "cable",
+      "from": "high",
+      "to": "band",
+      "color": "#38bdf8"
+    }
+  ],
+  "frames": [],
+  "groups": []
+}

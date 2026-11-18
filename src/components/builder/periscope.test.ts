@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { measureBeam } from "./beam-measurement.ts";
 import { describe, it } from "node:test";
@@ -18,10 +20,10 @@ import {
 // A periscope is two parts, its lower mirror and its top mirror, each a stop
 // a beam can pass; the top one stands straight above the lower one.
 
-const laser: BuilderComponent = { id: "laser", type: "laser-source", position: [-200, 100, 0], rotation: 0 };
-const peri: BuilderComponent = { id: "peri", type: "periscope", position: [0, 100, 0], rotation: 0 };
-const top: BuilderComponent = { id: "peri-top", type: "periscope-top", position: [0, 250, 0], rotation: 0, periscope: "peri" };
-const pd: BuilderComponent = { id: "pd", type: "photodiode", position: [0, 250, -200], rotation: 0 };
+const laser: BuilderComponent = { id: "laser", type: "laser-source", position: [-200, 100, 0], orientation: fromYawDeg(0) };
+const peri: BuilderComponent = { id: "peri", type: "periscope", position: [0, 100, 0], orientation: fromYawDeg(0) };
+const top: BuilderComponent = { id: "peri-top", type: "periscope-top", position: [0, 250, 0], orientation: fromYawDeg(0), periscope: "peri" };
+const pd: BuilderComponent = { id: "pd", type: "photodiode", position: [0, 250, -200], orientation: fromYawDeg(0) };
 
 const bench = (components: BuilderComponent[] = [laser, peri, top, pd]): BuilderSceneData => ({
   version: SCENE_VERSION,
@@ -77,8 +79,8 @@ describe("a periscope", () => {
   it("turns each mirror to face its neighbour off to the side", () => {
     const settled = settleAngles(bench());
     // the lower mirror looks back at the laser (−x), the top one on to the photodiode (−z)
-    assert.equal(byId(settled, "peri")?.rotation, 180);
-    assert.equal(byId(settled, "peri-top")?.rotation, 90);
+    assert.equal(yawOf(byId(settled, "peri")), 180);
+    assert.equal(yawOf(byId(settled, "peri-top")), 90);
   });
 
   it("goes whole when either mirror is deleted", () => {
@@ -106,8 +108,8 @@ describe("a periscope", () => {
 
   it("turns one mirror alone in place", () => {
     const turned = rotateComponents(bench([peri, top]), ["peri-top"], 1);
-    assert.equal(byId(turned, "peri-top")?.rotation, 15);
-    assert.equal(byId(turned, "peri")?.rotation, 0);
+    assert.equal(yawOf(byId(turned, "peri-top")), 15);
+    assert.equal(yawOf(byId(turned, "peri")), 0);
   });
 
   it("opens from a setup file as it was saved", () => {
@@ -118,7 +120,7 @@ describe("a periscope", () => {
 
 describe("a Faraday isolator", () => {
   it("opens from a setup file", () => {
-    const isolator: BuilderComponent = { id: "fi", type: "faraday-isolator", position: [0, 100, 0], rotation: 90 };
+    const isolator: BuilderComponent = { id: "fi", type: "faraday-isolator", position: [0, 100, 0], orientation: fromYawDeg(90) };
     assert.deepEqual(parseScene({ version: SCENE_VERSION, components: [isolator] })?.components, [
       { ...isolator, color: undefined, label: undefined },
     ]);

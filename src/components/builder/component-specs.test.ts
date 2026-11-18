@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -25,57 +26,57 @@ const MOUNT = "#8b1e3f";
 // Written out from addComponent as it stood before newComponent: every part
 // at its default height, unturned, and with no colour or label unless set.
 const BUILT: Record<ComponentType, BuilderComponent> = {
-  "laser-source": { id: "p", type: "laser-source", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  "fiber-collimator": { id: "p", type: "fiber-collimator", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  "mirror-mount": { id: "p", type: "mirror-mount", position: [10, 100, 20], rotation: 0, color: MOUNT, label: undefined },
-  "beam-splitter": { id: "p", type: "beam-splitter", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
+  "laser-source": { id: "p", type: "laser-source", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "fiber-collimator": { id: "p", type: "fiber-collimator", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "mirror-mount": { id: "p", type: "mirror-mount", position: [10, 100, 20], orientation: fromYawDeg(0), color: MOUNT, label: undefined },
+  "beam-splitter": { id: "p", type: "beam-splitter", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   lens: {
     id: "p",
     type: "lens",
     position: [10, 100, 20],
-    rotation: 0,
+    orientation: fromYawDeg(0),
     color: undefined,
     label: undefined,
     lensShape: "plano-convex",
     focalLength: 100,
   },
-  waveplate: { id: "p", type: "waveplate", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  filter: { id: "p", type: "filter", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  iris: { id: "p", type: "iris", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  sample: { id: "p", type: "sample", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  "paul-trap": { id: "p", type: "paul-trap", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  cavity: { id: "p", type: "cavity", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined, cavityLength: 50 },
-  particle: { id: "p", type: "particle", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  photodiode: { id: "p", type: "photodiode", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  camera: { id: "p", type: "camera", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  spectrometer: { id: "p", type: "spectrometer", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
+  waveplate: { id: "p", type: "waveplate", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  filter: { id: "p", type: "filter", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  iris: { id: "p", type: "iris", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  sample: { id: "p", type: "sample", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "paul-trap": { id: "p", type: "paul-trap", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  cavity: { id: "p", type: "cavity", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined, cavityLength: 50 },
+  particle: { id: "p", type: "particle", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  photodiode: { id: "p", type: "photodiode", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  camera: { id: "p", type: "camera", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  spectrometer: { id: "p", type: "spectrometer", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "single-photon-detector": {
     id: "p",
     type: "single-photon-detector",
     position: [10, 100, 20],
-    rotation: 0,
+    orientation: fromYawDeg(0),
     color: undefined,
     label: undefined,
   },
-  "time-tagger": { id: "p", type: "time-tagger", position: [10, 27, 20], rotation: 0, color: undefined, label: undefined },
-  "beam-block": { id: "p", type: "beam-block", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  objective: { id: "p", type: "objective", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
+  "time-tagger": { id: "p", type: "time-tagger", position: [10, 27, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "beam-block": { id: "p", type: "beam-block", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  objective: { id: "p", type: "objective", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   block: {
     id: "p",
     type: "block",
     position: [10, 100, 20],
-    rotation: 0,
+    orientation: fromYawDeg(0),
     color: "#3b4a6b",
     label: undefined,
     size: [30, 30, 30],
   },
-  aom: { id: "p", type: "aom", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  eom: { id: "p", type: "eom", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  "faraday-isolator": { id: "p", type: "faraday-isolator", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  periscope: { id: "p", type: "periscope", position: [10, 100, 20], rotation: 0, color: MOUNT, label: undefined },
-  "periscope-top": { id: "p", type: "periscope-top", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  "delay-line": { id: "p", type: "delay-line", position: [10, 100, 20], rotation: 0, color: undefined, label: undefined },
-  "translation-stage": { id: "p", type: "translation-stage", position: [10, 0, 20], rotation: 0, color: undefined, label: undefined },
+  aom: { id: "p", type: "aom", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  eom: { id: "p", type: "eom", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "faraday-isolator": { id: "p", type: "faraday-isolator", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  periscope: { id: "p", type: "periscope", position: [10, 100, 20], orientation: fromYawDeg(0), color: MOUNT, label: undefined },
+  "periscope-top": { id: "p", type: "periscope-top", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "delay-line": { id: "p", type: "delay-line", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "translation-stage": { id: "p", type: "translation-stage", position: [10, 0, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
 };
 
 const KINDS = Object.keys(COMPONENT_SPECS) as ComponentType[];
@@ -96,12 +97,12 @@ describe("newComponent", () => {
       id: "p",
       type: "particle",
       position: [0, 100, 0],
-      rotation: 0,
+      orientation: fromYawDeg(0),
       color: undefined,
       label: "Ion",
       host: "trap",
     });
-    assert.deepStrictEqual(Object.keys(built), ["id", "type", "position", "rotation", "color", "label", "host"]);
+    assert.deepStrictEqual(Object.keys(built), ["id", "type", "position", "orientation", "color", "label", "host"]);
   });
 
   it("leaves an empty host out, as addComponent did", () => {

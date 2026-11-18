@@ -218,7 +218,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
                 id: createComponentId("periscope-top"),
                 type: "periscope-top",
                 position: [x, clampHeight("periscope-top", defaultHeight(type) + PERISCOPE_RISE_MM), z],
-                rotation: 0,
+                orientation: [0, 0, 0, 1],
                 color: DEFAULT_MOUNT_COLOR,
                 periscope: id,
               },

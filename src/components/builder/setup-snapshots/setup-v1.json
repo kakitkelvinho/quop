@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "components": [
     {
       "id": "laser",
@@ -9,7 +9,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "780 nm ECDL"
     },
     {
@@ -20,7 +25,12 @@
         100,
         0
       ],
-      "rotation": 45
+      "orientation": [
+        0,
+        0.3826834323650898,
+        0,
+        0.9238795325112867
+      ]
     },
     {
       "id": "pbs",
@@ -30,7 +40,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "PBS"
     },
     {
@@ -41,7 +56,12 @@
         100,
         0
       ],
-      "rotation": 90,
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
       "lensShape": "plano-convex",
       "focalLength": 200
     },
@@ -53,7 +73,12 @@
         100,
         0
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "ion",
@@ -63,7 +88,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "host": "trap"
     },
     {
@@ -74,7 +104,12 @@
         100,
         0
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "bs",
@@ -84,7 +119,12 @@
         100,
         150
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "50:50"
     },
     {
@@ -95,7 +135,12 @@
         100,
         250
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "filter",
@@ -105,7 +150,12 @@
         100,
         350
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "iris",
@@ -115,7 +165,12 @@
         100,
         450
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "sample",
@@ -125,7 +180,12 @@
         100,
         550
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "cam",
@@ -135,7 +195,12 @@
         100,
         677
       ],
-      "rotation": 270
+      "orientation": [
+        0,
+        -0.7071067811865476,
+        0,
+        0.7071067811865475
+      ]
     },
     {
       "id": "fiber",
@@ -145,7 +210,12 @@
         100,
         -300
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "cavity",
@@ -155,7 +225,12 @@
         100,
         -300
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "spec",
@@ -165,7 +240,12 @@
         100,
         -300
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     }
   ],
   "beams": [

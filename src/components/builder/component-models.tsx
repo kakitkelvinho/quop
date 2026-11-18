@@ -56,6 +56,7 @@ import {
   type StageAxisSelection,
   type BlockSymbol,
   type Vec3,
+  yawOf,
 } from "@/components/builder/types";
 import {
   AOM_CRYSTAL,
@@ -789,19 +790,19 @@ function PeriscopeMirror({ palette, color, axis, tilt }: ModelProps & { tilt: 1 
 function PeriscopeStand({
   palette,
   axis,
-  rotation,
+  yaw,
   top,
 }: {
   palette: ScenePalette;
   axis: number;
   /** the lower mirror's yaw, degrees */
-  rotation: number;
+  yaw: number;
   top: BuilderComponent | undefined;
 }) {
   if (!useContext(PostsVisible)) return null;
   // the rod goes on the side of the lower mirror the top mirror's face looks away from;
   // local +z of a yaw b is world (sin b, cos b), the top's face (cos t, −sin t)
-  const facing = top ? Math.sin(((rotation - top.rotation) * Math.PI) / 180) : 0;
+  const facing = top ? Math.sin(((yaw - yawOf(top)) * Math.PI) / 180) : 0;
   const side = facing > 0 ? -1 : 1;
   const rodZ = side * PERISCOPE_ROD_OFFSET;
   const heights = top ? [axis, top.position[1]] : [axis];
@@ -1856,7 +1857,7 @@ function Objective({
  * dimensions, colour and label. A Faraday rotator is this block between two
  * beam cubes.
  */
-function GenericBlock({ palette, color, axis, size, symbol, rotation }: ModelProps & { size: Vec3; symbol?: BlockSymbol; rotation?: number }) {
+function GenericBlock({ palette, color, axis, size, symbol, yaw }: ModelProps & { size: Vec3; symbol?: BlockSymbol; yaw?: number }) {
   const [dx, dy, dz] = size;
   if (symbol) return (
     <group>
@@ -1865,7 +1866,7 @@ function GenericBlock({ palette, color, axis, size, symbol, rotation }: ModelPro
         <Enamel color={color ?? palette.body} />
         <Edges color={palette.anodise} threshold={18} />
       </RoundedBox>
-      <BlockSymbolFaces symbol={symbol} size={size} axis={axis} color={palette.anodise} rotation={rotation ?? 0} />
+      <BlockSymbolFaces symbol={symbol} size={size} axis={axis} color={palette.anodise} yaw={yaw ?? 0} />
     </group>
   );
   return (
@@ -2342,7 +2343,7 @@ function modelSignature(
   hasPartner: boolean,
   mountedHeight: number | null,
 ): string {
-  const placed = { ...component, position: component.position[1], rotation: component.symbol ? component.rotation : undefined };
+  const placed = { ...component, position: component.position[1], orientation: component.symbol ? component.orientation : undefined };
   return JSON.stringify([placed, showPosts, stubTaken, hasPartner, mountedHeight]);
 }
 
@@ -2415,7 +2416,7 @@ const COMPONENT_MODELS: Record<
     />
   ),
   block: (component, { modelProps }) => (
-    <GenericBlock {...modelProps} size={blockSize(component)} symbol={component.symbol} rotation={component.rotation} />
+    <GenericBlock {...modelProps} size={blockSize(component)} symbol={component.symbol} yaw={yawOf(component)} />
   ),
   aom: (_, { modelProps }) => <Aom {...modelProps} />,
   eom: (_, { modelProps }) => <Eom {...modelProps} />,
@@ -2436,7 +2437,7 @@ const COMPONENT_MODELS: Record<
       <PeriscopeStand
         palette={modelProps.palette}
         axis={modelProps.axis}
-        rotation={component.rotation}
+        yaw={yawOf(component)}
         top={partner}
       />
       <PeriscopeMirror {...modelProps} tilt={periscopeTilt(modelProps.axis, partner, 1)} />
@@ -2541,13 +2542,14 @@ export const ComponentMesh = memo(function ComponentMesh({
     <group
       ref={group}
       // the group stands on the table; the model reaches up to its height
-      position={[x, 0, z]}
-      rotation={[0, (component.rotation * Math.PI) / 180, 0]}
+      position={[x, axis, z]}
+      quaternion={component.orientation}
       onPointerDown={handlePointerDown}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      {/* the group stands at the part's port; its body is drawn behind it */}
+      {/* Turn around the optical centre, including when pitched. */}
+      <group position={[0, -axis, 0]}>
       <group position={[-componentReferenceX(component), 0, 0]}>
         <MountedOnStage.Provider value={mountedHeight}>
           {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken, partner })}
@@ -2575,6 +2577,7 @@ export const ComponentMesh = memo(function ComponentMesh({
             </span>
           </Html>
         ) : null}
+      </group>
       </group>
     </group>
     </PostsVisible.Provider>

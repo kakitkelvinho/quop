@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { measureBeam } from "./beam-measurement.ts";
@@ -18,7 +19,7 @@ const part = (id: string, type: ComponentType, x: number, extra: Partial<Builder
   id,
   type,
   position: [x, 100, 0],
-  rotation: 0,
+  orientation: fromYawDeg(0),
   ...extra,
 });
 
@@ -60,7 +61,7 @@ describe("a laser's built-in path", () => {
   it("starts on the table at the opening, the laser's position, however it is turned", () => {
     const bare = part("laser", "laser-source", 0);
     assert.equal(measureBeam([bare, part("m", "mirror-mount", 300)], beam(["laser", "m"])).lengthMm, 300);
-    const turned = { ...bare, rotation: 90 };
+    const turned = { ...bare, orientation: fromYawDeg(90) };
     assert.equal(measureBeam([turned, { ...part("m", "mirror-mount", 0), position: [0, 100, -300] }], beam(["laser", "m"])).lengthMm, 300);
   });
 
@@ -72,7 +73,7 @@ describe("a laser's built-in path", () => {
 
 describe("opening a laser's built-in path", () => {
   const open = (components: object[]) => parseScene({ version: 3, components, beams: [] })?.components;
-  const at = (type: string, extra: object) => ({ id: "x", type, position: [0, 100, 0], rotation: 0, ...extra });
+  const at = (type: string, extra: object) => ({ id: "x", type, position: [0, 100, 0], orientation: fromYawDeg(0), ...extra });
 
   it("keeps it on a laser", () => {
     assert.equal(open([at("laser-source", { internalPathMm: 4000 })])?.[0].internalPathMm, 4000);
