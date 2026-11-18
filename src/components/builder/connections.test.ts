@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -21,7 +23,7 @@ const part = (id: string, type: ComponentType, x: number, z: number, rotation = 
   id,
   type,
   position: [x, 100, z],
-  rotation,
+  orientation: fromYawDeg(rotation),
 });
 
 const fibre = (from: string, to: string, extra: Partial<Connection> = {}): Connection => ({
@@ -127,7 +129,7 @@ describe("a photodiode at the end of a connection", () => {
     beams: beams.map((path, index) => ({ id: `beam-${index}`, path, color: "#e33" })),
     connections: [fibre("fc", "pd")],
   });
-  const yaw = (data: BuilderSceneData) => data.components.find(({ id }) => id === "pd")?.rotation;
+  const yaw = (data: BuilderSceneData) => yawOf(data.components.find(({ id }) => id === "pd"));
 
   it("keeps the yaw it was turned to by hand, where a beam over the same parts would aim it", () => {
     assert.equal(yaw(settleAngles(scene([]))), 135);

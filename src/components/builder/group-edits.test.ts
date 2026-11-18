@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -36,7 +38,7 @@ const part = (
   x: number,
   z: number,
   extra: Partial<BuilderComponent> = {},
-): BuilderComponent => ({ id, type, position: [x, 100, z], rotation: 0, ...extra });
+): BuilderComponent => ({ id, type, position: [x, 100, z], orientation: fromYawDeg(0), ...extra });
 
 const beam = (id: string, path: string[]): Beam => ({ id, path, color: "#e33" });
 
@@ -107,7 +109,7 @@ describe("a particle in a group", () => {
   it("lets go of a host left out of the group", () => {
     const scene = bench([trap, particle, part("m", "mirror-mount", 100, 0)]);
     const nudged = settleHosts(nudgeComponents(scene, ["p", "m"], 25, 0));
-    assert.deepEqual(at(nudged, "p"), { id: "p", type: "particle", position: [25, 100, 0], rotation: 0 });
+    assert.deepEqual(at(nudged, "p"), { id: "p", type: "particle", position: [25, 100, 0], orientation: fromYawDeg(0) });
   });
 });
 
@@ -132,21 +134,21 @@ describe("turning a group", () => {
 
   it("turns the parts 15° about their centre, and each part with them", () => {
     const turned = rotateComponents(pair, ["a", "b"], 1);
-    assert.deepEqual(at(turned, "a"), { id: "a", type: "laser-source", position: [1.7, 100, 12.94], rotation: 15 });
-    assert.deepEqual(at(turned, "b"), { id: "b", type: "mirror-mount", position: [98.3, 100, -12.94], rotation: 15 });
+    assert.deepEqual(at(turned, "a"), { id: "a", type: "laser-source", position: [1.7, 100, 12.94], orientation: fromYawDeg(15) });
+    assert.deepEqual(at(turned, "b"), { id: "b", type: "mirror-mount", position: [98.3, 100, -12.94], orientation: fromYawDeg(15) });
   });
 
   it("comes back exactly when turned back", () => {
     const back = rotateComponents(rotateComponents(pair, ["a", "b"], 1), ["a", "b"], -1);
     assert.deepEqual(where(back, "a"), [0, 100, 0]);
     assert.deepEqual(where(back, "b"), [100, 100, 0]);
-    assert.equal(at(back, "a")?.rotation, 0);
+    assert.equal(yawOf(at(back, "a")), 0);
   });
 
   it("wraps the yaw into 0–360", () => {
-    const scene = bench([part("a", "lens", 0, 0, { rotation: 350 }), part("b", "lens", 0, 100)]);
-    assert.equal(at(rotateComponents(scene, ["a", "b"], 1), "a")?.rotation, 5);
-    assert.equal(at(rotateComponents(scene, ["a", "b"], -1), "b")?.rotation, 345);
+    const scene = bench([part("a", "lens", 0, 0, { orientation: fromYawDeg(350) }), part("b", "lens", 0, 100)]);
+    assert.equal(yawOf(at(rotateComponents(scene, ["a", "b"], 1), "a")), 5);
+    assert.equal(yawOf(at(rotateComponents(scene, ["a", "b"], -1), "b")), 345);
   });
 
   it("turns one part in place, its position exactly as it was", () => {
@@ -155,7 +157,7 @@ describe("turning a group", () => {
       id: "a",
       type: "lens",
       position: [12.345, 100, -0.001],
-      rotation: 15,
+      orientation: fromYawDeg(15),
     });
   });
 
@@ -179,10 +181,10 @@ describe("turning a group", () => {
         [beam("b", ["laser", "m", "pd"])],
       ),
     );
-    assert.equal(at(scene, "m")?.rotation, 135);
+    assert.equal(yawOf(at(scene, "m")), 135);
     const turned = settleAngles(rotateComponents(scene, ["laser", "m", "pd"], 1));
-    assert.equal(at(turned, "m")?.rotation, 150);
-    assert.equal(at(turned, "laser")?.rotation, 15);
+    assert.equal(yawOf(at(turned, "m")), 150);
+    assert.equal(yawOf(at(turned, "laser")), 15);
   });
 });
 
@@ -223,7 +225,7 @@ describe("duplicating a group", () => {
   const scene = bench(
     [
       part("a", "laser-source", 0, 0),
-      part("b", "mirror-mount", 100, 0, { color: "#dc2626", rotation: 45 }),
+      part("b", "mirror-mount", 100, 0, { color: "#dc2626", orientation: fromYawDeg(45) }),
       part("c", "photodiode", 100, 100),
     ],
     [beam("ab", ["a", "b"]), beam("abc", ["a", "b", "c"])],
@@ -237,7 +239,7 @@ describe("duplicating a group", () => {
       id: "b-copy",
       type: "mirror-mount",
       position: [125, 100, 25],
-      rotation: 45,
+      orientation: fromYawDeg(45),
       color: "#dc2626",
     });
     assert.deepEqual(where(after, "a-copy"), [25, 100, 25]);
@@ -266,7 +268,7 @@ describe("duplicating a group", () => {
     const hosted = bench([part("trap", "paul-trap", 0, 0), part("p", "particle", 0, 0, { host: "trap" })]);
     assert.equal(at(duplicateComponents(hosted, ["trap", "p"], labelled).scene, "p-copy")?.host, "trap-copy");
     const alone = at(duplicateComponents(hosted, ["p"], labelled).scene, "p-copy");
-    assert.deepEqual(alone, { id: "p-copy", type: "particle", position: [25, 100, 25], rotation: 0 });
+    assert.deepEqual(alone, { id: "p-copy", type: "particle", position: [25, 100, 25], orientation: fromYawDeg(0) });
   });
 
   it("makes new ids of its own by default", () => {
@@ -324,7 +326,7 @@ describe("dragging a rotation handle", () => {
   });
 
   const trio = bench([
-    part("a", "mirror-mount", 0, 0, { rotation: 350 }),
+    part("a", "mirror-mount", 0, 0, { orientation: fromYawDeg(350) }),
     part("b", "lens", 100, 0),
     part("c", "iris", 300, 0),
   ]);
@@ -336,8 +338,8 @@ describe("dragging a rotation handle", () => {
     const once = turnComponents(trio, origins, centre!, 90);
     assert.deepEqual(where(once, "a"), [50, 100, 50]);
     assert.deepEqual(where(once, "b"), [50, 100, -50]);
-    assert.equal(at(once, "a")?.rotation, 80);
-    assert.equal(at(once, "b")?.rotation, 90);
+    assert.equal(yawOf(at(once, "a")), 80);
+    assert.equal(yawOf(at(once, "b")), 90);
     assert.equal(at(once, "c"), at(trio, "c"));
   });
 
@@ -347,14 +349,14 @@ describe("dragging a rotation handle", () => {
     const there = turnComponents(trio, origins, centre, 35);
     const back = turnComponents(there, origins, centre, 0);
     assert.deepEqual(where(back, "a"), [0, 100, 0]);
-    assert.equal(at(back, "a")?.rotation, 350);
+    assert.equal(yawOf(at(back, "a")), 350);
   });
 
   it("turns one part about its own position, its reference point", () => {
-    const scene = bench([part("pd", "photodiode", 12.5, -40, { rotation: 0 })]);
+    const scene = bench([part("pd", "photodiode", 12.5, -40, { orientation: fromYawDeg(0) })]);
     const turned = turnComponents(scene, posesOf(scene, ["pd"]), turnCentre(scene, ["pd"])!, -45);
     assert.deepEqual(where(turned, "pd"), [12.5, 100, -40]);
-    assert.equal(at(turned, "pd")?.rotation, 315);
+    assert.equal(yawOf(at(turned, "pd")), 315);
   });
 });
 

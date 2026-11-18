@@ -58,7 +58,9 @@ export function canonical(q: Quat): Quat {
     const first = x !== 0 ? x : y !== 0 ? y : z;
     if (first < 0) sign = -1;
   }
-  const k = sign / len;
+  // A value already stored as unit length must survive a second parse byte for
+  // byte; re-normalising it can change the final bit of a component.
+  const k = Math.abs(len - 1) < 1e-12 ? sign : sign / len;
   // + 0 turns −0 into 0: deepStrictEqual tells them apart.
   return [x * k + 0, y * k + 0, z * k + 0, w * k + 0];
 }
@@ -121,6 +123,27 @@ export function toYawPitchRollDeg(q: Quat): YawPitchRoll {
   const pitch = locked ? Math.sign(m21) * (Math.PI / 2) : Math.atan2(m21, Math.hypot(m11, m31));
   const yaw = locked ? Math.atan2(m13, m33) : Math.atan2(-m31, m11);
   const roll = locked ? 0 : Math.atan2(-m23, m22);
+  return { yawDeg: wrapDeg360(degrees(yaw)), pitchDeg: degrees(pitch) + 0, rollDeg: wrapDeg180(degrees(roll)) };
+}
+
+/** Inspector angles in three.js Euler order YXZ: yaw about table Y. */
+export function fromEulerYXZDeg({ yawDeg, pitchDeg, rollDeg }: YawPitchRoll): Quat {
+  return compose(compose(turnAbout(1, yawDeg), turnAbout(0, pitchDeg)), turnAbout(2, rollDeg));
+}
+
+export function toEulerYXZDeg(q: Quat): YawPitchRoll {
+  const [x, y, z, w] = canonical(q);
+  const m11 = 1 - 2 * (y * y + z * z);
+  const m13 = 2 * (x * z + y * w);
+  const m21 = 2 * (x * y + z * w);
+  const m22 = 1 - 2 * (x * x + z * z);
+  const m23 = 2 * (y * z - x * w);
+  const m31 = 2 * (x * z - y * w);
+  const m33 = 1 - 2 * (x * x + y * y);
+  const locked = Math.abs(m23) >= 1 - 1e-12;
+  const pitch = Math.asin(Math.max(-1, Math.min(1, -m23)));
+  const yaw = locked ? Math.atan2(-m31, m11) : Math.atan2(m13, m33);
+  const roll = locked ? 0 : Math.atan2(m21, m22);
   return { yawDeg: wrapDeg360(degrees(yaw)), pitchDeg: degrees(pitch) + 0, rollDeg: wrapDeg180(degrees(roll)) };
 }
 

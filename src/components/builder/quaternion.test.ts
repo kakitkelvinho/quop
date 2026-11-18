@@ -8,6 +8,7 @@ import {
   compose,
   cross,
   dot,
+  fromEulerYXZDeg,
   fromYawDeg,
   fromYawPitchRollDeg,
   IDENTITY,
@@ -16,6 +17,7 @@ import {
   normalize,
   type Quat,
   rotate,
+  toEulerYXZDeg,
   toYawPitchRollDeg,
   type Vec3,
 } from "./quaternion.ts";
@@ -82,6 +84,21 @@ describe("vectors", () => {
 
   it("refuses to normalize a zero vector", () => {
     assert.throws(() => normalize([0, 0, 0]));
+  });
+});
+
+describe("inspector Euler order YXZ", () => {
+  it("matches three.js and round-trips ordinary angles", () => {
+    fc.assert(fc.property(yawDeg, pitchDeg, rollDeg, (yaw, pitch, roll) => {
+      const rad = Math.PI / 180;
+      const q = fromEulerYXZDeg({ yawDeg: yaw, pitchDeg: pitch, rollDeg: roll });
+      const three = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch * rad, yaw * rad, roll * rad, "YXZ"));
+      assertSameRotation(q, [three.x, three.y, three.z, three.w]);
+      const restored = toEulerYXZDeg(q);
+      assert.ok(angleGapDeg(restored.yawDeg, yaw) <= 1e-6);
+      assertNear(restored.pitchDeg, pitch, 1e-6);
+      assert.ok(angleGapDeg(restored.rollDeg, roll) <= 1e-6);
+    }));
   });
 });
 

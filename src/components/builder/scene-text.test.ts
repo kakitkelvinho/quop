@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -7,7 +8,7 @@ import { DEFAULT_SCENE, LABEL_MAX_LENGTH, serializeScene } from "./types.ts";
 // The JSON panel and Open file check a setup's text before it can replace the
 // table: size, JSON, shape and counts, then what parseScene left out.
 
-const MIRROR = { id: "m1", type: "mirror-mount", position: [0, 100, 0], rotation: 45 };
+const MIRROR = { id: "m1", type: "mirror-mount", position: [0, 100, 0], orientation: fromYawDeg(45) };
 
 function setup(extra: Record<string, unknown> = {}) {
   return JSON.stringify({ version: 8, components: [MIRROR], ...extra });

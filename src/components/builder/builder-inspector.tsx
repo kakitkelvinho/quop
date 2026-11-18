@@ -7,6 +7,7 @@ import { measureBeam } from "@/components/builder/beam-measurement";
 import { joinsOnToggle, membership } from "@/components/builder/groups";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useRowDrag } from "@/components/builder/use-row-drag";
+import { fromEulerYXZDeg, toEulerYXZDeg } from "@/components/builder/quaternion";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
@@ -51,6 +52,8 @@ import {
   STAGE_MOUNTABLE_TYPES,
   stageAxes,
   toggleStageAxis,
+  yawOf,
+  withYaw,
   type StageAxis,
   clampHeight,
   heightRange,
@@ -584,14 +587,14 @@ function SampleStageFields({
 /** A part's yaw, read-only and naming the beam when a beam turns it. */
 function YawRow({
   label,
-  rotation,
+  yaw,
   angleBeam,
   keys = false,
   onChange,
   onRotate,
 }: {
   label: string;
-  rotation: number;
+  yaw: number;
   angleBeam?: Beam;
   /** the buttons' titles name R and Shift R, which turn the selected part */
   keys?: boolean;
@@ -606,7 +609,7 @@ function YawRow({
           label={label}
           unit="°"
           step={15}
-          value={rotation}
+          value={yaw}
           disabled={locked}
           onChange={(yaw) => onChange(((yaw % 360) + 360) % 360)}
         />
@@ -622,6 +625,27 @@ function YawRow({
       ) : null}
     </>
   );
+}
+
+function PitchRollRows({ component, labelPrefix = "", locked, onChange }: {
+  component: BuilderComponent;
+  labelPrefix?: string;
+  locked: boolean;
+  onChange: (orientation: BuilderComponent["orientation"]) => void;
+}) {
+  const angles = toEulerYXZDeg(component.orientation);
+  return (["pitchDeg", "rollDeg"] as const).map((angle) => (
+    <div className="builderFieldRow" key={angle}>
+      <NumberField
+        label={`${labelPrefix}${angle === "pitchDeg" ? "Pitch" : "Roll"}`}
+        unit="°"
+        step={1}
+        value={angles[angle]}
+        disabled={locked}
+        onChange={(value) => onChange(fromEulerYXZDeg({ ...angles, [angle]: value }))}
+      />
+    </div>
+  ));
 }
 
 export function ComponentInspector({
@@ -778,21 +802,23 @@ export function ComponentInspector({
       ) : null}
       <YawRow
         label={upper ? "Bottom yaw" : "Yaw"}
-        rotation={component.rotation}
+        yaw={yawOf(component)}
         angleBeam={angleBeam}
         keys
-        onChange={(yaw) => onUpdate({ rotation: yaw })}
+        onChange={(yaw) => onUpdate({ orientation: withYaw(component, yaw).orientation })}
         onRotate={onRotate}
       />
+      <PitchRollRows component={component} labelPrefix={upper ? "Bottom " : ""} locked={Boolean(angleBeam)} onChange={(orientation) => onUpdate({ orientation })} />
       {upper && upper !== component ? (
         <YawRow
           label="Top yaw"
-          rotation={upper.rotation}
+          yaw={yawOf(upper)}
           angleBeam={partnerAngleBeam}
-          onChange={(yaw) => onUpdateOther(upper.id, { rotation: yaw })}
-          onRotate={(direction) => onUpdateOther(upper.id, { rotation: (upper.rotation + direction * ROTATION_STEP_DEG + 360) % 360 })}
+          onChange={(yaw) => onUpdateOther(upper.id, { orientation: withYaw(upper, yaw).orientation })}
+          onRotate={(direction) => onUpdateOther(upper.id, { orientation: withYaw(upper, yawOf(upper) + direction * ROTATION_STEP_DEG).orientation })}
         />
       ) : null}
+      {upper && upper !== component ? <PitchRollRows component={upper} labelPrefix="Top " locked={Boolean(partnerAngleBeam)} onChange={(orientation) => onUpdateOther(upper.id, { orientation })} /> : null}
       {component.type === "laser-source" ? (
         <>
           <NumberField

@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -115,7 +116,7 @@ describe("deleting a part on a beam", () => {
 });
 
 describe("opening a setup whose beam names a missing part", () => {
-  const part = (id: string, x: number) => ({ id, type: "lens", position: [x, 100, 0], rotation: 0 });
+  const part = (id: string, x: number) => ({ id, type: "lens", position: [x, 100, 0], orientation: fromYawDeg(0) });
   const open = (path: string[]) =>
     parseScene({ version: 2, components: [part("A", 0), part("C", 200)], beams: [beam("b", path)] });
 

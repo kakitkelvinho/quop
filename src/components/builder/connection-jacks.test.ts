@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -13,7 +14,7 @@ const part = (type: ComponentType, extra: Partial<BuilderComponent> = {}): Build
   id: type,
   type,
   position: [0, H, 0],
-  rotation: 0,
+  orientation: fromYawDeg(0),
   ...extra,
 });
 

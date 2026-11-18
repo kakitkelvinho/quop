@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "components": [
     {
       "id": "laser",
@@ -9,7 +9,12 @@
         100,
         -300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Laser"
     },
     {
@@ -20,7 +25,12 @@
         100,
         -300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "EOM"
     },
     {
@@ -31,7 +41,12 @@
         100,
         -300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "PDH pickoff"
     },
     {
@@ -42,7 +57,12 @@
         100,
         -300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Reference cavity"
     },
     {
@@ -53,7 +73,12 @@
         100,
         -550
       ],
-      "rotation": 90,
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
       "label": "Reflection PD"
     },
     {
@@ -64,7 +89,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "RF oscillator",
       "symbol": "rf-source"
     },
@@ -76,7 +106,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "RF split",
       "symbol": "splitter"
     },
@@ -88,7 +123,12 @@
         15,
         200
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "EOM driver",
       "symbol": "driver"
     },
@@ -100,7 +140,12 @@
         15,
         -100
       ],
-      "rotation": 90,
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
       "label": "RF amp",
       "symbol": "amplifier"
     },
@@ -112,7 +157,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Demod phase",
       "symbol": "phase-shifter"
     },
@@ -124,7 +174,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Mixer",
       "symbol": "mixer"
     },
@@ -136,7 +191,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "LPF",
       "symbol": "low-pass"
     },
@@ -148,7 +208,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Lock PID",
       "symbol": "pid"
     },
@@ -160,7 +225,12 @@
         15,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Sum",
       "symbol": "sum"
     },
@@ -172,7 +242,12 @@
         15,
         200
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Bias tee",
       "symbol": "bias-tee"
     },
@@ -184,7 +259,12 @@
         60,
         300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Error monitor",
       "symbol": "scope"
     },
@@ -196,7 +276,12 @@
         15,
         300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "HPF",
       "symbol": "high-pass"
     },
@@ -208,7 +293,12 @@
         15,
         300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "BPF",
       "symbol": "band-pass"
     }
