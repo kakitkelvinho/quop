@@ -32,7 +32,6 @@ import { BlockSymbolFaces } from "@/components/builder/block-symbol";
 import {
   CAVITY_LENGTH_RANGE_MM,
   DEFAULT_BLOCK_COLOR,
-  DEFAULT_LIGHT_COLOR,
   DEFAULT_MOUNT_COLOR,
   DEFAULT_OBJECTIVE_COLOR,
   DEFAULT_PARTICLE_COLOR,
@@ -111,8 +110,6 @@ const CRYSTAL_CLEAR = "#dff3f5";
 const CRYSTAL_AMBER = "#f3d9a0";
 /** the sound wavefronts drawn inside an AOM's crystal */
 const ACOUSTIC_TEAL = "#2f7f86";
-/** Light held in place — a cavity's mode and a trapped particle share it. */
-const MODE_COLOR = DEFAULT_LIGHT_COLOR;
 
 /** `axis` is the component's height: the model draws its optical centre there. */
 type ModelProps = { palette: ScenePalette; color?: string; axis: number };
@@ -201,8 +198,6 @@ function annulus(outerRadius: number, innerRadius: number, depth: number) {
 
 const ROTATION_BODY_GEOMETRY = annulus(24, OPTIC_D / 2 + 0.6, 10);
 const ROTATION_DIAL_GEOMETRY = annulus(21, OPTIC_D / 2 + 1.2, 3);
-const TRAP_HOLDER_GEOMETRY = annulus(15, 5, 3);
-const MIRROR_RING_GEOMETRY = annulus(15.5, OPTIC_D / 2, 8);
 const COLLIMATOR_PLATE_GEOMETRY = boredPlate(32, 4, 12, 8);
 
 /** A curve through a fibre stub's points. */
@@ -762,81 +757,6 @@ function MirrorMount({ palette, color, axis, post = true }: ModelProps & { post?
         <ringGeometry args={[OPTIC_D / 2 - 1.1, OPTIC_D / 2, 48]} />
         <meshBasicMaterial color="#7de8a0" toneMapped={false} />
       </mesh>
-    </group>
-  );
-}
-
-/**
- * A periscope, simplified from a Thorlabs RS99: one tall stainless rod on a
- * clamping foot, and the two mirrors on short arms off it, each a mirror mount
- * tipped 45° so its face (+x) looks up or down the rod as well as along the
- * table. The lower mirror's model draws the rod and both arms, up to its top
- * mirror's height; the rod stands to one side, away from where the top mirror
- * sends its light. Each mirror is drawn tipped toward the other, so a
- * periscope that takes the beam down works as well as one that takes it up.
- */
-const PERISCOPE_ROD_RADIUS = 8;
-/** how far to one side of the mirrors the rod stands, mm */
-const PERISCOPE_ROD_OFFSET = 40;
-
-/** +1 tips the face up toward a mirror above, −1 down toward one below. */
-function periscopeTilt(axis: number, partner: BuilderComponent | undefined, fallback: 1 | -1): 1 | -1 {
-  if (!partner || partner.position[1] === axis) return fallback;
-  return partner.position[1] > axis ? 1 : -1;
-}
-
-function PeriscopeMirror({ palette, color, axis, tilt }: ModelProps & { tilt: 1 | -1 }) {
-  return (
-    <group position={[0, axis, 0]} rotation={[0, 0, (tilt * Math.PI) / 4]}>
-      <MirrorMount palette={palette} color={color} axis={0} post={false} />
-    </group>
-  );
-}
-
-function PeriscopeStand({
-  palette,
-  axis,
-  yaw,
-  top,
-}: {
-  palette: ScenePalette;
-  axis: number;
-  /** the lower mirror's yaw, degrees */
-  yaw: number;
-  top: BuilderComponent | undefined;
-}) {
-  if (!useContext(PostsVisible)) return null;
-  // the rod goes on the side of the lower mirror the top mirror's face looks away from;
-  // local +z of a yaw b is world (sin b, cos b), the top's face (cos t, −sin t)
-  const facing = top ? Math.sin(((yaw - yawOf(top)) * Math.PI) / 180) : 0;
-  const side = facing > 0 ? -1 : 1;
-  const rodZ = side * PERISCOPE_ROD_OFFSET;
-  const heights = top ? [axis, top.position[1]] : [axis];
-  const rodTop = Math.max(...heights) + 14;
-  const armLength = PERISCOPE_ROD_OFFSET - 10;
-  return (
-    <group>
-      <mesh position={[0, PILLAR_BASE_HEIGHT / 2, rodZ]}>
-        <cylinderGeometry args={[15, 17, PILLAR_BASE_HEIGHT, 36]} />
-        <Enamel color={palette.post} />
-      </mesh>
-      <mesh position={[0, (PILLAR_BASE_HEIGHT + rodTop) / 2, rodZ]}>
-        <cylinderGeometry args={[PERISCOPE_ROD_RADIUS, PERISCOPE_ROD_RADIUS, rodTop - PILLAR_BASE_HEIGHT, 32]} />
-        <Hardware palette={palette} />
-      </mesh>
-      {heights.map((height, index) => (
-        <group key={index}>
-          {/* the clamp round the rod, and the arm out to the mirror */}
-          <mesh position={[0, height, rodZ]}>
-            <boxGeometry args={[22, 14, 22]} />
-            <Anodised color={palette.anodise} />
-          </mesh>
-          <mesh position={[0, height, rodZ - (side * armLength) / 2]}>
-            <boxGeometry args={[10, 8, armLength]} />
-            <Anodised color={palette.anodise} />
-          </mesh>
-        </group>
-      ))}
     </group>
   );
 }
@@ -1542,7 +1462,6 @@ const TRAP_ENDCAP_GAP = 12;
  * where a particle sits, is on the component's height.
  */
 function PaulTrap({ palette, axis }: ModelProps) {
-  const holderY = TRAP_ROD_LENGTH / 2;
   return (
     <group>
       {[-1, 1].flatMap((sx) =>
@@ -2321,8 +2240,6 @@ export type ComponentMeshProps = {
   beamOrder?: number;
   /** a connection leaves from this part's stub, so the stub is not drawn */
   stubTaken?: boolean;
-  /** a periscope mirror's other mirror, if it has one */
-  partner?: BuilderComponent;
   /** the standalone stage carrying this optic, if any */
   mountedStage?: BuilderComponent;
   /** drawn faint, as a member of a faded group */
@@ -2345,11 +2262,10 @@ function modelSignature(
   component: BuilderComponent,
   showPosts: boolean,
   stubTaken: boolean,
-  hasPartner: boolean,
   mountedHeight: number | null,
 ): string {
   const placed = { ...component, position: component.position[1], orientation: component.symbol ? component.orientation : undefined };
-  return JSON.stringify([placed, showPosts, stubTaken, hasPartner, mountedHeight]);
+  return JSON.stringify([placed, showPosts, stubTaken, mountedHeight]);
 }
 
 /** What a model is drawn from beyond the component itself. */
@@ -2357,8 +2273,6 @@ type ModelContext = {
   modelProps: ModelProps;
   /** a connection leaves from the part's stub, so the stub is not drawn */
   stubTaken: boolean;
-  /** a periscope mirror's other mirror, if it has one */
-  partner?: BuilderComponent;
 };
 
 /**
@@ -2437,20 +2351,6 @@ const COMPONENT_MODELS: Record<
   "translation-stage": (component, { modelProps: { palette } }) => (
     <TranslationStage palette={palette} axes={stageAxes(component)} color={component.stageColor ?? palette.stage} standalone />
   ),
-  periscope: (component, { modelProps, partner }) => (
-    <>
-      <PeriscopeStand
-        palette={modelProps.palette}
-        axis={modelProps.axis}
-        yaw={yawOf(component)}
-        top={partner}
-      />
-      <PeriscopeMirror {...modelProps} tilt={periscopeTilt(modelProps.axis, partner, 1)} />
-    </>
-  ),
-  "periscope-top": (_, { modelProps, partner }) => (
-    <PeriscopeMirror {...modelProps} tilt={periscopeTilt(modelProps.axis, partner, -1)} />
-  ),
   camera: (_, { modelProps }) => <CameraBody {...modelProps} />,
   spectrometer: (_, { modelProps }) => <Spectrometer {...modelProps} />,
   "single-photon-detector": (_, { modelProps }) => <SinglePhotonDetector {...modelProps} />,
@@ -2466,7 +2366,6 @@ export const ComponentMesh = memo(function ComponentMesh({
   showPosts,
   beamOrder,
   stubTaken = false,
-  partner,
   mountedStage,
   faded = false,
   onPointerDown,
@@ -2486,7 +2385,7 @@ export const ComponentMesh = memo(function ComponentMesh({
   // flat selection rings don't (a transmissive optic throwing a solid shadow
   // is exactly the fake look the glass is there to avoid).
   const group = useRef<Group>(null);
-  const signature = modelSignature(component, showPosts, stubTaken, partner !== undefined, mountedHeight);
+  const signature = modelSignature(component, showPosts, stubTaken, mountedHeight);
   useLayoutEffect(() => {
     group.current?.traverse((object) => {
       if (!(object instanceof Mesh) || Array.isArray(object.material)) return;
@@ -2557,7 +2456,7 @@ export const ComponentMesh = memo(function ComponentMesh({
       <group position={[0, -axis, 0]}>
       <group position={[-componentReferenceX(component), 0, 0]}>
         <MountedOnStage.Provider value={mountedHeight}>
-          {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken, partner })}
+          {COMPONENT_MODELS[component.type](component, { modelProps, stubTaken })}
         </MountedOnStage.Provider>
 
         {hovered && !selected ? (

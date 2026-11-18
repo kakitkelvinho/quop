@@ -38,6 +38,11 @@ v15 adds a standalone translation stage and gives the pickoff cube its
 v16 lets a standalone stage record `stageAxes`; older stages keep the XY drawing.
 v17 replaces a component's yaw `rotation` with a unit quaternion `orientation`;
 the mixer is pitched and rolled. Older setups convert yaw about the table vertical.
+v18 adds aimed Components: the mirror in its setup aims at the next stop.
+`setup-periscope-v18.json` separately records the old linked lower and upper
+periscope parts so their migration to two aimed mirrors stays covered.
+v19 replaces those linked parts with ordinary mirrors at their own heights;
+the lower mirror aims at the upper one, which aims at the old next stop.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

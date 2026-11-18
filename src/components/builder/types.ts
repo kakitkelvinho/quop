@@ -29,6 +29,7 @@ import {
   detectorSurfaces, lensSurfaces, mirrorSurfaces, noSurfaces, rectangularSurface,
 } from "./component-surfaces.ts";
 import type { Surface } from "./surface.ts";
+import { migrateLegacyPeriscopes } from "./legacy-periscope.ts";
 
 export function yawOf(component: Pick<BuilderComponent, "orientation">): number;
 export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined;
@@ -69,8 +70,6 @@ export type ComponentType =
   | "aom"
   | "eom"
   | "faraday-isolator"
-  | "periscope"
-  | "periscope-top"
   | "delay-line"
   | "translation-stage";
 
@@ -172,11 +171,6 @@ export type BuilderComponent = {
   cavityLength?: number;
   /** objective only, mm from the back of the thread to the nose; missing means DEFAULT_OBJECTIVE_LENGTH_MM */
   objectiveLength?: number;
-  /**
-   * periscope top only: the periscope (its lower mirror) whose post it shares;
-   * it stands straight above or below it, at its own height
-   */
-  periscope?: string;
   /**
    * delay line only, mm: its minimum delay, the path a beam through it gains
    * with the stage at 0, like a laser's built-in path: it counts toward the
@@ -299,7 +293,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 18 as const;
+export const SCENE_VERSION = 19 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -358,7 +352,6 @@ export type ComponentSpec = {
    */
   referenceX?: number;
   /** set on a part that comes with another and is never placed alone: it is left out of the parts panel */
-  partOf?: ComponentType;
   /**
    * the optional fields only this kind has, each described in COMPONENT_FIELDS;
    * every kind has a `color` and a `label`. Listed in the order a file opened
@@ -382,11 +375,10 @@ export type ComponentSpec = {
   /**
    * how a beam sets its angle (see settleAngles); missing means it is turned
    * by hand. "mirror": from the beam it sits in, as a mirror; a delay line too,
-   * though it stands across the beam. "periscope": as a mirror, about the beam
-   * that rises between a periscope's two mirrors. "detector": its face (local
+   * though it stands across the beam. "detector": its face (local
    * −x) turns to the light arriving at it.
    */
-  angle?: "mirror" | "periscope" | "detector";
+  angle?: "mirror" | "detector";
   /** its one connector, drawn as a stub, takes a cable as well as a fibre (see connection-jacks.ts) */
   stubTakesCable?: true;
 };
@@ -650,31 +642,6 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 38,
     fields: [],
   },
-  periscope: {
-    label: "Periscope",
-    surfaces: mirrorSurfaces,
-    tag: "Peri",
-    aliases: ["beam elevator", "beam riser", "periscope mirror"],
-    top: 20,
-    minHeight: 30,
-    radius: 34,
-    fields: [],
-    created: { color: DEFAULT_MOUNT_COLOR },
-    mounted: true,
-    angle: "periscope",
-  },
-  "periscope-top": {
-    label: "Periscope top mirror",
-    surfaces: mirrorSurfaces,
-    tag: "Peri top",
-    partOf: "periscope",
-    top: 20,
-    minHeight: 30,
-    radius: 30,
-    fields: ["periscope"],
-    mounted: true,
-    angle: "periscope",
-  },
   "delay-line": {
     label: "Delay line",
     surfaces: (component) => DELAY_LINE_SURFACES(delaySetting(component).path),
@@ -716,8 +683,6 @@ export const STAGED_TYPES = kindsWhere((spec) => spec.staged === true);
 export const STAGE_MOUNTABLE_TYPES = kindsWhere((spec) => spec.fields.includes("mountStage"));
 /** A delay line takes its angle from the beam it sits in, like a mirror, but stands across it (see delayLineYaw). */
 export const MIRROR_LIKE = kindsWhere((spec) => spec.angle === "mirror");
-/** A periscope's two mirrors: each turns like a mirror, about the beam that rises between them. */
-export const PERISCOPE_MIRRORS = kindsWhere((spec) => spec.angle === "periscope");
 /** Detectors whose face (local −x) turns to the light arriving at them. */
 export const AIMED_DETECTORS = kindsWhere((spec) => spec.angle === "detector");
 
@@ -726,7 +691,7 @@ export type PartCategory = { name: string; types: ComponentType[] };
 /** Palette grouping — reads as a bench walk-through: make it, steer it, shape it, read it. */
 export const PART_CATEGORIES: PartCategory[] = [
   { name: "Source", types: ["laser-source", "fiber-collimator"] },
-  { name: "Steering", types: ["mirror-mount", "beam-splitter", "periscope", "periscope-top", "delay-line"] },
+  { name: "Steering", types: ["mirror-mount", "beam-splitter", "delay-line"] },
   { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
   { name: "Modulation", types: ["aom", "eom", "faraday-isolator"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
@@ -814,8 +779,6 @@ export const DELAY_ARM_BASE_MM = 25;
 /** A delay line's travel, mm: a new one's, and the range any can have. */
 export const DELAY_TRAVEL_MM = 50;
 export const DELAY_TRAVEL_RANGE_MM: [number, number] = [0, 2000];
-/** How far above its lower mirror a new periscope's top mirror stands, mm. */
-export const PERISCOPE_RISE_MM = 100;
 /** A particle dropped within this distance of a host's centre snaps into it, mm. */
 export const HOST_CAPTURE_MM = 20;
 
@@ -921,11 +884,6 @@ export const COMPONENT_FIELDS = {
   host: {
     read: { as: "id" },
     brief: `the id of the ${briefTypeList(HOST_TYPES, "or")} it sits in. It is then drawn at its host's centre, whatever its own position says, and moves with it.`,
-  },
-  periscope: {
-    read: { as: "id" },
-    brief:
-      "the id of the `periscope` (its lower mirror) this top mirror belongs to. It is then drawn straight above that mirror, at its own height, whatever its own x and z say, and moves with it. Every `periscope` needs exactly one top mirror pointing at it.",
   },
   mountStage: {
     read: { as: "id" },
@@ -1372,77 +1330,6 @@ export function setStageMount(scene: BuilderSceneData, opticId: string, stageId:
   };
 }
 
-/**
- * The other mirror of a periscope: the top mirror of a periscope's lower one,
- * and the lower one of a top mirror. Undefined for any other part, or when the
- * other is gone.
- */
-export function periscopePartner(
-  components: BuilderComponent[],
-  component: BuilderComponent,
-): BuilderComponent | undefined {
-  if (component.type === "periscope-top") {
-    const base = component.periscope ? componentById(components, component.periscope) : undefined;
-    return base?.type === "periscope" ? base : undefined;
-  }
-  if (component.type !== "periscope") return undefined;
-  return components.find((entry) => entry.type === "periscope-top" && entry.periscope === component.id);
-}
-
-/** The part that is selected when this one is clicked: a periscope's top mirror selects its periscope. */
-export function selectableId(components: BuilderComponent[], id: string): string {
-  const component = componentById(components, id);
-  return (component?.type === "periscope-top" && periscopePartner(components, component)?.id) || id;
-}
-
-/** The ids, with the other mirror of every periscope among them added: the two move, copy and go as one. */
-export function withPeriscopePartners(components: BuilderComponent[], ids: string[]): string[] {
-  const all = new Set(ids);
-  for (const id of ids) {
-    const component = componentById(components, id);
-    const partner = component && periscopePartner(components, component);
-    if (partner) all.add(partner.id);
-  }
-  return [...all];
-}
-
-/** A periscope top mirror's label: its periscope's, marked as the top. */
-export function periscopeTopLabel(base: BuilderComponent): string | undefined {
-  const label = base.label?.trim();
-  return label ? `${label} top` : undefined;
-}
-
-/**
- * Keep every periscope top mirror straight above (or below) its lower mirror,
- * at its own height, with its periscope's label (marked as the top) and mount
- * colour, and let go of a lower mirror that no longer exists. Run after every
- * edit, like settleHosts, so the periscope is edited as one part.
- */
-export function settlePeriscopes(scene: BuilderSceneData): BuilderSceneData {
-  let changed = false;
-  const components = scene.components.map((component) => {
-    if (component.type !== "periscope-top" || component.periscope === undefined) return component;
-    const base = periscopePartner(scene.components, component);
-    if (!base) {
-      changed = true;
-      const loose = { ...component };
-      delete loose.periscope;
-      return loose;
-    }
-    const [x, y, z] = component.position;
-    const label = periscopeTopLabel(base);
-    if (x === base.position[0] && z === base.position[2] && component.label === label && component.color === base.color) {
-      return component;
-    }
-    changed = true;
-    const next: BuilderComponent = { ...component, position: [base.position[0], y, base.position[2]], color: base.color };
-    if (label === undefined) delete next.label;
-    else next.label = label;
-    return next;
-  });
-  return changed ? { ...scene, components } : scene;
-}
-
 // ---------------------------------------------------------------------------
 // Beam path edits
 // ---------------------------------------------------------------------------
@@ -1620,7 +1507,7 @@ function mirrorAngleStop(
   beams: Beam[],
   component: BuilderComponent,
 ): { beam: Beam; index: number } | undefined {
-  if (!MIRROR_LIKE.has(component.type) && !PERISCOPE_MIRRORS.has(component.type)) return undefined;
+  if (!MIRROR_LIKE.has(component.type)) return undefined;
   for (const beam of beams) {
     const index = beam.path.indexOf(component.id, 1);
     if (index > 0 && index < beam.path.length - 1) return { beam, index };
@@ -1643,7 +1530,7 @@ function detectorAngleStop(
 
 /**
  * The beam that sets a part's angle, or undefined when it is turned by hand.
- * A mirror or a periscope mirror takes its angle from a beam it sits in the middle of, and a
+ * A mirror takes its angle from a beam it sits in the middle of, and a
  * photodiode, camera, spectrometer or single-photon detector from a beam that
  * ends at it. Beam cubes are never derived (they transmit and reflect, so
  * need a different rule).
@@ -1697,21 +1584,6 @@ export function facingYaw(detector: Vec3, source: Vec3): number | undefined {
 }
 
 /**
- * The yaw, degrees in [0, 360), of a periscope mirror: tilted 45° to send the
- * light up or down, its face (local +x, tipped up or down) looks toward the
- * one neighbour that is not straight above or below it. With both
- * neighbours off to the side it bisects them, as a flat mirror would; with
- * neither, it keeps its last angle.
- */
-export function periscopeYaw(mirror: Vec3, previous: Vec3, next: Vec3): number | undefined {
-  const into = unitXZ(mirror, previous);
-  const out = unitXZ(mirror, next);
-  if (into && out) return bisectingYaw(mirror, previous, next);
-  const toward = into ?? out;
-  return toward ? yawDegrees(Math.atan2(-toward[1], toward[0])) : undefined;
-}
-
-/**
  * The yaw, degrees in [0, 360), of a delay line: it stands across the beam
  * line, its rail perpendicular to the way the light travels through its port.
  * Its two fold mirrors sit on the line and send the light down the rail to the
@@ -1747,9 +1619,7 @@ function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): numbe
     if (component.type === "delay-line") {
       return delayLineYaw(component.position, previous.position, next.position, yawOf(component));
     }
-    return PERISCOPE_MIRRORS.has(component.type)
-      ? periscopeYaw(component.position, previous.position, next.position)
-      : bisectingYaw(component.position, previous.position, next.position);
+    return bisectingYaw(component.position, previous.position, next.position);
   }
   const detector = detectorAngleStop(scene.beams, component);
   const source = detector && at(detector, -1);
@@ -2330,7 +2200,8 @@ export function parseScene(value: unknown): BuilderSceneData | null {
   if (!Array.isArray(raw.components)) return null;
 
   const version = finiteNumber(raw.version) ?? 1;
-  const components = raw.components
+  const legacy = version < 19 ? migrateLegacyPeriscopes(raw) : { setup: raw, aims: new Map<string, string>() };
+  const components = (legacy.setup.components as unknown[])
     .map((component) => parseComponent(component, version))
     .filter((component): component is BuilderComponent => component !== null);
 
@@ -2352,8 +2223,8 @@ export function parseScene(value: unknown): BuilderSceneData | null {
     : [];
 
   const memberIds = new Set([...ids, ...frames.map((frame) => frame.id)]);
-  const groups = Array.isArray(raw.groups)
-    ? raw.groups
+  const groups = Array.isArray(legacy.setup.groups)
+    ? legacy.setup.groups
         .map((group) => parseGroup(group, memberIds))
         .filter((group): group is Group => group !== null)
         .slice(0, GROUP_LIMIT)
@@ -2361,8 +2232,7 @@ export function parseScene(value: unknown): BuilderSceneData | null {
 
   const labelScale = parseLabelScale(raw.labelScale);
 
-  const scene = settlePeriscopes(
-    settleStageMounts(null, settleHosts({
+  const scene = settleStageMounts(null, settleHosts({
       version: SCENE_VERSION,
       components,
       beams,
@@ -2370,11 +2240,16 @@ export function parseScene(value: unknown): BuilderSceneData | null {
       frames,
       groups,
       ...(labelScale !== undefined ? { labelScale } : {}),
-    })),
-  );
-  if (version >= 18) return scene;
+    }));
+  if (version >= 19) return scene;
+  if (version === 18) {
+    const migrated = applyAims(scene, legacy.aims);
+    upgradedScenes.add(migrated);
+    return migrated;
+  }
   const angled = settleAngles(scene);
-  const migrated = migrateAims(version < 10 ? settleAngles(movedToPorts(angled)) : angled);
+  const moved = version < 10 ? settleAngles(movedToPorts(angled)) : angled;
+  const migrated = applyAims(migrateAims(moved), legacy.aims);
   upgradedScenes.add(migrated);
   return migrated;
 }
@@ -2397,6 +2272,13 @@ function migrateAims(scene: BuilderSceneData): BuilderSceneData {
     const { mountStage, ...beforeMount } = component;
     return mountStage === undefined ? { ...component, aim } : { ...beforeMount, aim, mountStage };
   }) };
+}
+
+function applyAims(scene: BuilderSceneData, aims: Map<string, string>): BuilderSceneData {
+  if (aims.size === 0) return scene;
+  return { ...scene, components: scene.components.map((component) => aims.has(component.id)
+    ? { ...component, aim: aims.get(component.id) }
+    : component) };
 }
 
 /**

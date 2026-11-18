@@ -494,14 +494,6 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M12 18v3" />
     </>
   ),
-  // two mirrors up a rod, the beam in low and out high
-  periscope: (
-    <>
-      <path d="M8 3.5v17" />
-      <path d="M10.5 19.5 15 15M10.5 9 15 4.5" />
-      <path d="M3 17.5h9.5V7H21" strokeDasharray="1.6 1.8" />
-    </>
-  ),
   // the beam line along the top, folded down the rail to the carriage's V of mirrors and back
   "delay-line": (
     <>
@@ -510,13 +502,6 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M10 6v10M14 6v10" strokeDasharray="1.6 1.6" />
       <path d="M8.5 16.5 12 20l3.5-3.5" />
       <path d="M5 21h14" />
-    </>
-  ),
-  "periscope-top": (
-    <>
-      <path d="M8 3.5v17" />
-      <path d="M10.5 9 15 4.5" />
-      <path d="M12.5 21V7H21" strokeDasharray="1.6 1.8" />
     </>
   ),
 };

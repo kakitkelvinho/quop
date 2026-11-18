@@ -42,10 +42,9 @@ export default function PartsPanel({
   const panel = usePanel("parts", { keepHeight: true, opensRestored: true });
   const groups = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    // a part that comes with another (a periscope's top mirror) is never placed alone
     const standard = PART_CATEGORIES.map((group) => ({
       ...group,
-      entries: group.types.filter((type) => !COMPONENT_SPECS[type].partOf && (!needle || matches(type, needle))).map((type) => ({ type, label: COMPONENT_SPECS[type].label, symbol: undefined as BlockSymbol | undefined })),
+      entries: group.types.filter((type) => !needle || matches(type, needle)).map((type) => ({ type, label: COMPONENT_SPECS[type].label, symbol: undefined as BlockSymbol | undefined })),
     }));
     const electronics = { name: "Electronics", entries: BLOCK_SYMBOLS.filter((symbol) => !needle || `${BLOCK_SYMBOL_LABELS[symbol]} ${symbol}`.toLowerCase().includes(needle)).map((symbol) => ({ type: "block" as ComponentType, label: BLOCK_SYMBOL_LABELS[symbol], symbol })) };
     return [...standard.slice(0, -1), electronics, ...standard.slice(-1)].filter((group) => group.entries.length);

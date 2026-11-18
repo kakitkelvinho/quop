@@ -59,9 +59,6 @@ import {
   bodyCentre,
   clampToTable,
   componentById,
-  periscopePartner,
-  selectableId,
-  withPeriscopePartners,
   componentDisplayName,
   findHost,
   appendStop,
@@ -394,11 +391,10 @@ export default function BuilderScene() {
     sceneRef.current = scene;
   }, [scene]);
 
-  // an id undo or a delete took off the table drops out here, and a
-  // periscope's top mirror stands for its periscope, selected by its lower one
+  // an id undo or a delete took off the table drops out here
   const selectedComponents = useMemo(
     () =>
-      [...new Set(selection.map((id) => selectableId(scene.components, id)))]
+      [...new Set(selection)]
         .map((id) => componentById(scene.components, id))
         .filter((component): component is BuilderComponent => component !== undefined),
     [scene.components, selection],
@@ -566,9 +562,7 @@ export default function BuilderScene() {
       setSelectedBeamId(null);
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
-      // a periscope is selected, and dragged, by its lower mirror, which carries its top one
-      const base = pressed.type === "periscope-top" ? periscopePartner(sceneRef.current.components, pressed) : undefined;
-      const component = base ?? pressed;
+      const component = pressed;
       // pressed as one of several selected parts, it drags them all
       const group = selectedIds.length > 1 && selectedIds.includes(component.id) ? selectedIds : null;
       if (!group) setSelection([component.id]);
@@ -644,7 +638,7 @@ export default function BuilderScene() {
 
   // Ctrl/⌘ + click adds the part under the pointer to the selection, or takes it out.
   const togglePointedPart = useCallback(() => {
-    const id = hoveredRef.current && selectableId(sceneRef.current.components, hoveredRef.current);
+    const id = hoveredRef.current;
     if (!id) return;
     setSelection((current) =>
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id],
@@ -761,9 +755,8 @@ export default function BuilderScene() {
 
       // A single part in the middle of a beam locks onto the straight line
       // between its neighbours when it comes close, ahead of the grid.
-      // (a periscope's next stop is its own top mirror, which follows it, so it doesn't lock)
       const lock =
-        drag.group || component.type === "particle" || component.type === "periscope"
+        drag.group || component.type === "particle"
           ? undefined
           : beamLineSnap(
               sceneRef.current.beams,
@@ -791,7 +784,7 @@ export default function BuilderScene() {
           api.commitCheckpoint(sceneRef.current);
           drag.origins = positionsOf(
             sceneRef.current.components,
-            withPeriscopePartners(sceneRef.current.components, drag.group),
+            drag.group,
           );
         }
         const [originX, , originZ] = drag.origins[drag.id];

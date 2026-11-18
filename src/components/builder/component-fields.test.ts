@@ -38,7 +38,6 @@ const GOOD: Record<KindField, unknown> = {
   objectiveLength: 70,
   opacity: 0.5,
   host: "host",
-  periscope: "host",
   mountStage: "host",
   delayMinPathMm: 120,
   delayTravelMm: 300,
@@ -55,11 +54,10 @@ const GOOD: Record<KindField, unknown> = {
   internalPathMm: 500,
 };
 
-/** What a part refers to by id: a cavity for a particle's host, a periscope for its top mirror. */
+/** What a part refers to by id: a cavity for a particle's host. */
 function partner(type: ComponentType): Record<string, unknown>[] {
   if (STAGE_MOUNTABLE_TYPES.has(type)) return [{ id: "host", type: "translation-stage", position: [0, 0, 0], orientation: fromYawDeg(0) }];
   if (type === "particle") return [{ id: "host", type: "cavity", position: [0, 100, 0], orientation: fromYawDeg(0) }];
-  if (type === "periscope-top") return [{ id: "host", type: "periscope", position: [0, 100, 0], orientation: fromYawDeg(0) }];
   return [];
 }
 
@@ -129,7 +127,6 @@ describe("COMPONENT_FIELDS", () => {
       objectiveLength: null,
       opacity: "half",
       host: 7,
-      periscope: ["host"],
       mountStage: 7,
       delayMinPathMm: "50",
       delayTravelMm: {},

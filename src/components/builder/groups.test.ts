@@ -177,17 +177,17 @@ describe("editing groups", () => {
     assert.equal(id, "new");
   });
 
-  it("takes a periscope's other mirror in with it", () => {
+  it("keeps two aimed mirrors independent when grouping one", () => {
     const scene: BuilderSceneData = {
       ...table(),
       components: [
-        { id: "p", type: "periscope", position: [0, 50, 0], orientation: fromYawDeg(0) },
-        { id: "pt", type: "periscope-top", position: [0, 150, 0], orientation: fromYawDeg(0), periscope: "p" },
+        { id: "p", type: "mirror-mount", position: [0, 50, 0], orientation: fromYawDeg(0), aim: "pt" },
+        { id: "pt", type: "mirror-mount", position: [0, 150, 0], orientation: fromYawDeg(0) },
       ],
       beams: [],
       connections: [],
     };
-    assert.deepEqual(createGroup(scene, ["pt"]).scene.groups[0].members.sort(), ["p", "pt"]);
+    assert.deepEqual(createGroup(scene, ["pt"]).scene.groups[0].members, ["pt"]);
   });
 
   it("knows the group a selection is, for the inspector's Ungroup", () => {
