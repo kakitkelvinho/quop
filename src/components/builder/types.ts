@@ -20,6 +20,22 @@ import {
   SPCM_FACE_X,
   SPECTROMETER_PORT,
 } from "./model-dimensions.ts";
+import { canonical, compose, fromEulerYXZDeg, fromYawDeg, invert, rotate, toEulerYXZDeg, type Quat } from "./quaternion.ts";
+
+export function yawOf(component: Pick<BuilderComponent, "orientation">): number;
+export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined;
+export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined {
+  if (!component) return undefined;
+  const rounded = Math.round(toEulerYXZDeg(component.orientation).yawDeg * 1e10) / 1e10;
+  return rounded === 360 ? 0 : rounded;
+}
+
+/** Replace the yaw while retaining the component's pitch and roll. */
+export function withYaw(component: BuilderComponent, yaw: number): BuilderComponent {
+  const { pitchDeg, rollDeg } = toEulerYXZDeg(component.orientation);
+  const orientation = fromEulerYXZDeg({ yawDeg: wrapYaw(yaw), pitchDeg, rollDeg });
+  return orientation.every((value, index) => value === component.orientation[index]) ? component : { ...component, orientation };
+}
 
 export type ComponentType =
   | "laser-source"
@@ -105,8 +121,8 @@ export type BuilderComponent = {
   type: ComponentType;
   /** millimetres; table plane is XZ, Y is the component's height (its optical centre above the breadboard) */
   position: Vec3;
-  /** degrees, yaw around the vertical axis */
-  rotation: number;
+  /** unit quaternion [x, y, z, w], with w ≥ 0 */
+  orientation: Quat;
   /** hex colour — body tint; on a mirror it marks which beam line it serves */
   color?: string;
   /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
@@ -269,7 +285,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 16 as const;
+export const SCENE_VERSION = 17 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -361,7 +377,7 @@ export type ComponentSpec = {
 };
 
 /** The optional BuilderComponent fields that belong to some kinds and not others. */
-export type KindField = Exclude<keyof BuilderComponent, "id" | "type" | "position" | "rotation" | "color" | "label">;
+export type KindField = Exclude<keyof BuilderComponent, "id" | "type" | "position" | "orientation" | "color" | "label">;
 
 type Created = Partial<Pick<BuilderComponent, KindField | "color">>;
 
@@ -1037,7 +1053,7 @@ export function newComponent(
     id,
     type,
     position: [x, type === "block" && extra?.symbol ? (extra.symbol === "scope" ? SCOPE_BLOCK_SIZE_MM[1] : SYMBOL_BLOCK_SIZE_MM[1]) / 2 : defaultHeight(type), z],
-    rotation: 0,
+    orientation: fromYawDeg(0),
     color: undefined,
     label: extra?.label,
     ...created,
@@ -1100,9 +1116,9 @@ export function delayArmMm(component: BuilderComponent): number {
  * the stage by as much as the pointer moves along it.
  */
 export function delayRailOffset(component: BuilderComponent, x: number, z: number): number {
-  const yaw = (component.rotation * Math.PI) / 180;
+  const [dx, , dz] = rotate(component.orientation, [1, 0, 0]);
   // local +x points along (cos, −sin) in (x, z); the rail runs the other way
-  return -(x - component.position[0]) * Math.cos(yaw) + (z - component.position[2]) * Math.sin(yaw);
+  return -(x - component.position[0]) * dx - (z - component.position[2]) * dz;
 }
 
 /**
@@ -1122,11 +1138,10 @@ export function delayRailMm(component: BuilderComponent): number {
 /** How far a delay line's carriage reaches behind its mirrors, mm, and so the rail beyond its farthest setting. */
 const DELAY_CARRIAGE_BACK_MM = 30;
 
-/** How far, in world x and z, a part's port sits from its body's centre: its referenceX turned with it. */
-function portShift(component: BuilderComponent, rotation = component.rotation): [number, number] {
+/** The world offset from a part's body centre to its port. */
+function portShift(component: BuilderComponent): Vec3 {
   const offset = componentReferenceX(component);
-  const yaw = (rotation * Math.PI) / 180;
-  return [offset * Math.cos(yaw), -offset * Math.sin(yaw)];
+  return rotate(component.orientation, [offset, 0, 0]);
 }
 
 /**
@@ -1145,8 +1160,8 @@ export function referencePoint(component: BuilderComponent): Vec3 {
  */
 export function bodyCentre(component: BuilderComponent): Vec3 {
   const [x, y, z] = component.position;
-  const [dx, dz] = portShift(component);
-  return [x - dx, y, z - dz];
+  const [dx, dy, dz] = portShift(component);
+  return [x - dx, y - dy, z - dz];
 }
 
 /** Vacuum time-of-flight along a path length, in picoseconds. */
@@ -1271,12 +1286,14 @@ export function settleStageMounts(previous: BuilderSceneData | null, scene: Buil
       return part;
     }
     const [x, y, z] = part.position;
-    const rotation = oldStage && oldStage.rotation !== stage.rotation && oldPart?.rotation === part.rotation
-      ? wrapYaw(part.rotation + stage.rotation - oldStage.rotation)
-      : part.rotation;
-    if (x === stage.position[0] && z === stage.position[2] && rotation === part.rotation) return part;
+    const stageTurned = oldStage && oldStage.orientation.some((value, index) => value !== stage.orientation[index]);
+    const partUntouched = oldPart && oldPart.orientation.every((value, index) => value === part.orientation[index]);
+    const orientation = stageTurned && partUntouched
+      ? compose(compose(stage.orientation, invert(oldStage.orientation)), part.orientation)
+      : part.orientation;
+    if (x === stage.position[0] && z === stage.position[2] && orientation === part.orientation) return part;
     changed = true;
-    return { ...part, position: [stage.position[0], y, stage.position[2]] as Vec3, rotation };
+    return { ...part, position: [stage.position[0], y, stage.position[2]] as Vec3, orientation };
   });
   const synced = components.map((part) => part.type === "translation-stage" ? stages.get(part.id)! : part);
   return changed || synced.some((part, index) => part !== scene.components[index]) ? { ...scene, components: synced } : scene;
@@ -1670,7 +1687,7 @@ function derivedYaw(scene: BuilderSceneData, component: BuilderComponent): numbe
     const next = at(mirror, 1);
     if (!previous || !next) return undefined;
     if (component.type === "delay-line") {
-      return delayLineYaw(component.position, previous.position, next.position, component.rotation);
+      return delayLineYaw(component.position, previous.position, next.position, yawOf(component));
     }
     return PERISCOPE_MIRRORS.has(component.type)
       ? periscopeYaw(component.position, previous.position, next.position)
@@ -1691,9 +1708,11 @@ export function settleAngles(scene: BuilderSceneData): BuilderSceneData {
   let changed = false;
   const components = scene.components.map((component) => {
     const yaw = derivedYaw(scene, component);
-    if (yaw === undefined || yaw === component.rotation) return component;
+    if (yaw === undefined) return component;
+    const { pitchDeg, rollDeg } = toEulerYXZDeg(component.orientation);
+    if (yaw === yawOf(component) && pitchDeg === 0 && rollDeg === 0) return component;
     changed = true;
-    return { ...component, rotation: yaw };
+    return { ...component, orientation: fromYawDeg(yaw) };
   });
   return changed ? { ...scene, components } : scene;
 }
@@ -2002,7 +2021,9 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
       version >= 2 ? Math.max(clampHeight(type as ComponentType, raw.position[1]), symbol && raw.size === undefined ? symbolHeight : 0) : defaultHeight(type as ComponentType),
       z,
     ],
-    rotation: finiteNumber(raw.rotation) ?? 0,
+    orientation: Array.isArray(raw.orientation) && raw.orientation.length === 4 && raw.orientation.every((value) => typeof value === "number" && Number.isFinite(value)) && raw.orientation.some((value) => value !== 0)
+      ? canonical(raw.orientation as Quat)
+      : fromYawDeg(finiteNumber(version < 17 ? raw.rotation : raw.yaw) ?? finiteNumber(raw.yaw) ?? 0),
     color: cssColor(raw.color, undefined),
     label: labelText(raw.label),
   };
@@ -2202,7 +2223,7 @@ function parseDelay(raw: Record<string, unknown>): Partial<BuilderComponent> {
     travel = max - min;
     stage = clamp(oldArm ?? min, [min, max]) - min;
   }
-  const held = delaySetting({ id: "", type: "delay-line", position: [0, 0, 0], rotation: 0, delayMinPathMm: minPath, delayTravelMm: travel, delayStageMm: stage });
+  const held = delaySetting({ id: "", type: "delay-line", position: [0, 0, 0], orientation: fromYawDeg(0), delayMinPathMm: minPath, delayTravelMm: travel, delayStageMm: stage });
   return {
     ...(minPath !== undefined ? { delayMinPathMm: held.minPath } : {}),
     ...(travel !== undefined ? { delayTravelMm: held.travel } : {}),
@@ -2324,18 +2345,19 @@ export function parseLabelScale(raw: unknown): number | undefined {
  */
 function movedToPorts(scene: BuilderSceneData): BuilderSceneData {
   const components = scene.components.map((component) => {
-    const [dx, dz] = portShift(component);
-    if (dx === 0 && dz === 0) return component;
+    const [dx, dy, dz] = portShift(component);
+    if (dx === 0 && dy === 0 && dz === 0) return component;
     const [x, y, z] = component.position;
     const [px, pz] = clampToTable(x + dx, z + dz);
-    return { ...component, position: [px, y, pz] as Vec3 };
+    return { ...component, position: [px, y + dy, pz] as Vec3 };
   });
   return { ...scene, components };
 }
 
 /** A setup as its file's text; `minified` drops the indentation, as a share link does. */
 export function serializeScene(scene: BuilderSceneData, { minified = false } = {}): string {
-  return JSON.stringify({ ...scene, version: SCENE_VERSION }, null, minified ? undefined : 2);
+  const components = scene.components.map((component) => ({ ...component, orientation: canonical(component.orientation) }));
+  return JSON.stringify({ ...scene, version: SCENE_VERSION, components }, null, minified ? undefined : 2);
 }
 
 export const EMPTY_SCENE: BuilderSceneData = {
@@ -2363,15 +2385,15 @@ export const DEFAULT_SCENE: BuilderSceneData = {
   components: atDefaultHeight([
     // a laser, spectrometer and photodiode are placed by their ports: the
     // the first beam runs 575 mm from the laser's opening to the spectrometer's
-    { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], rotation: 0 },
-    { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], rotation: 0 },
-    { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], rotation: 0 },
-    { id: "lens-1", type: "lens", position: [-25, 0, -150], rotation: 0, lensShape: "plano-convex", focalLength: 100 },
-    { id: "sample-1", type: "sample", position: [100, 0, -150], rotation: 0 },
-    { id: "filter-1", type: "filter", position: [200, 0, -150], rotation: 0 },
-    { id: "spectrometer-1", type: "spectrometer", position: [275, 0, -150], rotation: 0 },
-    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], rotation: 45, color: "#dc2626" },
-    { id: "pd-ref", type: "photodiode", position: [150, 0, 100], rotation: 0 },
+    { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], orientation: fromYawDeg(0) },
+    { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], orientation: fromYawDeg(0) },
+    { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], orientation: fromYawDeg(0) },
+    { id: "lens-1", type: "lens", position: [-25, 0, -150], orientation: fromYawDeg(0), lensShape: "plano-convex", focalLength: 100 },
+    { id: "sample-1", type: "sample", position: [100, 0, -150], orientation: fromYawDeg(0) },
+    { id: "filter-1", type: "filter", position: [200, 0, -150], orientation: fromYawDeg(0) },
+    { id: "spectrometer-1", type: "spectrometer", position: [275, 0, -150], orientation: fromYawDeg(0) },
+    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], orientation: fromYawDeg(45), color: "#dc2626" },
+    { id: "pd-ref", type: "photodiode", position: [150, 0, 100], orientation: fromYawDeg(0) },
   ]),
   beams: [
     {

@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -9,9 +11,9 @@ import { clampHeight, heightRange, parseScene, serializeScene } from "./types.ts
 const saved = {
   version: 2,
   components: [
-    { id: "laser", type: "laser-source", position: [-300, 100, 0], rotation: 0 },
-    { id: "spcm-a", type: "single-photon-detector", position: [0, 100, 0], rotation: 30, label: "SPCM A" },
-    { id: "tagger", type: "time-tagger", position: [300, 100, 0], rotation: 180 },
+    { id: "laser", type: "laser-source", position: [-300, 100, 0], orientation: fromYawDeg(0) },
+    { id: "spcm-a", type: "single-photon-detector", position: [0, 100, 0], orientation: fromYawDeg(30), label: "SPCM A" },
+    { id: "tagger", type: "time-tagger", position: [300, 100, 0], orientation: fromYawDeg(180) },
   ],
   beams: [{ id: "beam", path: ["laser", "spcm-a"], color: "#dc2626" }],
 };
@@ -37,7 +39,7 @@ describe("a setup with a single-photon detector and a time tagger", () => {
   it("keeps the detector's height and label, turns it to the laser, and places it by its fibre receptacle", () => {
     // saved by its centre, at x = 0, before version 10: its receptacle is 30.5 mm toward the laser
     const spcm = open().components.find(({ id }) => id === "spcm-a");
-    assert.deepEqual([spcm?.position, spcm?.label, spcm?.rotation], [[-30.5, 100, 0], "SPCM A", 0]);
+    assert.deepEqual([spcm?.position, spcm?.label, yawOf(spcm)], [[-30.5, 100, 0], "SPCM A", 0]);
   });
 
   it("stands the time tagger at its fixed height, whatever the file says", () => {
@@ -59,7 +61,7 @@ describe("a spectrometer's height", () => {
   it("is kept when a setup is opened", () => {
     const setup = parseScene({
       version: 12,
-      components: [{ id: "spec", type: "spectrometer", position: [0, 150, 0], rotation: 0 }],
+      components: [{ id: "spec", type: "spectrometer", position: [0, 150, 0], orientation: fromYawDeg(0) }],
       beams: [],
     });
     assert.equal(setup?.components[0].position[1], 150);

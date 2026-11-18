@@ -18,13 +18,13 @@ import {
   createConnectionId,
   dropComponentFromBeams,
   withPeriscopePartners,
-  wrapYaw,
   type Beam,
   type Connection,
   type BuilderComponent,
   type BuilderSceneData,
   type Vec3,
 } from "./types.ts";
+import { compose, fromYawDeg, type Quat } from "./quaternion.ts";
 import { joinSourcesGroups, pruneMembers } from "./groups.ts";
 
 /** A particle whose host moves with the group: settleHosts carries it. */
@@ -98,7 +98,7 @@ function toHundredth(value: number): number {
 }
 
 /** Where a part stood and which way it faced when a turn began. */
-export type Pose = { position: Vec3; rotation: number };
+export type Pose = { position: Vec3; orientation: Quat };
 
 /** The parts a turn of `ids` carries: a periscope swings round with a group whole; one mirror alone turns in place. */
 function turnGroup(scene: BuilderSceneData, ids: string[]): Set<string> {
@@ -123,7 +123,7 @@ export function turnCentre(scene: BuilderSceneData, ids: string[]): [number, num
 export function posesOf(scene: BuilderSceneData, ids: string[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {};
   for (const component of movers(scene, turnGroup(scene, ids))) {
-    poses[component.id] = { position: component.position, rotation: component.rotation };
+    poses[component.id] = { position: component.position, orientation: component.orientation };
   }
   return poses;
 }
@@ -155,8 +155,8 @@ export function turnComponents(
             toHundredth(centreX + offsetX * cos + offsetZ * sin),
             toHundredth(centreZ - offsetX * sin + offsetZ * cos),
           );
-    const rotation = wrapYaw(origin.rotation + degrees);
-    return rotation === placed.rotation ? placed : { ...placed, rotation };
+    const orientation = degrees === 0 ? origin.orientation : compose(fromYawDeg(degrees), origin.orientation);
+    return orientation === placed.orientation ? placed : { ...placed, orientation };
   });
 }
 

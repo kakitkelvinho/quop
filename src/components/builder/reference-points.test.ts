@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { measureBeam } from "./beam-measurement.ts";
 import { describe, it } from "node:test";
@@ -27,7 +28,7 @@ const part = (id: string, type: ComponentType, [x, z]: [number, number], rotatio
   id,
   type,
   position: [x, 100, z],
-  rotation,
+  orientation: fromYawDeg(rotation),
 });
 
 const beam = (path: string[]): Beam => ({ id: "b", path, color: "#7c3aed" });
@@ -119,10 +120,10 @@ describe("a setup saved by its parts' centres, before version 10", () => {
   const old = {
     version: 9,
     components: [
-      { id: "l", type: "laser-source", position: [-356, 100, -150], rotation: 0 },
-      { id: "m", type: "mirror-mount", position: [0, 100, -150], rotation: 0 },
-      { id: "s", type: "spectrometer", position: [337, 100, -150], rotation: 0 },
-      { id: "c", type: "fiber-collimator", position: [0, 100, 0], rotation: 90 },
+      { id: "l", type: "laser-source", position: [-356, 100, -150], orientation: fromYawDeg(0) },
+      { id: "m", type: "mirror-mount", position: [0, 100, -150], orientation: fromYawDeg(0) },
+      { id: "s", type: "spectrometer", position: [337, 100, -150], orientation: fromYawDeg(0) },
+      { id: "c", type: "fiber-collimator", position: [0, 100, 0], orientation: fromYawDeg(90) },
     ],
     beams: [{ id: "b", path: ["l", "m", "s"], color: "#7c3aed" }],
   };

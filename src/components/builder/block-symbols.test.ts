@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
@@ -19,7 +20,7 @@ describe("symbol blocks in setup files", () => {
   });
 
   it("drops an unknown symbol but keeps a plain block", () => {
-    const scene = parseScene({ version: 14, components: [{ id: "box", type: "block", position: [0, 15, 0], rotation: 0, symbol: "quantum-widget" }] });
+    const scene = parseScene({ version: 14, components: [{ id: "box", type: "block", position: [0, 15, 0], orientation: fromYawDeg(0), symbol: "quantum-widget" }] });
     assert.ok(scene);
     assert.equal(scene.components.length, 1);
     assert.equal(scene.components[0].symbol, undefined);
@@ -28,7 +29,7 @@ describe("symbol blocks in setup files", () => {
   });
 
   it("opens v13 plain blocks without changing their size, colour or position", () => {
-    const raw = { version: 13, components: [{ id: "box", type: "block", position: [12, 25, 34], rotation: 30, size: [100, 50, 60], color: "#3b4a6b" }] };
+    const raw = { version: 13, components: [{ id: "box", type: "block", position: [12, 25, 34], orientation: fromYawDeg(30), size: [100, 50, 60], color: "#3b4a6b" }] };
     const part = parseScene(raw)?.components[0];
     assert.ok(part);
     assert.deepEqual(part.position, raw.components[0].position);

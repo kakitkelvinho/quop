@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -35,8 +37,8 @@ describe("the JSON panel following the table", () => {
     let scene = withComponent(DEFAULT_SCENE, LENS, { position: moved });
     assert.deepEqual(lensIn(shown(scene).text)?.position, moved);
 
-    scene = withComponent(scene, LENS, { rotation: 30 });
-    assert.equal(lensIn(shown(scene).text)?.rotation, 30);
+    scene = withComponent(scene, LENS, { orientation: fromYawDeg(30) });
+    assert.equal(yawOf(lensIn(shown(scene).text)), 30);
 
     scene = withComponent(scene, LENS, { focalLength: 250, label: "L2" });
     const lens = lensIn(shown(scene).text);
@@ -45,7 +47,7 @@ describe("the JSON panel following the table", () => {
   });
 
   it("follows adding, deleting and grouping parts", () => {
-    const added: BuilderComponent = { id: "mirror-new", type: "mirror-mount", position: [0, 100, 200], rotation: 45 };
+    const added: BuilderComponent = { id: "mirror-new", type: "mirror-mount", position: [0, 100, 200], orientation: fromYawDeg(45) };
     let scene: BuilderSceneData = { ...DEFAULT_SCENE, components: [...DEFAULT_SCENE.components, added] };
     assert.ok(parsed(shown(scene).text).components.some((component) => component.id === "mirror-new"));
 
@@ -62,7 +64,7 @@ describe("the JSON panel following the table", () => {
   });
 
   it("reads back as the scene on screen", () => {
-    const scene = withComponent(DEFAULT_SCENE, LENS, { position: [60, 100, -150], rotation: 15 });
+    const scene = withComponent(DEFAULT_SCENE, LENS, { position: [60, 100, -150], orientation: fromYawDeg(15) });
     const check = checkSceneText(shown(scene).text);
     assert.equal(check.ok, true);
     if (check.ok) assert.equal(serializeScene(check.scene), serializeScene(scene));
@@ -71,13 +73,13 @@ describe("the JSON panel following the table", () => {
 
 describe("the author's draft in the JSON panel", () => {
   const live = serializeScene(DEFAULT_SCENE);
-  const typed = live.replace('"rotation": 0', '"rotation": 90');
+  const typed = live.replace('"orientation": [\n        0,\n        0,\n        0,\n        1\n      ]', '"yaw": 90');
 
   it("keeps what the author typed while the table changes", () => {
     const draft = editJson(live, null, typed);
     assert.deepEqual(draft, { text: typed, base: live });
 
-    const later = withComponent(DEFAULT_SCENE, LENS, { rotation: 45 });
+    const later = withComponent(DEFAULT_SCENE, LENS, { orientation: fromYawDeg(45) });
     const view = shown(later, draft);
     assert.equal(view.text, typed);
     assert.equal(view.edited, true);
@@ -92,7 +94,7 @@ describe("the author's draft in the JSON panel", () => {
 
   it("remembers where it began across further edits", () => {
     const first = editJson(live, null, typed);
-    const later = serializeScene(withComponent(DEFAULT_SCENE, LENS, { rotation: 45 }));
+    const later = serializeScene(withComponent(DEFAULT_SCENE, LENS, { orientation: fromYawDeg(45) }));
     const second = editJson(later, first, `${typed} `);
     assert.equal(second?.base, live);
   });

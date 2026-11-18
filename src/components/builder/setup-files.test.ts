@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { visibility } from "./groups.ts";
-import { DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene, type Beam, type BuilderComponent } from "./types.ts";
+import { fromEulerYXZDeg, fromYawDeg, toEulerYXZDeg } from "./quaternion.ts";
+import { DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene, withYaw, type Beam, type BuilderComponent } from "./types.ts";
 
 const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
@@ -29,6 +30,7 @@ const FIXTURES = [
   "setup-v14.json",
   "setup-v15.json",
   "setup-v16.json",
+  "setup-v17.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -47,6 +49,40 @@ type SavedSetup = {
 function readSaved(name: string): SavedSetup {
   return JSON.parse(readFileSync(new URL(`./setup-fixtures/${name}`, import.meta.url), "utf8"));
 }
+
+describe("setup-v17.json, the first version with quaternion orientation", () => {
+  it("keeps a pitched component and saves stable canonical bytes", () => {
+    const setup = open("setup-v17.json");
+    const pitched = setup.components.find(({ id }) => id === "rf");
+    assert.ok(pitched);
+    assert.notEqual(pitched.orientation[0], 0);
+    const first = serializeScene(setup);
+    const reopened = parseScene(JSON.parse(first));
+    assert.ok(reopened);
+    assert.equal(serializeScene(reopened), first);
+    assert.ok(reopened.components.every(({ orientation }) => orientation[3] >= 0));
+  });
+
+  it("reads old rotation and plain yaw as the same vertical turn", () => {
+    const base = { id: "box", type: "block", position: [0, 15, 0] };
+    const previous = parseScene({ version: 16, components: [{ ...base, rotation: 90 }] });
+    const current = parseScene({ version: 17, components: [{ ...base, yaw: 90 }] });
+    assert.deepEqual(previous?.components[0].orientation, fromYawDeg(90));
+    assert.deepEqual(current?.components[0].orientation, fromYawDeg(90));
+    assert.ok(!serializeScene(previous!).includes('"rotation"'));
+  });
+
+  it("turns yaw without losing a component's pitch and roll", () => {
+    const component = open("setup-v17.json").components.find(({ id }) => id === "rf")!;
+    const turned = withYaw(component, 120);
+    const angles = toEulerYXZDeg(turned.orientation);
+    assert.ok(Math.abs(angles.yawDeg - 120) < 1e-9);
+    assert.ok(Math.abs(angles.pitchDeg - 20) < 1e-9);
+    assert.ok(Math.abs(angles.rollDeg - 10) < 1e-9);
+    const inverted = { ...turned, orientation: fromEulerYXZDeg({ yawDeg: 120, pitchDeg: 20, rollDeg: 10 }).map((v) => -v) as BuilderComponent["orientation"] };
+    assert.ok(JSON.parse(serializeScene({ ...open("setup-v17.json"), components: [inverted] })).components[0].orientation[3] >= 0);
+  });
+});
 
 function open(name: string) {
   const setup = parseScene(readSaved(name));
@@ -402,10 +438,10 @@ describe("setup-v11.json, the first version with labelScale", () => {
 });
 
 describe("setup-v12.json, the first version with groups", () => {
-  it("is saved exactly as it opens, but for the version", () => {
-    const text = readFileSync(new URL("./setup-fixtures/setup-v12.json", import.meta.url), "utf8");
-    const saved = serializeScene(open("setup-v12.json")).replace('"version": 16,', '"version": 12,');
-    assert.equal(`${saved}\n`, text);
+  it("migrates every component to quaternion orientation", () => {
+    const saved = JSON.parse(serializeScene(open("setup-v12.json")));
+    assert.equal(saved.version, 17);
+    assert.ok(saved.components.every((component: Record<string, unknown>) => Array.isArray(component.orientation) && !("rotation" in component)));
   });
 
   it("is v11's setup plus two groups sharing a mirror and a hidden one", () => {
@@ -451,9 +487,10 @@ describe("setup-v13.json, the first version with a sample's stage style", () => 
     return parseScene({ ...saved, version, components });
   };
 
-  it("is saved exactly as it opens", () => {
-    const text = readFileSync(new URL("./setup-fixtures/setup-v13.json", import.meta.url), "utf8");
-    assert.equal(`${serializeScene(open("setup-v13.json")).replace('"version": 16,', '"version": 13,')}\n`, text);
+  it("keeps the stage style through migration and save", () => {
+    const reopened = parseScene(JSON.parse(serializeScene(open("setup-v13.json"))));
+    assert.equal(sampleOf(reopened)?.sampleStage, "side");
+    assert.equal(sampleOf(reopened)?.sampleStageLeft, true);
   });
 
   it("is v12's setup with the sample on a side stage, on its left, and the objective's stage coloured", () => {

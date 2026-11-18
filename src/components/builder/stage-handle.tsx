@@ -16,7 +16,6 @@ import { delayArmMm, delaySetting, type BuilderComponent } from "@/components/bu
 // as the inspector's slider does. Only the bubble on the side the camera
 // looks at is drawn: the other's ends would peek past the carriage. Drawn in the delay line's frame, about its port, so it turns with it.
 
-const DEG = Math.PI / 180;
 /** the bubble's length along the rail and half its height, mm, round ends included: the rotation bubble's */
 const BUBBLE_LENGTH_MM = 30;
 const BUBBLE_HALF_MM = 5.5;
@@ -99,7 +98,7 @@ export function StageHandle({ component, color, dark, sliding, onPointerDown }: 
   const [x, y, z] = component.position;
   const at = -delayArmMm(component) + DELAY_KNOB.x;
   return (
-    <group ref={frame} position={[x, y, z]} rotation={[0, component.rotation * DEG, 0]}>
+    <group ref={frame} position={[x, y, z]} quaternion={component.orientation}>
       <group position={[at, DELAY_KNOB.y, facing * DELAY_KNOB.z]}>
         {/* the bubble lies on the knob's outer face, facing out, long along the rail */}
         <group position={[0, 0, facing * (DELAY_KNOB.length / 2 + LIFT_MM)]} rotation={[0, facing === 1 ? 0 : Math.PI, 0]}>

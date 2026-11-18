@@ -1,3 +1,4 @@
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -105,7 +106,7 @@ describe("a setup file", () => {
   it("is byte for byte the same however the panels are arranged", () => {
     const scene = parseScene({
       version: 12,
-      components: [{ id: "spec", type: "spectrometer", position: [0, 150, 0], rotation: 0 }],
+      components: [{ id: "spec", type: "spectrometer", position: [0, 150, 0], orientation: fromYawDeg(0) }],
       beams: [],
     });
     assert.ok(scene);

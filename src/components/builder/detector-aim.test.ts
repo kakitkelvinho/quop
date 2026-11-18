@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromEulerYXZDeg, fromYawDeg, toEulerYXZDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -17,7 +19,7 @@ const part = (id: string, type: ComponentType, x: number, z: number, rotation = 
   id,
   type,
   position: [x, 60, z],
-  rotation,
+  orientation: fromYawDeg(rotation),
 });
 
 function scene(components: BuilderComponent[], paths: string[][]): BuilderSceneData {
@@ -30,18 +32,24 @@ function scene(components: BuilderComponent[], paths: string[][]): BuilderSceneD
   };
 }
 
-const yawOf = (data: BuilderSceneData, id: string) =>
-  data.components.find((component) => component.id === id)?.rotation;
+const yawAt = (data: BuilderSceneData, id: string) =>
+  yawOf(data.components.find((component) => component.id === id));
 
 describe("a photodiode that ends a beam", () => {
   it("faces a laser due west of it", () => {
     const settled = settleAngles(scene([part("laser", "laser-source", -200, 0), part("pd", "photodiode", 0, 0, 180)], [["laser", "pd"]]));
-    assert.equal(yawOf(settled, "pd"), 0);
+    assert.equal(yawAt(settled, "pd"), 0);
   });
 
   it("faces a stop due south (+z) of it", () => {
     const settled = settleAngles(scene([part("laser", "laser-source", 0, 200), part("pd", "photodiode", 0, 0)], [["laser", "pd"]]));
-    assert.equal(yawOf(settled, "pd"), 90);
+    assert.equal(yawAt(settled, "pd"), 90);
+  });
+
+  it("levels a detector when its beam sets the angle", () => {
+    const pitched = { ...part("pd", "photodiode", 0, 0), orientation: fromEulerYXZDeg({ yawDeg: 30, pitchDeg: 20, rollDeg: 10 }) };
+    const settled = settleAngles(scene([part("laser", "laser-source", -200, 0), pitched], [["laser", "pd"]]));
+    assert.deepEqual(toEulerYXZDeg(settled.components[1].orientation), { yawDeg: 0, pitchDeg: 0, rollDeg: 0 });
   });
 
   it("faces the stop before it, not the laser, on a folded path", () => {
@@ -52,7 +60,7 @@ describe("a photodiode that ends a beam", () => {
       ),
     );
     // the mirror sits at −z of the photodiode: yaw 270 turns the face to −z
-    assert.equal(yawOf(settled, "pd"), 270);
+    assert.equal(yawAt(settled, "pd"), 270);
   });
 
   it("re-aims when the stop before it moves", () => {
@@ -63,7 +71,7 @@ describe("a photodiode that ends a beam", () => {
         component.id === "laser" ? { ...component, position: [0, 60, 200] } : component,
       ),
     });
-    assert.equal(yawOf(moved, "pd"), 90);
+    assert.equal(yawAt(moved, "pd"), 90);
   });
 
   it("is locked to that beam", () => {
@@ -75,13 +83,13 @@ describe("a photodiode that ends a beam", () => {
 describe("a detector turned by hand", () => {
   it("keeps its rotation on no beam", () => {
     const data = scene([part("pd", "photodiode", 0, 0, 135)], []);
-    assert.equal(yawOf(settleAngles(data), "pd"), 135);
+    assert.equal(yawAt(settleAngles(data), "pd"), 135);
     assert.equal(derivedAngleBeam(data.beams, data.components[0]), undefined);
   });
 
   it("keeps its rotation at a beam's start", () => {
     const data = scene([part("pd", "photodiode", 0, 0, 135), part("block", "beam-block", 200, 0)], [["pd", "block"]]);
-    assert.equal(yawOf(settleAngles(data), "pd"), 135);
+    assert.equal(yawAt(settleAngles(data), "pd"), 135);
   });
 });
 
@@ -93,21 +101,21 @@ describe("cameras and spectrometers", () => {
         [["laser", "cam"], ["laser", "spec"]],
       ),
     );
-    assert.equal(yawOf(settled, "cam"), 0);
+    assert.equal(yawAt(settled, "cam"), 0);
     // the laser is at (−200, 0) from (0, 300): face points west-north-west
-    assert.equal(yawOf(settled, "spec"), 303.69);
+    assert.equal(yawAt(settled, "spec"), 303.69);
   });
 });
 
 describe("single-photon detectors", () => {
   it("face a laser due south (+z) of them", () => {
     const settled = settleAngles(scene([part("laser", "laser-source", 0, 200), part("spcm", "single-photon-detector", 0, 0, 45)], [["laser", "spcm"]]));
-    assert.equal(yawOf(settled, "spcm"), 90);
+    assert.equal(yawAt(settled, "spcm"), 90);
   });
 
   it("face a laser due west of them", () => {
     const settled = settleAngles(scene([part("laser", "laser-source", -200, 0), part("spcm", "single-photon-detector", 0, 0, 45)], [["laser", "spcm"]]));
-    assert.equal(yawOf(settled, "spcm"), 0);
+    assert.equal(yawAt(settled, "spcm"), 0);
   });
 
   it("are locked to the beam that ends at them", () => {
@@ -117,7 +125,7 @@ describe("single-photon detectors", () => {
 
   it("keep their rotation at a beam's start", () => {
     const data = scene([part("spcm", "single-photon-detector", 0, 0, 135), part("block", "beam-block", 200, 0)], [["spcm", "block"]]);
-    assert.equal(yawOf(settleAngles(data), "spcm"), 135);
+    assert.equal(yawAt(settleAngles(data), "spcm"), 135);
     assert.equal(derivedAngleBeam(data.beams, data.components[0]), undefined);
   });
 });
@@ -125,7 +133,7 @@ describe("single-photon detectors", () => {
 describe("a time tagger", () => {
   it("keeps its hand-set rotation at a beam's end: it is not aimed", () => {
     const data = scene([part("laser", "laser-source", -200, 0), part("tagger", "time-tagger", 0, 0, 135)], [["laser", "tagger"]]);
-    assert.equal(yawOf(settleAngles(data), "tagger"), 135);
+    assert.equal(yawAt(settleAngles(data), "tagger"), 135);
     assert.equal(derivedAngleBeam(data.beams, data.components[1]), undefined);
   });
 });

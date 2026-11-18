@@ -16,6 +16,8 @@ import {
 // of the circle's centre: angles run counter-clockwise seen from above, 0
 // along local +x, as yaw does.
 
+import { yawOf } from "@/components/builder/types";
+
 const DEG = Math.PI / 180;
 /** how high over the table the handle lies, mm: just above the selection ring */
 const LIFT_MM = 0.9;
@@ -277,7 +279,7 @@ export function PartRotationHandle({ component, color, dark, locked, rotating, o
   const [x, , z] = component.position;
 
   return (
-    <group position={[x, 0, z]} rotation={[0, component.rotation * DEG, 0]}>
+    <group position={[x, 0, z]} rotation={[0, yawOf(component) * DEG, 0]}>
       <Bubble
         // the selection ring is a 3 mm band from `ring` out: thread the bubble on its middle
         radius={centred ? ring + 1.5 : Math.max(38, ring + 10)}
@@ -287,7 +289,7 @@ export function PartRotationHandle({ component, color, dark, locked, rotating, o
         dark={dark}
         rotating={rotating}
         locked={locked}
-        badge={rotating ? `${Math.round(component.rotation)}°` : null}
+        badge={rotating ? `${Math.round(yawOf(component))}°` : null}
         onPointerDown={onPointerDown}
       />
     </group>

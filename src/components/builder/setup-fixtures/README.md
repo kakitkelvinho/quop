@@ -36,6 +36,8 @@ symbol, including a larger scope, and leaves `size` out so symbol defaults apply
 v15 adds a standalone translation stage and gives the pickoff cube its
 `mountStage` id; v1 to v14 open with no standalone stages or attachments.
 v16 lets a standalone stage record `stageAxes`; older stages keep the XY drawing.
+v17 replaces a component's yaw `rotation` with a unit quaternion `orientation`;
+the mixer is pitched and rolled. Older setups convert yaw about the table vertical.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

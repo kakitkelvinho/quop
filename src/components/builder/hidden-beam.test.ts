@@ -1,3 +1,5 @@
+import { yawOf } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { measureBeam } from "./beam-measurement.ts";
 import { describe, it } from "node:test";
@@ -22,7 +24,7 @@ const part = (id: string, type: ComponentType, x: number, z: number): BuilderCom
   id,
   type,
   position: [x, 100, z],
-  rotation: 0,
+  orientation: fromYawDeg(0),
 });
 
 const bench = (beams: Beam[]): BuilderSceneData => ({
@@ -69,13 +71,13 @@ describe("hiding and showing a beam", () => {
 describe("a hidden beam in a setup", () => {
   it("still angles a mirror in the middle of it: the face bisects the legs, 135 degrees", () => {
     const hidden = bench([{ ...probe, hidden: true }]);
-    assert.equal(settleAngles(hidden).components.find(({ id }) => id === "M")?.rotation, 135);
+    assert.equal(yawOf(settleAngles(hidden).components.find(({ id }) => id === "M")), 135);
   });
 
   it("still angles a detector at its end", () => {
     const hidden = bench([{ id: "to-pd", path: ["M", "pd"], color: "#e33", hidden: true }]);
     const shown = bench([{ id: "to-pd", path: ["M", "pd"], color: "#e33" }]);
-    const yaw = (scene: BuilderSceneData) => settleAngles(scene).components.find(({ id }) => id === "pd")?.rotation;
+    const yaw = (scene: BuilderSceneData) => yawOf(settleAngles(scene).components.find(({ id }) => id === "pd"));
     assert.equal(yaw(hidden), yaw(shown));
     assert.notEqual(yaw(hidden), 0);
   });
