@@ -52,6 +52,7 @@ import { BeamDistances } from "@/components/builder/beam-distances";
 import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
+import type { TraceResult } from "@/components/builder/trace-scene";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
 import {
   GroupRotationHandle,
@@ -1112,6 +1113,7 @@ function GroupOutline({ group, components, frames }: { group: Group; components:
 export type BuilderCanvasProps = {
   components: BuilderComponent[];
   beams: Beam[];
+  trace: TraceResult | null;
   connections: Connection[];
   frames: Frame[];
   /** a member of hidden groups only is left out of the drawing, and can't be picked */
@@ -1208,6 +1210,7 @@ function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
 export default function BuilderCanvas({
   components,
   beams,
+  trace,
   connections,
   frames,
   groups,
@@ -1471,6 +1474,25 @@ export default function BuilderCanvas({
           </Fragment>
         );
       })}
+
+      {trace?.trees.flatMap((tree) => tree.segments.map((segment, index) => (
+        <Line
+          key={`${tree.laserId}-${index}`}
+          points={[
+            [segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]],
+            [segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]],
+          ]}
+          color={beams.find((beam) => beam.path[0] === tree.laserId)?.color ?? palette.accent}
+          lineWidth={1.5}
+          transparent
+          opacity={0.9}
+          dashed
+          dashSize={8}
+          gapSize={6}
+          depthTest={false}
+          renderOrder={3}
+        />
+      )))}
 
       {beamDraft.length >= 2 ? (
         <BeamPath

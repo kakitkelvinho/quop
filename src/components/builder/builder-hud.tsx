@@ -35,6 +35,7 @@ import {
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
+import type { TraceCheck } from "@/components/builder/trace-scene";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
@@ -69,6 +70,7 @@ export type ConnectDraft = { kind: ConnectionKind; from: string | null };
 export type BuilderHudProps = {
   components: BuilderComponent[];
   beams: Beam[];
+  traceChecks: TraceCheck[] | null;
   frames: Frame[];
   /** the selected parts, in the order they were picked */
   selected: BuilderComponent[];
@@ -290,21 +292,25 @@ const LIST_PANEL = { fitWidth: true, minimises: true, maximises: false };
 function BeamList({
   components,
   beams,
+  traceChecks,
   selectedId,
   besideParts,
   onSelect,
   onMove,
   onSetHidden,
   onDelete,
+  onSelectComponent,
 }: {
   components: BuilderComponent[];
   beams: Beam[];
+  traceChecks: TraceCheck[] | null;
   selectedId: string | null;
   besideParts: boolean;
   onSelect: (id: string) => void;
   onMove: (id: string, to: number, how: "drag" | "keyboard") => boolean;
   onSetHidden: (id: string, hidden: boolean) => void;
   onDelete: (id: string) => void;
+  onSelectComponent: (id: string) => void;
 }) {
   const listRef = useRef<HTMLOListElement>(null);
   // a row's buttons, in order: select, hide, delete; the first enabled one wanted gets focus
@@ -378,8 +384,18 @@ function BeamList({
       })}
     </ol>
   );
+  const checks = traceChecks ? (
+    <div className="builderTraceChecks" aria-label="Traced Beam checks">
+      <strong>Traced Beam checks</strong>
+      {traceChecks.length ? traceChecks.map((check) => (
+        <button type="button" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>
+          {check.message}
+        </button>
+      )) : <span>No checks</span>}
+    </div>
+  ) : null;
   // a list holds only rows, so with a title bar the island is a section around it
-  if (!panel.moves) return list;
+  if (!panel.moves) return <>{list}{checks}</>;
   return (
     <section
       {...panel.frame}
@@ -389,6 +405,7 @@ function BeamList({
     >
       <PanelBar title="Beams" titleId="builderBeamsTitle" grip={false} {...panel.bar} />
       {list}
+      {checks}
       {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
@@ -1599,7 +1616,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   // a list hidden from the rail leaves the page; a minimised one stays, hidden, so it keeps its place
   const listOn = (id: ListId, count: number) => count > 0 && (panelsMove || !railHidden[id]);
   const anyList =
-    listOn("beams", beams.length) || listOn("frames", props.frames.length) || listOn("groups", props.groups.length);
+    listOn("beams", beams.length + Number(props.traceChecks !== null)) || listOn("frames", props.frames.length) || listOn("groups", props.groups.length);
 
   return (
     <>
@@ -1735,16 +1752,18 @@ export default function BuilderHud(props: BuilderHudProps) {
         {/* the lists stack up from the rail, like windows over a taskbar */}
         {anyList ? (
           <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
-            {listOn("beams", beams.length) ? (
+            {listOn("beams", beams.length + Number(props.traceChecks !== null)) ? (
               <BeamList
                 components={components}
                 beams={beams}
+                traceChecks={props.traceChecks}
                 selectedId={selectedBeam?.id ?? null}
                 besideParts={besideParts}
                 onSelect={props.onSelectBeam}
                 onMove={props.onMoveBeam}
                 onSetHidden={props.onSetBeamHidden}
                 onDelete={props.onDeleteBeam}
+                onSelectComponent={props.onSelectComponent}
               />
             ) : null}
             {listOn("frames", props.frames.length) ? (
