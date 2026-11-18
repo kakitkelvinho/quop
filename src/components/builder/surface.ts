@@ -8,6 +8,7 @@
  */
 
 import { add, cross, dot, length, normalize, type Quat, rotate, scale, type Vec3 } from "./quaternion.ts";
+import type { Jones } from "./jones.ts";
 
 export type Aperture =
   | { kind: "circle"; radiusMm: number }
@@ -16,8 +17,9 @@ export type Aperture =
 
 export type SurfaceRule =
   | { kind: "block" }
-  | { kind: "pass" }
+  | { kind: "pass"; jones?: Jones }
   | { kind: "reflect" }
+  | { kind: "isolator"; jones: Jones }
   | { kind: "thin-lens"; focalLengthMm: number }
   // R and T are power fractions; R + T = 1 when lossless, less when the surface absorbs.
   | { kind: "split"; reflectance: number; transmittance: number };
@@ -28,6 +30,7 @@ export type Surface = {
   normal: Vec3;
   aperture: Aperture;
   rule: SurfaceRule;
+  extraPathMm?: number;
 };
 
 /** One traced beam at one point: where it starts, which way it goes (unit), and how much of the laser's power it carries. */
@@ -67,6 +70,9 @@ export function makeSurface(surface: Surface): Surface {
   }
   if (rule.kind === "thin-lens" && !(rule.focalLengthMm > 0 && Number.isFinite(rule.focalLengthMm))) {
     throw new Error("thin lens needs a finite positive focal length");
+  }
+  if (surface.extraPathMm !== undefined && !(surface.extraPathMm >= 0 && Number.isFinite(surface.extraPathMm))) {
+    throw new Error("extra path must be finite and non-negative");
   }
   return surface;
 }
@@ -118,6 +124,8 @@ export function applyRule(rule: SurfaceRule, normal: Vec3, beam: TracedBeam, hit
       return [];
     case "pass":
       return [leaving(beam.direction, 1)];
+    case "isolator":
+      return dot(beam.direction, normal) > 0 ? [leaving(beam.direction, 1)] : [];
     case "reflect":
       return [leaving(reflectDirection(beam.direction, normal), 1)];
     case "thin-lens": {
