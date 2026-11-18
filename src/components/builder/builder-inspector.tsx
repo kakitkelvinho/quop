@@ -8,6 +8,7 @@ import { joinsOnToggle, membership } from "@/components/builder/groups";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { fromEulerYXZDeg, toEulerYXZDeg } from "@/components/builder/quaternion";
+import { canAim, type AimStatus } from "@/components/builder/aim-settling";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
@@ -653,6 +654,11 @@ export function ComponentInspector({
   components,
   angleBeam,
   partnerAngleBeam,
+  traced,
+  aimStatus,
+  onSetAim,
+  onFlipAim,
+  onSnapAim,
   onUpdate,
   onUpdateOther,
   onSelectComponent,
@@ -670,6 +676,11 @@ export function ComponentInspector({
   angleBeam?: Beam;
   /** the same for a periscope's top mirror */
   partnerAngleBeam?: Beam;
+  traced?: boolean;
+  aimStatus?: AimStatus;
+  onSetAim?: (targetId: string) => void;
+  onFlipAim?: () => void;
+  onSnapAim?: () => void;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
   /** edits another part: a periscope mirror's other mirror */
   onUpdateOther: (id: string, patch: ComponentPatch, record?: boolean) => void;
@@ -708,6 +719,28 @@ export function ComponentInspector({
         <IconButton icon="duplicate" label="Duplicate (D)" onClick={onDuplicate} />
         <IconButton icon="trash" label="Delete (Delete)" onClick={onDelete} />
       </div>
+      {traced && canAim(component) ? (
+        <>
+          <label className="builderField">
+            <span className="builderField__label">Aim reflected light at</span>
+            <span className="builderField__control">
+              <select value={component.aim ?? ""} onChange={(event) => event.target.value
+                ? onSetAim?.(event.target.value)
+                : onUpdate({ aim: undefined })}>
+                <option value="">No target (45° fold)</option>
+                {components.filter((part) => part.id !== component.id).map((part) => (
+                  <option key={part.id} value={part.id}>{componentDisplayName(part)}</option>
+                ))}
+              </select>
+            </span>
+          </label>
+          <div className="builderInspector__actions">
+            <button type="button" onClick={onFlipAim}>Flip (F)</button>
+            {component.free ? <button type="button" onClick={onSnapAim}>Snap 45° to the light</button> : null}
+          </div>
+          {aimStatus?.kind === "waiting" ? <p className="builderInspector__hint" role="status">◌ {aimStatus.reason}</p> : null}
+        </>
+      ) : null}
       <label className="builderField">
         <span className="builderField__label">Label</span>
         <span className="builderField__control">

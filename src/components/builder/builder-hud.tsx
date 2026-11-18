@@ -36,6 +36,7 @@ import {
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import type { TraceCheck } from "@/components/builder/trace-scene";
+import type { AimStatus } from "@/components/builder/aim-settling";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
@@ -114,6 +115,11 @@ export type BuilderHudProps = {
   onUpdateComponent: (id: string, patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => void;
   onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
+  traced: boolean;
+  aimStatuses: Map<string, AimStatus> | null;
+  onSetAim: (id: string, targetId: string) => void;
+  onFlipAim: (id: string) => void;
+  onSnapAim: (id: string) => void;
   onDuplicateSelected: () => void;
   onDeleteSelected: () => void;
   /** several parts: one height for all, or one mount colour for those with a mount */
@@ -1408,8 +1414,13 @@ export default function BuilderHud(props: BuilderHudProps) {
       <ComponentInspector
         component={selected[0]}
         components={components}
-        angleBeam={derivedAngleBeam(beams, selected[0])}
+        angleBeam={props.traced ? undefined : derivedAngleBeam(beams, selected[0])}
         partnerAngleBeam={partnerAngleBeam(components, beams, selected[0])}
+        traced={props.traced}
+        aimStatus={props.aimStatuses?.get(selected[0].id)}
+        onSetAim={(targetId) => props.onSetAim(selected[0].id, targetId)}
+        onFlipAim={() => props.onFlipAim(selected[0].id)}
+        onSnapAim={() => props.onSnapAim(selected[0].id)}
         onUpdate={props.onUpdateSelected}
         onUpdateOther={props.onUpdateComponent}
         onSelectComponent={props.onSelectComponent}

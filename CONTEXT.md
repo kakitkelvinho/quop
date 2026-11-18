@@ -31,6 +31,12 @@ _Avoid_: optical axis
 An author-drawn, ordered path through components, recording where the light is meant to go. It is not a ray trace; a beam between two components at different heights slopes.
 _Avoid_: ray, trace
 
+**Aim**:
+The Component a Mirror or Beam cube sends reflected light toward. The Tabletop works out its orientation from the incoming direction and the target's Reference point. If the target is missing, the optic keeps its last orientation and waits.
+
+**Fold**:
+The side an unaimed Mirror or Beam cube sends incoming light toward at 45°. Its saved value is `1` or `-1`; F flips the side.
+
 **Traced beam**:
 Light followed from a Laser source through Component surfaces in 3D. While the traced flag is on, it is drawn as a dashed overlay beside the author's Beams; the Beam list and saved Setup still keep the author's paths.
 

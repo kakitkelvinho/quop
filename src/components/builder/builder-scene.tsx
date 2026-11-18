@@ -35,6 +35,8 @@ import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene
 import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
 import { readTracedFlag } from "@/components/builder/traced-flag";
 import { traceScene } from "@/components/builder/trace-scene";
+import { canAim, settleAims } from "@/components/builder/aim-settling";
+import { upgradeNotice } from "@/components/builder/setup-upgrade";
 import { hasWork, hashToScene, isShareHash, sceneToHash } from "@/components/builder/share-link";
 import { resetPanels } from "@/components/builder/panel-store";
 import { finishGroupMode } from "@/components/builder/group-mode";
@@ -320,11 +322,13 @@ function shareUrl(scene: BuilderSceneData): string {
 export default function BuilderScene() {
   // the page renders only on the client, so the address can be read up front
   const [arrival] = useState(arrive);
-  const api = useBuilderScene(arrival.open);
+  const [traced] = useState(readTracedFlag);
+  const api = useBuilderScene(arrival.open, traced);
   const palette = useScenePalette();
   const { scene } = api;
-  const [traced] = useState(readTracedFlag);
+  const [openingScene] = useState(scene);
   const trace = useMemo(() => traced ? traceScene(scene) : null, [traced, scene]);
+  const aimStatuses = useMemo(() => traced ? settleAims(scene).statuses : null, [traced, scene]);
 
   // component ids in the order they were picked; the last is the primary
   const [selection, setSelection] = useState<string[]>([]);
@@ -369,6 +373,7 @@ export default function BuilderScene() {
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
+  const aimDragRef = useRef<string | null>(null);
   const turnRef = useRef<TurnState | null>(null);
   // the turn in flight, for drawing: its centre and how far it has gone
   const [turning, setTurning] = useState<{ centre: [number, number]; turned: number } | null>(null);
@@ -411,7 +416,7 @@ export default function BuilderScene() {
       return {
         kind: "part",
         component,
-        locked: derivedAngleBeam(scene.beams, component) !== undefined,
+        locked: !traced && derivedAngleBeam(scene.beams, component) !== undefined,
         rotating: turning !== null,
       };
     }
@@ -425,7 +430,7 @@ export default function BuilderScene() {
       }),
     );
     return { kind: "group", centre, radius: reach + 14, turned: turning?.turned ?? 0, rotating: turning !== null };
-  }, [scene, selectedComponents, selectedIds, turning]);
+  }, [scene, selectedComponents, selectedIds, traced, turning]);
 
   // a lone delay line's carriage gets a handle to slide it along its rail
   const stageHandle = useMemo(() => {
@@ -631,6 +636,12 @@ export default function BuilderScene() {
     setHoveredId(id);
   }, []);
 
+  const handleAimHandlePointerDown = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
+    if (event.nativeEvent.button !== 0) return;
+    aimDragRef.current = id;
+    setSelection([id]);
+  }, []);
+
   // Ctrl/⌘ + click adds the part under the pointer to the selection, or takes it out.
   const togglePointedPart = useCallback(() => {
     const id = hoveredRef.current && selectableId(sceneRef.current.components, hoveredRef.current);
@@ -825,6 +836,12 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
+      const aimer = aimDragRef.current;
+      aimDragRef.current = null;
+      if (aimer && event.type === "pointerup" && hoveredRef.current && hoveredRef.current !== aimer) {
+        api.setAim(aimer, hoveredRef.current);
+        return;
+      }
       if (slideRef.current) {
         slideRef.current = null;
         setSliding(false);
@@ -852,6 +869,7 @@ export default function BuilderScene() {
       if (drag.group && !drag.started && event.type === "pointerup" && travelled <= CLICK_SLOP_PX) {
         setSelection([drag.id]);
       }
+      if (traced && drag.started && event.type === "pointerup") api.finishAimDrag(drag.id);
     };
     window.addEventListener("pointerup", endDrag);
     window.addEventListener("pointercancel", endDrag);
@@ -859,7 +877,7 @@ export default function BuilderScene() {
       window.removeEventListener("pointerup", endDrag);
       window.removeEventListener("pointercancel", endDrag);
     };
-  }, []);
+  }, [api, traced]);
 
   // ---- connections ---------------------------------------------------------
 
@@ -1240,6 +1258,7 @@ export default function BuilderScene() {
   // a setup the JSON panel checked, or a shared link, replaces the table, as one undo step
   const applyScene = useCallback(
     (parsed: BuilderSceneData, message: string) => {
+      const notice = traced ? upgradeNotice(parsed) : null;
       api.replaceScene(parsed);
       setFitToken((token) => token + 1);
       setSelection([]);
@@ -1247,9 +1266,9 @@ export default function BuilderScene() {
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
       endMode();
-      announce(message);
+      announce(notice ?? message);
     },
-    [announce, api, endMode],
+    [announce, api, endMode, traced],
   );
 
   const handleApplyScene = useCallback(
@@ -1265,11 +1284,12 @@ export default function BuilderScene() {
   // the link has done its job once read: a reload keeps the table's own edits
   useEffect(() => {
     if (isShareHash(window.location.hash)) clearShareHash();
-    const message = arrival.failed ? SHARE_FAILED : arrival.open ? "Opened a shared setup." : null;
-    if (!message) return;
-    const timer = window.setTimeout(() => announce(message));
+    const message = traced ? upgradeNotice(openingScene) : null;
+    const opening = message ?? (arrival.failed ? SHARE_FAILED : arrival.open ? "Opened a shared setup." : null);
+    if (!opening) return;
+    const timer = window.setTimeout(() => announce(opening));
     return () => window.clearTimeout(timer);
-  }, [announce, arrival]);
+  }, [announce, arrival, openingScene, traced]);
 
   // a link pasted into the address of an open Tabletop opens too
   useEffect(() => {
@@ -1359,10 +1379,10 @@ export default function BuilderScene() {
       const [only] = selectedComponents;
       // a part whose angle a beam sets doesn't turn by hand; in a group it
       // still swings round with the rest, and its beam re-angles it
-      if (selectedIds.length === 1 && derivedAngleBeam(sceneRef.current.beams, only)) return;
+      if (!traced && selectedIds.length === 1 && derivedAngleBeam(sceneRef.current.beams, only)) return;
       api.rotateComponents(selectedIds, direction);
     },
-    [api, selectedComponents, selectedIds],
+    [api, selectedComponents, selectedIds, traced],
   );
 
   const duplicateSelected = useCallback(() => {
@@ -1572,6 +1592,15 @@ export default function BuilderScene() {
 
       if (selectedIds.length === 0) return;
 
+      if (traced && (event.key === "f" || event.key === "F") && selectedIds.length === 1) {
+        const component = selectedComponents[0];
+        if (component && canAim(component)) {
+          event.preventDefault();
+          api.flipAim(component.id);
+          return;
+        }
+      }
+
       const step = event.shiftKey ? FINE_GRID_MM : GRID_SIZE_MM;
       switch (event.key) {
         case "ArrowLeft":
@@ -1627,15 +1656,20 @@ export default function BuilderScene() {
     selectedConnection,
     selectedFrame,
     selectedIds,
+    selectedComponents,
+    traced,
     trayOpen,
   ]);
 
   const updateSelected = useCallback(
     (patch: Partial<Omit<BuilderComponent, "id" | "type">>, record?: boolean) => {
       if (selectedIds.length !== 1) return;
-      api.updateComponent(selectedIds[0], patch, record);
+      const component = componentById(sceneRef.current.components, selectedIds[0]);
+      api.updateComponent(selectedIds[0], traced && patch.orientation && component && canAim(component)
+        ? { ...patch, aim: undefined, free: true }
+        : patch, record);
     },
-    [api, selectedIds],
+    [api, selectedIds, traced],
   );
 
   // A click on the table's beams picks the nearest; clicking the same spot
@@ -1717,6 +1751,9 @@ export default function BuilderScene() {
           onComponentHover={handleComponentHover}
           rotationHandle={rotationHandle}
           onRotationHandlePointerDown={handleRotationHandlePointerDown}
+          aimStatuses={aimStatuses}
+          onAimHandlePointerDown={handleAimHandlePointerDown}
+          onFlipAim={api.flipAim}
           stageHandle={stageHandle}
           onStageHandlePointerDown={handleStageHandlePointerDown}
           onConnectionPointerDown={handleConnectionPointerDown}
@@ -1794,6 +1831,11 @@ export default function BuilderScene() {
           setSelectedConnectionId(null);
         }}
         onRotateSelected={rotateSelected}
+        traced={traced}
+        aimStatuses={aimStatuses}
+        onSetAim={api.setAim}
+        onFlipAim={api.flipAim}
+        onSnapAim={api.snapAim}
         onDuplicateSelected={duplicateSelected}
         onDeleteSelected={deleteSelected}
         onSetSelectedHeight={(height) => api.setComponentsHeight(selectedIds, height)}

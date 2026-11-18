@@ -1,5 +1,5 @@
 {
-  "version": 17,
+  "version": 18,
   "components": [
     {
       "id": "laser",
@@ -48,6 +48,7 @@
         1
       ],
       "label": "PDH pickoff",
+      "aim": "cavity",
       "mountStage": "stage-pickoff"
     },
     {

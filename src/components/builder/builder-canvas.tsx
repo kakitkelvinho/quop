@@ -2,6 +2,7 @@
 
 import {
   Environment,
+  Html,
   Lightformer,
   Line,
   OrbitControls,
@@ -53,6 +54,7 @@ import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
 import type { TraceResult } from "@/components/builder/trace-scene";
+import type { AimStatus } from "@/components/builder/aim-settling";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
 import {
   GroupRotationHandle,
@@ -82,6 +84,7 @@ import {
   componentById,
   componentRadius,
   periscopePartner,
+  referencePoint,
   type Beam,
   type Frame,
   type Group,
@@ -1163,6 +1166,9 @@ export type BuilderCanvasProps = {
   /** the selection's rotation handle, if it gets one */
   rotationHandle: RotationHandleSpec | null;
   onRotationHandlePointerDown: (event: ThreeEvent<PointerEvent>) => void;
+  aimStatuses: Map<string, AimStatus> | null;
+  onAimHandlePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
+  onFlipAim: (id: string) => void;
   /** a lone selected delay line, whose carriage gets a handle to slide it, and whether it is sliding now */
   stageHandle: { component: BuilderComponent; sliding: boolean } | null;
   onStageHandlePointerDown: (event: ThreeEvent<PointerEvent>) => void;
@@ -1245,6 +1251,9 @@ export default function BuilderCanvas({
   onComponentHover,
   rotationHandle,
   onRotationHandlePointerDown,
+  aimStatuses,
+  onAimHandlePointerDown,
+  onFlipAim,
   stageHandle,
   onStageHandlePointerDown,
   onConnectionPointerDown,
@@ -1429,6 +1438,38 @@ export default function BuilderCanvas({
           onPointerDown={onRotationHandlePointerDown}
         />
       ) : null}
+      {aimStatuses ? components.filter((part) => part.type === "mirror-mount" || part.type === "beam-splitter").map((part) => {
+        const point = referencePoint(part);
+        const shown = selection.includes(part.id) || hoveredId === part.id;
+        return (
+          <Fragment key={`aim-${part.id}`}>
+            {hoveredId === part.id && !selection.includes(part.id) ? (
+              <mesh position={[point[0], 1, point[2]]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[componentRadius(part) + 8, 0.7, 6, 48]} />
+                <meshBasicMaterial color={palette.accent} transparent opacity={0.6} depthTest={false} />
+              </mesh>
+            ) : null}
+            {aimStatuses.get(part.id)?.kind === "waiting" ? (
+              <mesh position={[point[0], point[1] + componentRadius(part) + 8, point[2]]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[4, 0.8, 6, 24]} />
+                <meshBasicMaterial color={palette.accent} transparent opacity={0.85} depthTest={false} />
+              </mesh>
+            ) : null}
+            {shown ? (
+              <group position={[point[0] + componentRadius(part) + 13, 2, point[2]]}>
+                <mesh
+                  onPointerDown={(event) => { event.stopPropagation(); onAimHandlePointerDown(part.id, event); }}
+                  onWheel={(event) => { event.stopPropagation(); onFlipAim(part.id); }}
+                >
+                  <sphereGeometry args={[5, 12, 8]} />
+                  <meshBasicMaterial color={palette.accent} depthTest={false} />
+                </mesh>
+                <Html center style={{ pointerEvents: "none", whiteSpace: "nowrap", fontSize: 11, fontWeight: 700, color: palette.accent }}>Aim · F flip</Html>
+              </group>
+            ) : null}
+          </Fragment>
+        );
+      }) : null}
       {stageHandle ? (
         <StageHandle
           component={stageHandle.component}

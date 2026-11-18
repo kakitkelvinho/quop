@@ -1,0 +1,81 @@
+{
+  "version": 18,
+  "components": [
+    {
+      "id": "laser",
+      "type": "laser-source",
+      "position": [
+        0,
+        100,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "first",
+      "type": "mirror-mount",
+      "position": [
+        100,
+        100,
+        0
+      ],
+      "orientation": [
+        0,
+        -0.9238795325112867,
+        0,
+        0.3826834323650899
+      ],
+      "aim": "second"
+    },
+    {
+      "id": "second",
+      "type": "mirror-mount",
+      "position": [
+        100,
+        100,
+        100
+      ],
+      "orientation": [
+        0,
+        0.3826834323650898,
+        0,
+        0.9238795325112867
+      ],
+      "fold": -1
+    },
+    {
+      "id": "detector",
+      "type": "photodiode",
+      "position": [
+        200,
+        100,
+        100
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "beams": [
+    {
+      "id": "beam",
+      "path": [
+        "laser",
+        "first",
+        "second"
+      ],
+      "color": "#ef4444"
+    }
+  ],
+  "connections": [],
+  "frames": [],
+  "groups": []
+}

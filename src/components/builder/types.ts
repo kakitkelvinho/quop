@@ -131,6 +131,12 @@ export type BuilderComponent = {
   position: Vec3;
   /** unit quaternion [x, y, z, w], with w ≥ 0 */
   orientation: Quat;
+  /** mirror or Beam cube: the Component this one sends its reflected light toward */
+  aim?: string;
+  /** mirror or Beam cube: which side an unaimed 45° reflection takes */
+  fold?: 1 | -1;
+  /** mirror or Beam cube: its orientation was turned by hand */
+  free?: true;
   /** hex colour — body tint; on a mirror it marks which beam line it serves */
   color?: string;
   /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
@@ -293,7 +299,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 17 as const;
+export const SCENE_VERSION = 18 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -416,7 +422,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 25,
     minHeight: 27,
     radius: 34,
-    fields: ["mountStage"],
+    fields: ["aim", "fold", "free", "mountStage"],
     created: { color: DEFAULT_MOUNT_COLOR },
     mounted: true,
     angle: "mirror",
@@ -429,7 +435,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     top: 13,
     minHeight: 25,
     radius: 30,
-    fields: ["mountStage"],
+    fields: ["aim", "fold", "free", "mountStage"],
     mounted: true,
   },
   lens: {
@@ -870,6 +876,22 @@ export function briefTypeList(types: Iterable<ComponentType>, last: "and" | "or"
  * is each kind's `fields` in COMPONENT_SPECS.
  */
 export const COMPONENT_FIELDS = {
+  aim: {
+    read: { as: "id" },
+    since: 18,
+    brief: "the id of the Component this Mirror or Beam cube sends its reflected light toward. The Tabletop derives its orientation from incoming light and this target; leave it out to use a 45° fold.",
+  },
+  fold: {
+    read: { as: "own", read: (raw: Record<string, unknown>) => raw.fold === -1 || raw.fold === 1 ? { fold: raw.fold } : {} },
+    default: 1,
+    since: 18,
+    brief: "`1` or `-1`, choosing the side of an unaimed 45° fold; default `1`. Press F to flip it.",
+  },
+  free: {
+    read: { as: "flag" },
+    since: 18,
+    brief: "`true` keeps an unaimed Mirror or Beam cube at its hand-turned orientation until it is aimed or snapped back to 45°.",
+  },
   lensShape: {
     read: { as: "enum", options: ["plano-convex", "biconvex"] },
     default: "plano-convex",
@@ -2291,6 +2313,17 @@ export function labelText(raw: unknown): string | undefined {
  * those from before version 15 have no standalone translation stages or mounts;
  * those from before version 16 draw every standalone stage with XY axes.
  */
+const upgradedScenes = new WeakSet<BuilderSceneData>();
+
+export function wasUpgraded(scene: BuilderSceneData): boolean {
+  return upgradedScenes.has(scene);
+}
+
+export function carryUpgrade(source: BuilderSceneData, next: BuilderSceneData): BuilderSceneData {
+  if (wasUpgraded(source)) upgradedScenes.add(next);
+  return next;
+}
+
 export function parseScene(value: unknown): BuilderSceneData | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
@@ -2328,20 +2361,42 @@ export function parseScene(value: unknown): BuilderSceneData | null {
 
   const labelScale = parseLabelScale(raw.labelScale);
 
-  const scene = settleAngles(
-    settlePeriscopes(
-      settleStageMounts(null, settleHosts({
-        version: SCENE_VERSION,
-        components,
-        beams,
-        connections,
-        frames,
-        groups,
-        ...(labelScale !== undefined ? { labelScale } : {}),
-      })),
-    ),
+  const scene = settlePeriscopes(
+    settleStageMounts(null, settleHosts({
+      version: SCENE_VERSION,
+      components,
+      beams,
+      connections,
+      frames,
+      groups,
+      ...(labelScale !== undefined ? { labelScale } : {}),
+    })),
   );
-  return version < 10 ? settleAngles(movedToPorts(scene)) : scene;
+  if (version >= 18) return scene;
+  const angled = settleAngles(scene);
+  const migrated = migrateAims(version < 10 ? settleAngles(movedToPorts(angled)) : angled);
+  upgradedScenes.add(migrated);
+  return migrated;
+}
+
+function migrateAims(scene: BuilderSceneData): BuilderSceneData {
+  const aims = new Map<string, string>();
+  const kinds = new Map(scene.components.map((component) => [component.id, component.type]));
+  for (const beam of scene.beams) {
+    for (let index = 0; index < beam.path.length - 1; index++) {
+      const id = beam.path[index];
+      if ((kinds.get(id) === "mirror-mount" || kinds.get(id) === "beam-splitter") && !aims.has(id)) {
+        aims.set(id, beam.path[index + 1]);
+      }
+    }
+  }
+  if (aims.size === 0) return scene;
+  return { ...scene, components: scene.components.map((component) => {
+    const aim = aims.get(component.id);
+    if (!aim) return component;
+    const { mountStage, ...beforeMount } = component;
+    return mountStage === undefined ? { ...component, aim } : { ...beforeMount, aim, mountStage };
+  }) };
 }
 
 /**

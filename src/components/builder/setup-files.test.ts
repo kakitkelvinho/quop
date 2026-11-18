@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 
 import { visibility } from "./groups.ts";
 import { fromEulerYXZDeg, fromYawDeg, toEulerYXZDeg } from "./quaternion.ts";
-import { DEFAULT_OBJECTIVE_LENGTH_MM, parseScene, serializeScene, withYaw, type Beam, type BuilderComponent } from "./types.ts";
+import { DEFAULT_OBJECTIVE_LENGTH_MM, SCENE_VERSION, parseScene, serializeScene, withYaw, type Beam, type BuilderComponent } from "./types.ts";
 
 const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
@@ -440,7 +440,7 @@ describe("setup-v11.json, the first version with labelScale", () => {
 describe("setup-v12.json, the first version with groups", () => {
   it("migrates every component to quaternion orientation", () => {
     const saved = JSON.parse(serializeScene(open("setup-v12.json")));
-    assert.equal(saved.version, 17);
+    assert.equal(saved.version, SCENE_VERSION);
     assert.ok(saved.components.every((component: Record<string, unknown>) => Array.isArray(component.orientation) && !("rotation" in component)));
   });
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import * as groupEdits from "@/components/builder/group-edits";
 import * as groups from "@/components/builder/groups";
+import { aimAt, canAim, catchAims, flipFold, insertIntoAimedPath, settleAims } from "@/components/builder/aim-settling";
 import {
   BEAM_COLORS,
   CONNECTION_KINDS,
@@ -13,6 +14,7 @@ import {
   DEFAULT_SCENE,
   EMPTY_SCENE,
   clampToTable,
+  carryUpgrade,
   createBeamId,
   createComponentId,
   createConnectionId,
@@ -54,14 +56,15 @@ const AUTOSAVE_DELAY_MS = 500;
 type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 
 /**
- * Every edit ends with hosted particles back at their host's centre and
- * periscope top mirrors over their lower ones, then mirrors in the middle of
- * a beam turned to reflect it.
+ * Every edit settles hosted positions and orientations. Drawn Beams control
+ * angles in the default mode; physical aims control them in traced mode.
  */
-function settled(mutate: Mutation): Mutation {
+function settled(mutate: Mutation, traced: boolean): Mutation {
   return (scene) => {
     const next = mutate(scene);
-    return next === scene ? scene : settleAngles(settlePeriscopes(settleHosts(settleStageMounts(scene, next))));
+    if (next === scene) return scene;
+    const placed = settlePeriscopes(settleHosts(settleStageMounts(scene, next)));
+    return traced ? settleAims(placed).scene : settleAngles(placed);
   };
 }
 
@@ -143,13 +146,15 @@ export function readStoredScene(): BuilderSceneData | null {
   return null;
 }
 
-function initialState(opening: BuilderSceneData | null): HistoryState {
-  return { scene: opening ?? readStoredScene() ?? DEFAULT_SCENE, past: [], future: [] };
+function initialState(opening: BuilderSceneData | null, traced: boolean): HistoryState {
+  const source = opening ?? readStoredScene() ?? DEFAULT_SCENE;
+  const scene = traced ? carryUpgrade(source, settleAims(source).scene) : source;
+  return { scene, past: [], future: [] };
 }
 
 /** `opening` is a setup the table opens with in place of the autosaved one, such as a shared link's. */
-export function useBuilderScene(opening: BuilderSceneData | null = null) {
-  const [state, dispatch] = useReducer(reducer, opening, initialState);
+export function useBuilderScene(opening: BuilderSceneData | null = null, traced = false) {
+  const [state, dispatch] = useReducer(reducer, opening, (start) => initialState(start, traced));
   const { scene } = state;
 
   // A drag previews a new scene on every pointer move; serialising each one
@@ -188,12 +193,12 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
   }, [flush]);
 
   const commit = useCallback(
-    (mutate: Mutation) => dispatch({ kind: "commit", mutate: settled(mutate) }),
-    [],
+    (mutate: Mutation) => dispatch({ kind: "commit", mutate: settled(mutate, traced) }),
+    [traced],
   );
   const preview = useCallback(
-    (mutate: Mutation) => dispatch({ kind: "preview", mutate: settled(mutate) }),
-    [],
+    (mutate: Mutation) => dispatch({ kind: "preview", mutate: settled(mutate, traced) }),
+    [traced],
   );
   const commitCheckpoint = useCallback(
     (snapshot: BuilderSceneData) => dispatch({ kind: "checkpoint", snapshot }),
@@ -224,17 +229,22 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
               },
             ]
           : [];
-      commit((current) => ({
-        ...current,
-        components: [
-          ...current.components,
-          newComponent(type, id, x, z, extra),
-          ...top,
-        ],
-      }));
+      commit((current) => {
+        const placed: BuilderSceneData = {
+          ...current,
+          components: [
+            ...current.components,
+            newComponent(type, id, x, z, extra),
+            ...top,
+          ],
+        };
+        if (!traced) return placed;
+        const aimed = settleAims(placed).scene;
+        return catchAims(insertIntoAimedPath(aimed, id));
+      });
       return id;
     },
-    [commit],
+    [commit, traced],
   );
 
   const updateComponent = useCallback(
@@ -292,15 +302,37 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
   /** A handle turn in flight: each part `degrees` round `centre` from its origin pose, with no undo step. */
   const turnComponents = useCallback(
     (origins: Record<string, groupEdits.Pose>, centre: [number, number], degrees: number) =>
-      preview((current) => groupEdits.turnComponents(current, origins, centre, degrees)),
-    [preview],
+      preview((current) => {
+        const turned = groupEdits.turnComponents(current, origins, centre, degrees);
+        if (!traced) return turned;
+        return { ...turned, components: turned.components.map((part) => origins[part.id] && canAim(part)
+          ? { ...part, aim: undefined, free: true }
+          : part) };
+      }),
+    [preview, traced],
   );
 
   const rotateComponents = useCallback(
     (ids: string[], direction: 1 | -1 = 1) =>
-      commit((current) => groupEdits.rotateComponents(current, ids, direction)),
-    [commit],
+      commit((current) => {
+        const turned = groupEdits.rotateComponents(current, ids, direction);
+        if (!traced) return turned;
+        return { ...turned, components: turned.components.map((part) => ids.includes(part.id) && canAim(part)
+          ? { ...part, aim: undefined, free: true }
+          : part) };
+      }),
+    [commit, traced],
   );
+
+  const setAim = useCallback((id: string, targetId: string) => commit((current) => aimAt(current, id, targetId)), [commit]);
+  const flipAim = useCallback((id: string) => commit((current) => flipFold(current, id)), [commit]);
+  const snapAim = useCallback((id: string) => commit((current) => ({ ...current, components: current.components.map((part) =>
+    part.id === id && canAim(part) ? { ...part, aim: undefined, free: undefined } : part,
+  ) })), [commit]);
+  const finishAimDrag = useCallback((id: string) => {
+    if (!traced) return;
+    preview((current) => catchAims(insertIntoAimedPath(current, id)));
+  }, [preview, traced]);
 
   const deleteComponents = useCallback(
     (ids: string[]) => commit((current) => groupEdits.deleteComponents(current, ids)),
@@ -347,9 +379,8 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
   const addBeam = useCallback(
     (path: string[], color?: string, label?: string) => {
       if (path.length < 2) return;
-      commit((current) => ({
-        ...current,
-        beams: [
+      commit((current) => {
+        const added: BuilderSceneData = { ...current, beams: [
           ...current.beams,
           {
             id: createBeamId(),
@@ -357,10 +388,15 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
             color: color ?? BEAM_COLORS[current.beams.length % BEAM_COLORS.length],
             label,
           },
-        ],
-      }));
+        ] };
+        if (!traced) return added;
+        return path.slice(1).reduce((next, id, index) => {
+          const from = path[index];
+          return next.components.some((part) => part.id === from && canAim(part)) ? aimAt(next, from, id) : next;
+        }, added);
+      });
     },
-    [commit],
+    [commit, traced],
   );
 
   const updateBeam = useCallback(
@@ -600,6 +636,10 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       translateComponents,
       nudgeComponents,
       rotateComponents,
+      setAim,
+      flipAim,
+      snapAim,
+      finishAimDrag,
       turnComponents,
       deleteComponents,
       duplicateComponents,
@@ -645,6 +685,10 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
       translateComponents,
       nudgeComponents,
       rotateComponents,
+      setAim,
+      flipAim,
+      snapAim,
+      finishAimDrag,
       turnComponents,
       deleteComponents,
       duplicateComponents,

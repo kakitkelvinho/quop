@@ -31,7 +31,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 17. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 18. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: the light paths, in order. The first beam through a mirror sets its angle.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -52,6 +52,9 @@ Every component has:
 
 Some types read fields of their own; leave them out to take the default:
 
+- `aim` (`mirror-mount` and `beam-splitter` only): the id of the Component this Mirror or Beam cube sends its reflected light toward. The Tabletop derives its orientation from incoming light and this target; leave it out to use a 45° fold.
+- `fold` (`mirror-mount` and `beam-splitter` only): `1` or `-1`, choosing the side of an unaimed 45° fold; default `1`. Press F to flip it.
+- `free` (`mirror-mount` and `beam-splitter` only): `true` keeps an unaimed Mirror or Beam cube at its hand-turned orientation until it is aimed or snapped back to 45°.
 - `lensShape` (`lens` only): `"plano-convex"` (the default) or `"biconvex"`.
 - `focalLength` (`lens` only): mm, 10–2000; default 100. It sets the drawn curvature.
 - `cavityLength` (`cavity` only): mm between its two mirrors, 10–300; default 50.
@@ -137,8 +140,8 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 ### Steering
 
-- `mirror-mount`: Mirror. Height 27–300 mm, default 100. Its own fields: `mountStage`.
-- `beam-splitter`: Beam cube. Height 25–300 mm, default 100. Its own fields: `mountStage`.
+- `mirror-mount`: Mirror. Height 27–300 mm, default 100. Its own fields: `aim`, `fold`, `free`, `mountStage`.
+- `beam-splitter`: Beam cube. Height 25–300 mm, default 100. Its own fields: `aim`, `fold`, `free`, `mountStage`.
 - `periscope`: Periscope. Height 30–300 mm, default 100.
 - `periscope-top`: Periscope top mirror. Height 30–300 mm, default 100. Its own fields: `periscope`.
 - `delay-line`: Delay line. Height 30–300 mm, default 100. Its own fields: `delayMinPathMm`, `delayTravelMm`, `delayStageMm`, `lightColor`, `lightHidden`.
@@ -184,7 +187,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 17,
+  "version": 18,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "orientation": [0, 0, 0, 1], "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "orientation": [0, 0.9238795325112867, 0, 0.38268343236508984], "color": "#8b1e3f", "label": "M1" },
@@ -208,7 +211,7 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 
 ```json
 {
-  "version": 17,
+  "version": 18,
   "components": [
     { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "yaw": 0 },
     { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "yaw": 0 }
