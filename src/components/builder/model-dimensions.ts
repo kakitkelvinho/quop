@@ -75,6 +75,12 @@ export const DELAY_DRIVE_MM = 12;
 
 /** A photodiode's head: the radius of its dome, which bulges away from the beam (+x). */
 export const PD_RADIUS = 13;
+export const OPTIC_DIAMETER_MM = 25.4;
+export const BEAM_CUBE_EDGE_MM = OPTIC_DIAMETER_MM;
+export const PD_CHIP_SIDE_MM = 4.4;
+export const CAMERA_OPENING_RADIUS_MM = 11;
+export const SPECTROMETER_PORT_RADIUS_MM = 7;
+export const FC_TIP_RADIUS_MM = 2.8;
 
 /**
  * The fibre stubs, from the connector down to the table, as control points of
