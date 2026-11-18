@@ -1,4 +1,5 @@
 import { add, dot, length, rotate, scale, type Vec3 } from "./quaternion.ts";
+import { OPTIC_DIAMETER_MM } from "./model-dimensions.ts";
 import { applyRule, intersect, placeSurface, type Surface, type TracedBeam } from "./surface.ts";
 import {
   AIMED_DETECTORS, COMPONENT_SPECS, componentRadius, fieldValue, referencePoint,
@@ -13,6 +14,7 @@ export type TraceSegment = {
   path: string[];
   power: number;
   pathLengthMm: number;
+  arm: "through" | "reflected";
 };
 
 export type BeamTree = { laserId: string; segments: TraceSegment[] };
@@ -25,7 +27,7 @@ export type TraceCheck = {
 
 export type TraceResult = { trees: BeamTree[]; checks: TraceCheck[]; matchedDrawnBeamIds: string[] };
 
-export type TraceOptions = { maxSegmentsPerLaser?: number; maxBounces?: number };
+export type TraceOptions = { maxSegmentsPerLaser?: number; maxBounces?: number; settling?: boolean };
 
 type LocatedSurface = { component: BuilderComponent; surface: Surface };
 type TraceState = {
@@ -35,24 +37,33 @@ type TraceState = {
   pathLengthMm: number;
   bounces: number;
   depth: number;
+  arm: "through" | "reflected";
 };
 
 const OPEN_BEAM_MM = 500;
 const HIT_EPSILON_MM = 1e-7;
 
-function placedSurfaces(components: BuilderComponent[]): LocatedSurface[] {
+function placedSurfaces(components: BuilderComponent[], settling: boolean): LocatedSurface[] {
   return components.flatMap((component) => {
     const pose = { positionMm: referencePoint(component), orientation: component.orientation };
-    return (COMPONENT_SPECS[component.type].surfaces?.(component) ?? []).map((surface) => ({
+    const declared = COMPONENT_SPECS[component.type].surfaces?.(component) ?? [];
+    const local = settling && component.type === "beam-splitter" ? declared.slice(-1) : declared;
+    return local.map((surface) => ({
       component, surface: placeSurface(surface, pose),
     }));
   });
 }
 
-function nearestHit(surfaces: LocatedSurface[], beam: TracedBeam): { located: LocatedSurface; hitMm: Vec3; distanceMm: number } | null {
+function nearestHit(surfaces: LocatedSurface[], beam: TracedBeam, settling: boolean): { located: LocatedSurface; hitMm: Vec3; distanceMm: number } | null {
   let nearest: { located: LocatedSurface; hitMm: Vec3; distanceMm: number } | null = null;
   for (const located of surfaces) {
-    const hitMm = intersect(located.surface, beam);
+    let hitMm: Vec3 | null = null;
+    if (settling && (located.component.type === "mirror-mount" || located.component.type === "beam-splitter")) {
+      const toCentre = add(located.surface.positionMm, scale(beam.originMm, -1));
+      const travelMm = dot(toCentre, beam.direction);
+      const closest = add(beam.originMm, scale(beam.direction, travelMm));
+      if (travelMm > HIT_EPSILON_MM && length(add(closest, scale(located.surface.positionMm, -1))) <= OPTIC_DIAMETER_MM / 2) hitMm = closest;
+    } else hitMm = intersect(located.surface, beam);
     if (!hitMm) continue;
     const distanceMm = length(add(hitMm, scale(beam.originMm, -1)));
     if (!nearest || distanceMm < nearest.distanceMm - HIT_EPSILON_MM) nearest = { located, hitMm, distanceMm };
@@ -115,7 +126,7 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
   if (!(Number.isInteger(maxSegments) && maxSegments > 0 && Number.isInteger(maxBounces) && maxBounces >= 0)) {
     throw new Error("trace limits must be non-negative integers, with a positive segment cap");
   }
-  const surfaces = placedSurfaces(scene.components);
+  const surfaces = placedSurfaces(scene.components, options.settling ?? false);
   const checks = new Map<string, TraceCheck>();
   const reached = new Set<string>();
   const addCheck = (check: TraceCheck) => checks.set(checkKey(check), check);
@@ -126,12 +137,13 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
     const states: TraceState[] = [{
       beam: { originMm: start, direction: rotate(laser.orientation, [1, 0, 0]), power: 1 },
       fromId: laser.id, path: [laser.id], pathLengthMm: fieldValue(laser, "internalPathMm"), bounces: 0, depth: 0,
+      arm: "through",
     }];
     const segments: TraceSegment[] = [];
 
     while (states.length > 0 && segments.length < maxSegments) {
       const state = states.pop()!;
-      const hit = nearestHit(surfaces, state.beam);
+      const hit = nearestHit(surfaces, state.beam, options.settling ?? false);
       const distanceMm = hit?.distanceMm ?? OPEN_BEAM_MM;
       const missed = missedAperture(surfaces, state.beam, distanceMm);
       if (missed) addCheck({ kind: "missed-aperture", componentId: missed.id, message: `${missed.label || missed.id}: missed aperture` });
@@ -139,7 +151,7 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
       const toId = hit?.located.component.id ?? null;
       const path = toId && toId !== state.path.at(-1) ? [...state.path, toId] : state.path;
       const pathLengthMm = state.pathLengthMm + distanceMm + (hit?.located.surface.extraPathMm ?? 0);
-      segments.push({ fromMm: state.beam.originMm, toMm, fromId: state.fromId, toId, path, power: state.beam.power, pathLengthMm });
+      segments.push({ fromMm: state.beam.originMm, toMm, fromId: state.fromId, toId, path, power: state.beam.power, pathLengthMm, arm: state.arm });
       if (!hit) continue;
       reached.add(toId!);
       const { component, surface } = hit.located;
@@ -152,7 +164,7 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
         const next = outgoing[index];
         const reflected = surface.rule.kind === "reflect" || surface.rule.kind === "split" && index === 1;
         if (state.bounces + Number(reflected) > maxBounces) continue;
-        states.push({ beam: next, fromId: component.id, path, pathLengthMm, bounces: state.bounces + Number(reflected), depth: state.depth + 1 });
+        states.push({ beam: next, fromId: component.id, path, pathLengthMm, bounces: state.bounces + Number(reflected), depth: state.depth + 1, arm: reflected ? "reflected" : "through" });
       }
     }
     if (states.length > 0) addCheck({ kind: "segment-limit", componentId: laser.id, message: `${laser.label || laser.id}: trace limit reached` });

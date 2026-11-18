@@ -29,6 +29,9 @@ const kindsWith = (field: KindField) => KINDS.filter((type) => COMPONENT_SPECS[t
 
 /** A usable value for each field, unlike its default where it has one. */
 const GOOD: Record<KindField, unknown> = {
+  aim: "host",
+  fold: -1,
+  free: true,
   lensShape: "biconvex",
   focalLength: 250,
   cavityLength: 80,
@@ -118,6 +121,9 @@ describe("COMPONENT_FIELDS", () => {
 
   it("leaves out a value it can't use", () => {
     const unusable: Partial<Record<KindField, unknown>> = {
+      aim: 7,
+      fold: 0,
+      free: false,
       focalLength: "100",
       cavityLength: Number.NaN,
       objectiveLength: null,
@@ -173,7 +179,7 @@ describe("COMPONENT_FIELDS", () => {
 
   it("ignores a field in a file from before its version, and reads it from that version on", () => {
     const versioned = FIELDS.filter((field) => "since" in COMPONENT_FIELDS[field]);
-    assert.deepEqual(versioned, ["objectiveLength", "mountStage", "sampleStage", "stageColor", "stageAxes", "sampleStageLeft", "symbol"]);
+    assert.deepEqual(versioned, ["aim", "fold", "free", "objectiveLength", "mountStage", "sampleStage", "stageColor", "stageAxes", "sampleStageLeft", "symbol"]);
     for (const field of versioned) {
       const { since } = COMPONENT_FIELDS[field] as { since: number };
       const extra = field === "sampleStageLeft" ? { sampleStage: "side", [field]: GOOD[field] } : { [field]: GOOD[field] };

@@ -1,5 +1,5 @@
 {
-  "version": 17,
+  "version": 18,
   "components": [
     {
       "id": "laser",
@@ -31,7 +31,8 @@
         0,
         0.9238795325112867
       ],
-      "color": "#8b1e3f"
+      "color": "#8b1e3f",
+      "aim": "bs"
     },
     {
       "id": "bs",
@@ -47,7 +48,8 @@
         0,
         1
       ],
-      "label": "PBS"
+      "label": "PBS",
+      "aim": "lens"
     },
     {
       "id": "lens",
@@ -267,7 +269,8 @@
         0.9238795325112867,
         0,
         0.38268343236508984
-      ]
+      ],
+      "aim": "cavity"
     },
     {
       "id": "cavity",

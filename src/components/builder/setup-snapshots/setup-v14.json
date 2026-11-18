@@ -1,5 +1,5 @@
 {
-  "version": 17,
+  "version": 18,
   "components": [
     {
       "id": "laser",
@@ -47,7 +47,8 @@
         0,
         1
       ],
-      "label": "PDH pickoff"
+      "label": "PDH pickoff",
+      "aim": "cavity"
     },
     {
       "id": "cavity",
