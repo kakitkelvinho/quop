@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { FIBER_STUBS, connectionJack, leavesFromStub } from "./connection-jacks.ts";
 import { COMPONENT_SPECS, type BuilderComponent, type ComponentType, type Vec3, delayRailMm } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 // #315: where a fibre or cable plugs into each part, as plain numbers in the
 // part's frame. The expected numbers are the ones the connections were drawn
@@ -13,7 +14,7 @@ const part = (type: ComponentType, extra: Partial<BuilderComponent> = {}): Build
   id: type,
   type,
   position: [0, H, 0],
-  rotation: 0,
+  orientation: fromYawDeg(0),
   ...extra,
 });
 

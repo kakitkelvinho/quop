@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { type Beam, type BuilderComponent, beamLineSnap, snapToBeamLine } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 // #128: a part in the middle of a beam locks onto the straight line between
 // the stops before and after it when dragged within about 5 mm.
 
 const part = (id: string, x: number, z: number): BuilderComponent =>
-  ({ id, type: "lens", position: [x, 100, z], rotation: 0 }) as unknown as BuilderComponent;
+  ({ id, type: "lens", position: [x, 100, z], orientation: fromYawDeg(0) }) as unknown as BuilderComponent;
 const beam = (id: string, path: string[]): Beam => ({ id, path, color: "#e33" });
 
 describe("snapToBeamLine", () => {

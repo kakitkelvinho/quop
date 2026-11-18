@@ -37,6 +37,7 @@ import {
   type Frame,
   type Group,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
@@ -48,7 +49,7 @@ const part = (id: string, type: ComponentType, x: number, z: number): BuilderCom
   id,
   type,
   position: [x, 100, z],
-  rotation: 0,
+  orientation: fromYawDeg(0),
 });
 
 const beam = (id: string, path: string[], extra: Partial<Beam> = {}): Beam => ({ id, path, color: "#e33", ...extra });
@@ -180,8 +181,8 @@ describe("editing groups", () => {
     const scene: BuilderSceneData = {
       ...table(),
       components: [
-        { id: "p", type: "periscope", position: [0, 50, 0], rotation: 0 },
-        { id: "pt", type: "periscope-top", position: [0, 150, 0], rotation: 0, periscope: "p" },
+        { id: "p", type: "periscope", position: [0, 50, 0], orientation: fromYawDeg(0) },
+        { id: "pt", type: "periscope-top", position: [0, 150, 0], orientation: fromYawDeg(0), periscope: "p" },
       ],
       beams: [],
       connections: [],
@@ -371,14 +372,14 @@ describe("a group on its own, for Export group (#215)", () => {
     const hosted: BuilderSceneData = {
       ...table([group("g", ["ion"])]),
       components: [
-        { id: "trap", type: "paul-trap", position: [0, 100, 0], rotation: 0 },
-        { id: "ion", type: "particle", position: [0, 100, 0], rotation: 0, host: "trap" },
+        { id: "trap", type: "paul-trap", position: [0, 100, 0], orientation: fromYawDeg(0) },
+        { id: "ion", type: "particle", position: [0, 100, 0], orientation: fromYawDeg(0), host: "trap" },
       ],
       beams: [],
       connections: [],
     };
     const subset = groupSubset(hosted, "g")!;
-    assert.deepEqual(subset.scene.components, [{ id: "ion", type: "particle", position: [0, 100, 0], rotation: 0 }]);
+    assert.deepEqual(subset.scene.components, [{ id: "ion", type: "particle", position: [0, 100, 0], orientation: fromYawDeg(0) }]);
     assert.deepEqual(subset.loosened, [{ id: "ion", from: "trap" }]);
     assert.match(leftOutNotice(hosted, "g", [], subset.loosened)!, /is saved without .*, which isn't in g\./);
   });

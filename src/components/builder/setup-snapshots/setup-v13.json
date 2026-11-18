@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "components": [
     {
       "id": "laser",
@@ -9,7 +9,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "780 nm ECDL"
     },
     {
@@ -20,7 +25,12 @@
         100,
         0
       ],
-      "rotation": 45,
+      "orientation": [
+        0,
+        0.3826834323650898,
+        0,
+        0.9238795325112867
+      ],
       "color": "#8b1e3f"
     },
     {
@@ -31,7 +41,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "PBS"
     },
     {
@@ -42,7 +57,12 @@
         100,
         0
       ],
-      "rotation": 90,
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
       "lensShape": "biconvex",
       "focalLength": 150
     },
@@ -54,7 +74,12 @@
         100,
         0
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "ion",
@@ -64,7 +89,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "color": "#ff5a36",
       "host": "trap",
       "particleRadius": 4
@@ -77,7 +107,12 @@
         100,
         0
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "SPCM A"
     },
     {
@@ -88,7 +123,12 @@
         100,
         150
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "λ/2"
     },
     {
@@ -99,7 +139,12 @@
         100,
         250
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "iris",
@@ -109,7 +154,12 @@
         100,
         350
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "sample",
@@ -119,7 +169,12 @@
         100,
         450
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "color": "#f2c94c",
       "opacity": 0.6,
       "sampleStage": "side",
@@ -133,7 +188,12 @@
         100,
         579
       ],
-      "rotation": 90,
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
       "objectiveLength": 80,
       "stageColor": "#8a6d3b"
     },
@@ -145,7 +205,12 @@
         125,
         677
       ],
-      "rotation": 270,
+      "orientation": [
+        0,
+        -0.7071067811865476,
+        0,
+        0.7071067811865475
+      ],
       "label": "EMCCD"
     },
     {
@@ -156,7 +221,12 @@
         100,
         -300
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "aom",
@@ -166,7 +236,12 @@
         100,
         -300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "80 MHz"
     },
     {
@@ -177,7 +252,12 @@
         100,
         -300
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "m2",
@@ -187,7 +267,12 @@
         100,
         -300
       ],
-      "rotation": 135
+      "orientation": [
+        0,
+        0.9238795325112867,
+        0,
+        0.38268343236508984
+      ]
     },
     {
       "id": "cavity",
@@ -197,7 +282,12 @@
         100,
         -450
       ],
-      "rotation": 90,
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ],
       "cavityLength": 100
     },
     {
@@ -208,7 +298,12 @@
         100,
         -538
       ],
-      "rotation": 90
+      "orientation": [
+        0,
+        0.7071067811865475,
+        0,
+        0.7071067811865476
+      ]
     },
     {
       "id": "dump",
@@ -218,7 +313,12 @@
         100,
         150
       ],
-      "rotation": 0
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
     },
     {
       "id": "riser",
@@ -228,7 +328,12 @@
         25,
         400
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "color": "#3b4a6b",
       "size": [
         100,
@@ -244,7 +349,12 @@
         25,
         300
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "color": "#1f2937",
       "label": "Time tagger",
       "size": [
@@ -261,7 +371,12 @@
         100,
         -450
       ],
-      "rotation": 0,
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ],
       "label": "Folded delay",
       "internalPathMm": 4000
     }

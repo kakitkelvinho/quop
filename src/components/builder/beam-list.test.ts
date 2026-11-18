@@ -12,7 +12,12 @@ import {
   SCENE_VERSION,
   serializeScene,
   settleAngles,
+  componentYaw,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
+
+const optionalYaw = (part?: BuilderComponent) => part && componentYaw(part);
+
 
 // #96, #126: the beam list is ordered, saved in that order, and reordered by
 // dragging a row in the beams box to a new place.
@@ -94,7 +99,7 @@ const part = (id: string, type: ComponentType, x: number, z: number): BuilderCom
   id,
   type,
   position: [x, 100, z],
-  rotation: 0,
+  orientation: fromYawDeg(0),
 });
 
 const bench = (beams: Beam[]): BuilderSceneData => ({
@@ -122,7 +127,7 @@ describe("the beam list in a setup", () => {
 
   it("hands a shared mirror to the beam that is first in the list", () => {
     const mirrorYaw = (scene: BuilderSceneData) =>
-      settleAngles(scene).components.find(({ id }) => id === "M")?.rotation;
+      optionalYaw(settleAngles(scene).components.find(({ id }) => id === "M"));
 
     const northFirst = [through("to-north", "north"), through("to-south", "south")];
     assert.equal(mirrorYaw(bench(northFirst)), 135);

@@ -8,6 +8,7 @@ import { BufferAttribute, BufferGeometry, Color, DoubleSide } from "three";
 import {
   componentRadius,
   componentReferenceX,
+  componentYaw,
   type BuilderComponent,
 } from "@/components/builder/types";
 
@@ -277,7 +278,7 @@ export function PartRotationHandle({ component, color, dark, locked, rotating, o
   const [x, , z] = component.position;
 
   return (
-    <group position={[x, 0, z]} rotation={[0, component.rotation * DEG, 0]}>
+    <group position={[x, 0, z]} rotation={[0, componentYaw(component) * DEG, 0]}>
       <Bubble
         // the selection ring is a 3 mm band from `ring` out: thread the bubble on its middle
         radius={centred ? ring + 1.5 : Math.max(38, ring + 10)}
@@ -287,7 +288,7 @@ export function PartRotationHandle({ component, color, dark, locked, rotating, o
         dark={dark}
         rotating={rotating}
         locked={locked}
-        badge={rotating ? `${Math.round(component.rotation)}°` : null}
+        badge={rotating ? `${Math.round(componentYaw(component))}°` : null}
         onPointerDown={onPointerDown}
       />
     </group>

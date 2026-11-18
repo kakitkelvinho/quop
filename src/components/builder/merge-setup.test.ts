@@ -13,6 +13,7 @@ import {
   type Connection,
   type Group,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 // #216: Import into this table merges a setup file into the table, where Open
 // JSON… → Apply replaces it.
@@ -21,7 +22,7 @@ const part = (id: string, type: ComponentType, x: number, z: number, extra: Part
   id,
   type,
   position: [x, 100, z],
-  rotation: 0,
+  orientation: fromYawDeg(0),
   ...extra,
 });
 
@@ -51,7 +52,7 @@ const twoExperiments = (): BuilderSceneData =>
   setup({
     components: [
       part("a", "laser-source", -300, 0),
-      part("m", "mirror-mount", 0, 0, { rotation: 135 }),
+      part("m", "mirror-mount", 0, 0, { orientation: fromYawDeg(135) }),
       part("b", "photodiode", 0, -300),
       part("c", "laser-source", 300, 0),
       part("d", "photodiode", 0, 300),

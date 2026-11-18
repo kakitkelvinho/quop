@@ -61,6 +61,9 @@ import {
   componentById,
   periscopePartner,
   componentDisplayName,
+  componentYaw,
+  turnedYaw,
+  withYaw,
   componentTag,
   cornerBounds,
   isRectangle,
@@ -78,6 +81,7 @@ import {
   type Group,
   type LensShape,
 } from "@/components/builder/types";
+import { fromYawPitchRollDeg, toYawPitchRollDeg, type Quat } from "@/components/builder/quaternion";
 
 const LENS_SHAPES: { value: LensShape; label: string }[] = [
   { value: "plano-convex", label: "Plano-convex" },
@@ -624,6 +628,45 @@ function YawRow({
   );
 }
 
+/**
+ * A part's pitch, which tips its optical axis up or down, and its roll about
+ * that axis. A beam that sets the part's angle lays it level, so both lock with
+ * its yaw.
+ */
+function TiltRow({
+  orientation,
+  locked,
+  onChange,
+}: {
+  orientation: Quat;
+  locked: boolean;
+  onChange: (orientation: Quat) => void;
+}) {
+  const angles = toYawPitchRollDeg(orientation);
+  return (
+    <div className="builderFieldRow">
+      <NumberField
+        label="Pitch"
+        unit="°"
+        step={15}
+        min={-90}
+        max={90}
+        value={angles.pitchDeg}
+        disabled={locked}
+        onChange={(pitchDeg) => onChange(fromYawPitchRollDeg({ ...angles, pitchDeg: Math.min(90, Math.max(-90, pitchDeg)) }))}
+      />
+      <NumberField
+        label="Roll"
+        unit="°"
+        step={15}
+        value={angles.rollDeg}
+        disabled={locked}
+        onChange={(rollDeg) => onChange(fromYawPitchRollDeg({ ...angles, rollDeg }))}
+      />
+    </div>
+  );
+}
+
 export function ComponentInspector({
   component,
   components,
@@ -778,19 +821,26 @@ export function ComponentInspector({
       ) : null}
       <YawRow
         label={upper ? "Bottom yaw" : "Yaw"}
-        rotation={component.rotation}
+        rotation={componentYaw(component)}
         angleBeam={angleBeam}
         keys
-        onChange={(yaw) => onUpdate({ rotation: yaw })}
+        onChange={(yaw) => onUpdate({ orientation: withYaw(component.orientation, yaw) })}
         onRotate={onRotate}
       />
+      {upper ? null : (
+        <TiltRow
+          orientation={component.orientation}
+          locked={Boolean(angleBeam)}
+          onChange={(orientation) => onUpdate({ orientation })}
+        />
+      )}
       {upper && upper !== component ? (
         <YawRow
           label="Top yaw"
-          rotation={upper.rotation}
+          rotation={componentYaw(upper)}
           angleBeam={partnerAngleBeam}
-          onChange={(yaw) => onUpdateOther(upper.id, { rotation: yaw })}
-          onRotate={(direction) => onUpdateOther(upper.id, { rotation: (upper.rotation + direction * ROTATION_STEP_DEG + 360) % 360 })}
+          onChange={(yaw) => onUpdateOther(upper.id, { orientation: withYaw(upper.orientation, yaw) })}
+          onRotate={(direction) => onUpdateOther(upper.id, { orientation: turnedYaw(upper.orientation, direction * ROTATION_STEP_DEG) })}
         />
       ) : null}
       {component.type === "laser-source" ? (

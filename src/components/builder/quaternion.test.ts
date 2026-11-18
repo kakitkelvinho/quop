@@ -108,6 +108,16 @@ describe("stored form", () => {
     );
   });
 
+  it("is left exactly as it is when stored again", () => {
+    fc.assert(
+      fc.property(rawQuat, (raw) => {
+        const stored = canonical(raw);
+        assert.deepEqual(canonical(stored), stored);
+      }),
+    );
+    fc.assert(fc.property(yawDeg, (yaw) => assert.deepEqual(canonical(fromYawDeg(yaw)), fromYawDeg(yaw))));
+  });
+
   it("is the same for both forms of a half turn", () => {
     assert.deepEqual(canonical([0, -1, 0, 0]), canonical([0, 1, 0, 0]));
     assert.deepEqual(canonical([0, 0, -1, 0]), [0, 0, 1, 0]);

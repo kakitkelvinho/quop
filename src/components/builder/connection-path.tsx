@@ -9,6 +9,7 @@ import { FIBER_STUBS, connectionJack, leavesFromStub } from "@/components/builde
 import {
   CONNECTION_KINDS,
   bodyCentre,
+  componentYaw,
   componentRadius,
   type BuilderComponent,
   type Connection,
@@ -34,7 +35,7 @@ const HIT_RADIUS_MM = 5;
 function endPoints(part: BuilderComponent, other: BuilderComponent, kind: ConnectionKind, rest: number): Vector3[] {
   // stubs and cables leave the body, which a part with a port is drawn behind
   const [x, height, z] = bodyCentre(part);
-  const yaw = (part.rotation * Math.PI) / 180;
+  const yaw = (componentYaw(part) * Math.PI) / 180;
   const [ox, , oz] = bodyCentre(other);
   // the other end, in the part's frame
   const toward = new Vector3(ox - x, 0, oz - z).applyAxisAngle(UP, -yaw);

@@ -30,6 +30,7 @@ import {
   briefCode as code,
   briefRange as range,
   briefTypeList as typeList,
+  componentYaw,
   defaultHeight,
   kindsWhere,
   heightRange,
@@ -42,6 +43,7 @@ import {
   type Group,
   type KindField,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 /** One line per field. */
 type FieldDocs<T> = { [K in keyof T]-?: { text: string } };
@@ -66,13 +68,15 @@ const FILE_FIELDS: FieldDocs<BuilderSceneData> = {
 };
 
 /** The fields every component has; those only some kinds have are in COMPONENT_FIELDS. */
-const COMMON_FIELDS: FieldDocs<Pick<BuilderComponent, "id" | "type" | "position" | "rotation" | "color" | "label">> = {
+const COMMON_FIELDS: FieldDocs<Pick<BuilderComponent, "id" | "type" | "position" | "orientation" | "color" | "label">> = {
   id: { text: "text, unique in the file. Beams, connections and particles refer to the part by it." },
   type: { text: "one of the type ids under **Component types**. A part of another type is dropped." },
   position: {
     text: `\`[x, y, z]\`, mm. x and z place the part on the table (within ±${TABLE_GUARD_MM}): its centre, or for a part with a port (a laser's opening, a fibre collimator's lens, a detector's window, an objective's threaded plate) that port, where the beam meets it, so the distance between two parts' positions is the beam between them. y is its height, its optical centre above the table, held to the type's range.`,
   },
-  rotation: { text: "degrees, yaw about the vertical axis; default 0. See **Angles**." },
+  orientation: {
+    text: "how the part is turned, which the builder saves as a unit quaternion `[x, y, z, w]`. Don't write one: give `yaw` in its place, degrees about the vertical axis; default 0. See **Angles**.",
+  },
   color: {
     text: `a hex colour such as ${code(DEFAULT_MOUNT_COLOR)}; missing means the part's own colour. On a ${typeList(MOUNTED_TYPES, "or")} it tints the mount, to mark the beam line the part serves.`,
   },
@@ -170,10 +174,10 @@ function componentTypes(): string {
 export const EXAMPLE_SETUP: BuilderSceneData = {
   version: SCENE_VERSION,
   components: [
-    { id: "laser", type: "laser-source", position: [-300, 100, 0], rotation: 0, label: "780 nm" },
-    { id: "m1", type: "mirror-mount", position: [0, 100, 0], rotation: 135, color: DEFAULT_MOUNT_COLOR, label: "M1" },
-    { id: "lens", type: "lens", position: [0, 100, -150], rotation: 90, lensShape: "plano-convex", focalLength: 100 },
-    { id: "pd", type: "photodiode", position: [0, 100, -300], rotation: 90, label: "PD" },
+    { id: "laser", type: "laser-source", position: [-300, 100, 0], orientation: fromYawDeg(0), label: "780 nm" },
+    { id: "m1", type: "mirror-mount", position: [0, 100, 0], orientation: fromYawDeg(135), color: DEFAULT_MOUNT_COLOR, label: "M1" },
+    { id: "lens", type: "lens", position: [0, 100, -150], orientation: fromYawDeg(90), lensShape: "plano-convex", focalLength: 100 },
+    { id: "pd", type: "photodiode", position: [0, 100, -300], orientation: fromYawDeg(90), label: "PD" },
   ],
   beams: [{ id: "probe", path: ["laser", "m1", "lens", "pd"], color: "#dc2626", label: "probe" }],
   connections: [],
@@ -206,12 +210,18 @@ function inlineJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+/** A part as the brief asks for it: a \`yaw\` where the builder saves an orientation. */
+function asWritten({ orientation, ...rest }: BuilderComponent): Record<string, unknown> {
+  const { id, type, position, ...others } = rest;
+  return { id, type, position, yaw: componentYaw({ orientation }), ...others };
+}
+
 /** The example with one line per component, beam and frame. */
 function exampleJson(): string {
   const lists = (["components", "beams", "connections", "frames", "groups"] as const).map((key) => {
     const items = EXAMPLE_SETUP[key];
     if (!items.length) return `  "${key}": []`;
-    return `  "${key}": [\n${items.map((item) => `    ${inlineJson(item)}`).join(",\n")}\n  ]`;
+    return `  "${key}": [\n${items.map((item) => `    ${inlineJson(key === "components" ? asWritten(item as BuilderComponent) : item)}`).join(",\n")}\n  ]`;
   });
   return `{\n  "version": ${EXAMPLE_SETUP.version},\n${lists.join(",\n")}\n}`;
 }
@@ -238,16 +248,16 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 ## Angles
 
-\`rotation\` is a yaw in degrees about the vertical axis. At 0 a part faces along +x. A positive angle turns it counter-clockwise as seen from above (in the top-down view): at 90 its +x points along −z, at 180 along −x, at 270 along +z. Use multiples of ${ROTATION_STEP_DEG} where you can.
+Give each part a \`yaw\`, degrees about the vertical axis; the builder saves it as the part's \`orientation\`, a quaternion you should not write by hand. A part can also be pitched or rolled in the builder; a file written with \`yaw\` alone keeps every part level. At 0 a part faces along +x. A positive angle turns it counter-clockwise as seen from above (in the top-down view): at 90 its +x points along −z, at 180 along −x, at 270 along +z. Use multiples of ${ROTATION_STEP_DEG} where you can.
 
-- **Beams are not traced.** A beam is drawn as straight lines between the parts in its \`path\`, whatever way they face. A rotation only makes the drawing look right, so to turn a beam, put a mirror at the corner in its path.
-- A **laser** or **fibre collimator** emits along its own +x: rotation 0 fires toward +x, 90 toward −z, 180 toward −x, 270 toward +z.
-- A part the beam passes through (a lens, waveplate, filter, iris, sample, objective, AOM, EOM, Faraday isolator or cavity) has its optical axis along its own x: rotation 0 for a beam along x, 90 for a beam along z. A **Faraday isolator** lets light through travelling along its +x, and its rejection port is on its +z side: draw light leaving that port as its own beam, starting at the isolator.
-- A **delay line** stands across a beam line: its port, at its position, holds two fold mirrors on the line that send the light down the rail to a V of two mirrors on the carriage, across and back, so it leaves along the line it came in on. Put it in the middle of a straight beam, \`[..., "m1", "delay", "m2", ...]\` with m1, delay and m2 in a line, and the builder turns it so its rail (along its −x) is perpendicular to the beam, on the side its rotation already faces: rotation 90 puts the rail toward +z, 270 toward −z, for a beam along x. The beam is drawn through the port; \`delayMinPathMm\` plus twice \`delayStageMm\` is added to its path length.
+- **Beams are not traced.** A beam is drawn as straight lines between the parts in its \`path\`, whatever way they face. A yaw only makes the drawing look right, so to turn a beam, put a mirror at the corner in its path.
+- A **laser** or **fibre collimator** emits along its own +x: yaw 0 fires toward +x, 90 toward −z, 180 toward −x, 270 toward +z.
+- A part the beam passes through (a lens, waveplate, filter, iris, sample, objective, AOM, EOM, Faraday isolator or cavity) has its optical axis along its own x: yaw 0 for a beam along x, 90 for a beam along z. A **Faraday isolator** lets light through travelling along its +x, and its rejection port is on its +z side: draw light leaving that port as its own beam, starting at the isolator.
+- A **delay line** stands across a beam line: its port, at its position, holds two fold mirrors on the line that send the light down the rail to a V of two mirrors on the carriage, across and back, so it leaves along the line it came in on. Put it in the middle of a straight beam, \`[..., "m1", "delay", "m2", ...]\` with m1, delay and m2 in a line, and the builder turns it so its rail (along its −x) is perpendicular to the beam, on the side its yaw already faces: yaw 90 puts the rail toward +z, 270 toward −z, for a beam along x. The beam is drawn through the port; \`delayMinPathMm\` plus twice \`delayStageMm\` is added to its path length.
 - A **translation stage** is a fixed visual mount on the table, separate from the delay line. Give a supported optic its id as \`mountStage\` to place the optic over it. Moving or turning the stage carries the optic; the stage adds no beam path length and has no travel setting. Only one optic can use each stage. Its optional \`stageAxes\` chooses the visible plates and thumbscrews, not motion.
-- A **periscope** is two parts: a \`periscope\` (its lower mirror, on the rod) and a \`periscope-top\` (its upper mirror) whose \`periscope\` field names it. Give both the same x and z and their own heights, and put both in the beam's path, one after the other: \`[..., "peri", "peri-top", ...]\`. The beam runs straight up (or down) between them, and that rise counts in its path length. Each mirror is turned by the builder to face its neighbour off to the side, like a mirror in the middle of a beam. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the rotation of the beam's direction of travel.
-- A **mirror** in the middle of a beam, and a **photodiode**, **camera**, **spectrometer** or **single-photon detector** at the end of one, are turned by the builder: the mirror to reflect the beam from the stop before it to the stop after, the detector to face the stop before it. Any rotation you write for them is replaced, so 0 will do. A mirror at either end of a path keeps the rotation you give it; its reflecting face looks along its +x.
-- A **beam cube**'s reflecting diagonal runs from its −x−z corner to its +x+z corner: at rotation 0, light travelling +x carries on along +x and is reflected toward +z; at rotation 90, light travelling +x is reflected toward −z. Draw the reflected arm as its own beam, starting at the cube.
+- A **periscope** is two parts: a \`periscope\` (its lower mirror, on the rod) and a \`periscope-top\` (its upper mirror) whose \`periscope\` field names it. Give both the same x and z and their own heights, and put both in the beam's path, one after the other: \`[..., "peri", "peri-top", ...]\`. The beam runs straight up (or down) between them, and that rise counts in its path length. Each mirror is turned by the builder to face its neighbour off to the side, like a mirror in the middle of a beam. An **objective**'s tip points along +x, toward the focus. A **beam block** takes the light on its −x face, so give it the yaw of the beam's direction of travel.
+- A **mirror** in the middle of a beam, and a **photodiode**, **camera**, **spectrometer** or **single-photon detector** at the end of one, are turned by the builder: the mirror to reflect the beam from the stop before it to the stop after, the detector to face the stop before it. Any yaw you write for them is replaced, so 0 will do. A mirror at either end of a path keeps the yaw you give it; its reflecting face looks along its +x.
+- A **beam cube**'s reflecting diagonal runs from its −x−z corner to its +x+z corner: at yaw 0, light travelling +x carries on along +x and is reflected toward +z; at yaw 90, light travelling +x is reflected toward −z. Draw the reflected arm as its own beam, starting at the cube.
 
 ## The file
 
@@ -311,8 +321,8 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 {
   "version": ${SCENE_VERSION},
   "components": [
-    { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "rotation": 0 },
-    { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "rotation": 0 }
+    { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "yaw": 0 },
+    { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "yaw": 0 }
   ],
   "beams": [],
   "connections": [{ "id": "if-cable", "kind": "cable", "from": "mixer", "to": "scope" }],

@@ -18,16 +18,21 @@ import {
   parseScene,
   serializeScene,
   settleAngles,
+  componentYaw,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
+
+const optionalYaw = (part?: BuilderComponent) => part && componentYaw(part);
+
 
 // A delay line stands across a beam line: fold mirrors at its port send the
 // light down its rail to a V of mirrors on its carriage and back, and it
 // leaves along the line it came in on. It adds its minimum delay and twice
 // how far its stage has travelled.
 
-const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [0, 100, 100], rotation: 0 };
-const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [200, 100, 50], rotation: 0, delayMinPathMm: 100, delayStageMm: 40 };
-const m2: BuilderComponent = { id: "m2", type: "mirror-mount", position: [0, 100, 0], rotation: 0 };
+const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [0, 100, 100], orientation: fromYawDeg(0) };
+const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [200, 100, 50], orientation: fromYawDeg(0), delayMinPathMm: 100, delayStageMm: 40 };
+const m2: BuilderComponent = { id: "m2", type: "mirror-mount", position: [0, 100, 0], orientation: fromYawDeg(0) };
 const beam: Beam = { id: "b", path: ["m1", "delay", "m2"], color: "#e33" };
 const components = [m1, delay, m2];
 
@@ -55,20 +60,20 @@ describe("a delay line", () => {
   });
 
   it("starts with its stage at the start of its travel, and holds the stage within it", () => {
-    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0 };
+    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], orientation: fromYawDeg(0) };
     assert.deepEqual(delaySetting(fresh), { minPath: DELAY_MIN_PATH_MM, travel: DELAY_TRAVEL_MM, stage: 0, path: DELAY_MIN_PATH_MM });
     assert.equal(delaySetting({ ...fresh, delayStageMm: 500 }).stage, DELAY_TRAVEL_MM);
     assert.equal(delaySetting({ ...fresh, delayStageMm: -5 }).stage, 0);
   });
 
   it("is about 12 cm long as it comes, its rail reaching the carriage's farthest setting", () => {
-    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0 };
+    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], orientation: fromYawDeg(0) };
     assert.equal(delayRailMm(fresh), DELAY_ARM_BASE_MM + DELAY_TRAVEL_MM + 30);
     assert.equal(delayRailMm({ ...fresh, delayTravelMm: 300 }) - delayRailMm(fresh), 250);
   });
 
   it("draws nothing of its minimum delay: the rail and carriage stay put", () => {
-    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0, delayStageMm: 20 };
+    const fresh: BuilderComponent = { id: "d", type: "delay-line", position: [0, 100, 0], orientation: fromYawDeg(0), delayStageMm: 20 };
     const longer = { ...fresh, delayMinPathMm: 3000 };
     assert.equal(delayRailMm(longer), delayRailMm(fresh));
     assert.equal(delayArmMm(longer), delayArmMm(fresh));
@@ -78,23 +83,23 @@ describe("a delay line", () => {
 
   it("measures a drag along its rail, whichever way it is turned", () => {
     // at 90 the rail (local −x) runs toward +z
-    const turned = { ...delay, position: [0, 100, 0] as [number, number, number], rotation: 90 };
+    const turned = { ...delay, position: [0, 100, 0] as [number, number, number], orientation: fromYawDeg(90) };
     assert.ok(Math.abs(delayRailOffset(turned, 0, 30) - 30) < 1e-9);
     assert.ok(Math.abs(delayRailOffset(turned, 40, 30) - 30) < 1e-9);
-    assert.ok(Math.abs(delayRailOffset({ ...turned, rotation: 0 }, -25, 0) - 25) < 1e-9);
+    assert.ok(Math.abs(delayRailOffset({ ...turned, orientation: fromYawDeg(0) }, -25, 0) - 25) < 1e-9);
   });
 
   it("stands across a straight beam line, its rail on the side it already faces", () => {
-    const a: BuilderComponent = { id: "a", type: "mirror-mount", position: [0, 100, 0], rotation: 0 };
-    const b: BuilderComponent = { id: "b", type: "mirror-mount", position: [400, 100, 0], rotation: 0 };
-    const across = (rotation: number) =>
-      settleAngles({
+    const a: BuilderComponent = { id: "a", type: "mirror-mount", position: [0, 100, 0], orientation: fromYawDeg(0) };
+    const b: BuilderComponent = { id: "b", type: "mirror-mount", position: [400, 100, 0], orientation: fromYawDeg(0) };
+    const across = (yaw: number) =>
+      optionalYaw(settleAngles({
         version: SCENE_VERSION,
-        components: [a, { ...delay, position: [200, 100, 0], rotation }, b],
+        components: [a, { ...delay, position: [200, 100, 0], orientation: fromYawDeg(yaw) }, b],
         beams: [{ ...beam, path: ["a", "delay", "b"] }],
         connections: [],
         frames: [], groups: [],
-      }).components.find((part) => part.id === "delay")?.rotation;
+      }).components.find((part) => part.id === "delay"));
     // a beam along +x: the rail (local −x) points along +z at 90, −z at 270
     assert.equal(across(300), 270);
     assert.equal(across(60), 90);
@@ -124,7 +129,7 @@ describe("a delay line", () => {
   });
 
   it("opens one saved by its arm, port to retroreflector, with the same path through it", () => {
-    const bare: BuilderComponent = { id: "delay", type: "delay-line", position: [200, 100, 50], rotation: 0 };
+    const bare: BuilderComponent = { id: "delay", type: "delay-line", position: [200, 100, 50], orientation: fromYawDeg(0) };
     const old = parseScene({ version: SCENE_VERSION, components: [{ ...bare, delayMinMm: 60, delayMaxMm: 260, delayMm: 110 }] })!;
     assert.deepEqual(delaySetting(old.components[0]), { minPath: 120, travel: 200, stage: 50, path: 220 });
     // the old defaults filled what it left out: an arm of 50 to 350, at its shortest
@@ -136,8 +141,8 @@ describe("a delay line", () => {
 describe("the light inside a cavity or delay line", () => {
   it("keeps its colour and hidden flag through a setup file", () => {
     const lit = [
-      { id: "c", type: "cavity", position: [0, 100, 0], rotation: 0, lightColor: "#16a34a", lightHidden: true },
-      { id: "d", type: "delay-line", position: [0, 100, 0], rotation: 0, lightColor: "#0891b2" },
+      { id: "c", type: "cavity", position: [0, 100, 0], orientation: fromYawDeg(0), lightColor: "#16a34a", lightHidden: true },
+      { id: "d", type: "delay-line", position: [0, 100, 0], orientation: fromYawDeg(0), lightColor: "#0891b2" },
     ];
     const scene = parseScene({ version: SCENE_VERSION, components: lit })!;
     assert.deepEqual(
@@ -153,8 +158,8 @@ describe("the light inside a cavity or delay line", () => {
     const scene = parseScene({
       version: SCENE_VERSION,
       components: [
-        { id: "m", type: "mirror-mount", position: [0, 100, 0], rotation: 0, lightColor: "#16a34a", lightHidden: true },
-        { id: "c", type: "cavity", position: [0, 100, 0], rotation: 0, lightColor: "url(x)" },
+        { id: "m", type: "mirror-mount", position: [0, 100, 0], orientation: fromYawDeg(0), lightColor: "#16a34a", lightHidden: true },
+        { id: "c", type: "cavity", position: [0, 100, 0], orientation: fromYawDeg(0), lightColor: "url(x)" },
       ],
     })!;
     assert.equal(scene.components[0].lightColor, undefined);

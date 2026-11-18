@@ -13,6 +13,7 @@ import {
   SCENE_VERSION,
   settleAngles,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
 
@@ -27,7 +28,7 @@ const part = (id: string, type: ComponentType, [x, z]: [number, number], rotatio
   id,
   type,
   position: [x, 100, z],
-  rotation,
+  orientation: fromYawDeg(rotation),
 });
 
 const beam = (path: string[]): Beam => ({ id: "b", path, color: "#7c3aed" });

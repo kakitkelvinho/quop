@@ -3,14 +3,15 @@ import { describe, it } from "node:test";
 
 import { measureBeam } from "./beam-measurement.ts";
 import { type Beam, type BuilderComponent, DELAY_MIN_PATH_MM } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 // The distance labels along a beam: one per leg, the straight run between
 // reference points, plus a passed delay line's minimum delay.
 
-const laser: BuilderComponent = { id: "laser", type: "laser-source", position: [0, 100, 0], rotation: 0 };
-const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [300, 100, 0], rotation: 0 };
-const m2: BuilderComponent = { id: "m2", type: "mirror-mount", position: [300, 100, 400], rotation: 0 };
-const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [600, 100, 0], rotation: 0, delayStageMm: 20 };
+const laser: BuilderComponent = { id: "laser", type: "laser-source", position: [0, 100, 0], orientation: fromYawDeg(0) };
+const m1: BuilderComponent = { id: "m1", type: "mirror-mount", position: [300, 100, 0], orientation: fromYawDeg(0) };
+const m2: BuilderComponent = { id: "m2", type: "mirror-mount", position: [300, 100, 400], orientation: fromYawDeg(0) };
+const delay: BuilderComponent = { id: "delay", type: "delay-line", position: [600, 100, 0], orientation: fromYawDeg(0), delayStageMm: 20 };
 const beam = (path: string[]): Beam => ({ id: "b", path, color: "#e33" });
 
 describe("Beam distance labels", () => {

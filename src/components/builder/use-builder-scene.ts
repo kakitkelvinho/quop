@@ -44,6 +44,7 @@ import {
   type Frame,
   type Vec3,
 } from "@/components/builder/types";
+import { fromYawDeg } from "@/components/builder/quaternion";
 
 // The key predates scene versions 2 and 3; parseScene reads every version.
 const STORAGE_KEY = "quop.builder.scene.v1";
@@ -218,7 +219,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null) {
                 id: createComponentId("periscope-top"),
                 type: "periscope-top",
                 position: [x, clampHeight("periscope-top", defaultHeight(type) + PERISCOPE_RISE_MM), z],
-                rotation: 0,
+                orientation: fromYawDeg(0),
                 color: DEFAULT_MOUNT_COLOR,
                 periscope: id,
               },

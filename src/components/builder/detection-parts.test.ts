@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { clampHeight, heightRange, parseScene, serializeScene } from "./types.ts";
+import { clampHeight, heightRange, parseScene, serializeScene, componentYaw } from "./types.ts";
 
 // #107: the single-photon detector and the time tagger are new types, not a
 // new schema, so a version-2 file holding them opens and saves unchanged.
@@ -37,7 +37,7 @@ describe("a setup with a single-photon detector and a time tagger", () => {
   it("keeps the detector's height and label, turns it to the laser, and places it by its fibre receptacle", () => {
     // saved by its centre, at x = 0, before version 10: its receptacle is 30.5 mm toward the laser
     const spcm = open().components.find(({ id }) => id === "spcm-a");
-    assert.deepEqual([spcm?.position, spcm?.label, spcm?.rotation], [[-30.5, 100, 0], "SPCM A", 0]);
+    assert.deepEqual([spcm?.position, spcm?.label, spcm && componentYaw(spcm)], [[-30.5, 100, 0], "SPCM A", 0]);
   });
 
   it("stands the time tagger at its fixed height, whatever the file says", () => {

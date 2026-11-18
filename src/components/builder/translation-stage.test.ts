@@ -15,9 +15,10 @@ import {
   type BuilderComponent,
   type BuilderSceneData,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
-const stage: BuilderComponent = { id: "stage", type: "translation-stage", position: [100, 0, 50], rotation: 0 };
-const lens: BuilderComponent = { id: "lens", type: "lens", position: [100, 100, 50], rotation: 90, mountStage: "stage" };
+const stage: BuilderComponent = { id: "stage", type: "translation-stage", position: [100, 0, 50], orientation: fromYawDeg(0) };
+const lens: BuilderComponent = { id: "lens", type: "lens", position: [100, 100, 50], orientation: fromYawDeg(90), mountStage: "stage" };
 const scene: BuilderSceneData = { ...EMPTY_SCENE, components: [stage, lens] };
 
 describe("fixed translation stage", () => {
@@ -41,7 +42,7 @@ describe("fixed translation stage", () => {
     const mounted = settleStageMounts(before, setStageMount(before, "lens", "stage"));
     assert.equal(mounted.components[1].mountStage, "stage");
     assert.deepEqual(mounted.components[1].position, [100, 100, 50]);
-    assert.equal(mounted.components[1].rotation, 90);
+    assert.deepEqual(mounted.components[1].orientation, fromYawDeg(90));
     assert.deepEqual(mounted.groups, before.groups);
     const detached = settleStageMounts(mounted, setStageMount(mounted, "lens", undefined));
     assert.equal(detached.components[1].mountStage, undefined);
@@ -49,7 +50,7 @@ describe("fixed translation stage", () => {
   });
 
   it("leaves incompatible parts and occupied stages alone", () => {
-    const other = { id: "other", type: "lens" as const, position: [100, 100, 50] as [number, number, number], rotation: 0 };
+    const other = { id: "other", type: "lens" as const, position: [100, 100, 50] as [number, number, number], orientation: fromYawDeg(0) };
     const occupied = { ...scene, components: [...scene.components, other] };
     assert.equal(setStageMount(occupied, "other", "stage"), occupied);
     assert.equal(setStageMount(occupied, "stage", "stage"), occupied);
@@ -61,21 +62,21 @@ describe("fixed translation stage", () => {
     const next = { ...scene, components: [stage, { ...lens, position: [300, 100, 75] as [number, number, number] }] };
     const settled = settleStageMounts(null, next);
     assert.deepEqual(settled.components[1].position, [100, 100, 50]);
-    assert.equal(settled.components[1].rotation, 90);
+    assert.deepEqual(settled.components[1].orientation, fromYawDeg(90));
   });
 
   it("carries the optic when the stage moves or turns, and lets the optic keep its own yaw edits", () => {
     const moved = settleStageMounts(scene, {
       ...scene,
-      components: [{ ...stage, position: [125, 0, 75], rotation: 15 }, lens],
+      components: [{ ...stage, position: [125, 0, 75], orientation: fromYawDeg(15) }, lens],
     });
     assert.deepEqual(moved.components[1].position, [125, 100, 75]);
-    assert.equal(moved.components[1].rotation, 105);
+    assert.deepEqual(moved.components[1].orientation, fromYawDeg(105));
     const opticTurned = settleStageMounts(moved, {
       ...moved,
-      components: [moved.components[0], { ...moved.components[1], rotation: 120 }],
+      components: [moved.components[0], { ...moved.components[1], orientation: fromYawDeg(120) }],
     });
-    assert.equal(opticTurned.components[1].rotation, 120);
+    assert.deepEqual(opticTurned.components[1].orientation, fromYawDeg(120));
   });
 
   it("moves the stage when its mounted optic is dragged", () => {
@@ -109,7 +110,7 @@ describe("fixed translation stage", () => {
     const opened = parseScene({
       ...scene,
       beams: [{ id: "beam", path: ["lens", "stage", "other"], color: "#ff0000" }],
-      components: [...scene.components, { id: "other", type: "lens", position: [200, 100, 50], rotation: 0 }],
+      components: [...scene.components, { id: "other", type: "lens", position: [200, 100, 50], orientation: fromYawDeg(0) }],
     });
     assert.deepEqual(opened?.beams[0]?.path, ["lens", "other"]);
   });

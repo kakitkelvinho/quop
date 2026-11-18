@@ -8,7 +8,12 @@ import {
   derivedAngleBeam,
   SCENE_VERSION,
   settleAngles,
+  componentYaw,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
+
+const optionalYaw = (part?: BuilderComponent) => part && componentYaw(part);
+
 
 // #81: a detector that ends a beam faces the light arriving at it, the stop
 // before it on that beam. Yaw 0 points a detector's face west (−x).
@@ -17,7 +22,7 @@ const part = (id: string, type: ComponentType, x: number, z: number, rotation = 
   id,
   type,
   position: [x, 60, z],
-  rotation,
+  orientation: fromYawDeg(rotation),
 });
 
 function scene(components: BuilderComponent[], paths: string[][]): BuilderSceneData {
@@ -31,7 +36,7 @@ function scene(components: BuilderComponent[], paths: string[][]): BuilderSceneD
 }
 
 const yawOf = (data: BuilderSceneData, id: string) =>
-  data.components.find((component) => component.id === id)?.rotation;
+  optionalYaw(data.components.find((component) => component.id === id));
 
 describe("a photodiode that ends a beam", () => {
   it("faces a laser due west of it", () => {

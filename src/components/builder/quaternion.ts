@@ -58,7 +58,9 @@ export function canonical(q: Quat): Quat {
     const first = x !== 0 ? x : y !== 0 ? y : z;
     if (first < 0) sign = -1;
   }
-  const k = sign / len;
+  // Dividing by a length that is 1 within rounding can still move the last bit,
+  // and then a Setup opened and saved again would not be byte-identical.
+  const k = Math.abs(len - 1) <= 4 * Number.EPSILON ? sign : sign / len;
   // + 0 turns −0 into 0: deepStrictEqual tells them apart.
   return [x * k + 0, y * k + 0, z * k + 0, w * k + 0];
 }

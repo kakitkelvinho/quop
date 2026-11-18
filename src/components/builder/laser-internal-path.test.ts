@@ -8,6 +8,7 @@ import {
   type ComponentType,
   parseScene,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 // #94: a laser source can carry light before the aperture, a folded or internal
 // delay path. A beam that starts at the laser counts it toward its path length;
@@ -18,7 +19,7 @@ const part = (id: string, type: ComponentType, x: number, extra: Partial<Builder
   id,
   type,
   position: [x, 100, 0],
-  rotation: 0,
+  orientation: fromYawDeg(0),
   ...extra,
 });
 
@@ -60,7 +61,7 @@ describe("a laser's built-in path", () => {
   it("starts on the table at the opening, the laser's position, however it is turned", () => {
     const bare = part("laser", "laser-source", 0);
     assert.equal(measureBeam([bare, part("m", "mirror-mount", 300)], beam(["laser", "m"])).lengthMm, 300);
-    const turned = { ...bare, rotation: 90 };
+    const turned = { ...bare, orientation: fromYawDeg(90) };
     assert.equal(measureBeam([turned, { ...part("m", "mirror-mount", 0), position: [0, 100, -300] }], beam(["laser", "m"])).lengthMm, 300);
   });
 

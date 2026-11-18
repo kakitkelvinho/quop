@@ -14,6 +14,7 @@ import {
   fieldValue,
   parseScene,
 } from "./types.ts";
+import { fromYawDeg } from "./quaternion.ts";
 
 // COMPONENT_FIELDS describes each optional Component field once. These open
 // one-part setups to check that every field is read as its entry says: held
@@ -53,9 +54,9 @@ const GOOD: Record<KindField, unknown> = {
 
 /** What a part refers to by id: a cavity for a particle's host, a periscope for its top mirror. */
 function partner(type: ComponentType): Record<string, unknown>[] {
-  if (STAGE_MOUNTABLE_TYPES.has(type)) return [{ id: "host", type: "translation-stage", position: [0, 0, 0], rotation: 0 }];
-  if (type === "particle") return [{ id: "host", type: "cavity", position: [0, 100, 0], rotation: 0 }];
-  if (type === "periscope-top") return [{ id: "host", type: "periscope", position: [0, 100, 0], rotation: 0 }];
+  if (STAGE_MOUNTABLE_TYPES.has(type)) return [{ id: "host", type: "translation-stage", position: [0, 0, 0], orientation: fromYawDeg(0) }];
+  if (type === "particle") return [{ id: "host", type: "cavity", position: [0, 100, 0], orientation: fromYawDeg(0) }];
+  if (type === "periscope-top") return [{ id: "host", type: "periscope", position: [0, 100, 0], orientation: fromYawDeg(0) }];
   return [];
 }
 
@@ -63,7 +64,7 @@ function partner(type: ComponentType): Record<string, unknown>[] {
 function opened(type: ComponentType, extra: Record<string, unknown>, version: number = SCENE_VERSION): BuilderComponent {
   const scene = parseScene({
     version,
-    components: [...partner(type), { id: "p", type, position: [0, 100, 0], rotation: 0, ...extra }],
+    components: [...partner(type), { id: "p", type, position: [0, 100, 0], orientation: fromYawDeg(0), ...extra }],
     beams: [],
   });
   const part = scene?.components.find((component) => component.id === "p");
@@ -164,7 +165,7 @@ describe("COMPONENT_FIELDS", () => {
   it("gives a part's own value over the default", () => {
     for (const field of FIELDS) {
       for (const type of kindsWith(field)) {
-        const part = { id: "p", type, position: [0, 100, 0], rotation: 0, [field]: GOOD[field] } as BuilderComponent;
+        const part = { id: "p", type, position: [0, 100, 0], orientation: fromYawDeg(0), [field]: GOOD[field] } as BuilderComponent;
         assert.deepEqual(fieldValue(part, field), GOOD[field], `${type}: ${field}`);
       }
     }

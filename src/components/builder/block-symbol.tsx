@@ -54,10 +54,10 @@ function SymbolInk({ symbol, color }: { symbol: BlockSymbol; color: string }) {
   );
 }
 
-export function BlockSymbolFaces({ symbol, size, axis, color, rotation }: { symbol: BlockSymbol; size: Vec3; axis: number; color: string; rotation: number }) {
+export function BlockSymbolFaces({ symbol, size, axis, color, yaw: yawDeg }: { symbol: BlockSymbol; size: Vec3; axis: number; color: string; yaw: number }) {
   const [dx, dy, dz] = size;
   const topScale = Math.min(dx, dz) / 56;
-  const yaw = rotation * Math.PI / 180;
+  const yaw = yawDeg * Math.PI / 180;
   const localX = Math.cos(yaw) - Math.sin(yaw);
   const localZ = Math.sin(yaw) + Math.cos(yaw);
   const zFace = Math.abs(localZ) >= Math.abs(localX);
