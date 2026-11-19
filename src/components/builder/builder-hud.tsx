@@ -58,6 +58,7 @@ import {
   serializeScene,
 } from "@/components/builder/types";
 import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
+import { PrototypeBeamsBox, usePrototype } from "@/components/builder/prototype-traced-display";
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
@@ -1625,6 +1626,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   ];
   // a list hidden from the rail leaves the page; a minimised one stays, hidden, so it keeps its place
   const listOn = (id: ListId, count: number) => count > 0 && (panelsMove || !railHidden[id]);
+  const { variant: prototypeVariant } = usePrototype();
   const anyList =
     listOn("beams", beams.length + Number(props.trace !== null)) || listOn("frames", props.frames.length) || listOn("groups", props.groups.length);
 
@@ -1762,7 +1764,17 @@ export default function BuilderHud(props: BuilderHudProps) {
         {/* the lists stack up from the rail, like windows over a taskbar */}
         {anyList ? (
           <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
-            {listOn("beams", beams.length + Number(props.trace !== null)) ? (
+            {prototypeVariant !== "now" && props.trace ? (
+              <PrototypeBeamsBox
+                components={components}
+                beams={beams}
+                trace={props.trace}
+                selectedBeamId={selectedBeam?.id ?? null}
+                onSelectBeam={props.onSelectBeam}
+                onSetHidden={props.onSetBeamHidden}
+                onSelectComponent={props.onSelectComponent}
+              />
+            ) : listOn("beams", beams.length + Number(props.trace !== null)) ? (
               <BeamList
                 components={components}
                 beams={beams}

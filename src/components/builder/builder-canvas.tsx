@@ -55,6 +55,7 @@ import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
 import { tracePathContains, type TraceResult } from "@/components/builder/trace-scene";
 import { traceGuideGeometry } from "@/components/builder/trace-guide";
+import { PrototypeTableLight, usePrototype } from "@/components/builder/prototype-traced-display";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
 import {
@@ -1345,6 +1346,7 @@ export default function BuilderCanvas({
   // what hidden groups and frames leave in the drawing; hidden parts still
   // count in path lengths and angle mirrors, so only drawing reads this
   const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
+  const { variant: prototypeVariant } = usePrototype();
   const matchedDrawnBeamIds = useMemo(() => new Set(trace?.matchedDrawnBeamIds ?? []), [trace]);
   const selectedTraceBeam = beams.find((beam) => beam.id === selectedBeamId && matchedDrawnBeamIds.has(beam.id) && !beam.hidden);
   const selectedTracePath = selectedTraceBeam && trace?.trees.flatMap((tree) => tree.segments).findLast((segment) =>
@@ -1541,8 +1543,12 @@ export default function BuilderCanvas({
         );
       })}
 
-      {trace ? <TraceGuides trace={trace} beams={beams} /> : null}
-      {trace && selectedTraceBeam && selectedTracePath ? trace.trees.flatMap((tree) => tree.segments.map((segment, index) =>
+      {trace && prototypeVariant !== "now" ? (
+        <PrototypeTableLight trace={trace} beams={beams} selectedBeamId={selectedBeamId} BeamPath={BeamPath} BeamHit={BeamHit}
+          onBeamClick={onBeamClick} interactive={beamsInteractive} />
+      ) : null}
+      {trace && prototypeVariant === "now" ? <TraceGuides trace={trace} beams={beams} /> : null}
+      {trace && prototypeVariant === "now" && selectedTraceBeam && selectedTracePath ? trace.trees.flatMap((tree) => tree.segments.map((segment, index) =>
         segment.path.length <= selectedTracePath.length && segment.path.every((id, at) => selectedTracePath[at] === id) ? (
           <BeamPath
             key={`${tree.laserId}-${index}`}

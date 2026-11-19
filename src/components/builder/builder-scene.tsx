@@ -35,6 +35,8 @@ import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene
 import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
 import { readTracedFlag } from "@/components/builder/traced-flag";
 import { traceScene } from "@/components/builder/trace-scene";
+import { PrototypeSwitcher, usePrototype } from "@/components/builder/prototype-traced-display";
+import { scenarioTrace } from "@/components/builder/prototype-traced-routes";
 import { effectiveBeams } from "@/components/builder/beam-branches";
 import { canAim, settleAims } from "@/components/builder/aim-settling";
 import { upgradeNotice } from "@/components/builder/setup-upgrade";
@@ -325,7 +327,11 @@ export default function BuilderScene() {
   const palette = useScenePalette();
   const { scene } = api;
   const [openingScene] = useState(scene);
-  const trace = useMemo(() => traced ? traceScene(scene) : null, [traced, scene]);
+  const { scenario: prototypeScenario } = usePrototype();
+  const trace = useMemo(() => {
+    const real = traced ? traceScene(scene) : null;
+    return real ? scenarioTrace(real, scene.beams, prototypeScenario) : null;
+  }, [traced, scene, prototypeScenario]);
   const aimStatuses = useMemo(() => traced ? settleAims(scene).statuses : null, [traced, scene]);
 
   // component ids in the order they were picked; the last is the primary
@@ -1772,6 +1778,7 @@ export default function BuilderScene() {
         ) : null}
       </div>
 
+      <PrototypeSwitcher />
       <BuilderHud
         components={scene.components}
         beams={shownBeams}
