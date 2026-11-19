@@ -28,7 +28,7 @@ The default height, 100 mm, that a component gets when first placed: the height 
 _Avoid_: optical axis
 
 **Beam**:
-An author-drawn, ordered path through components, recording where the light is meant to go. It is not a ray trace; a beam between two components at different heights slopes.
+Light traced from a Laser source through Component surfaces in 3D. The trace follows each Component's optical rule, so a Beam can split, reflect, pass through, miss an aperture or stop. An author may save an ordered path through Components to record the intended route and give a branch its colour, label and visibility. A saved path that disagrees with the trace remains visible as a hand-drawn Beam.
 _Avoid_: ray, trace
 
 **Aim**:
@@ -38,23 +38,22 @@ The Component a Mirror or Beam cube sends reflected light toward. The Tabletop w
 The side an unaimed Mirror or Beam cube sends incoming light toward at 45°. Its saved value is `1` or `-1`; F flips the side.
 
 **Traced beam**:
-Light followed from a Laser source through Component surfaces in 3D. While the traced flag is on, it is drawn as a dashed overlay beside the author's Beams; the Beam list and saved Setup still keep the author's paths.
+The visible result of following light from a Laser source through Component surfaces. It is drawn as a dashed line in the Tabletop. For one release, `?traced=0` restores the earlier drawn-Beam view.
 
 **Beam tree**:
-The paths one Laser source's traced light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.
-Author-drawn Beams with the same first Component also form a saved tree: one Beam is the trunk and later Beams can name a parent branch. A branch may inherit its parent's colour, label and hidden state until it sets its own. The author-drawn tree records intent; the traced tree follows surfaces.
+The paths one Laser source's light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.
+Saved Beam paths with the same first Component form a matching tree: one is the trunk and later paths can name a parent branch. A branch may inherit its parent's colour, label and hidden state until it sets its own. The saved tree records intent and appearance; the traced tree follows surfaces.
 
 **Beam list**:
-A setup's beams in the order the author keeps them, shown in the beams box and saved with the setup. The order is the author's to change; where two beams pass through one mirror, the first in the list sets its angle.
-Branch indentation in the beams box shows parentage while each row remains in Beam list order.
+A Setup's saved Beam paths in the order the author keeps them, shown in the beams box and saved with the Setup. When two aimed Components send light to the same Mirror, the first path in this list chooses which incoming direction settles its orientation. Branch indentation shows parentage while each row remains in list order. A saved path that agrees with traced light styles that branch without drawing a second Beam; a path that differs remains visible as a hand-drawn Beam.
 _Avoid_: beam order, layer order
 
 **Hidden beam**:
-A beam the author has switched off in the drawing, from its eye button in the beams box, so it is left out of the view and of a PNG export. Only the drawing changes: it keeps its row in the beam list, still counts in path lengths, and still angles the mirrors and detectors it passes. Saved with the setup. Selecting a hidden beam shows it on screen as a faint glow so it can still be edited; the export still leaves it out.
+A saved Beam branch the author has switched off with its eye button in the beams box. Its traced segments and any hand-drawn path are left out of the view and PNG export. It keeps its row and still counts in Path lengths; hiding it does not change the light's physical route or any Component orientation. The hidden state is saved with the Setup. Selecting a hidden hand-drawn path shows a faint glow on screen so it can still be edited; the export leaves it out.
 _Avoid_: deleted beam, disabled beam, muted beam
 
 **Path length**:
-The 3D length of a beam through its components' reference points, in mm; the basis of its time of flight. When a beam starts at a laser with a built-in path, that path counts too, once; a laser later in the path adds nothing.
+The 3D length of a traced Beam through the Component surfaces it reaches, in mm; the basis of its time of flight. A Laser source's built-in path and a Delay line's delay are added to the corresponding branch. A saved Beam path also retains its measured length when it disagrees with the trace.
 
 **Reference point**:
 Where a beam meets a component, for drawing and for path length. For most components it is the optical centre. A detector's is its entrance: a photodiode's or single-photon detector's front window, a camera's lens-mount face, a spectrometer's entrance port. An objective's is its threaded plate, the pupil end, whichever side the beam comes from. A laser source's is its output face, where the light leaves it, and a fibre collimator's its lens window, where light leaves or enters the fibre. A component with a port is placed, snapped and saved by it, its body drawn behind; the distance between two positions is the beam between them.

@@ -53,7 +53,7 @@ type Mutation = (scene: BuilderSceneData) => BuilderSceneData;
 
 /**
  * Every edit settles hosted positions and orientations. Drawn Beams control
- * angles in the default mode; physical aims control them in traced mode.
+ * angles only in the temporary fallback mode; physical aims control them normally.
  */
 function settled(mutate: Mutation, traced: boolean): Mutation {
   return (scene) => {
@@ -149,7 +149,7 @@ function initialState(opening: BuilderSceneData | null, traced: boolean): Histor
 }
 
 /** `opening` is a setup the table opens with in place of the autosaved one, such as a shared link's. */
-export function useBuilderScene(opening: BuilderSceneData | null = null, traced = false) {
+export function useBuilderScene(opening: BuilderSceneData | null = null, traced = true) {
   const [state, dispatch] = useReducer(reducer, opening, (start) => initialState(start, traced));
   const { scene } = state;
 

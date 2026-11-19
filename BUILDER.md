@@ -35,19 +35,17 @@ itself never scales. The lowest height is where the post runs out, or where a
 floating part meets the table; the ceiling is 300 mm. A spectrometer's
 height is its input port's (50–300 mm); its box stands on the table and is
 drawn as tall as the port needs. The time tagger is the exception: it sits on
-the table with its inputs at 27 mm. A beam between parts at
-different heights slopes, and its path length and time of flight are 3D.
+the table with its inputs at 27 mm. Traced light can climb between aimed
+mirrors at different heights; its path length and time of flight are 3D.
 
-**Beams are drawn, not traced.** A beam is an ordered list of the components it
-visits. The builder does not compute reflection or refraction, and deliberately
-so: a lab diagram records what you *intend* the light to do, and a half-correct
-ray trace would quietly disagree with the setup you are documenting. The cost is
-that a beam can be drawn through a part that would not really steer it; the
-benefit is that any layout can be expressed, including ones the simulator would
-get wrong.
+**Beams are traced.** Light leaves each Laser source and meets Component
+surfaces in 3D. Mirrors reflect, Beam cubes split it, and apertures can be
+missed. An ordered saved Beam path still records the route the author intends
+and gives a traced branch its colour, label and visibility. When that path
+disagrees with the trace, it stays drawn so the author can inspect it.
 
-**Path length is the payoff.** Because a beam is a polyline with real
-millimetres, its length and vacuum time of flight fall out for free. Both are
+**Path length is the payoff.** Traced segments have real 3D lengths, so
+their total length and vacuum time of flight fall out. Both are
 shown per beam, which is the number a pump–probe delay line is actually built
 around. A laser source can also carry a built-in path (0–100 000 mm, set in
 its inspector, empty for none): light it adds before the aperture, such as a
@@ -85,19 +83,17 @@ as before; before the ports existed at all, beams measured a few millimetres
 differently at a detector, 56 mm longer from a laser and 10.5 mm longer at a
 fibre collimator.
 
-**Beams can be told apart.** Each beam has its own width (a drawn diameter in
-millimetres, 0.5–10 mm, 2 mm by default, so it scales with the zoom like the
-parts) and opacity (10–100%), set with the sliders in its inspector. A
-selected beam is drawn fully opaque with a stronger halo, however faint it
-is, so clicking its row in the beams box always finds it.
+**Beams can be told apart.** Saved paths give traced branches their colours.
+A path that disagrees with the trace keeps its own width (a drawn diameter
+in millimetres, 0.5–10 mm, 2 mm by default) and opacity (10–100%), set in
+its inspector. A selected hand-drawn Beam has a stronger halo.
 
 **Hide a beam for a figure.** Each beam's row in the beams box has an eye
 button that hides or shows it on the table, to drop a reference arm out of a
-PNG without deleting it. Hiding changes the drawing only: a hidden beam is not
-drawn and is not in the export, but its row stays in the box, dimmed, with its
-length, and it still counts in path lengths, still angles the mirrors and
-detectors it passes, and can still be selected and edited from its row.
-Selecting a hidden beam draws it on screen as a faint glow, with no core and no
+PNG without deleting it. Hiding changes the drawing only: its traced branch
+and any hand-drawn path are absent from the view and export, but its row stays
+in the box, dimmed, with its length. Hiding changes no Component orientation.
+Selecting a hidden hand-drawn Beam draws it on screen as a faint glow, with no core and no
 arrows, so you can see what you are editing; the export still leaves it out. Hidden is
 saved with the setup (scene version 4; older setups open with every beam
 shown) and each toggle is one undo step.
@@ -207,14 +203,12 @@ is what puts an off-grid lens back on the line the grid cannot reach. Elsewhere 
 grid still applies. With several beams through the part the first in the beam
 list is used, and dragging a group of parts skips the lock.
 
-**A mirror in a beam angles itself.** A mirror that is a stop in the middle
-of a beam (not its first or last) turns so its face bisects the directions to
-the stops before and after it, and re-angles live as any of the three moves.
-Its yaw is then read-only in the inspector, and `R` does nothing. If two beams
-pass through it, the first in the beam list wins, and the inspector names it
-("Angle set by …"); moving a beam up or down the list hands the mirror to the
-other. A mirror on no beam, or only at a beam's end, turns by
-hand. Beam cubes always turn by hand.
+**A mirror aims at a Component.** Its reflected light follows its saved aim,
+and its orientation settles from the incoming direction and that target.
+Without an aim it folds 45°; F flips the side. A free Mirror keeps its
+hand-turned orientation. Beam cubes use the same rule for their reflected
+branch and also transmit light. If two aimed Components send light to the
+same Mirror, the first saved Beam path chooses its incoming direction.
 
 **A delay line adds its path.** A delay line is a translation stage
 that stands across a beam line, as one does on a real table: two fold mirrors
@@ -235,10 +229,9 @@ one undo step per drag. A
 beam through it (a stop in the middle) is drawn to the port and away from it,
 and gains the minimum delay plus twice the position each time it passes,
 which its inspector names ("Includes … mm in delay lines"). A beam that only
-starts or ends at it gains nothing. It turns itself, like a mirror: its rail
-stays perpendicular to the light through its port, on whichever side of the
-line it already faces, so turning it 180° by hand puts the rail on the other
-side.
+starts or ends at it gains nothing. Its orientation is set by hand in traced
+mode. The old drawn-mode fallback still settles its rail perpendicular to the
+saved Beam path.
 
 **A translation stage is a fixed mount.** The standalone translation stage in
 Other starts with an XY drawing. Its inspector's X, Y and Z boxes choose which
@@ -410,7 +403,7 @@ group or any of its groups is shown; a frame when it isn't hidden itself and,
 by the same rule, by its groups; a beam, whole and untrimmed, when it isn't
 hidden itself and any of its stops is shown; a connection when either end is.
 Like a hidden beam, hiding changes only the drawing: hidden parts still count
-in path lengths and still angle mirrors and detectors, and they can't be
+in path lengths without changing Component orientation, and they can't be
 clicked, box-selected or picked by `⌘A`. A PNG leaves them out. Deleting a
 group ungroups its members, which stay on the table; deleting a part or frame
 takes it out of every group, and a group it empties stays until it is deleted.
@@ -629,14 +622,14 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Move several | Drag any selected part: it snaps to the grid and the rest keep their spacing from it. Arrow keys nudge them all. One undo step either way. A particle moves with its host when both are selected; selected without its host, it lets go |
 | Raise / lower | Type a height in the inspector |
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
-| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw (not a mirror in the middle of a beam, or a detector at a beam's end: they angle themselves). Several parts turn 15° about their centre, each with them; a mirror or detector a beam angles swings round and re-angles |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw. An aimed Mirror or Beam cube settles its orientation from incoming light and its target; free optics and detectors keep their hand-set orientation. Several parts turn 15° about their centre |
 | Slide a delay line's stage | Select it and drag the bubble on its carriage's thumbscrew along the rail, or set Position in its inspector |
 | Mount an optic on a translation stage | Place the stage from Other, select it and one compatible optic with Ctrl/⌘ click, then press Mount in their inspector; the optic's Mount on stage menu also works |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | + → Beam at the top left, or the empty Beams slot on the rail; click parts in order, `Enter`. The + (or the slot) pressed again stops |
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
-| Hide or show a beam | The eye button on its row in the beams box. A hidden beam isn't drawn or exported; its row stays, dimmed, and it still angles mirrors and counts in path lengths. Selecting it draws a faint glow on screen, not in the export, so it can be edited. One undo step |
+| Hide or show a beam | The eye button on its row in the beams box. A hidden branch and any hand-drawn path are absent from the view and export; its row stays, dimmed. Hiding does not alter the light's route or Component orientation. Selecting a hidden hand-drawn path shows a faint glow on screen for editing. One undo step |
 | Add, move or edit a frame | + → Frame, or the empty Frames slot on the rail, draws one (pressed again, it stops): drag for a rectangle, or click corners (each side snaps to x or z and the grid, `⇧` for fine steps) and double-click, click the first corner or press `Enter` to close it; `⌫` removes the last corner, `Esc` cancels; the finished frame is selected, one undo step. Drag an unselected frame's edge to select and move it whole (`⇧` for fine steps). On a selected frame, drag a side in or out or drag a corner handle to reshape it (stops at the last valid outline, one undo step per drag); `Alt`-drag or the arrow keys move it whole, `Delete` removes it. Label, colour and Fill are in its inspector, and a rectangle's width and depth (any other shape shows its overall size); Fill off draws the outline alone, on screen and in the PNG, as one undo step |
 | Hide, show, reorder or delete a frame | The eye and trash buttons on its row in the Frames box; drag the row to a new place (or focus it and press `Alt+↑` / `Alt+↓`). A hidden frame isn't drawn or exported; its row stays, dimmed. One undo step |
 | Edit a beam's path | Select it; in its stop list, drag a stop's row to a new place (the rows open a gap where it will land; `Esc` cancels; a focused row also moves with `Alt+↑` / `Alt+↓`), or remove it (a beam keeps 2 stops). A drop or move that would put the same part twice in a row is refused, and says why. **Add stops**, then click parts to add them to the end in click order (a part already on the beam comes back as a revisit; the last stop can't follow itself); `Enter` / `Esc` to finish |

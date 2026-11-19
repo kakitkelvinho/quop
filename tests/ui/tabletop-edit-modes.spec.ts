@@ -13,6 +13,18 @@ async function topView(page: Page) {
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
 }
 
+test("traced light is the default and the drawn fallback lasts one visit", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  await expect(page.getByLabel("Traced Beam checks")).toBeVisible();
+  await expect(page.getByLabel("Traced Beam checks")).toContainText("No checks");
+
+  await page.goto("builder/tabletop/?traced=0");
+  await expect(page.getByLabel("Traced Beam checks")).toHaveCount(0);
+
+  await page.goto("builder/tabletop/");
+  await expect(page.getByLabel("Traced Beam checks")).toBeVisible();
+});
+
 test("switching drawing tools discards the previous draft", async ({ page }) => {
   await page.goto("builder/tabletop/");
   await topView(page);

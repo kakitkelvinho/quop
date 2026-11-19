@@ -77,7 +77,7 @@ function fadedByGroups(held: Group[] | undefined): boolean {
  * A component is shown when it is in no group, or any of its groups is shown.
  * A frame is shown when it isn't hidden itself and, by the same rule, by its
  * groups. Hiding changes only the drawing: a hidden component still counts in
- * path lengths and still angles mirrors and detectors.
+ * path lengths. Hiding does not change light or Component orientation.
  */
 export function visibility(scene: Pick<BuilderSceneData, "components" | "frames" | "groups">): Visibility {
   const byMember = groupsByMember(scene.groups);

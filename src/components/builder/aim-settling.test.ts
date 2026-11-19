@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import fc from "fast-check";
 
 import { aimAt, catchAims, flipFold, insertIntoAimedPath, settleAims } from "./aim-settling.ts";
-import { length, normalize, type Vec3 } from "./quaternion.ts";
+import { fromYawDeg, length, normalize, type Vec3 } from "./quaternion.ts";
 import { traceScene } from "./trace-scene.ts";
 import { newComponent, SCENE_VERSION, type Beam, type BuilderComponent, type BuilderSceneData } from "./types.ts";
 
@@ -38,6 +38,18 @@ describe("aim settling", () => {
     assert.equal(settled.statuses.get("m1")?.kind, "aimed");
     assert.equal(settled.statuses.get("m2")?.kind, "aimed");
     assert.deepEqual(traceScene(settled.scene).trees[0].segments.slice(0, 3).map((segment) => segment.toId), ["m1", "m2", "pd"]);
+  });
+
+  it("points a Beam cube's diagonal reflection at its aim while transmitting the other branch", () => {
+    const data = scene([
+      part("laser-source", "laser", 0, 100, 0),
+      { ...part("beam-splitter", "cube", 100, 100, 0), aim: "reflected" },
+      part("photodiode", "through", 200, 100, 0),
+      { ...part("photodiode", "reflected", 100, 100, 100), orientation: fromYawDeg(90) },
+    ]);
+    const result = traceScene(settleAims(data).scene);
+    assert.ok(result.trees[0].segments.some((segment) => segment.toId === "through"));
+    assert.ok(result.trees[0].segments.some((segment) => segment.toId === "reflected"));
   });
 
   it("flips an unaimed 45° Mirror to the other side and clears an aim", () => {
