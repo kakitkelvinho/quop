@@ -216,7 +216,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
         };
         if (!traced) return placed;
         const aimed = settleAims(placed).scene;
-        return catchAims(insertIntoAimedPath(aimed, id));
+        return catchAims(insertIntoAimedPath(aimed, id), id);
       });
       return id;
     },
@@ -307,7 +307,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
   ) })), [commit]);
   const finishAimDrag = useCallback((id: string) => {
     if (!traced) return;
-    preview((current) => catchAims(insertIntoAimedPath(current, id)));
+    preview((current) => catchAims(insertIntoAimedPath(current, id), id));
   }, [preview, traced]);
 
   const deleteComponents = useCallback(

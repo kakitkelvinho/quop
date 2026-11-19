@@ -155,14 +155,20 @@ export function aimAt(scene: BuilderSceneData, id: string, targetId: string): Bu
   ) };
 }
 
-export function catchAims(scene: BuilderSceneData): BuilderSceneData {
+/**
+ * On placing or releasing `releasedId`: an unaimed Mirror or Beam cube takes as its aim what its
+ * reflected light lands on, when either it or that target is the released Component. Others
+ * keep their state, so an F flip elsewhere is not undone (#390).
+ */
+export function catchAims(scene: BuilderSceneData, releasedId: string): BuilderSceneData {
   const byId = new Map(scene.components.map((component) => [component.id, component]));
   const caught = new Map<string, string>();
   for (const tree of traceScene(scene).trees) {
     for (const segment of tree.segments) {
       const from = segment.fromId && byId.get(segment.fromId);
       const target = segment.toId && byId.get(segment.toId);
-      if (from && target && canAim(from) && !from.aim && !from.free && target.type !== "laser-source" && segment.arm === "reflected" && !caught.has(from.id)) {
+      const released = from && target && (from.id === releasedId || target.id === releasedId);
+      if (released && canAim(from) && !from.aim && !from.free && target.type !== "laser-source" && segment.arm === "reflected" && !caught.has(from.id)) {
         caught.set(from.id, target.id);
       }
     }
