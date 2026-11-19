@@ -444,6 +444,8 @@ export default function BuilderScene() {
   useEffect(() => {
     const stored = readStoredQuality();
     if (!stored) return;
+    // localStorage is unreadable on the server, so the stored choice can only apply after mount
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuality(stored);
     setAutoQuality(false);
   }, []);
@@ -458,6 +460,8 @@ export default function BuilderScene() {
   // selection) ends Add stops when its beam is no longer selected.
   useEffect(() => {
     if (editMode.kind === "add-stops" &&
+      // the selection is changed from many places, so the mode follows it here
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       (selectedBeamId !== editMode.beamId || !scene.beams.some((beam) => beam.id === editMode.beamId))) endMode();
   }, [editMode, scene.beams, selectedBeamId, endMode]);
   const selectedConnection = useMemo(
