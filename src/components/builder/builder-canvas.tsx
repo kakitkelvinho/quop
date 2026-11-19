@@ -28,9 +28,11 @@ import {
 import {
   BackSide,
   Box3,
+  BufferGeometry,
   CanvasTexture,
   Color,
   DirectionalLight,
+  Float32BufferAttribute,
   MOUSE,
   Matrix4,
   Mesh,
@@ -51,10 +53,10 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
 import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
-import { beamForTracePath } from "@/components/builder/beam-branches";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
-import type { TraceResult } from "@/components/builder/trace-scene";
+import { tracePathContains, type TraceResult } from "@/components/builder/trace-scene";
+import { traceGuideGeometry } from "@/components/builder/trace-guide";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
 import {
@@ -94,6 +96,40 @@ import {
 } from "@/components/builder/types";
 
 export type CameraView = "iso" | "top";
+
+function TraceGuides({ trace, beams }: { trace: TraceResult; beams: Beam[] }) {
+  const geometry = useMemo(() => {
+    const data = traceGuideGeometry(trace, beams);
+    const result = new BufferGeometry();
+    result.setAttribute("position", new Float32BufferAttribute(data.positions, 3));
+    result.setAttribute("guideOpacity", new Float32BufferAttribute(data.opacity, 1));
+    return result;
+  }, [trace, beams]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <lineSegments geometry={geometry} renderOrder={3}>
+      <shaderMaterial
+        uniforms={{ guideColor: { value: new Color("#ff9d5c") } }}
+        vertexShader={`attribute float guideOpacity;
+          varying float vOpacity;
+          void main() {
+            vOpacity = guideOpacity;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }`}
+        fragmentShader={`uniform vec3 guideColor;
+          varying float vOpacity;
+          void main() {
+            gl_FragColor = vec4(guideColor, vOpacity);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }`}
+        transparent
+        depthTest={false}
+        depthWrite={false}
+      />
+    </lineSegments>
+  );
+}
 
 /** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
 const SNAP_GUIDE_Y_MM = 0.8;
@@ -1330,6 +1366,10 @@ export default function BuilderCanvas({
   // count in path lengths and angle mirrors, so only drawing reads this
   const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
   const matchedDrawnBeamIds = useMemo(() => new Set(trace?.matchedDrawnBeamIds ?? []), [trace]);
+  const selectedTraceBeam = beams.find((beam) => beam.id === selectedBeamId && matchedDrawnBeamIds.has(beam.id) && !beam.hidden);
+  const selectedTracePath = selectedTraceBeam && trace?.trees.flatMap((tree) => tree.segments).findLast((segment) =>
+    segment.toId === selectedTraceBeam.path.at(-1) && tracePathContains(segment.path, selectedTraceBeam.path),
+  )?.path;
   const shownComponents = useMemo(
     () => components.filter((component) => shown.components.has(component.id)),
     [components, shown],
@@ -1462,8 +1502,14 @@ export default function BuilderCanvas({
                   <sphereGeometry args={[5, 12, 8]} />
                   <meshBasicMaterial color={palette.accent} depthTest={false} />
                 </mesh>
-                <Html center style={{ pointerEvents: "none", whiteSpace: "nowrap", fontSize: 11, fontWeight: 700, color: palette.accent }}>Aim · F flip</Html>
               </group>
+            ) : null}
+            {shown ? (
+              <Html position={[point[0] + componentRadius(part) + 66, point[1] + 8, point[2]]} center>
+                <button type="button" className="builderAimHint" onPointerDown={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); onFlipAim(part.id); }} aria-label={`Flip ${part.label || part.id}`}>
+                  <kbd>F</kbd><span>Flip</span>
+                </button>
+              </Html>
             ) : null}
           </Fragment>
         );
@@ -1515,26 +1561,24 @@ export default function BuilderCanvas({
         );
       })}
 
-      {trace?.trees.flatMap((tree) => tree.segments.map((segment, index) => {
-        const branch = beamForTracePath(beams, segment.path);
-        if (branch?.hidden) return null;
-        return <Line
-          key={`${tree.laserId}-${index}`}
-          points={[
-            [segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]],
-            [segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]],
-          ]}
-          color={branch?.color ?? palette.accent}
-          lineWidth={1.5}
-          transparent
-          opacity={0.9}
-          dashed
-          dashSize={8}
-          gapSize={6}
-          depthTest={false}
-          renderOrder={3}
-        />;
-      }))}
+      {trace ? <TraceGuides trace={trace} beams={beams} /> : null}
+      {trace && selectedTraceBeam && selectedTracePath ? trace.trees.flatMap((tree) => tree.segments.map((segment, index) =>
+        segment.path.length <= selectedTracePath.length && segment.path.every((id, at) => selectedTracePath[at] === id) ? (
+          <Line
+            key={`${tree.laserId}-${index}`}
+            points={[
+              [segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]],
+              [segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]],
+            ]}
+            color={selectedTraceBeam.color}
+            lineWidth={2}
+            transparent
+            opacity={0.8}
+            depthTest={false}
+            renderOrder={4}
+          />
+        ) : null,
+      )) : null}
 
       {beamDraft.length >= 2 ? (
         <BeamPath

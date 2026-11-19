@@ -27,6 +27,21 @@ export type TraceCheck = {
 
 export type TraceResult = { trees: BeamTree[]; checks: TraceCheck[]; matchedDrawnBeamIds: string[] };
 
+export function tracePathContains(actual: string[], expected: string[]): boolean {
+  if (expected.length === 0) return true;
+  for (let start = 0; start <= actual.length - expected.length; start++) {
+    if (expected.every((id, index) => actual[start + index] === id)) return true;
+  }
+  return false;
+}
+
+export function tracedBeamLengthMm(trace: TraceResult, beam: { id: string; path: string[] }): number | undefined {
+  if (!trace.matchedDrawnBeamIds.includes(beam.id)) return undefined;
+  return trace.trees.flatMap((tree) => tree.segments).findLast((segment) =>
+    segment.toId === beam.path.at(-1) && tracePathContains(segment.path, beam.path),
+  )?.pathLengthMm;
+}
+
 export type TraceOptions = { maxSegmentsPerLaser?: number; maxBounces?: number; settling?: boolean };
 
 type LocatedSurface = { component: BuilderComponent; surface: Surface };
@@ -89,14 +104,6 @@ function missedAperture(surfaces: LocatedSurface[], beam: TracedBeam, beforeMm: 
 
 function checkKey(check: TraceCheck): string {
   return `${check.kind}:${check.componentId}`;
-}
-
-function pathContains(actual: string[], expected: string[]): boolean {
-  if (expected.length === 0) return true;
-  for (let start = 0; start <= actual.length - expected.length; start++) {
-    if (expected.every((id, index) => actual[start + index] === id)) return true;
-  }
-  return false;
 }
 
 function wrongHeight(segments: TraceSegment[], fromId: string, target: BuilderComponent, surfaces: LocatedSurface[]): boolean {
@@ -174,7 +181,7 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
   const allSegments = trees.flatMap((tree) => tree.segments);
   const matchedDrawnBeamIds: string[] = [];
   for (const drawn of scene.beams) {
-    if (allSegments.some((segment) => pathContains(segment.path, drawn.path))) {
+    if (allSegments.some((segment) => tracePathContains(segment.path, drawn.path))) {
       matchedDrawnBeamIds.push(drawn.id);
       continue;
     }
