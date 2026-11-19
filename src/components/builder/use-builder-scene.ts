@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import * as groupEdits from "@/components/builder/group-edits";
 import * as groups from "@/components/builder/groups";
+import { removeBeamBranch } from "@/components/builder/beam-branches";
 import { aimAt, canAim, catchAims, flipFold, insertIntoAimedPath, settleAims } from "@/components/builder/aim-settling";
 import {
   BEAM_COLORS,
@@ -352,16 +353,26 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
   // ---- beam edits ----------------------------------------------------------
 
   const addBeam = useCallback(
-    (path: string[], color?: string, label?: string) => {
+    (path: string[], color?: string, label?: string, inheritColor = false) => {
       if (path.length < 2) return;
       commit((current) => {
+        const sameSource = current.beams.filter((beam) => beam.path[0] === path[0]);
+        const parent = sameSource
+          .filter((beam) => beam.path.length < path.length && beam.path.every((id, index) => path[index] === id))
+          .sort((a, b) => b.path.length - a.path.length)[0] ?? sameSource[0];
         const added: BuilderSceneData = { ...current, beams: [
           ...current.beams,
           {
             id: createBeamId(),
             path,
             color: color ?? BEAM_COLORS[current.beams.length % BEAM_COLORS.length],
-            label,
+            label: parent ? undefined : label,
+            ...(parent ? {
+              parentId: parent.id,
+              ...(inheritColor ? { inheritColor: true } : {}),
+              inheritLabel: true,
+              inheritHidden: true,
+            } : {}),
           },
         ] };
         if (!traced) return added;
@@ -390,7 +401,7 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
     (id: string) => {
       commit((current) => ({
         ...current,
-        beams: current.beams.filter((beam) => beam.id !== id),
+        beams: removeBeamBranch(current.beams, id),
       }));
     },
     [commit],

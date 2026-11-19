@@ -30,6 +30,7 @@ import {
 } from "./component-surfaces.ts";
 import type { Surface } from "./surface.ts";
 import { migrateLegacyPeriscopes } from "./legacy-periscope.ts";
+import { migrateBeamBranches, retainBeamBranches, validBeamParents } from "./beam-branches.ts";
 
 export function yawOf(component: Pick<BuilderComponent, "orientation">): number;
 export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined;
@@ -207,22 +208,22 @@ export type BuilderComponent = {
 
 export type Beam = {
   id: string;
+  parentId?: string;
   /** ordered component ids the beam visits, source to end */
   path: string[];
   color: string;
   label?: string;
+  inheritColor?: true;
+  inheritLabel?: true;
+  inheritHidden?: true;
   /** drawn diameter, mm; missing means BEAM_WIDTH_MM */
   width?: number;
   /** 0.1–1; missing means fully opaque */
   opacity?: number;
   /** false draws the beam as glow only: no core and no direction arrows; missing means shown */
   arrows?: boolean;
-  /**
-   * true keeps the beam out of the drawing, and so out of a PNG. Everything
-   * else treats it as any beam: it angles mirrors and detectors, has its path
-   * length, and can be selected. Stored only when true; missing means shown.
-   */
-  hidden?: true;
+  /** A child can store false to stay shown while its parent is hidden. */
+  hidden?: boolean;
 };
 
 export type ConnectionKind = "fiber" | "cable";
@@ -293,7 +294,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 19 as const;
+export const SCENE_VERSION = 20 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -1381,10 +1382,11 @@ function pathWithout(path: string[], keep: (id: string) => boolean): string[] | 
 
 /** Take a deleted part off every beam; a beam it leaves with one stop is gone. */
 export function dropComponentFromBeams(beams: Beam[], id: string): Beam[] {
-  return beams.flatMap((beam) => {
+  const kept = beams.flatMap((beam) => {
     const path = pathWithout(beam.path, (entry) => entry !== id);
     return path ? [{ ...beam, path }] : [];
   });
+  return retainBeamBranches(beams, kept);
 }
 
 // ---------------------------------------------------------------------------
@@ -1407,12 +1409,13 @@ export function moveBeamTo(beams: Beam[], id: string, to: number): BeamListEdit 
   return { ok: true, beams: next };
 }
 
-/** Hide or show one beam. The flag is stored only when hidden, so showing it takes the key away. */
+/** Hide or show one beam; a shown child keeps an explicit override. */
 export function setBeamHidden(beams: Beam[], id: string, hidden: boolean): Beam[] {
   return beams.map((beam) => {
     if (beam.id !== id) return beam;
     const next = { ...beam };
-    if (hidden) next.hidden = true;
+    delete next.inheritHidden;
+    if (hidden || beam.parentId) next.hidden = hidden;
     else delete next.hidden;
     return next;
   });
@@ -1963,7 +1966,7 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   return component;
 }
 
-function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
+function parseBeam(value: unknown, validIds: Set<string>, version: number): Beam | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   if (typeof raw.id !== "string") return null;
@@ -1982,6 +1985,10 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
     path,
     color: cssColor(raw.color, BEAM_COLORS[0]),
     label: labelText(raw.label),
+    ...(version >= 20 && typeof raw.parentId === "string" ? { parentId: raw.parentId } : {}),
+    ...(version >= 20 && raw.inheritColor === true ? { inheritColor: true } : {}),
+    ...(version >= 20 && raw.inheritLabel === true ? { inheritLabel: true } : {}),
+    ...(version >= 20 && raw.inheritHidden === true ? { inheritHidden: true } : {}),
     ...(finiteNumber(raw.width) !== undefined
       ? { width: clamp(finiteNumber(raw.width)!, BEAM_WIDTH_RANGE_MM) }
       : {}),
@@ -1989,7 +1996,7 @@ function parseBeam(value: unknown, validIds: Set<string>): Beam | null {
       ? { opacity: clamp(finiteNumber(raw.opacity)!, BEAM_OPACITY_RANGE) }
       : {}),
     ...(raw.arrows === false ? { arrows: false } : {}),
-    ...(raw.hidden === true ? { hidden: true } : {}),
+    ...(raw.hidden === true || version >= 20 && raw.hidden === false ? { hidden: raw.hidden as boolean } : {}),
   };
 }
 
@@ -2207,11 +2214,12 @@ export function parseScene(value: unknown): BuilderSceneData | null {
 
   const ids = new Set(components.map((component) => component.id));
   const beamStopIds = new Set(components.filter((part) => part.type !== "translation-stage").map((part) => part.id));
-  const beams = Array.isArray(raw.beams)
+  const parsedBeams = Array.isArray(raw.beams)
     ? raw.beams
-        .map((beam) => parseBeam(beam, beamStopIds))
+        .map((beam) => parseBeam(beam, beamStopIds, version))
         .filter((beam): beam is Beam => beam !== null)
     : [];
+  const beams = version < 20 ? migrateBeamBranches(parsedBeams) : validBeamParents(parsedBeams);
   const connections = Array.isArray(raw.connections)
     ? raw.connections
         .map((connection) => parseConnection(connection, ids))

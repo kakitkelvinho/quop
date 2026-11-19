@@ -85,12 +85,16 @@ const BEAM_FIELDS: FieldDocs<Beam> = {
   path: {
     text: "the component ids the light passes, source first. At least 2; a part may come back later in the path but never twice in a row. An id that names no part is dropped from the path.",
   },
+  parentId: { text: "the id of another Beam with the same first component. It makes this Beam a branch of that Beam's tree." },
   color: { text: `a hex colour; default ${code(BEAM_COLORS[0])}. Give each beam its own, such as ${BEAM_COLORS.map((color) => code(color)).join(", ")}.` },
   label: { text: "text shown in the beams list, such as `probe` or `reference arm`." },
+  inheritColor: { text: "`true` uses the parent branch's effective colour; omit to use this Beam's colour." },
+  inheritLabel: { text: "`true` uses the parent branch's effective label; omit to use this Beam's label." },
+  inheritHidden: { text: "`true` follows the parent branch's visibility; omit to use this Beam's hidden value." },
   width: { text: `drawn diameter, mm, ${range(BEAM_WIDTH_RANGE_MM)}; default ${BEAM_WIDTH_MM}.` },
   opacity: { text: `${range(BEAM_OPACITY_RANGE)}; default 1.` },
   arrows: { text: "`false` draws the beam as a glow with no direction arrows; leave it out otherwise." },
-  hidden: { text: "`true` leaves the beam out of the drawing; leave it out otherwise." },
+  hidden: { text: "`true` leaves the beam out of the drawing; `false` explicitly shows a child of a hidden branch." },
 };
 
 const CONNECTION_FIELDS: FieldDocs<Connection> = {

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { groupSubset } from "./groups.ts";
+import { effectiveBeams } from "./beam-branches.ts";
 import { existingGroups, isSamePart, mergeSetup, nameFromFile, type FreshIds } from "./merge-setup.ts";
 import {
   EMPTY_SCENE,
@@ -112,6 +113,20 @@ describe("the same part", () => {
 });
 
 describe("ids that clash", () => {
+  it("remaps a branch parent when both Beam ids change", () => {
+    const source = setup({
+      components: [part("laser", "laser-source", 0, 0), part("a", "beam-block", 100, 0), part("b", "beam-block", 100, 100)],
+      beams: [
+        { id: "root", path: ["laser", "a"], color: "#f00" },
+        { id: "child", parentId: "root", path: ["laser", "b"], color: "#000", inheritColor: true },
+      ],
+    });
+    const table = setup({ beams: [beam("root", ["x", "y"]), beam("child", ["x", "z"])], components: [] });
+    const { scene } = merged(table, source);
+    assert.equal(scene.beams[3].parentId, scene.beams[2].id);
+    assert.equal(effectiveBeams(scene.beams)[3].color, "#f00");
+  });
+
   it("get fresh ids, and every reference in the file follows them", () => {
     const table = setup({
       components: [part("m1", "mirror-mount", 500, 500), part("trap", "paul-trap", 900, 900)],
