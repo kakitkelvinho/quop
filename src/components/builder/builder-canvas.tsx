@@ -51,6 +51,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
 import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
+import { beamForTracePath } from "@/components/builder/beam-branches";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
 import type { TraceResult } from "@/components/builder/trace-scene";
@@ -1512,14 +1513,16 @@ export default function BuilderCanvas({
         );
       })}
 
-      {trace?.trees.flatMap((tree) => tree.segments.map((segment, index) => (
-        <Line
+      {trace?.trees.flatMap((tree) => tree.segments.map((segment, index) => {
+        const branch = beamForTracePath(beams, segment.path);
+        if (branch?.hidden) return null;
+        return <Line
           key={`${tree.laserId}-${index}`}
           points={[
             [segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]],
             [segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]],
           ]}
-          color={beams.find((beam) => beam.path[0] === tree.laserId)?.color ?? palette.accent}
+          color={branch?.color ?? palette.accent}
           lineWidth={1.5}
           transparent
           opacity={0.9}
@@ -1528,8 +1531,8 @@ export default function BuilderCanvas({
           gapSize={6}
           depthTest={false}
           renderOrder={3}
-        />
-      )))}
+        />;
+      }))}
 
       {beamDraft.length >= 2 ? (
         <BeamPath

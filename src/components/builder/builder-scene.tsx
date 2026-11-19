@@ -35,6 +35,7 @@ import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene
 import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
 import { readTracedFlag } from "@/components/builder/traced-flag";
 import { traceScene } from "@/components/builder/trace-scene";
+import { effectiveBeams } from "@/components/builder/beam-branches";
 import { canAim, settleAims } from "@/components/builder/aim-settling";
 import { upgradeNotice } from "@/components/builder/setup-upgrade";
 import { hasWork, hashToScene, isShareHash, sceneToHash } from "@/components/builder/share-link";
@@ -162,7 +163,7 @@ const NEW_DRAWING: FrameDrawing = { corners: [], pointer: null, rectangle: null,
 type EditMode =
   | { kind: "idle" }
   | { kind: "place"; type: ComponentType; symbol: BlockSymbol | null }
-  | { kind: "beam"; stops: string[]; color: string }
+  | { kind: "beam"; stops: string[]; color: string; colorSet?: true }
   | { kind: "connection"; draft: ConnectDraft }
   | { kind: "frame"; drawing: FrameDrawing }
   | { kind: "add-stops"; beamId: string }
@@ -434,9 +435,10 @@ export default function BuilderScene() {
     return { component: selectedComponents[0], sliding };
   }, [selectedComponents, sliding]);
 
+  const shownBeams = useMemo(() => effectiveBeams(scene.beams), [scene.beams]);
   const selectedBeam = useMemo(
-    () => scene.beams.find((beam) => beam.id === selectedBeamId) ?? null,
-    [scene.beams, selectedBeamId],
+    () => shownBeams.find((beam) => beam.id === selectedBeamId) ?? null,
+    [shownBeams, selectedBeamId],
   );
   // a selected hidden beam shows on screen as a ghost, so it can be edited; a PNG leaves it out
   const [exporting, setExporting] = useState(false);
@@ -1109,11 +1111,11 @@ export default function BuilderScene() {
         first && last
           ? `${componentDisplayName(first)} → ${componentDisplayName(last)}`
           : undefined;
-      api.addBeam(beamDraft, beamColor, label);
+      api.addBeam(beamDraft, beamColor, label, editMode.kind === "beam" && !editMode.colorSet);
       announce("Beam added.");
     }
     endMode();
-  }, [announce, api, beamColor, beamDraft, endMode]);
+  }, [announce, api, beamColor, beamDraft, editMode, endMode]);
 
   const undoBeamStep = useCallback(
     () => setEditMode((current) => current.kind === "beam" ? { ...current, stops: current.stops.slice(0, -1) } : current),
@@ -1709,7 +1711,7 @@ export default function BuilderScene() {
       >
         <BuilderCanvas
           components={scene.components}
-          beams={scene.beams}
+          beams={shownBeams}
           trace={trace}
           connections={scene.connections}
           frames={scene.frames}
@@ -1772,7 +1774,7 @@ export default function BuilderScene() {
 
       <BuilderHud
         components={scene.components}
-        beams={scene.beams}
+        beams={shownBeams}
         traceChecks={trace?.checks ?? null}
         frames={scene.frames}
         selected={selectedComponents}
@@ -1847,7 +1849,7 @@ export default function BuilderScene() {
         onFinishBeam={finishBeam}
         onCancelBeam={cancelBeam}
         onUndoBeamStep={undoBeamStep}
-        onBeamColorChange={(color) => setEditMode((current) => current.kind === "beam" ? { ...current, color } : current)}
+        onBeamColorChange={(color) => setEditMode((current) => current.kind === "beam" ? { ...current, color, colorSet: true } : current)}
         onStartConnect={startConnect}
         onCancelConnect={cancelConnect}
         onConnectKindChange={(kind) => setEditMode((current) => current.kind === "connection" ? { ...current, draft: { ...current.draft, kind } } : current)}

@@ -5,6 +5,7 @@
 // answers the dialog for a group that is already on the table.
 
 import { deleteComponents } from "./group-edits.ts";
+import { retainBeamBranches } from "./beam-branches.ts";
 import { createGroupId, nextGroupColor, pruneMembers } from "./groups.ts";
 import { SCENE_LIMITS } from "./scene-text.ts";
 import {
@@ -129,7 +130,7 @@ function withoutGroup(table: BuilderSceneData, group: Group): BuilderSceneData {
   let scene: BuilderSceneData = {
     ...table,
     groups: table.groups.filter((entry) => entry.id !== group.id),
-    beams: table.beams.filter((beam) => !beam.path.every((id) => members.has(id))),
+    beams: retainBeamBranches(table.beams, table.beams.filter((beam) => !beam.path.every((id) => members.has(id)))),
     connections: table.connections.filter(({ from, to }) => !(members.has(from) && members.has(to))),
     frames: table.frames.filter((frame) => !leaving.has(frame.id)),
   };
@@ -224,11 +225,18 @@ export function mergeSetup(table: BuilderSceneData, file: BuilderSceneData, opti
   const frames = file.frames.map((frame) => ({ ...frame, id: frameId.get(frame.id)! }));
 
   const onlySameParts = (stops: string[]) => stops.every((id) => same.has(id));
-  const beams = file.beams.flatMap((beam): Beam[] => {
+  const beamId = new Map<string, string>();
+  for (const beam of file.beams) {
     const path = beam.path.map((id) => partId.get(id) ?? id);
     const twin = base.beams.find((entry) => entry.id === beam.id);
-    if (twin && onlySameParts(beam.path) && twin.path.join("\u0000") === path.join("\u0000")) return [];
-    return [{ ...beam, id: claim(ids.beam, beam), path }];
+    beamId.set(beam.id, twin && onlySameParts(beam.path) && twin.path.join("\u0000") === path.join("\u0000")
+      ? twin.id : claim(ids.beam, beam));
+  }
+  const beams = file.beams.flatMap((beam): Beam[] => {
+    const id = beamId.get(beam.id)!;
+    if (base.beams.some((entry) => entry.id === id)) return [];
+    return [{ ...beam, id, path: beam.path.map((part) => partId.get(part) ?? part),
+      ...(beam.parentId ? { parentId: beamId.get(beam.parentId) } : {}) }];
   });
   const connections = file.connections.flatMap((connection): Connection[] => {
     const [from, to] = [partId.get(connection.from) ?? connection.from, partId.get(connection.to) ?? connection.to];

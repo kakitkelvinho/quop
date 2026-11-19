@@ -42,9 +42,11 @@ Light followed from a Laser source through Component surfaces in 3D. While the t
 
 **Beam tree**:
 The paths one Laser source's traced light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.
+Author-drawn Beams with the same first Component also form a saved tree: one Beam is the trunk and later Beams can name a parent branch. A branch may inherit its parent's colour, label and hidden state until it sets its own. The author-drawn tree records intent; the traced tree follows surfaces.
 
 **Beam list**:
 A setup's beams in the order the author keeps them, shown in the beams box and saved with the setup. The order is the author's to change; where two beams pass through one mirror, the first in the list sets its angle.
+Branch indentation in the beams box shows parentage while each row remains in Beam list order.
 _Avoid_: beam order, layer order
 
 **Hidden beam**:

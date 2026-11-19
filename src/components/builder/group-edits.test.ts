@@ -255,6 +255,15 @@ describe("duplicating a group", () => {
     ]);
   });
 
+  it("keeps a copied branch attached to the copied parent", () => {
+    const branched = { ...scene, beams: [
+      beam("ab", ["a", "b"]),
+      { ...beam("abc", ["a", "b", "c"]), parentId: "ab", inheritColor: true as const },
+    ] };
+    const copied = duplicateComponents(branched, ["a", "b", "c"], labelled).scene.beams;
+    assert.equal(copied[3].parentId, "ab-copy");
+  });
+
   it("copies only the fibres and cables that run between copied parts", () => {
     const { scene: after } = duplicateComponents(scene, ["a", "b"], labelled);
     assert.deepEqual(after.connections, [

@@ -1,5 +1,5 @@
 {
-  "version": 19,
+  "version": 20,
   "components": [
     {
       "id": "laser",
@@ -455,7 +455,8 @@
       ],
       "color": "#64748b",
       "label": "reference arm",
-      "hidden": true
+      "hidden": true,
+      "parentId": "probe"
     }
   ],
   "connections": [
