@@ -38,7 +38,7 @@ The Component a Mirror or Beam cube sends reflected light toward. The Tabletop w
 The side an unaimed Mirror or Beam cube sends incoming light toward at 45°. Its saved value is `1` or `-1`; F flips the side.
 
 **Traced beam**:
-The visible result of following light from a Laser source through Component surfaces. The Tabletop shows short, fading orange guides where light leaves or enters a Component; selecting a saved Beam path reveals its full traced route. For one release, `?traced=0` restores the earlier drawn-Beam view.
+The visible result of following light from a Laser source through Component surfaces. The Tabletop shows short, fading orange guides where light leaves or enters a Component; selecting a saved Beam path reveals its full traced route with that path's colour, width, opacity, halo and arrow setting. For one release, `?traced=0` restores the earlier drawn-Beam view.
 
 **Beam tree**:
 The paths one Laser source's light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.

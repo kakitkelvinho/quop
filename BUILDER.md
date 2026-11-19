@@ -87,9 +87,11 @@ fibre collimator.
 
 **Beams can be told apart.** Saved paths give traced branches their colours in
 the Beams box and when one is selected. The passive guides stay orange.
-A path that disagrees with the trace keeps its own width (a drawn diameter
-in millimetres, 0.5–10 mm, 2 mm by default) and opacity (10–100%), set in
-its inspector. A selected hand-drawn Beam has a stronger halo.
+Selecting a saved path shows its traced route, or its hand-drawn route when it
+disagrees with the trace, with the path's width (a diameter in millimetres,
+0.5–10 mm, 2 mm by default), opacity (10–100%), halo and Arrow or No arrow
+setting. Those settings are edited in its inspector; they do not change the
+passive orange guides.
 
 **Hide a beam for a figure.** Each beam's row in the beams box has an eye
 button that hides or shows it on the table, to drop a reference arm out of a

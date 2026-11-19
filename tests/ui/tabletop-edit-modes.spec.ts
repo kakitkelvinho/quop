@@ -25,6 +25,22 @@ test("traced light is the default and the drawn fallback lasts one visit", async
   await expect(page.getByLabel("Traced Beam checks")).toBeVisible();
 });
 
+test("a selected traced Beam keeps its width, opacity and arrow controls", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  await page.locator(".builderBeamRow__select").first().click();
+  const width = page.getByRole("slider", { name: /Width/ });
+  const opacity = page.getByRole("slider", { name: /Opacity/ });
+  await expect(width).toBeVisible();
+  await expect(opacity).toBeVisible();
+  await width.press("End");
+  await expect(width).toHaveValue("10");
+  await opacity.press("Home");
+  await expect(opacity).toHaveValue("0.1");
+  await page.getByRole("button", { name: "No arrow" }).click();
+  await expect(page.getByRole("button", { name: "No arrow" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Traced length")).toBeVisible();
+});
+
 test("the Flip keycap acts on the selected Mirror without dismissing it", async ({ page }) => {
   await page.goto("builder/tabletop/");
   const label = await page.locator(".builderLabel").filter({ hasText: "Mirror" }).boundingBox();

@@ -1272,46 +1272,42 @@ export function BeamInspector({
           </button>
         </div>
       ) : null}
-      {tracedLengthMm === undefined ? (
-        <>
-          <SliderField
-            label="Width"
-            value={width}
-            display={`${width.toFixed(1)} mm`}
-            range={BEAM_WIDTH_RANGE_MM}
-            step={0.5}
-            onBegin={onCheckpoint}
-            onChange={(next) => onUpdate({ width: next }, false)}
-          />
-          <SliderField
-            label="Opacity"
-            value={opacity}
-            display={`${Math.round(opacity * 100)}%`}
-            range={BEAM_OPACITY_RANGE}
-            step={0.05}
-            onBegin={onCheckpoint}
-            onChange={(next) => onUpdate({ opacity: next }, false)}
-          />
-          <div className="builderChoice" role="group" aria-label="Direction arrows">
-            <button
-              type="button"
-              className="builderButton"
-              aria-pressed={beam.arrows !== false}
-              onClick={() => onUpdate({ arrows: undefined })}
-            >
-              Arrow
-            </button>
-            <button
-              type="button"
-              className="builderButton"
-              aria-pressed={beam.arrows === false}
-              onClick={() => onUpdate({ arrows: false })}
-            >
-              No arrow
-            </button>
-          </div>
-        </>
-      ) : null}
+      <SliderField
+        label="Width"
+        value={width}
+        display={`${width.toFixed(1)} mm`}
+        range={BEAM_WIDTH_RANGE_MM}
+        step={0.5}
+        onBegin={onCheckpoint}
+        onChange={(next) => onUpdate({ width: next }, false)}
+      />
+      <SliderField
+        label="Opacity"
+        value={opacity}
+        display={`${Math.round(opacity * 100)}%`}
+        range={BEAM_OPACITY_RANGE}
+        step={0.05}
+        onBegin={onCheckpoint}
+        onChange={(next) => onUpdate({ opacity: next }, false)}
+      />
+      <div className="builderChoice" role="group" aria-label="Direction arrows">
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={beam.arrows !== false}
+          onClick={() => onUpdate({ arrows: undefined })}
+        >
+          Arrow
+        </button>
+        <button
+          type="button"
+          className="builderButton"
+          aria-pressed={beam.arrows === false}
+          onClick={() => onUpdate({ arrows: false })}
+        >
+          No arrow
+        </button>
+      </div>
       <dl className="builderMetrics">
         <div>
           <dt>{tracedLengthMm === undefined ? "Drawn length" : "Traced length"}</dt>
