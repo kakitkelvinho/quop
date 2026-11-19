@@ -1,6 +1,6 @@
 import { cross, length, normalize, scale, canonical, compose, fromYawDeg, type Quat, type Vec3 } from "./quaternion.ts";
 import { traceScene } from "./trace-scene.ts";
-import { type BuilderComponent, type BuilderSceneData, referencePoint } from "./types.ts";
+import { type BuilderComponent, type BuilderSceneData, delayLineYaw, referencePoint, yawOf } from "./types.ts";
 
 export type AimStatus = { kind: "aimed" | "snapped" | "free" | "waiting"; previousId?: string; reason?: string };
 
@@ -78,6 +78,16 @@ function onePass(scene: BuilderSceneData): { scene: BuilderSceneData; statuses: 
   const statuses = new Map<string, AimStatus>();
   let changed = false;
   const components = scene.components.map((component) => {
+    if (component.type === "delay-line") {
+      // It stands across the line from its preceding Component; with none it keeps its orientation (#360).
+      const previous = byId.get(before.get(component.id) ?? "");
+      const yaw = previous && delayLineYaw(component.position, referencePoint(previous), component.position, yawOf(component));
+      if (yaw === undefined) return component;
+      const orientation = fromYawDeg(yaw);
+      if (sameOrientation(component.orientation, orientation)) return component;
+      changed = true;
+      return { ...component, orientation };
+    }
     if (!canAim(component)) return component;
     if (component.free && !component.aim) {
       statuses.set(component.id, { kind: "free" });

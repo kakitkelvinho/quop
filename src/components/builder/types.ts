@@ -22,10 +22,10 @@ import {
 } from "./model-dimensions.ts";
 import { canonical, compose, fromEulerYXZDeg, fromYawDeg, invert, rotate, toEulerYXZDeg, type Quat } from "./quaternion.ts";
 import {
-  AOM_SURFACES, BEAM_BLOCK_SURFACES, CAVITY_SURFACES, DELAY_LINE_SURFACES, EOM_SURFACES,
+  AOM_SURFACES, BEAM_BLOCK_SURFACES, CAVITY_SURFACES, EOM_SURFACES,
   FIBRE_COLLIMATOR_SURFACES, FILTER_SURFACES, IRIS_SURFACES, ISOLATOR_SURFACES,
   OBJECTIVE_SURFACES, PARTICLE_SURFACES, SAMPLE_SURFACES, TIME_TAGGER_SURFACES,
-  TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces,
+  TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces, delayLineSurfaces,
   detectorSurfaces, lensSurfaces, mirrorSurfaces, noSurfaces, rectangularSurface,
 } from "./component-surfaces.ts";
 import type { Surface } from "./surface.ts";
@@ -645,7 +645,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "delay-line": {
     label: "Delay line",
-    surfaces: (component) => DELAY_LINE_SURFACES(delaySetting(component).path),
+    surfaces: (component) => delayLineSurfaces(delaySetting(component).path, delayRailMm(component)),
     tag: "Delay",
     aliases: ["delay stage", "translation stage", "retroreflector", "corner cube", "optical delay"],
     top: 22,
