@@ -1393,8 +1393,8 @@ export function dropComponentFromBeams(beams: Beam[], id: string): Beam[] {
 // Beam list edits
 // ---------------------------------------------------------------------------
 //
-// A setup's beams are an ordered list, saved in that order, and the order
-// means something: the first beam through a mirror sets its angle.
+// A setup's Beams are saved in list order. The temporary drawn-mode fallback
+// still uses that order to derive mirror angles.
 
 export type BeamListEdit = { ok: true; beams: Beam[] } | { ok: false; reason: string };
 
@@ -2350,9 +2350,8 @@ export const EMPTY_SCENE: BuilderSceneData = {
   groups: [],
 };
 
-// A two-beam layout so the table isn't blank on first load. It demonstrates
-// the two conventions a newcomer needs: mount colour marks the beam line, and
-// a beam is a path you draw through the parts it passes.
+// A two-branch layout so the table isn't blank on first load. Saved paths
+// give traced branches their colours.
 /** Stand hand-written components at their default height. */
 function atDefaultHeight(components: BuilderComponent[]): BuilderComponent[] {
   return components.map((component) => ({
@@ -2368,12 +2367,12 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     // the first beam runs 575 mm from the laser's opening to the spectrometer's
     { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], orientation: fromYawDeg(0) },
     { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], orientation: fromYawDeg(0) },
-    { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], orientation: fromYawDeg(0) },
+    { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], orientation: fromYawDeg(0), aim: "mirror-ref" },
     { id: "lens-1", type: "lens", position: [-25, 0, -150], orientation: fromYawDeg(0), lensShape: "plano-convex", focalLength: 100 },
     { id: "sample-1", type: "sample", position: [100, 0, -150], orientation: fromYawDeg(0) },
     { id: "filter-1", type: "filter", position: [200, 0, -150], orientation: fromYawDeg(0) },
     { id: "spectrometer-1", type: "spectrometer", position: [275, 0, -150], orientation: fromYawDeg(0) },
-    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], orientation: fromYawDeg(45), color: "#dc2626" },
+    { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], orientation: fromYawDeg(45), color: "#dc2626", aim: "pd-ref" },
     { id: "pd-ref", type: "photodiode", position: [150, 0, 100], orientation: fromYawDeg(0) },
   ]),
   beams: [
@@ -2384,8 +2383,9 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     },
     {
       id: "beam-ref",
-      path: ["pbs-1", "mirror-ref", "pd-ref"],
+      path: ["laser-pump", "waveplate-1", "pbs-1", "mirror-ref", "pd-ref"],
       color: "#dc2626",
+      parentId: "beam-pump",
     },
   ],
   connections: [],

@@ -1,4 +1,4 @@
-import { cross, length, normalize, scale, canonical, type Quat, type Vec3 } from "./quaternion.ts";
+import { cross, length, normalize, scale, canonical, compose, fromYawDeg, type Quat, type Vec3 } from "./quaternion.ts";
 import { traceScene } from "./trace-scene.ts";
 import { type BuilderComponent, type BuilderSceneData, referencePoint } from "./types.ts";
 
@@ -106,7 +106,10 @@ function onePass(scene: BuilderSceneData): { scene: BuilderSceneData; statuses: 
       return component;
     }
     statuses.set(component.id, { kind: target ? "aimed" : "snapped", previousId });
-    const orientation = orientationForNormal(normal);
+    // A Beam cube's reflective surface is diagonal to its body axis.
+    const orientation = component.type === "beam-splitter"
+      ? compose(orientationForNormal(normal), fromYawDeg(-45))
+      : orientationForNormal(normal);
     if (sameOrientation(component.orientation, orientation)) return component;
     changed = true;
     return { ...component, orientation };

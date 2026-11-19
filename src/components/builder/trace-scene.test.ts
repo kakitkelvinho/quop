@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
+import { settleAims } from "./aim-settling.ts";
 import { fromYawDeg, fromYawPitchRollDeg } from "./quaternion.ts";
 import { traceScene } from "./trace-scene.ts";
-import { newComponent, parseScene, SCENE_VERSION, type BuilderComponent, type BuilderSceneData } from "./types.ts";
+import { DEFAULT_SCENE, newComponent, parseScene, SCENE_VERSION, type BuilderComponent, type BuilderSceneData } from "./types.ts";
 
 function part(type: BuilderComponent["type"], id: string, x: number, y: number, z: number, yaw = 0): BuilderComponent {
   return { ...newComponent(type, id, x, z), position: [x, y, z], orientation: fromYawDeg(yaw) };
@@ -15,6 +16,12 @@ function scene(components: BuilderComponent[]): BuilderSceneData {
 }
 
 describe("traceScene", () => {
+  it("traces both branches of the starting Setup", () => {
+    const result = traceScene(settleAims(DEFAULT_SCENE).scene);
+    assert.deepEqual(result.matchedDrawnBeamIds, DEFAULT_SCENE.beams.map((beam) => beam.id));
+    assert.ok(!result.checks.some((check) => check.kind === "path-mismatch"));
+  });
+
   it("follows two 45° mirrors through the expected 3D stops", () => {
     const result = traceScene(scene([
       part("laser-source", "laser", 0, 100, 0),
