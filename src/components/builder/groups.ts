@@ -20,6 +20,7 @@ import {
   type Frame,
   type Group,
 } from "./types.ts";
+import { retainBeamBranches } from "./beam-branches.ts";
 
 // ---------------------------------------------------------------------------
 // Visibility
@@ -374,7 +375,7 @@ export function groupSubset(
     scene: {
       ...scene,
       components,
-      beams,
+      beams: retainBeamBranches(scene.beams, beams),
       connections,
       frames: scene.frames.filter((frame) => members.has(frame.id)),
       groups: [shown],

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import { visibility } from "./groups.ts";
+import { effectiveBeams } from "./beam-branches.ts";
 import { fromEulerYXZDeg, fromYawDeg, toEulerYXZDeg } from "./quaternion.ts";
 import { DEFAULT_OBJECTIVE_LENGTH_MM, SCENE_VERSION, parseScene, serializeScene, withYaw, type Beam, type BuilderComponent } from "./types.ts";
 
@@ -33,6 +34,7 @@ const FIXTURES = [
   "setup-v17.json",
   "setup-v18.json",
   "setup-v19.json",
+  "setup-v20.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
@@ -107,6 +109,13 @@ for (const name of FIXTURES) {
       assert.deepEqual(
         open(name).beams.map(({ id, path }) => ({ id, path })),
         saved.beams.map(({ id, path }) => ({ id, path })),
+      );
+    });
+
+    it("keeps each former Beam's colour on its branch", () => {
+      assert.deepEqual(
+        effectiveBeams(open(name).beams).map(({ color }) => color),
+        (saved.beams as Array<SavedSetup["beams"][number] & { color: string }>).map(({ color }) => color),
       );
     });
 

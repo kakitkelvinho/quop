@@ -1246,11 +1246,26 @@ export function BeamInspector({
             type="text"
             value={beam.label ?? ""}
             placeholder={`${beam.path.length}-stop beam`}
-            onChange={(event) => onUpdate({ label: event.target.value })}
+            onChange={(event) => onUpdate({ label: event.target.value, inheritLabel: undefined })}
           />
         </span>
       </label>
-      <BeamSwatches value={beam.color} onChange={(color) => onUpdate({ color })} />
+      {beam.parentId ? (
+        <button type="button" className="builderBranchInherit" aria-pressed={Boolean(beam.inheritLabel)} onClick={() => onUpdate({ inheritLabel: beam.inheritLabel ? undefined : true, label: beam.inheritLabel ? beam.label : undefined })}>
+          {beam.inheritLabel ? "Name from parent" : "Use parent name"}
+        </button>
+      ) : null}
+      <BeamSwatches value={beam.color} onChange={(color) => onUpdate({ color, inheritColor: undefined })} />
+      {beam.parentId ? (
+        <div className="builderBranchInheritActions">
+          <button type="button" className="builderBranchInherit" aria-pressed={Boolean(beam.inheritColor)} onClick={() => onUpdate({ inheritColor: beam.inheritColor ? undefined : true, color: beam.color })}>
+            {beam.inheritColor ? "Colour from parent" : "Use parent colour"}
+          </button>
+          <button type="button" className="builderBranchInherit" aria-pressed={Boolean(beam.inheritHidden)} onClick={() => onUpdate({ inheritHidden: beam.inheritHidden ? undefined : true, hidden: beam.hidden })}>
+            {beam.inheritHidden ? "Visibility from parent" : "Use parent visibility"}
+          </button>
+        </div>
+      ) : null}
       <SliderField
         label="Width"
         value={width}

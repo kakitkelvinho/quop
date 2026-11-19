@@ -3925,6 +3925,21 @@ html[data-theme="dark"] .builderCoach {
   opacity: 0.5;
 }
 
+.builderBranchInheritActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.builderBranchInherit {
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: var(--foreground);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+
 .builderBeamRow__select {
   display: flex;
   flex: 1;
@@ -3932,7 +3947,7 @@ html[data-theme="dark"] .builderCoach {
   gap: 0.5rem;
   min-width: 0;
   min-height: calc(1.9rem - 2px);
-  padding: 0 0.3rem 0 0.55rem;
+  padding: 0 0.3rem 0 calc(0.55rem + min(var(--beam-branch-depth, 0), 4) * 0.85rem);
   border: 0;
   border-radius: var(--builder-radius);
   background: none;

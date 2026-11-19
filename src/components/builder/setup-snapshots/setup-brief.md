@@ -31,7 +31,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 19. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 20. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: the light paths, in order. The first beam through a mirror sets its angle.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -82,12 +82,16 @@ An author-drawn path through components, recording where the light is meant to g
 
 - `id`: text, unique in the file.
 - `path`: the component ids the light passes, source first. At least 2; a part may come back later in the path but never twice in a row. An id that names no part is dropped from the path.
+- `parentId`: the id of another Beam with the same first component. It makes this Beam a branch of that Beam's tree.
 - `color`: a hex colour; default `"#7c3aed"`. Give each beam its own, such as `"#7c3aed"`, `"#dc2626"`, `"#0891b2"`, `"#16a34a"`, `"#ea580c"`, `"#db2777"`.
 - `label`: text shown in the beams list, such as `probe` or `reference arm`.
+- `inheritColor`: `true` uses the parent branch's effective colour; omit to use this Beam's colour.
+- `inheritLabel`: `true` uses the parent branch's effective label; omit to use this Beam's label.
+- `inheritHidden`: `true` follows the parent branch's visibility; omit to use this Beam's hidden value.
 - `width`: drawn diameter, mm, 0.5–10; default 2.
 - `opacity`: 0.1–1; default 1.
 - `arrows`: `false` draws the beam as a glow with no direction arrows; leave it out otherwise.
-- `hidden`: `true` leaves the beam out of the drawing; leave it out otherwise.
+- `hidden`: `true` leaves the beam out of the drawing; `false` explicitly shows a child of a hidden branch.
 
 ### A connection
 
@@ -184,7 +188,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 19,
+  "version": 20,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "orientation": [0, 0, 0, 1], "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "orientation": [0, 0.9238795325112867, 0, 0.38268343236508984], "color": "#8b1e3f", "label": "M1" },
@@ -208,7 +212,7 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 
 ```json
 {
-  "version": 19,
+  "version": 20,
   "components": [
     { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "yaw": 0 },
     { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "yaw": 0 }

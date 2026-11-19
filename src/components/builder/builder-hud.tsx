@@ -1,10 +1,11 @@
 "use client";
 
-import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Fragment, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { measureBeam } from "@/components/builder/beam-measurement";
+import { branchDepth } from "@/components/builder/beam-branches";
 import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
@@ -349,6 +350,8 @@ function BeamList({
           <li
             key={beam.id}
             {...drag}
+            data-branch-depth={branchDepth(beams, beam.id)}
+            style={{ "--beam-branch-depth": branchDepth(beams, beam.id) } as CSSProperties}
             className={`builderBeamRow${selected ? " is-selected" : ""}${beam.hidden ? " is-hidden" : ""} ${drag.className}`}
           >
             <button
@@ -358,7 +361,7 @@ function BeamList({
               onClick={() => onSelect(beam.id)}
             >
               <span className="builderBeamRow__dot" style={{ background: beam.color }} />
-              <span className="builderBeamRow__name">{name}</span>
+              <span className="builderBeamRow__name">{beam.parentId ? "↳ " : ""}{name}</span>
               <span className="builderReadout">{Math.round(measureBeam(components, beam).lengthMm)} mm</span>
             </button>
             <span className="builderBeamRow__actions" data-no-drag>
