@@ -1,12 +1,13 @@
 "use client";
 // PROTOTYPE (#395), throwaway: lives on branch prototype/traced-beam-display only, never main.
 // Question: how should Beams look on the table and in the Beams box when light is traced?
-// Three variants on /builder/tabletop, switched by ?variant= (now | A | B | C), plus
+// Variants on /builder/tabletop, switched by ?variant= (now | A | B | B2 | C), plus
 // ?scenario= (saved | unsaved | handdrawn) to fake the cases the starter Setup lacks.
 // Alt+← / Alt+→ cycle variants (plain arrows already nudge Components).
 import { Html, Line } from "@react-three/drei";
 import { Fragment, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
-import { Vector3 } from "three";
+import { Color, Vector3 } from "three";
+import { traceGuideGeometry } from "@/components/builder/trace-guide";
 import {
   scenarioBeams, traceRoutes, undrawnRuns,
   type Route, type Scenario,
@@ -18,11 +19,12 @@ import {
   type Beam, type BuilderComponent, type Vec3,
 } from "@/components/builder/types";
 
-export type Variant = "now" | "A" | "B" | "C";
+export type Variant = "now" | "A" | "B" | "B2" | "C";
 const VARIANTS: { key: Variant; name: string }[] = [
   { key: "now", name: "Today (fades)" },
   { key: "A", name: "Coloured light + light tree" },
   { key: "B", name: "Saved Beams + status" },
+  { key: "B2", name: "Saved Beams + fades for unsaved light" },
   { key: "C", name: "Physical light + checks inline" },
 ];
 const SCENARIOS: { key: Scenario; name: string }[] = [
@@ -109,7 +111,7 @@ export function PrototypeTableLight({
   const { routes } = useRoutes(trace, beams, scenario);
   const runs = useMemo(() => undrawnRuns(routes), [routes]);
   const focused = (route: Route) =>
-    route.key === selected || route.key === hovered || (route.saved !== undefined && route.saved.id === selectedBeamId);
+    (hovered === UNSAVED_ALL && !route.saved) || route.key === selected || route.key === hovered || (route.saved !== undefined && route.saved.id === selectedBeamId);
 
   const hit = (route: Route, points: Vector3[]) => interactive && route.saved
     ? <BeamHit beamId={route.saved.id} points={points} width={route.saved.width ?? BEAM_WIDTH_MM} onClick={onBeamClick} />
@@ -157,6 +159,32 @@ export function PrototypeTableLight({
     })}</>;
   }
 
+  if (variant === "B2") {
+    // saved Beams are the drawing; unsaved light keeps today's short fades until its row is hovered or picked
+    const savedSegments = new Set(routes.filter((route) => route.saved).flatMap((route) => route.segments));
+    const faded = routes.filter((route) => !route.saved && !focused(route));
+    const fadeTrace: TraceResult = {
+      trees: [{ laserId: "", segments: [...new Set(faded.flatMap((route) => route.segments))].filter((s) => !savedSegments.has(s)) }],
+      checks: [], matchedDrawnBeamIds: [],
+    };
+    return <>
+      <Fades trace={fadeTrace} />
+      {runs.map(({ route, points }, index) => {
+        if (route.saved?.hidden) return null;
+        const vectors = lifted(points);
+        const on = focused(route);
+        if (route.saved) return (
+          <Fragment key={`${route.key}-${index}`}>
+            <BeamPath points={vectors} color={route.saved.color} width={route.saved.width} opacity={route.saved.opacity}
+              core={route.saved.arrows !== false} selected={on} />
+            {hit(route, vectors)}
+          </Fragment>
+        );
+        return on ? <BeamPath key={`${route.key}-${index}`} points={vectors} color={UNSAVED_COLOR} opacity={0.9} core={false} selected /> : null;
+      })}
+    </>;
+  }
+
   if (variant === "C") {
     // physical light: one light colour, brightness and width follow power; author colours only on focus
     return <>{runs.map(({ route, points, power }, index) => {
@@ -179,6 +207,24 @@ export function PrototypeTableLight({
     })}</>;
   }
   return null;
+}
+
+const UNSAVED_ALL = "unsaved:all";
+
+function Fades({ trace }: { trace: TraceResult }) {
+  const guide = useMemo(() => {
+    const data = traceGuideGeometry(trace, []);
+    const orange = new Color(UNSAVED_COLOR);
+    const points: [number, number, number][] = [];
+    const colors: [number, number, number, number][] = [];
+    for (let at = 0; at < data.opacity.length; at++) {
+      points.push([data.positions[at * 3], data.positions[at * 3 + 1], data.positions[at * 3 + 2]]);
+      colors.push([orange.r, orange.g, orange.b, data.opacity[at]]);
+    }
+    return { points, colors };
+  }, [trace]);
+  if (guide.points.length === 0) return null;
+  return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest={false} depthWrite={false} renderOrder={3} />;
 }
 
 // ---------- Beams box ----------
@@ -205,7 +251,7 @@ export function PrototypeBeamsBox(props: BoxProps) {
   const ctx = { ...props, beams, routes, trace: props.trace, stub: setNote };
   return (
     <section className="builderIsland protoBox" aria-label="Beams (prototype)">
-      {variant === "A" ? <BoxA {...ctx} /> : variant === "B" ? <BoxB {...ctx} /> : <BoxC {...ctx} />}
+      {variant === "A" ? <BoxA {...ctx} /> : variant === "B" || variant === "B2" ? <BoxB {...ctx} /> : <BoxC {...ctx} />}
       {note ? <p className="protoNote">{note}</p> : null}
     </section>
   );
@@ -346,7 +392,8 @@ function BoxB(ctx: Ctx) {
       </ul>
       {unsaved.length ? (
         <details className="protoSection" open>
-          <summary>{unsaved.length} branch{unsaved.length === 1 ? "" : "es"} of light not saved as a Beam</summary>
+          <summary onMouseEnter={() => setFocus({ hovered: UNSAVED_ALL })} onMouseLeave={() => setFocus({ hovered: null })}>
+            {unsaved.length} branch{unsaved.length === 1 ? "" : "es"} of light not saved as a Beam</summary>
           <ul>
             {unsaved.map((route) => (
               <RouteRow key={route.key} ctx={ctx} route={{ ...route, depth: 0 }}>
