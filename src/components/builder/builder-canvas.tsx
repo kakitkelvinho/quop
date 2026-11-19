@@ -28,11 +28,9 @@ import {
 import {
   BackSide,
   Box3,
-  BufferGeometry,
   CanvasTexture,
   Color,
   DirectionalLight,
-  Float32BufferAttribute,
   MOUSE,
   Matrix4,
   Mesh,
@@ -98,37 +96,19 @@ import {
 export type CameraView = "iso" | "top";
 
 function TraceGuides({ trace, beams }: { trace: TraceResult; beams: Beam[] }) {
-  const geometry = useMemo(() => {
+  const guide = useMemo(() => {
     const data = traceGuideGeometry(trace, beams);
-    const result = new BufferGeometry();
-    result.setAttribute("position", new Float32BufferAttribute(data.positions, 3));
-    result.setAttribute("guideOpacity", new Float32BufferAttribute(data.opacity, 1));
-    return result;
+    const orange = new Color("#ff9d5c");
+    const points: [number, number, number][] = [];
+    const colors: [number, number, number, number][] = [];
+    for (let at = 0; at < data.opacity.length; at++) {
+      points.push([data.positions[at * 3], data.positions[at * 3 + 1], data.positions[at * 3 + 2]]);
+      colors.push([orange.r, orange.g, orange.b, data.opacity[at]]);
+    }
+    return { points, colors };
   }, [trace, beams]);
-  useEffect(() => () => geometry.dispose(), [geometry]);
-  return (
-    <lineSegments geometry={geometry} renderOrder={3}>
-      <shaderMaterial
-        uniforms={{ guideColor: { value: new Color("#ff9d5c") } }}
-        vertexShader={`attribute float guideOpacity;
-          varying float vOpacity;
-          void main() {
-            vOpacity = guideOpacity;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }`}
-        fragmentShader={`uniform vec3 guideColor;
-          varying float vOpacity;
-          void main() {
-            gl_FragColor = vec4(guideColor, vOpacity);
-            #include <tonemapping_fragment>
-            #include <colorspace_fragment>
-          }`}
-        transparent
-        depthTest={false}
-        depthWrite={false}
-      />
-    </lineSegments>
-  );
+  if (guide.points.length === 0) return null;
+  return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest={false} depthWrite={false} renderOrder={3} />;
 }
 
 /** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
@@ -1564,18 +1544,17 @@ export default function BuilderCanvas({
       {trace ? <TraceGuides trace={trace} beams={beams} /> : null}
       {trace && selectedTraceBeam && selectedTracePath ? trace.trees.flatMap((tree) => tree.segments.map((segment, index) =>
         segment.path.length <= selectedTracePath.length && segment.path.every((id, at) => selectedTracePath[at] === id) ? (
-          <Line
+          <BeamPath
             key={`${tree.laserId}-${index}`}
             points={[
-              [segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]],
-              [segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]],
+              new Vector3(segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]),
+              new Vector3(segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]),
             ]}
             color={selectedTraceBeam.color}
-            lineWidth={2}
-            transparent
-            opacity={0.8}
-            depthTest={false}
-            renderOrder={4}
+            width={selectedTraceBeam.width}
+            opacity={selectedTraceBeam.opacity}
+            core={selectedTraceBeam.arrows !== false}
+            selected
           />
         ) : null,
       )) : null}
