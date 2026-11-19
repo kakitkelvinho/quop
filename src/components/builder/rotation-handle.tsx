@@ -145,14 +145,6 @@ function padlock(r: number): BufferGeometry {
   return geometry;
 }
 
-/** Geometry built once per input and disposed when it's replaced or unmounted. */
-function useGeometries<T extends Record<string, BufferGeometry>>(build: () => T, deps: unknown[]): T {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const geometries = useMemo(build, deps);
-  useEffect(() => () => Object.values(geometries).forEach((geometry) => geometry.dispose()), [geometries]);
-  return geometries;
-}
-
 // Drawn over the post bases, so the part it turns never hides it. The ring
 // beneath is transparent, and three draws the transparent pass after every
 // opaque mesh whatever its renderOrder: so the handle joins that pass, at
@@ -190,7 +182,7 @@ function Bubble({ radius, angle, skewer, color, dark, rotating, locked = false, 
   }, [hover, get, locked, rotating]);
 
   const half = (BUBBLE_LENGTH_MM / 2 - BUBBLE_HALF_MM) / radius;
-  const shapes = useGeometries(
+  const shapes = useMemo(
     () => ({
       fill: arcBand(radius - BUBBLE_HALF_MM, radius + BUBBLE_HALF_MM, -half, half),
       start: cap(radius, -half, BUBBLE_HALF_MM),
@@ -200,6 +192,7 @@ function Bubble({ radius, angle, skewer, color, dark, rotating, locked = false, 
     }),
     [radius, half, skewer, locked],
   );
+  useEffect(() => () => Object.values(shapes).forEach((geometry) => geometry.dispose()), [shapes]);
   const ink = dark ? ARROW_INK.dark : ARROW_INK.light;
   // under the pointer, the accent lifts a little toward the ink
   const fill = useMemo(
