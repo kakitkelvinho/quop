@@ -35,7 +35,7 @@ import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene
 import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
 import { readTracedFlag } from "@/components/builder/traced-flag";
 import { traceScene } from "@/components/builder/trace-scene";
-import { PrototypeSwitcher, usePrototype } from "@/components/builder/prototype-traced-display";
+import { PrototypeSwitcher, getAimPick, setAimPick, usePrototype } from "@/components/builder/prototype-traced-display";
 import { scenarioTrace } from "@/components/builder/prototype-traced-routes";
 import { effectiveBeams } from "@/components/builder/beam-branches";
 import { canAim, settleAims } from "@/components/builder/aim-settling";
@@ -531,6 +531,15 @@ export default function BuilderScene() {
       if (event.nativeEvent.button !== 0 || editMode.kind === "frame") return;
       const pressed = componentById(sceneRef.current.components, id);
       if (!pressed) return;
+      const aimer = getAimPick();
+      if (aimer) {
+        setAimPick(null);
+        if (aimer !== id) {
+          api.setAim(aimer, id);
+          announce(`Aimed at ${componentDisplayName(pressed)}.`);
+        }
+        return;
+      }
       if (editMode.kind === "beam") {
         if (pressed.type === "translation-stage") {
           announce("A translation stage is a mount, not a beam stop.");

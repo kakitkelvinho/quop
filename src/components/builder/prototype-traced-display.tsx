@@ -15,7 +15,7 @@ import {
 import type { TraceResult } from "@/components/builder/trace-scene";
 import { measureBeam } from "@/components/builder/beam-measurement";
 import {
-  BEAM_WIDTH_MM, DEFAULT_LIGHT_COLOR, beamDisplayName, componentDisplayName, lengthToPicoseconds,
+  BEAM_WIDTH_MM, DEFAULT_LIGHT_COLOR, beamDisplayName, componentDisplayName, lengthToPicoseconds, referencePoint,
   type Beam, type BuilderComponent, type Vec3,
 } from "@/components/builder/types";
 
@@ -24,7 +24,7 @@ const VARIANTS: { key: Variant; name: string }[] = [
   { key: "now", name: "Today (fades)" },
   { key: "A", name: "Coloured light + light tree" },
   { key: "B", name: "Saved Beams + status" },
-  { key: "B2", name: "Saved Beams + fades for unsaved light" },
+  { key: "B2", name: "Saved Beams + fades, Aim at…, laser colours" },
   { key: "C", name: "Physical light + checks inline" },
 ];
 const SCENARIOS: { key: Scenario; name: string }[] = [
@@ -33,6 +33,45 @@ const SCENARIOS: { key: Scenario; name: string }[] = [
   { key: "handdrawn", name: "One Beam hand-drawn" },
 ];
 const UNSAVED_COLOR = "#ff9d5c";
+/** B2: each laser's unsaved light gets its own colour; the first keeps today's orange */
+const LASER_LIGHT = ["#ff9d5c", "#22b8cf", "#d946ef", "#84cc16", "#f43f5e", "#6366f1"];
+function laserColour(trace: TraceResult, laserId: string) {
+  const at = Math.max(0, trace.trees.findIndex((tree) => tree.laserId === laserId));
+  return LASER_LIGHT[at % LASER_LIGHT.length];
+}
+
+// ---------- B2: "Aim at…" pick on the table ----------
+let aimPick: string | null = null;
+const aimListeners = new Set<() => void>();
+export function getAimPick() { return aimPick; }
+export function setAimPick(id: string | null) {
+  aimPick = id;
+  aimListeners.forEach((listener) => listener());
+}
+function useAimPick() {
+  return useSyncExternalStore(
+    (callback) => {
+      aimListeners.add(callback);
+      return () => aimListeners.delete(callback);
+    },
+    () => aimPick,
+    () => null,
+  );
+}
+export function AimPickButton({ id }: { id: string }) {
+  const { variant } = usePrototype();
+  const picking = useAimPick();
+  useEffect(() => {
+    if (picking !== id) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setAimPick(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [picking, id]);
+  if (variant !== "B2") return null;
+  return picking === id
+    ? <button type="button" className="protoPick is-on" onClick={() => setAimPick(null)}>Click a Component on the table… (Esc)</button>
+    : <button type="button" className="protoPick" onClick={() => setAimPick(id)}>⌖ Pick on table</button>;
+}
 
 // ---------- URL state ----------
 const EVENT = "prototype-traced-display";
@@ -96,8 +135,10 @@ type BeamHitLike = ComponentType<{
 }>;
 
 export function PrototypeTableLight({
-  trace, beams, selectedBeamId, BeamPath, BeamHit, onBeamClick, interactive,
+  trace, beams, selectedBeamId, BeamPath, BeamHit, onBeamClick, interactive, components, selectedIds,
 }: {
+  components: BuilderComponent[];
+  selectedIds: string[];
   trace: TraceResult;
   beams: Beam[];
   selectedBeamId: string | null;
@@ -163,12 +204,20 @@ export function PrototypeTableLight({
     // saved Beams are the drawing; unsaved light keeps today's short fades until its row is hovered or picked
     const savedSegments = new Set(routes.filter((route) => route.saved).flatMap((route) => route.segments));
     const faded = routes.filter((route) => !route.saved && !focused(route));
-    const fadeTrace: TraceResult = {
-      trees: [{ laserId: "", segments: [...new Set(faded.flatMap((route) => route.segments))].filter((s) => !savedSegments.has(s)) }],
-      checks: [], matchedDrawnBeamIds: [],
-    };
+    const lasers = [...new Set(faded.map((route) => route.laserId))];
+    const only = selectedIds.length === 1 ? components.find((part) => part.id === selectedIds[0]) : undefined;
+    const target = only?.aim ? components.find((part) => part.id === only.aim) : undefined;
     return <>
-      <Fades trace={fadeTrace} />
+      {lasers.map((laserId) => (
+        <Fades key={laserId} color={laserColour(trace, laserId)} trace={{
+          trees: [{ laserId, segments: [...new Set(faded.filter((route) => route.laserId === laserId).flatMap((route) => route.segments))].filter((s) => !savedSegments.has(s)) }],
+          checks: [], matchedDrawnBeamIds: [],
+        }} />
+      ))}
+      {only && target ? (
+        <Line points={[referencePoint(only), referencePoint(target)]} color="#8a8178" lineWidth={1} dashed dashSize={4} gapSize={4}
+          transparent opacity={0.7} depthWrite={false} />
+      ) : null}
       {runs.map(({ route, points }, index) => {
         if (route.saved?.hidden) return null;
         const vectors = lifted(points);
@@ -180,7 +229,7 @@ export function PrototypeTableLight({
             {hit(route, vectors)}
           </Fragment>
         );
-        return on ? <BeamPath key={`${route.key}-${index}`} points={vectors} color={UNSAVED_COLOR} opacity={0.9} core={false} selected /> : null;
+        return on ? <BeamPath key={`${route.key}-${index}`} points={vectors} color={laserColour(trace, route.laserId)} opacity={0.9} core={false} selected /> : null;
       })}
     </>;
   }
@@ -211,20 +260,22 @@ export function PrototypeTableLight({
 
 const UNSAVED_ALL = "unsaved:all";
 
-function Fades({ trace }: { trace: TraceResult }) {
+// depth-tested and on the axis (today's guide floats 2 mm up and draws over the hardware),
+// so a mount hides light behind it and the laser's light leaves its cone
+function Fades({ trace, color }: { trace: TraceResult; color: string }) {
   const guide = useMemo(() => {
     const data = traceGuideGeometry(trace, []);
-    const orange = new Color(UNSAVED_COLOR);
+    const tint = new Color(color);
     const points: [number, number, number][] = [];
     const colors: [number, number, number, number][] = [];
     for (let at = 0; at < data.opacity.length; at++) {
-      points.push([data.positions[at * 3], data.positions[at * 3 + 1], data.positions[at * 3 + 2]]);
-      colors.push([orange.r, orange.g, orange.b, data.opacity[at]]);
+      points.push([data.positions[at * 3], data.positions[at * 3 + 1] - 2, data.positions[at * 3 + 2]]);
+      colors.push([tint.r, tint.g, tint.b, data.opacity[at]]);
     }
     return { points, colors };
-  }, [trace]);
+  }, [trace, color]);
   if (guide.points.length === 0) return null;
-  return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest={false} depthWrite={false} renderOrder={3} />;
+  return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} transparent depthWrite={false} renderOrder={3} />;
 }
 
 // ---------- Beams box ----------
@@ -397,7 +448,7 @@ function BoxB(ctx: Ctx) {
           <ul>
             {unsaved.map((route) => (
               <RouteRow key={route.key} ctx={ctx} route={{ ...route, depth: 0 }}>
-                <span className="protoDot is-hollow" style={{ borderColor: UNSAVED_COLOR }} />
+                <span className="protoDot is-hollow" style={{ borderColor: laserColour(ctx.trace, route.laserId) }} />
                 <span className="protoName">→ {nameOf(ctx.components, route.endId)}</span>
                 <span className="protoLen">{Math.round(route.lengthMm)} mm</span>
               </RouteRow>
@@ -533,5 +584,7 @@ const PROTO_CSS = `
 .protoPower span{position:absolute;inset:0 auto 0 0;background:${DEFAULT_LIGHT_COLOR}88}
 .protoPower b{position:relative;display:block;text-align:center;font-size:.6rem;line-height:.75rem;font-weight:600}
 .protoPowerTag{font:600 10px/1 system-ui,sans-serif;padding:2px 5px;border-radius:999px;background:#fff;color:#c2410c;border:1px solid #fdba74;white-space:nowrap}
+.protoPick{margin:.25rem 0 .1rem;border:1px solid var(--builder-hairline);border-radius:var(--builder-radius,4px);background:none;color:inherit;font:inherit;font-size:.78rem;padding:.3rem .55rem;cursor:pointer}
+.protoPick.is-on{border-color:var(--focus-ring);color:var(--accent-strong);background:var(--builder-hover)}
 .protoNote{margin:.4rem .35rem 0;padding:.35rem .5rem;border-radius:6px;background:#111;color:#fff;font-size:.72rem}
 `;

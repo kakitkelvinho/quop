@@ -1,5 +1,6 @@
 "use client";
 
+import { AimPickButton } from "@/components/builder/prototype-traced-display";
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Icon, IconButton } from "@/components/builder/builder-icons";
@@ -719,6 +720,7 @@ export function ComponentInspector({
               </select>
             </span>
           </label>
+          <AimPickButton id={component.id} />
           <div className="builderInspector__actions">
             <button type="button" onClick={onFlipAim}>Flip (F)</button>
             {component.free ? <button type="button" onClick={onSnapAim}>Snap 45° to the light</button> : null}

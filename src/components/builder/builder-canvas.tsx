@@ -1475,7 +1475,7 @@ export default function BuilderCanvas({
                 <meshBasicMaterial color={palette.accent} transparent opacity={0.85} depthTest={false} />
               </mesh>
             ) : null}
-            {shown ? (
+            {shown && prototypeVariant !== "B2" ? (
               <group position={[point[0] + componentRadius(part) + 13, 2, point[2]]}>
                 <mesh
                   onPointerDown={(event) => { event.stopPropagation(); onAimHandlePointerDown(part.id, event); }}
@@ -1544,7 +1544,7 @@ export default function BuilderCanvas({
       })}
 
       {trace && prototypeVariant !== "now" ? (
-        <PrototypeTableLight trace={trace} beams={beams} selectedBeamId={selectedBeamId} BeamPath={BeamPath} BeamHit={BeamHit}
+        <PrototypeTableLight components={components} selectedIds={selection} trace={trace} beams={beams} selectedBeamId={selectedBeamId} BeamPath={BeamPath} BeamHit={BeamHit}
           onBeamClick={onBeamClick} interactive={beamsInteractive} />
       ) : null}
       {trace && prototypeVariant === "now" ? <TraceGuides trace={trace} beams={beams} /> : null}
