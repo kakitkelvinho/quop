@@ -1329,6 +1329,7 @@ export default function BuilderCanvas({
   // what hidden groups and frames leave in the drawing; hidden parts still
   // count in path lengths and angle mirrors, so only drawing reads this
   const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
+  const matchedDrawnBeamIds = useMemo(() => new Set(trace?.matchedDrawnBeamIds ?? []), [trace]);
   const shownComponents = useMemo(
     () => components.filter((component) => shown.components.has(component.id)),
     [components, shown],
@@ -1478,8 +1479,9 @@ export default function BuilderCanvas({
       ) : null}
 
       {beams.map((beam) => {
-        const drawn = isBeamDrawn(beam, shown);
-        const ghost = !drawn && beam.id === ghostBeamId;
+        const matched = matchedDrawnBeamIds.has(beam.id);
+        const drawn = !matched && isBeamDrawn(beam, shown);
+        const ghost = !matched && !drawn && beam.id === ghostBeamId;
         if (!drawn && !ghost) return null;
         const measurement = measureBeam(components, beam);
         const points = measurement.points.map((point) => new Vector3(...point));

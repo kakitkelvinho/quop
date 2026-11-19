@@ -1,10 +1,8 @@
 # Beams are traced from component surfaces in 3D
 
-_Status: proposed, not yet built._
+_Status: accepted._
 
-Today a beam is an author-drawn list of components, and nothing in the code says what a component does to light: mirrors are handled in `settleAngles`, detectors in the reference-point code, lasers and delay lines in the path-length code. From the next schema version, each kind of component declares the surfaces light can meet, and beams are traced from those surfaces in 3D instead of drawn. The author says where a mirror sends the light; the builder works out its angle and follows the beam. The alternative was to keep hand-drawn beams and only tidy the component types, but tracing removes most of the drawing work, catches a beam that misses a mirror or arrives at the wrong height, and gives every kind one shared description instead of special cases spread across files.
-
-_Contradicts the **Beam** entry in `CONTEXT.md` ("It is not a ray trace"); that entry changes when this is built._
+Beams are traced in 3D from Component surfaces rather than drawn only from ordered Component lists. The author says where a Mirror sends the light; the Tabletop works out its orientation and follows the light. Tracing catches a Beam that misses a Mirror or arrives at the wrong height and gives every Component kind one shared description of what it does to light. Saved Beam paths remain to record intent and style branches; paths that disagree with the trace stay visible for editing.
 
 ## What a component is
 
