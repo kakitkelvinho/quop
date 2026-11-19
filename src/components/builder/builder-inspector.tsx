@@ -7,7 +7,7 @@ import { measureBeam } from "@/components/builder/beam-measurement";
 import { joinsOnToggle, membership } from "@/components/builder/groups";
 import { useScenePalette } from "@/components/builder/scene-theme";
 import { useRowDrag } from "@/components/builder/use-row-drag";
-import { fromEulerYXZDeg, toEulerYXZDeg } from "@/components/builder/quaternion";
+import { fromYawPitchRollDeg, toYawPitchRollDeg } from "@/components/builder/quaternion";
 import { canAim, type AimStatus } from "@/components/builder/aim-settling";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
@@ -633,7 +633,7 @@ function PitchRollRows({ component, labelPrefix = "", locked, onChange }: {
   locked: boolean;
   onChange: (orientation: BuilderComponent["orientation"]) => void;
 }) {
-  const angles = toEulerYXZDeg(component.orientation);
+  const angles = toYawPitchRollDeg(component.orientation);
   return (["pitchDeg", "rollDeg"] as const).map((angle) => (
     <div className="builderFieldRow" key={angle}>
       <NumberField
@@ -642,7 +642,7 @@ function PitchRollRows({ component, labelPrefix = "", locked, onChange }: {
         step={1}
         value={angles[angle]}
         disabled={locked}
-        onChange={(value) => onChange(fromEulerYXZDeg({ ...angles, [angle]: value }))}
+        onChange={(value) => onChange(fromYawPitchRollDeg({ ...angles, [angle]: value }))}
       />
     </div>
   ));
