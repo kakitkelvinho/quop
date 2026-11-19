@@ -43,6 +43,8 @@ v18 adds aimed Components: the mirror in its setup aims at the next stop.
 periscope parts so their migration to two aimed mirrors stays covered.
 v19 replaces those linked parts with ordinary mirrors at their own heights;
 the lower mirror aims at the upper one, which aims at the old next stop.
+v20 links Beams with the same first Component into a saved tree. The return
+branch has its own colour and an explicit shown state.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

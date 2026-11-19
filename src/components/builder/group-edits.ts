@@ -22,6 +22,7 @@ import {
   type BuilderSceneData,
   type Vec3,
 } from "./types.ts";
+import { retainBeamBranches } from "./beam-branches.ts";
 import { compose, fromYawDeg, type Quat } from "./quaternion.ts";
 import { joinSourcesGroups, pruneMembers } from "./groups.ts";
 
@@ -228,9 +229,17 @@ export function duplicateComponents(
     if (source.aim !== undefined) copy.aim = copyOf.get(source.aim) ?? source.aim;
     return copy;
   });
-  const beams = scene.beams
-    .filter((beam) => beam.path.every((id) => copyOf.has(id)))
-    .map((beam) => ({ ...beam, id: makeId.beam(beam), path: beam.path.map((id) => copyOf.get(id)!) }));
+  const beamSources = retainBeamBranches(scene.beams, scene.beams.filter((beam) => beam.path.every((id) => copyOf.has(id))));
+  const beamIds = new Map(beamSources.map((beam) => [beam.id, makeId.beam(beam)]));
+  const beams = beamSources.map((beam) => {
+    const { parentId, ...rest } = beam;
+    return {
+      ...rest,
+      id: beamIds.get(beam.id)!,
+      path: beam.path.map((id) => copyOf.get(id)!),
+      ...(parentId && beamIds.has(parentId) ? { parentId: beamIds.get(parentId) } : {}),
+    };
+  });
   const connections = scene.connections
     .filter(({ from, to }) => copyOf.has(from) && copyOf.has(to))
     .map((connection) => ({

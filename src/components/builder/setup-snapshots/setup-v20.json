@@ -1,0 +1,96 @@
+{
+  "version": 20,
+  "components": [
+    {
+      "id": "laser",
+      "type": "laser-source",
+      "position": [
+        0,
+        100,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": "lower",
+      "type": "mirror-mount",
+      "position": [
+        100,
+        100,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0.9238795325112867,
+        0.3826834323650899
+      ],
+      "label": "Bottom mirror",
+      "aim": "upper"
+    },
+    {
+      "id": "upper",
+      "type": "mirror-mount",
+      "position": [
+        100,
+        200,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        -0.3826834323650898,
+        0.9238795325112867
+      ],
+      "label": "Top mirror",
+      "aim": "detector"
+    },
+    {
+      "id": "detector",
+      "type": "photodiode",
+      "position": [
+        200,
+        200,
+        0
+      ],
+      "orientation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  ],
+  "beams": [
+    {
+      "id": "rise",
+      "path": [
+        "laser",
+        "lower",
+        "upper",
+        "detector"
+      ],
+      "color": "#ffffff"
+    },
+    {
+      "id": "return",
+      "path": [
+        "laser",
+        "lower",
+        "upper"
+      ],
+      "color": "#34d399",
+      "label": "Return",
+      "parentId": "rise",
+      "hidden": false
+    }
+  ],
+  "connections": [],
+  "frames": [],
+  "groups": []
+}
