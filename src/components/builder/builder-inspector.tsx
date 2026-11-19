@@ -33,6 +33,7 @@ import {
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_HOUSING_COLORS,
   INTERNAL_PATH_RANGE_MM,
+  lengthToPicoseconds,
   OBJECTIVE_LENGTH_RANGE_MM,
   CAVITY_LENGTH_RANGE_MM,
   FOCAL_LENGTH_RANGE_MM,
@@ -1214,6 +1215,7 @@ function ColorField({
 export function BeamInspector({
   beam,
   components,
+  tracedLengthMm,
   onUpdate,
   onCheckpoint,
   onDelete,
@@ -1222,6 +1224,7 @@ export function BeamInspector({
 }: {
   beam: Beam;
   components: BuilderComponent[];
+  tracedLengthMm?: number;
   onUpdate: (patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
   onCheckpoint: () => void;
   onDelete: () => void;
@@ -1229,7 +1232,10 @@ export function BeamInspector({
   addingStops: boolean;
   onToggleAddStops: () => void;
 }) {
-  const { lengthMm: length, laserInternalMm: insideLaser, delayLineMm: inDelayLines, timeOfFlightPs } = measureBeam(components, beam);
+  const measured = measureBeam(components, beam);
+  const { laserInternalMm: insideLaser, delayLineMm: inDelayLines } = measured;
+  const length = tracedLengthMm ?? measured.lengthMm;
+  const timeOfFlightPs = lengthToPicoseconds(length);
   const width = beam.width ?? BEAM_WIDTH_MM;
   const opacity = beam.opacity ?? 1;
 
@@ -1266,45 +1272,49 @@ export function BeamInspector({
           </button>
         </div>
       ) : null}
-      <SliderField
-        label="Width"
-        value={width}
-        display={`${width.toFixed(1)} mm`}
-        range={BEAM_WIDTH_RANGE_MM}
-        step={0.5}
-        onBegin={onCheckpoint}
-        onChange={(next) => onUpdate({ width: next }, false)}
-      />
-      <SliderField
-        label="Opacity"
-        value={opacity}
-        display={`${Math.round(opacity * 100)}%`}
-        range={BEAM_OPACITY_RANGE}
-        step={0.05}
-        onBegin={onCheckpoint}
-        onChange={(next) => onUpdate({ opacity: next }, false)}
-      />
-      <div className="builderChoice" role="group" aria-label="Direction arrows">
-        <button
-          type="button"
-          className="builderButton"
-          aria-pressed={beam.arrows !== false}
-          onClick={() => onUpdate({ arrows: undefined })}
-        >
-          Arrow
-        </button>
-        <button
-          type="button"
-          className="builderButton"
-          aria-pressed={beam.arrows === false}
-          onClick={() => onUpdate({ arrows: false })}
-        >
-          No arrow
-        </button>
-      </div>
+      {tracedLengthMm === undefined ? (
+        <>
+          <SliderField
+            label="Width"
+            value={width}
+            display={`${width.toFixed(1)} mm`}
+            range={BEAM_WIDTH_RANGE_MM}
+            step={0.5}
+            onBegin={onCheckpoint}
+            onChange={(next) => onUpdate({ width: next }, false)}
+          />
+          <SliderField
+            label="Opacity"
+            value={opacity}
+            display={`${Math.round(opacity * 100)}%`}
+            range={BEAM_OPACITY_RANGE}
+            step={0.05}
+            onBegin={onCheckpoint}
+            onChange={(next) => onUpdate({ opacity: next }, false)}
+          />
+          <div className="builderChoice" role="group" aria-label="Direction arrows">
+            <button
+              type="button"
+              className="builderButton"
+              aria-pressed={beam.arrows !== false}
+              onClick={() => onUpdate({ arrows: undefined })}
+            >
+              Arrow
+            </button>
+            <button
+              type="button"
+              className="builderButton"
+              aria-pressed={beam.arrows === false}
+              onClick={() => onUpdate({ arrows: false })}
+            >
+              No arrow
+            </button>
+          </div>
+        </>
+      ) : null}
       <dl className="builderMetrics">
         <div>
-          <dt>Path length</dt>
+          <dt>{tracedLengthMm === undefined ? "Drawn length" : "Traced length"}</dt>
           <dd>{Math.round(length)} mm</dd>
         </div>
         <div>

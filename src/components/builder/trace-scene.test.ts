@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 
 import { settleAims } from "./aim-settling.ts";
 import { fromYawDeg, fromYawPitchRollDeg } from "./quaternion.ts";
-import { traceScene } from "./trace-scene.ts";
+import { traceScene, tracedBeamLengthMm } from "./trace-scene.ts";
 import { DEFAULT_SCENE, newComponent, parseScene, SCENE_VERSION, type BuilderComponent, type BuilderSceneData } from "./types.ts";
 
 function part(type: BuilderComponent["type"], id: string, x: number, y: number, z: number, yaw = 0): BuilderComponent {
@@ -20,6 +20,7 @@ describe("traceScene", () => {
     const result = traceScene(settleAims(DEFAULT_SCENE).scene);
     assert.deepEqual(result.matchedDrawnBeamIds, DEFAULT_SCENE.beams.map((beam) => beam.id));
     assert.ok(!result.checks.some((check) => check.kind === "path-mismatch"));
+    assert.ok(tracedBeamLengthMm(result, DEFAULT_SCENE.beams[0])! > 0);
   });
 
   it("follows two 45° mirrors through the expected 3D stops", () => {
@@ -98,10 +99,12 @@ describe("traceScene", () => {
     const aligned = scene([part("laser-source", "laser", 0, 100, 0), part("photodiode", "pd", 200, 100, 0)]);
     aligned.beams = [{ id: "drawn", path: ["laser", "pd"], color: "#ffffff" }];
     assert.deepEqual(traceScene(aligned).matchedDrawnBeamIds, ["drawn"]);
+    assert.equal(tracedBeamLengthMm(traceScene(aligned), aligned.beams[0]), 200);
     const lifted = scene([part("laser-source", "laser", 0, 100, 0), part("photodiode", "pd", 200, 130, 0)]);
     lifted.beams = aligned.beams;
     const result = traceScene(lifted);
     assert.deepEqual(result.matchedDrawnBeamIds, []);
+    assert.equal(tracedBeamLengthMm(result, lifted.beams[0]), undefined);
     assert.ok(result.checks.some((check) => check.kind === "wrong-height" && check.componentId === "pd"));
   });
 

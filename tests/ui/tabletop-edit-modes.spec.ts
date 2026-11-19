@@ -25,6 +25,18 @@ test("traced light is the default and the drawn fallback lasts one visit", async
   await expect(page.getByLabel("Traced Beam checks")).toBeVisible();
 });
 
+test("the Flip keycap acts on the selected Mirror without dismissing it", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  const label = await page.locator(".builderLabel").filter({ hasText: "Mirror" }).boundingBox();
+  expect(label).not.toBeNull();
+  await page.mouse.click(label!.x + label!.width / 2, label!.y + label!.height + 65);
+  const hint = page.getByRole("button", { name: "Flip Mirror" });
+  await expect(hint).toBeVisible();
+  await hint.click();
+  await expect(page.getByRole("heading", { name: "Mirror" })).toBeVisible();
+  await expect(hint).toBeVisible();
+});
+
 test("switching drawing tools discards the previous draft", async ({ page }) => {
   await page.goto("builder/tabletop/");
   await topView(page);

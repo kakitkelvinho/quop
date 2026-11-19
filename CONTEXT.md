@@ -38,14 +38,14 @@ The Component a Mirror or Beam cube sends reflected light toward. The Tabletop w
 The side an unaimed Mirror or Beam cube sends incoming light toward at 45°. Its saved value is `1` or `-1`; F flips the side.
 
 **Traced beam**:
-The visible result of following light from a Laser source through Component surfaces. It is drawn as a dashed line in the Tabletop. For one release, `?traced=0` restores the earlier drawn-Beam view.
+The visible result of following light from a Laser source through Component surfaces. The Tabletop shows short, fading orange guides where light leaves or enters a Component; selecting a saved Beam path reveals its full traced route. For one release, `?traced=0` restores the earlier drawn-Beam view.
 
 **Beam tree**:
 The paths one Laser source's light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.
 Saved Beam paths with the same first Component form a matching tree: one is the trunk and later paths can name a parent branch. A branch may inherit its parent's colour, label and hidden state until it sets its own. The saved tree records intent and appearance; the traced tree follows surfaces.
 
 **Beam list**:
-A Setup's saved Beam paths in the order the author keeps them, shown in the beams box and saved with the Setup. When two aimed Components send light to the same Mirror, the first path in this list chooses which incoming direction settles its orientation. Branch indentation shows parentage while each row remains in list order. A saved path that agrees with traced light styles that branch without drawing a second Beam; a path that differs remains visible as a hand-drawn Beam.
+A Setup's saved Beam paths in the order the author keeps them, shown in the beams box and saved with the Setup. When two aimed Components send light to the same Mirror, the first path in this list chooses which incoming direction settles its orientation. Branch indentation shows parentage while each row remains in list order. A saved path that agrees with traced light gives its branch a label and colour for inspection, without drawing a second Beam; a path that differs remains visible as a hand-drawn Beam. A matching row shows the traced Path length.
 _Avoid_: beam order, layer order
 
 **Hidden beam**:

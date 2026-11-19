@@ -1771,7 +1771,7 @@ export default function BuilderScene() {
       <BuilderHud
         components={scene.components}
         beams={shownBeams}
-        traceChecks={trace?.checks ?? null}
+        trace={trace}
         frames={scene.frames}
         selected={selectedComponents}
         selectedBeam={selectedBeam}

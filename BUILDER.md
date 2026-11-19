@@ -40,9 +40,11 @@ mirrors at different heights; its path length and time of flight are 3D.
 
 **Beams are traced.** Light leaves each Laser source and meets Component
 surfaces in 3D. Mirrors reflect, Beam cubes split it, and apertures can be
-missed. An ordered saved Beam path still records the route the author intends
-and gives a traced branch its colour, label and visibility. When that path
-disagrees with the trace, it stays drawn so the author can inspect it.
+missed. Short orange guides fade away from the laser output and from both
+sides of each reached Component; selecting a saved Beam path reveals its full
+route in that path's colour. The saved path records the route the author intends,
+plus its label and visibility. When it disagrees with the trace, it stays drawn
+so the author can inspect it.
 
 **Path length is the payoff.** Traced segments have real 3D lengths, so
 their total length and vacuum time of flight fall out. Both are
@@ -83,7 +85,8 @@ as before; before the ports existed at all, beams measured a few millimetres
 differently at a detector, 56 mm longer from a laser and 10.5 mm longer at a
 fibre collimator.
 
-**Beams can be told apart.** Saved paths give traced branches their colours.
+**Beams can be told apart.** Saved paths give traced branches their colours in
+the Beams box and when one is selected. The passive guides stay orange.
 A path that disagrees with the trace keeps its own width (a drawn diameter
 in millimetres, 0.5–10 mm, 2 mm by default) and opacity (10–100%), set in
 its inspector. A selected hand-drawn Beam has a stronger halo.

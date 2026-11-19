@@ -36,7 +36,7 @@ import {
 } from "@/components/builder/builder-inspector";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
-import type { TraceCheck } from "@/components/builder/trace-scene";
+import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import {
   COMPONENT_SPECS,
@@ -65,7 +65,7 @@ export type ConnectDraft = { kind: ConnectionKind; from: string | null };
 export type BuilderHudProps = {
   components: BuilderComponent[];
   beams: Beam[];
-  traceChecks: TraceCheck[] | null;
+  trace: TraceResult | null;
   frames: Frame[];
   /** the selected parts, in the order they were picked */
   selected: BuilderComponent[];
@@ -292,7 +292,7 @@ const LIST_PANEL = { fitWidth: true, minimises: true, maximises: false };
 function BeamList({
   components,
   beams,
-  traceChecks,
+  trace,
   selectedId,
   besideParts,
   onSelect,
@@ -303,7 +303,7 @@ function BeamList({
 }: {
   components: BuilderComponent[];
   beams: Beam[];
-  traceChecks: TraceCheck[] | null;
+  trace: TraceResult | null;
   selectedId: string | null;
   besideParts: boolean;
   onSelect: (id: string) => void;
@@ -346,6 +346,7 @@ function BeamList({
         const name = beamDisplayName(beam);
         const selected = selectedId === beam.id;
         const drag = rowProps(index);
+        const tracedLength = trace ? tracedBeamLengthMm(trace, beam) : undefined;
         return (
           <li
             key={beam.id}
@@ -362,7 +363,9 @@ function BeamList({
             >
               <span className="builderBeamRow__dot" style={{ background: beam.color }} />
               <span className="builderBeamRow__name">{beam.parentId ? "↳ " : ""}{name}</span>
-              <span className="builderReadout">{Math.round(measureBeam(components, beam).lengthMm)} mm</span>
+              <span className="builderReadout" title={tracedLength === undefined ? "Drawn path length" : "Traced path length"}>
+                {Math.round(tracedLength ?? measureBeam(components, beam).lengthMm)} mm
+              </span>
             </button>
             <span className="builderBeamRow__actions" data-no-drag>
               <IconButton
@@ -386,10 +389,10 @@ function BeamList({
       })}
     </ol>
   );
-  const checks = traceChecks ? (
+  const checks = trace ? (
     <div className="builderTraceChecks" aria-label="Traced Beam checks">
       <strong>Traced Beam checks</strong>
-      {traceChecks.length ? traceChecks.map((check) => (
+      {trace.checks.length ? trace.checks.map((check) => (
         <button type="button" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>
           {check.message}
         </button>
@@ -1437,6 +1440,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       <BeamInspector
         beam={selectedBeam}
         components={components}
+        tracedLengthMm={props.trace ? tracedBeamLengthMm(props.trace, selectedBeam) : undefined}
         onUpdate={(patch, record) => props.onUpdateBeam(selectedBeam.id, patch, record)}
         onCheckpoint={props.onCheckpoint}
         onDelete={() => props.onDeleteBeam(selectedBeam.id)}
@@ -1622,7 +1626,7 @@ export default function BuilderHud(props: BuilderHudProps) {
   // a list hidden from the rail leaves the page; a minimised one stays, hidden, so it keeps its place
   const listOn = (id: ListId, count: number) => count > 0 && (panelsMove || !railHidden[id]);
   const anyList =
-    listOn("beams", beams.length + Number(props.traceChecks !== null)) || listOn("frames", props.frames.length) || listOn("groups", props.groups.length);
+    listOn("beams", beams.length + Number(props.trace !== null)) || listOn("frames", props.frames.length) || listOn("groups", props.groups.length);
 
   return (
     <>
@@ -1758,11 +1762,11 @@ export default function BuilderHud(props: BuilderHudProps) {
         {/* the lists stack up from the rail, like windows over a taskbar */}
         {anyList ? (
           <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
-            {listOn("beams", beams.length + Number(props.traceChecks !== null)) ? (
+            {listOn("beams", beams.length + Number(props.trace !== null)) ? (
               <BeamList
                 components={components}
                 beams={beams}
-                traceChecks={props.traceChecks}
+                trace={props.trace}
                 selectedId={selectedBeam?.id ?? null}
                 besideParts={besideParts}
                 onSelect={props.onSelectBeam}
