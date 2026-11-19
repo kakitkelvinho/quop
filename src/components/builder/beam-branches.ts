@@ -74,13 +74,23 @@ export function branchDepth(beams: Beam[], id: string): number {
   return depth;
 }
 
-export function beamForTracePath(beams: Beam[], path: string[]): Beam | undefined {
+function startsWith(path: string[], prefix: string[]): boolean {
+  return prefix.length <= path.length && prefix.every((id, index) => path[index] === id);
+}
+
+/**
+ * The saved Beam a traced segment follows: one whose route it lies on, as a leg up to the
+ * Beam's last stop or as light after it. An `open` segment leaves its path's last stop for no
+ * Component, so it can only lie after. Sharing only a laser is not following (#392); the
+ * deepest Beam wins, the earlier in the list on a tie.
+ */
+export function beamForTracePath(beams: Beam[], path: string[], open = false): Beam | undefined {
   let chosen: Beam | undefined;
   let longest = 0;
   for (const beam of beams) {
-    if (beam.path[0] !== path[0]) continue;
-    let common = 0;
-    while (common < beam.path.length && common < path.length && beam.path[common] === path[common]) common++;
+    const after = startsWith(path, beam.path);
+    if (!after && (open || !startsWith(beam.path, path))) continue;
+    const common = Math.min(beam.path.length, path.length);
     if (common > longest) {
       chosen = beam;
       longest = common;

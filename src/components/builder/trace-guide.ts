@@ -27,7 +27,7 @@ export function traceGuideGeometry(trace: TraceResult, beams: Beam[]): TraceGuid
 
   for (const tree of trace.trees) {
     for (const segment of tree.segments) {
-      if (beamForTracePath(beams, segment.path)?.hidden) continue;
+      if (beamForTracePath(beams, segment.path, segment.toId === null)?.hidden) continue;
       const delta: Vec3 = [
         segment.toMm[0] - segment.fromMm[0],
         segment.toMm[1] - segment.fromMm[1],
