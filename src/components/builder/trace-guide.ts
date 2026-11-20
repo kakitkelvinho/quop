@@ -18,7 +18,7 @@ export function traceGuideGeometry(trace: TraceResult, beams: Beam[]): TraceGuid
       for (const fraction of [step / STEPS, (step + 1) / STEPS]) {
         positions.push(
           point[0] + direction[0] * length * fraction,
-          point[1] + direction[1] * length * fraction + 2,
+          point[1] + direction[1] * length * fraction,
           point[2] + direction[2] * length * fraction,
         );
         opacity.push(GUIDE_OPACITY * (1 - fraction));
@@ -29,7 +29,7 @@ export function traceGuideGeometry(trace: TraceResult, beams: Beam[]): TraceGuid
 
   for (const tree of trace.trees) {
     for (const segment of tree.segments) {
-      if (beamForTracePath(beams, segment.path, segment.toId === null)?.hidden) continue;
+      if (beamForTracePath(beams, segment.path, segment.toId === null)) continue;
       const delta: Vec3 = [
         segment.toMm[0] - segment.fromMm[0],
         segment.toMm[1] - segment.fromMm[1],

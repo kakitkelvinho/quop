@@ -21,10 +21,11 @@ it("draws short fading guides at the laser and both sides of the mirror", () => 
   assert.equal(Math.max(...x), 240);
   assert.equal(guide.opacity[0], guide.opacity[16]);
   assert.equal(guide.opacity[7], 0);
+  assert.equal(guide.positions[1], 100);
 });
 
 it("leaves hidden branches out of the guide", () => {
-  assert.equal(traceGuideGeometry(trace, [{ id: "beam", path: ["laser", "mirror"], color: "#ffffff", hidden: true }]).positions.length, 0);
+  assert.equal(traceGuideGeometry({ ...trace, matchedDrawnBeamIds: ["beam"] }, [{ id: "beam", path: ["laser", "mirror"], color: "#ffffff", hidden: true }]).positions.length, 0);
 });
 
 it("hides only the traced paths that follow a hidden Beam, not its laser's other branches", () => {

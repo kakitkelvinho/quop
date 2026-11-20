@@ -7,6 +7,7 @@ import {
 } from "./types.ts";
 
 export type TraceSegment = {
+  routeId?: string;
   fromMm: Vec3;
   toMm: Vec3;
   fromId: string | null;
@@ -20,6 +21,7 @@ export type TraceSegment = {
 export type BeamTree = { laserId: string; segments: TraceSegment[] };
 
 export type TraceCheck = {
+  routeId?: string;
   kind: "blocked" | "missed-aperture" | "wrong-height" | "waiting-for-light" | "segment-limit" | "path-mismatch";
   componentId: string;
   message: string;
@@ -46,6 +48,7 @@ export type TraceOptions = { maxSegmentsPerLaser?: number; maxBounces?: number; 
 
 type LocatedSurface = { component: BuilderComponent; surface: Surface };
 type TraceState = {
+  routeId: string;
   beam: TracedBeam;
   fromId: string;
   path: string[];
@@ -108,7 +111,7 @@ function missedAperture(surfaces: LocatedSurface[], beam: TracedBeam, beforeMm: 
 }
 
 function checkKey(check: TraceCheck): string {
-  return `${check.kind}:${check.componentId}`;
+  return `${check.kind}:${check.componentId}:${check.routeId ?? ""}`;
 }
 
 function wrongHeight(segments: TraceSegment[], fromId: string, target: BuilderComponent, surfaces: LocatedSurface[]): boolean {
@@ -147,6 +150,7 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
   for (const laser of scene.components.filter((component) => component.type === "laser-source")) {
     const start = referencePoint(laser);
     const states: TraceState[] = [{
+      routeId: encodeURIComponent(laser.id),
       beam: { originMm: start, direction: rotate(laser.orientation, [1, 0, 0]), power: 1 },
       fromId: laser.id, path: [laser.id], pathLengthMm: fieldValue(laser, "internalPathMm"), bounces: 0, depth: 0,
       arm: "through",
@@ -158,17 +162,17 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
       const hit = nearestHit(surfaces, state.beam, options.settling ?? false);
       const distanceMm = hit?.distanceMm ?? OPEN_BEAM_MM;
       const missed = missedAperture(surfaces, state.beam, distanceMm);
-      if (missed) addCheck({ kind: "missed-aperture", componentId: missed.id, message: `${missed.label || missed.id}: missed aperture` });
+      if (missed) addCheck({ kind: "missed-aperture", routeId: state.routeId, componentId: missed.id, message: `${missed.label || missed.id}: missed aperture` });
       const toMm = hit?.hitMm ?? add(state.beam.originMm, scale(state.beam.direction, OPEN_BEAM_MM));
       const toId = hit?.located.component.id ?? null;
       const path = toId && toId !== state.path.at(-1) ? [...state.path, toId] : state.path;
       const pathLengthMm = state.pathLengthMm + distanceMm + (hit?.located.surface.extraPathMm ?? 0);
-      segments.push({ fromMm: state.beam.originMm, toMm, fromId: state.fromId, toId, path, power: state.beam.power, pathLengthMm, arm: state.arm });
+      segments.push({ routeId: state.routeId, fromMm: state.beam.originMm, toMm, fromId: state.fromId, toId, path, power: state.beam.power, pathLengthMm, arm: state.arm });
       if (!hit) continue;
       reached.add(toId!);
       const { component, surface } = hit.located;
       if (surface.rule.kind === "block" && !AIMED_DETECTORS.has(component.type) || surface.rule.kind === "isolator" && dot(state.beam.direction, surface.normal) <= 0) {
-        addCheck({ kind: "blocked", componentId: component.id, message: `Blocked by ${component.label || component.id}` });
+        addCheck({ kind: "blocked", routeId: state.routeId, componentId: component.id, message: `Blocked by ${component.label || component.id}` });
       }
       if (state.depth >= 64) continue;
       const outgoing = applyRule(surface.rule, surface.normal, state.beam, hit.hitMm, surface.positionMm);
@@ -176,10 +180,10 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
         const next = outgoing[index];
         const reflected = surface.rule.kind === "reflect" || surface.rule.kind === "split" && index === 1;
         if (state.bounces + Number(reflected) > maxBounces) continue;
-        states.push({ beam: next, fromId: component.id, path, pathLengthMm, bounces: state.bounces + Number(reflected), depth: state.depth + 1, arm: reflected ? "reflected" : "through" });
+        states.push({ routeId: outgoing.length > 1 ? `${state.routeId}/${encodeURIComponent(component.id)}:${reflected ? "reflected" : "through"}` : state.routeId, beam: next, fromId: component.id, path, pathLengthMm, bounces: state.bounces + Number(reflected), depth: state.depth + 1, arm: reflected ? "reflected" : "through" });
       }
     }
-    if (states.length > 0) addCheck({ kind: "segment-limit", componentId: laser.id, message: `${laser.label || laser.id}: trace limit reached` });
+    if (states.length > 0) addCheck({ kind: "segment-limit", routeId: states[0].routeId, componentId: laser.id, message: `${laser.label || laser.id}: trace limit reached` });
     trees.push({ laserId: laser.id, segments });
   }
 
