@@ -1958,12 +1958,7 @@ export default function BuilderHud(props: BuilderHudProps) {
           <button type="button" aria-label="Dismiss what’s new" onClick={dismissWhatsNew}>×</button>
         </div>
         <h2 id="builder-whats-new-title">Light follows the table</h2>
-        <p>Beams now trace from each laser through Component surfaces. Saved Beam paths still show where you meant the light to go.</p>
-        <ul>
-          <li>Aim a Mirror or Beam cube with Pick on table in the Inspector, by drawing a Beam, or by dropping it into the light.</li>
-          <li>Press <kbd>F</kbd> to flip the selected Mirror’s fold.</li>
-          <li>Use the checks in the status bar to find blocked light and paths that differ from the trace.</li>
-        </ul>
+        <p>Light now starts at each laser and follows the Components on the table. Drop a Mirror or Beam cube into the light and it can turn to catch a target. Your old hand-drawn Beams are still there, so older Setups keep working.</p>
         <div className="builderWhatsNew__actions">
           <button type="button" onClick={() => { dismissWhatsNew(); if (props.traced) props.onToggleTraced(); }}>Use earlier view</button>
           <button type="button" className="is-primary" onClick={dismissWhatsNew}>Got it</button>
