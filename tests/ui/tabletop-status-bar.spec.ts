@@ -12,7 +12,7 @@ test("what's new appears once and can open the earlier view", async ({ page }) =
     return { background: style.backgroundColor, text: style.color };
   });
   expect(gotItColors.text).not.toBe(gotItColors.background);
-  await expect(card).toContainText("Your old hand-drawn Beams are still there");
+  await expect(card).toContainText("Hand-drawn Beams are still there, and older Setups still work.");
   await card.getByRole("button", { name: "Use earlier view" }).click();
   await expect(card).toHaveCount(0);
   await expect(statusBar(page)).toContainText("Legacy view: drawn Beams, not traced");
