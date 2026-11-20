@@ -1,6 +1,6 @@
 import { cross, length, normalize, scale, canonical, compose, fromYawDeg, type Quat, type Vec3 } from "./quaternion.ts";
 import { traceScene } from "./trace-scene.ts";
-import { type BuilderComponent, type BuilderSceneData, referencePoint } from "./types.ts";
+import { type BuilderComponent, type BuilderSceneData, delayLineYaw, referencePoint, yawOf } from "./types.ts";
 
 export type AimStatus = { kind: "aimed" | "snapped" | "free" | "waiting"; previousId?: string; reason?: string };
 
@@ -78,6 +78,16 @@ function onePass(scene: BuilderSceneData): { scene: BuilderSceneData; statuses: 
   const statuses = new Map<string, AimStatus>();
   let changed = false;
   const components = scene.components.map((component) => {
+    if (component.type === "delay-line") {
+      // It stands across the line from its preceding Component; with none it keeps its orientation (#360).
+      const previous = byId.get(before.get(component.id) ?? "");
+      const yaw = previous && delayLineYaw(component.position, referencePoint(previous), component.position, yawOf(component));
+      if (yaw === undefined) return component;
+      const orientation = fromYawDeg(yaw);
+      if (sameOrientation(component.orientation, orientation)) return component;
+      changed = true;
+      return { ...component, orientation };
+    }
     if (!canAim(component)) return component;
     if (component.free && !component.aim) {
       statuses.set(component.id, { kind: "free" });
@@ -145,14 +155,20 @@ export function aimAt(scene: BuilderSceneData, id: string, targetId: string): Bu
   ) };
 }
 
-export function catchAims(scene: BuilderSceneData): BuilderSceneData {
+/**
+ * On placing or releasing `releasedId`: an unaimed Mirror or Beam cube takes as its aim what its
+ * reflected light lands on, when either it or that target is the released Component. Others
+ * keep their state, so an F flip elsewhere is not undone (#390).
+ */
+export function catchAims(scene: BuilderSceneData, releasedId: string): BuilderSceneData {
   const byId = new Map(scene.components.map((component) => [component.id, component]));
   const caught = new Map<string, string>();
   for (const tree of traceScene(scene).trees) {
     for (const segment of tree.segments) {
       const from = segment.fromId && byId.get(segment.fromId);
       const target = segment.toId && byId.get(segment.toId);
-      if (from && target && canAim(from) && !from.aim && !from.free && target.type !== "laser-source" && segment.arm === "reflected" && !caught.has(from.id)) {
+      const released = from && target && (from.id === releasedId || target.id === releasedId);
+      if (released && canAim(from) && !from.aim && !from.free && target.type !== "laser-source" && segment.arm === "reflected" && !caught.has(from.id)) {
         caught.set(from.id, target.id);
       }
     }

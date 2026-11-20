@@ -59,13 +59,18 @@ type TraceState = {
 };
 
 const OPEN_BEAM_MM = 500;
+// While settling, these catch light passing near their Reference point whichever way they face, so they can be turned toward it.
+const SETTLED_TYPES = new Set<BuilderComponent["type"]>(["mirror-mount", "beam-splitter", "delay-line"]);
 const HIT_EPSILON_MM = 1e-7;
 
 function placedSurfaces(components: BuilderComponent[], settling: boolean): LocatedSurface[] {
   return components.flatMap((component) => {
     const pose = { positionMm: referencePoint(component), orientation: component.orientation };
     const declared = COMPONENT_SPECS[component.type].surfaces?.(component) ?? [];
-    const local = settling && component.type === "beam-splitter" ? declared.slice(-1) : declared;
+    const local = !settling ? declared
+      : component.type === "beam-splitter" ? declared.slice(-1)
+      : component.type === "delay-line" ? declared.slice(0, 1)
+      : declared;
     return local.map((surface) => ({
       component, surface: placeSurface(surface, pose),
     }));
@@ -76,7 +81,7 @@ function nearestHit(surfaces: LocatedSurface[], beam: TracedBeam, settling: bool
   let nearest: { located: LocatedSurface; hitMm: Vec3; distanceMm: number } | null = null;
   for (const located of surfaces) {
     let hitMm: Vec3 | null = null;
-    if (settling && (located.component.type === "mirror-mount" || located.component.type === "beam-splitter")) {
+    if (settling && SETTLED_TYPES.has(located.component.type)) {
       const toCentre = add(located.surface.positionMm, scale(beam.originMm, -1));
       const travelMm = dot(toCentre, beam.direction);
       const closest = add(beam.originMm, scale(beam.direction, travelMm));

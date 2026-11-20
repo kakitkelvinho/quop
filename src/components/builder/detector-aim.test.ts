@@ -1,5 +1,5 @@
 import { yawOf } from "./types.ts";
-import { fromEulerYXZDeg, fromYawDeg, toEulerYXZDeg } from "./quaternion.ts";
+import { fromYawPitchRollDeg, fromYawDeg, toYawPitchRollDeg } from "./quaternion.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
@@ -47,9 +47,9 @@ describe("a photodiode that ends a beam", () => {
   });
 
   it("levels a detector when its beam sets the angle", () => {
-    const pitched = { ...part("pd", "photodiode", 0, 0), orientation: fromEulerYXZDeg({ yawDeg: 30, pitchDeg: 20, rollDeg: 10 }) };
+    const pitched = { ...part("pd", "photodiode", 0, 0), orientation: fromYawPitchRollDeg({ yawDeg: 30, pitchDeg: 20, rollDeg: 10 }) };
     const settled = settleAngles(scene([part("laser", "laser-source", -200, 0), pitched], [["laser", "pd"]]));
-    assert.deepEqual(toEulerYXZDeg(settled.components[1].orientation), { yawDeg: 0, pitchDeg: 0, rollDeg: 0 });
+    assert.deepEqual(toYawPitchRollDeg(settled.components[1].orientation), { yawDeg: 0, pitchDeg: 0, rollDeg: 0 });
   });
 
   it("faces the stop before it, not the laser, on a folded path", () => {

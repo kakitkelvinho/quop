@@ -1,4 +1,4 @@
-import { traceRoutes } from "./trace-routes.ts";
+import { beamForTracePath } from "./beam-branches.ts";
 import type { TraceResult } from "./trace-scene.ts";
 import type { Beam, Vec3 } from "./types.ts";
 
@@ -27,12 +27,9 @@ export function traceGuideGeometry(trace: TraceResult, beams: Beam[]): TraceGuid
     }
   }
 
-  const drawn = new Set<TraceResult["trees"][number]["segments"][number]>();
-  for (const route of traceRoutes(trace, beams)) {
-    if (route.beam) continue;
-    for (const segment of route.segments) {
-      if (drawn.has(segment)) continue;
-      drawn.add(segment);
+  for (const tree of trace.trees) {
+    for (const segment of tree.segments) {
+      if (beamForTracePath(beams, segment.path, segment.toId === null)) continue;
       const delta: Vec3 = [
         segment.toMm[0] - segment.fromMm[0],
         segment.toMm[1] - segment.fromMm[1],
@@ -42,8 +39,8 @@ export function traceGuideGeometry(trace: TraceResult, beams: Beam[]): TraceGuid
       if (length <= 0) continue;
       const direction: Vec3 = delta.map((value) => value / length) as Vec3;
       const fade = Math.min(FADE_MM, length / 2);
-      stub(segment.fromMm, direction, fade, route.laserId);
-      if (segment.toId) stub(segment.toMm, direction.map((value) => -value) as Vec3, fade, route.laserId);
+      stub(segment.fromMm, direction, fade, tree.laserId);
+      if (segment.toId) stub(segment.toMm, direction.map((value) => -value) as Vec3, fade, tree.laserId);
     }
   }
   return { positions: new Float32Array(positions), opacity: new Float32Array(opacity), laserIds };

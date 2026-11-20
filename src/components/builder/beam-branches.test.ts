@@ -44,6 +44,15 @@ describe("Beam branches", () => {
     assert.equal(beamForTracePath(beams, ["laser", "cube", "b", "c"])?.id, "tip");
   });
 
+  it("matches a traced path only to a Beam whose route it lies on", () => {
+    const [trunk] = beams;
+    assert.equal(beamForTracePath([trunk], ["laser", "cube", "r"]), undefined);
+    assert.equal(beamForTracePath([trunk], ["laser", "cube"])?.id, "trunk");
+    assert.equal(beamForTracePath([trunk], ["laser", "cube"], true), undefined);
+    assert.equal(beamForTracePath([trunk], ["laser", "cube", "a", "x"])?.id, "trunk");
+    assert.equal(beamForTracePath([trunk], ["laser", "cube", "a"], true)?.id, "trunk");
+  });
+
   it("merges old beams with the same source into one tree with their own colours", () => {
     const old: Beam[] = [
       { id: "red", path: ["laser", "cube", "a"], color: "#f00" },
