@@ -61,10 +61,51 @@ describe("traceScene", () => {
 
   it("includes internal and Delay line paths in the measured length", () => {
     const laser = { ...part("laser-source", "laser", 0, 100, 0), internalPathMm: 40 };
-    const delay = { ...part("delay-line", "delay", 100, 100, 0), delayMinPathMm: 200, delayStageMm: 10 };
+    const delay = { ...part("delay-line", "delay", 100, 100, 0, 90), delayMinPathMm: 200, delayStageMm: 10 };
     const result = traceScene(scene([laser, delay, part("photodiode", "pd", 200, 100, 0)]));
     const end = result.trees[0].segments.find((segment) => segment.toId === "pd");
     assert.equal(end?.pathLengthMm, 460);
+  });
+
+  describe("a Delay line across the line (#360)", () => {
+    const delayScene = (yaw: number, z = 0, y = 100) => scene([
+      part("laser-source", "laser", 0, 100, 0),
+      { ...part("delay-line", "delay", 100, y, z, yaw), delayMinPathMm: 200, delayStageMm: 10 },
+      part("photodiode", "pd", 200, 100, 0),
+    ]);
+    const toDetector = (data: BuilderSceneData) => traceScene(data).trees[0].segments.find((segment) => segment.toId === "pd");
+
+    for (const yaw of [90, 270]) {
+      it(`adds its delay at yaw ${yaw} and leaves on the line it came in on`, () => {
+        const end = toDetector(delayScene(yaw));
+        assert.deepEqual(end?.path, ["laser", "delay", "pd"]);
+        assert.equal(end?.pathLengthMm, 200 + 200 + 2 * 10);
+        assert.deepEqual(end?.fromMm, [100, 100, 0]);
+      });
+    }
+
+    it("turns itself across the line from yaw 0, keeping the side it faces", () => {
+      for (const [from, to] of [[0, 90], [30, 90], [200, 270], [300, 270]]) {
+        const settled = settleAims(delayScene(from)).scene;
+        const delay = settled.components.find((component) => component.id === "delay")!;
+        assert.deepEqual(delay.orientation, fromYawDeg(to), `from ${from}`);
+        assert.equal(toDetector(settled)?.pathLengthMm, 420);
+      }
+    });
+
+    it("keeps its orientation with no Component before it", () => {
+      const lone = scene([part("delay-line", "delay", 100, 100, 0, 30)]);
+      assert.equal(settleAims(lone).scene, lone);
+    });
+
+    it("blocks a Beam that misses its port, off the line or at the wrong height", () => {
+      // at yaw 90 the stage runs back from the port toward +z, at 270 toward −z
+      for (const data of [delayScene(90, -20), delayScene(270, 20), delayScene(90, 0, 120)]) {
+        const result = traceScene(data);
+        assert.deepEqual(result.trees[0].segments.map((segment) => segment.toId), ["delay"]);
+        assert.ok(result.checks.some((check) => check.kind === "blocked" && check.componentId === "delay"));
+      }
+    });
   });
 
   it("caps total segments per laser even when a Beam cube branches", () => {

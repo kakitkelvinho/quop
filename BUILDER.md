@@ -234,9 +234,11 @@ one undo step per drag. A
 beam through it (a stop in the middle) is drawn to the port and away from it,
 and gains the minimum delay plus twice the position each time it passes,
 which its inspector names ("Includes … mm in delay lines"). A beam that only
-starts or ends at it gains nothing. Its orientation is set by hand in traced
-mode. The old drawn-mode fallback still settles its rail perpendicular to the
-saved Beam path.
+starts or ends at it gains nothing. In traced mode it turns itself across the
+line from the Component before it, keeping its rail on the side it already
+faces, so turning it round by hand moves the rail to the other side; light
+that misses its 25.4 mm port is blocked by the stage. The old drawn-mode
+fallback still settles its rail perpendicular to the saved Beam path.
 
 **A translation stage is a fixed mount.** The standalone translation stage in
 Other starts with an XY drawing. Its inspector's X, Y and Z boxes choose which
@@ -267,10 +269,10 @@ Mirror at the next stop. They can be selected, moved, copied and deleted
 independently. Older Setup files convert their linked pair into two Mirrors,
 keeping their ids, heights, labels, groups and Beams.
 
-**A detector at a beam's end faces the light.** A photodiode, camera,
-spectrometer or single-photon detector that is a beam's last stop turns its
-face to the stop before it, and re-aims live as either moves. Like a mirror,
-its yaw is then read-only and names the beam. At a beam's start, or on no beam, it turns by hand.
+**A detector turns by hand.** A photodiode, camera, spectrometer or
+single-photon detector keeps the orientation it is given; turn its face to the
+arriving light. Only the old drawn-mode fallback turns a detector that is a
+Beam's last stop to the stop before it, with its yaw read-only.
 
 **Mount colour marks the beam line.** Any part held in a mount (mirror, beam
 cube, waveplate, filter, iris, fiber collimator) can have its mount tinted; the
@@ -627,7 +629,7 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Move several | Drag any selected part: it snaps to the grid and the rest keep their spacing from it. Arrow keys nudge them all. One undo step either way. A particle moves with its host when both are selected; selected without its host, it lets go |
 | Raise / lower | Type a height in the inspector |
 | Type a number | Any number field in the inspector: Enter or leaving the field applies it (clicking another part counts, and the edit stays with the part you typed it on), Esc drops what you typed, and text that isn't a number (an empty field, a lone `-`) puts the old value back. The arrows step it at once |
-| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw. An aimed Mirror or Beam cube settles its orientation from incoming light and its target; free optics and detectors keep their hand-set orientation. Several parts turn 15° about their centre |
+| Rotate | `R` / `Shift R`, the rotate buttons, or type a yaw. An aimed Mirror or Beam cube settles its orientation from incoming light and its target, and a Delay line stands across its line; free optics and detectors keep their hand-set orientation. Several parts turn 15° about their centre |
 | Slide a delay line's stage | Select it and drag the bubble on its carriage's thumbscrew along the rail, or set Position in its inspector |
 | Mount an optic on a translation stage | Place the stage from Other, select it and one compatible optic with Ctrl/⌘ click, then press Mount in their inspector; the optic's Mount on stage menu also works |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |

@@ -68,13 +68,28 @@ describe("aim settling", () => {
       part("laser-source", "laser", 0, 100, 0), part("mirror-mount", "m", 100, 100, 0),
       { ...part("photodiode", "pd", 100, 100, 100), orientation: [0, Math.SQRT1_2, 0, Math.SQRT1_2] },
     ]);
-    const caught = catchAims(settleAims(data).scene);
+    const caught = catchAims(settleAims(data).scene, "pd");
     assert.equal(at(caught, "m").aim, "pd");
     const moved = { ...caught, components: caught.components.map((component) => component.id === "pd" ? { ...component, position: [150, 100, 100] as Vec3 } : component) };
     const settled = settleAims(moved).scene;
     const leaving = traceScene(settled).trees[0].segments.find((segment) => segment.fromId === "m");
     assert.ok(leaving);
     near(normalize([leaving.toMm[0] - leaving.fromMm[0], leaving.toMm[1] - leaving.fromMm[1], leaving.toMm[2] - leaving.fromMm[2]]), normalize([50, 0, 100]));
+  });
+
+  it("keeps a flipped Mirror flipped and unaimed when an unrelated Component is dragged", () => {
+    const data = scene([
+      part("laser-source", "laser", 0, 100, 0), { ...part("mirror-mount", "m", 100, 100, 0), aim: "left" },
+      { ...part("photodiode", "left", 100, 100, 100), orientation: fromYawDeg(90) },
+      { ...part("photodiode", "right", 100, 100, -100), orientation: fromYawDeg(270) },
+      part("photodiode", "other", 300, 100, 300),
+    ]);
+    const flipped = settleAims(flipFold(settleAims(data).scene, "m")).scene;
+    assert.ok(traceScene(flipped).trees[0].segments.some((segment) => segment.fromId === "m" && segment.toId === "right"));
+    const dragged = { ...flipped, components: flipped.components.map((component) => component.id === "other" ? { ...component, position: [320, 100, 300] as Vec3 } : component) };
+    const released = catchAims(settleAims(dragged).scene, "other");
+    assert.equal(at(released, "m").aim, undefined);
+    assert.equal(at(released, "m").fold, -1);
   });
 
   it("re-points an aimed Mirror when another Mirror is inserted into its light", () => {
