@@ -31,6 +31,12 @@ const ICONS = {
       <path d="M2 12h9.5" />
     </>
   ),
+  pin: (
+    <>
+      <path d="M8 4h8l-1 5 2 3v2H7v-2l2-3-1-5Z" />
+      <path d="M12 14v7" />
+    </>
+  ),
   // a patch cord: a plug at each end and the cable slack between them
   connect: (
     <>
@@ -308,6 +314,7 @@ export function IconButton({
   label,
   onClick,
   active,
+  off,
   disabled,
   guide,
 }: {
@@ -315,6 +322,7 @@ export function IconButton({
   label: string;
   onClick: () => void;
   active?: boolean;
+  off?: boolean;
   disabled?: boolean;
   /** its key in the quick guide's coach marks */
   guide?: string;
@@ -330,7 +338,7 @@ export function IconButton({
       title={label}
       data-guide={guide}
     >
-      <Icon name={icon} />
+      <Icon name={icon} off={off} />
     </button>
   );
 }

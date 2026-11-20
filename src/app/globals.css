@@ -3850,7 +3850,7 @@ html[data-theme="dark"] .builderCoach {
 }
 
 .builderLightList__laser,
-.builderLightList__drawn,
+.builderLightList__legacy,
 .builderLightList__loose {
   display: flex;
   flex-direction: column;
@@ -3858,10 +3858,16 @@ html[data-theme="dark"] .builderCoach {
 }
 
 .builderLightList__laser + .builderLightList__laser,
-.builderLightList__drawn,
+.builderLightList__legacy,
 .builderLightList__loose {
   border-top: 1px solid var(--builder-hairline);
   padding-top: 0.4rem;
+}
+
+.builderLightList__drawn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 
 .builderLightList h3 {
@@ -3895,6 +3901,12 @@ html[data-theme="dark"] .builderCoach {
 .builderLightList__endpoint {
   flex: 1;
   min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3917,6 +3929,7 @@ html[data-theme="dark"] .builderCoach {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3927,7 +3940,6 @@ html[data-theme="dark"] .builderCoach {
   color: var(--accent-strong);
 }
 
-.builderLightList__unsaved,
 .builderLightList__readouts,
 .builderLightList__drawnRow small {
   color: var(--muted);
@@ -3938,6 +3950,42 @@ html[data-theme="dark"] .builderCoach {
   justify-content: space-between;
   margin-top: 0.25rem;
   font-variant-numeric: tabular-nums;
+}
+
+.builderLightList__power {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+
+.builderLightList__powerBar {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 2rem;
+  height: 0.55rem;
+  padding: 1px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+
+.builderLightList__powerBar::after {
+  content: "";
+  position: absolute;
+  right: -4px;
+  top: 2px;
+  width: 2px;
+  height: calc(100% - 4px);
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.builderLightList__powerFill {
+  display: block;
+  height: 100%;
+  background: currentColor;
 }
 
 .builderLightList__heading,

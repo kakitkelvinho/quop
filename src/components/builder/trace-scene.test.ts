@@ -18,9 +18,10 @@ function scene(components: BuilderComponent[]): BuilderSceneData {
 describe("traceScene", () => {
   it("traces both branches of the starting Setup", () => {
     const result = traceScene(settleAims(DEFAULT_SCENE).scene);
-    assert.deepEqual(result.matchedDrawnBeamIds, DEFAULT_SCENE.beams.map((beam) => beam.id));
+    assert.deepEqual(result.matchedDrawnBeamIds, []);
     assert.ok(!result.checks.some((check) => check.kind === "path-mismatch"));
-    assert.ok(tracedBeamLengthMm(result, DEFAULT_SCENE.beams[0])! > 0);
+    assert.ok(result.trees[0].segments.some((segment) => segment.toId === "spectrometer-1" && segment.pathLengthMm > 0));
+    assert.ok(result.trees[0].segments.some((segment) => segment.toId === "pd-ref" && segment.power === 0.5));
   });
 
   it("follows two 45° mirrors through the expected 3D stops", () => {

@@ -1724,7 +1724,7 @@ export default function BuilderScene() {
     setSelectedFrameId(null);
   }, [editMode, endMode, selectedBeamId]);
 
-  const handleSaveRoute = useCallback((route: LightRoute) => {
+  const handlePinRoute = useCallback((route: LightRoute) => {
     if (route.path.length < 2) return;
     const source = componentById(sceneRef.current.components, route.laserId);
     const end = route.endId && componentById(sceneRef.current.components, route.endId);
@@ -1732,9 +1732,16 @@ export default function BuilderScene() {
     const id = api.addBeam(route.path, BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length], label, false, true);
     if (id) {
       setSelectedBeamId(id);
-      announce("Beam saved.");
+      announce("Route pinned.");
     }
   }, [api, announce]);
+
+  const handleUnpinRoute = useCallback((id: string) => {
+    api.deleteBeam(id);
+    setSelectedBeamId((current) => current === id ? null : current);
+    if (editMode.kind === "add-stops" && editMode.beamId === id) endMode();
+    announce("Route unpinned. ⌘Z undoes.");
+  }, [api, announce, editMode, endMode]);
 
   return (
     <div className="builderWorkspace">
@@ -1910,7 +1917,8 @@ export default function BuilderScene() {
           setSelectedConnectionId(null);
         }}
         onSelectBeam={handleSelectBeam}
-        onSaveRoute={handleSaveRoute}
+        onPinRoute={handlePinRoute}
+        onUnpinRoute={handleUnpinRoute}
         onHoverRoute={setHoveredRouteId}
         onToggleAddStops={() => {
           if (editMode.kind === "add-stops") endMode();
