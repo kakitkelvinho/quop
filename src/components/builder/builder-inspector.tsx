@@ -655,7 +655,9 @@ export function ComponentInspector({
   angleBeam,
   traced,
   aimStatus,
+  pickingAim,
   onSetAim,
+  onPickAim,
   onFlipAim,
   onSnapAim,
   onUpdate,
@@ -675,7 +677,9 @@ export function ComponentInspector({
   angleBeam?: Beam;
   traced?: boolean;
   aimStatus?: AimStatus;
+  pickingAim?: boolean;
   onSetAim?: (targetId: string) => void;
+  onPickAim?: () => void;
   onFlipAim?: () => void;
   onSnapAim?: () => void;
   onUpdate: (patch: ComponentPatch, record?: boolean) => void;
@@ -721,6 +725,9 @@ export function ComponentInspector({
             </span>
           </label>
           <div className="builderInspector__actions">
+            <button type="button" aria-pressed={pickingAim} onClick={onPickAim}>
+              {pickingAim ? "Picking… (Esc to cancel)" : "Pick on table"}
+            </button>
             <button type="button" onClick={onFlipAim}>Flip (F)</button>
             {component.free ? <button type="button" onClick={onSnapAim}>Snap 45° to the light</button> : null}
           </div>

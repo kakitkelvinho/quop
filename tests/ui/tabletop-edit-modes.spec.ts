@@ -9,6 +9,12 @@ async function clickPart(page: Page, index: number) {
   await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height + 20);
 }
 
+async function clickLabeledPart(page: Page, label: string) {
+  const box = await page.locator(".builderLabel").filter({ hasText: label }).boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height + 20);
+}
+
 async function topView(page: Page) {
   await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   await page.getByRole("button", { name: "Camera" }).click();
@@ -52,6 +58,28 @@ test("the Flip keycap acts on the selected Mirror without dismissing it", async 
   await hint.click();
   await expect(page.getByRole("heading", { name: "Mirror" })).toBeVisible();
   await expect(hint).toBeVisible();
+});
+
+test("Pick on table re-aims a Mirror and Esc cancels without changing it", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  await topView(page);
+  await clickLabeledPart(page, "Mirror");
+  const aim = page.getByRole("combobox", { name: "Aim reflected light at" });
+  await expect(aim).toHaveValue("pd-ref");
+  const pick = page.getByRole("button", { name: "Pick on table" });
+  await pick.click();
+  await expect(page.getByRole("button", { name: /Picking/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("toolbar", { name: "Tabletop status" })).toContainText("target");
+  await page.keyboard.press("Escape");
+  await expect(pick).toBeVisible();
+  await expect(aim).toHaveValue("pd-ref");
+  await aim.selectOption("spectrometer-1");
+  await expect(aim).toHaveValue("spectrometer-1");
+  await pick.click();
+  await clickLabeledPart(page, "PD");
+  await expect(aim).toHaveValue("pd-ref");
+  await expect(page.getByRole("heading", { name: "Mirror" })).toBeVisible();
+  await expect(page.getByRole("toolbar", { name: "Tabletop status" })).toContainText("Aimed at PD.");
 });
 
 test("switching drawing tools discards the previous draft", async ({ page }) => {

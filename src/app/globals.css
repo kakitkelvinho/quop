@@ -3499,6 +3499,7 @@ html[data-theme="dark"] .builderCoach {
 
 .builderInspector__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 

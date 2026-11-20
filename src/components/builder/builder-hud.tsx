@@ -128,6 +128,8 @@ export type BuilderHudProps = {
   onToggleTraced: () => void;
   aimStatuses: Map<string, AimStatus> | null;
   onSetAim: (id: string, targetId: string) => void;
+  aimPickId: string | null;
+  onPickAim: (id: string) => void;
   onFlipAim: (id: string) => void;
   onSnapAim: (id: string) => void;
   onDuplicateSelected: () => void;
@@ -238,6 +240,7 @@ type ListId = "beams" | "frames" | "groups";
 
 /** Key hints appear only inside a mode — the rest of the time the canvas stays quiet. */
 function modeHints(props: BuilderHudProps): { label: string; hints: Hint[] } | null {
+  if (props.aimPickId) return { label: "Aim", hints: [["Click", "target"], ["Esc", "cancel"]] };
   if (props.groupMode) return { label: "Group", hints: groupModeHints(props.selected.length) };
   if (props.beamMode)
     return {
@@ -1524,7 +1527,9 @@ export default function BuilderHud(props: BuilderHudProps) {
         angleBeam={props.traced ? undefined : derivedAngleBeam(beams, selected[0])}
         traced={props.traced}
         aimStatus={props.aimStatuses?.get(selected[0].id)}
+        pickingAim={props.aimPickId === selected[0].id}
         onSetAim={(targetId) => props.onSetAim(selected[0].id, targetId)}
+        onPickAim={() => props.onPickAim(selected[0].id)}
         onFlipAim={() => props.onFlipAim(selected[0].id)}
         onSnapAim={() => props.onSnapAim(selected[0].id)}
         onUpdate={props.onUpdateSelected}
@@ -1955,7 +1960,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <h2 id="builder-whats-new-title">Light follows the table</h2>
         <p>Beams now trace from each laser through Component surfaces. Saved Beam paths still show where you meant the light to go.</p>
         <ul>
-          <li>Aim a Mirror or Beam cube in the Inspector, with the aim knob, by drawing a Beam, or by dropping it into the light.</li>
+          <li>Aim a Mirror or Beam cube with Pick on table in the Inspector, by drawing a Beam, or by dropping it into the light.</li>
           <li>Press <kbd>F</kbd> to flip the selected Mirror’s fold.</li>
           <li>Use the checks in the status bar to find blocked light and paths that differ from the trace.</li>
         </ul>

@@ -1190,7 +1190,6 @@ export type BuilderCanvasProps = {
   rotationHandle: RotationHandleSpec | null;
   onRotationHandlePointerDown: (event: ThreeEvent<PointerEvent>) => void;
   aimStatuses: Map<string, AimStatus> | null;
-  onAimHandlePointerDown: (id: string, event: ThreeEvent<PointerEvent>) => void;
   onFlipAim: (id: string) => void;
   /** a lone selected delay line, whose carriage gets a handle to slide it, and whether it is sliding now */
   stageHandle: { component: BuilderComponent; sliding: boolean } | null;
@@ -1277,7 +1276,6 @@ export default function BuilderCanvas({
   rotationHandle,
   onRotationHandlePointerDown,
   aimStatuses,
-  onAimHandlePointerDown,
   onFlipAim,
   stageHandle,
   onStageHandlePointerDown,
@@ -1478,17 +1476,6 @@ export default function BuilderCanvas({
                 <torusGeometry args={[4, 0.8, 6, 24]} />
                 <meshBasicMaterial color={palette.accent} transparent opacity={0.85} depthTest={false} />
               </mesh>
-            ) : null}
-            {shown ? (
-              <group position={[point[0] + componentRadius(part) + 13, 2, point[2]]}>
-                <mesh
-                  onPointerDown={(event) => { event.stopPropagation(); onAimHandlePointerDown(part.id, event); }}
-                  onWheel={(event) => { event.stopPropagation(); onFlipAim(part.id); }}
-                >
-                  <sphereGeometry args={[5, 12, 8]} />
-                  <meshBasicMaterial color={palette.accent} depthTest={false} />
-                </mesh>
-              </group>
             ) : null}
             {shown ? (
               <Html position={[point[0] + componentRadius(part) + 66, point[1] + 8, point[2]]} center>
