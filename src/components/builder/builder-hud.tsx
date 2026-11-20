@@ -58,7 +58,7 @@ import {
   serializeScene,
 } from "@/components/builder/types";
 import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
-import { PrototypeBeamsBox, usePrototype } from "@/components/builder/prototype-traced-display";
+import { PrototypeBeamsBox, PrototypeStatusBar, usePrototype } from "@/components/builder/prototype-traced-display";
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
@@ -1714,6 +1714,7 @@ export default function BuilderHud(props: BuilderHudProps) {
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
 
+        <PrototypeStatusBar where="top" mode={mode} status={props.status} trace={props.trace} onSelectComponent={props.onSelectComponent} />
         {mode ? (
           <p className="builderModeBadge">
             {mode.label}
@@ -1851,6 +1852,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
+      <PrototypeStatusBar where="bottom" mode={mode} status={props.status} trace={props.trace} onSelectComponent={props.onSelectComponent} />
       <p className="builderStatus" role="status" aria-live="polite">
         {props.status}
       </p>

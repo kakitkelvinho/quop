@@ -1,7 +1,8 @@
 "use client";
 // PROTOTYPE (#395), throwaway: lives on branch prototype/traced-beam-display only, never main.
 // Question: how should Beams look on the table and in the Beams box when light is traced?
-// Variants on /builder/tabletop, switched by ?variant= (now | A | B | B2 | C), plus
+// Variants on /builder/tabletop, switched by ?variant= (now | A | B | B2 | C | D), plus
+// for B2 and D: ?light= (colours | power) and ?bar= (line | strip | readout | off), plus
 // ?scenario= (saved | unsaved | handdrawn) to fake the cases the starter Setup lacks.
 // Alt+← / Alt+→ cycle variants (plain arrows already nudge Components).
 import { Html, Line } from "@react-three/drei";
@@ -19,13 +20,22 @@ import {
   type Beam, type BuilderComponent, type Vec3,
 } from "@/components/builder/types";
 
-export type Variant = "now" | "A" | "B" | "B2" | "C";
+export type Variant = "now" | "A" | "B" | "B2" | "C" | "D";
+export type LightView = "colours" | "power";
+export type Bar = "line" | "strip" | "readout" | "off";
+const BARS: { key: Bar; name: string }[] = [
+  { key: "line", name: "Bar: bottom line" },
+  { key: "strip", name: "Bar: under the dock" },
+  { key: "readout", name: "Bar: corner readout" },
+  { key: "off", name: "Bar: off" },
+];
 const VARIANTS: { key: Variant; name: string }[] = [
   { key: "now", name: "Today (fades)" },
   { key: "A", name: "Coloured light + light tree" },
   { key: "B", name: "Saved Beams + status" },
   { key: "B2", name: "Saved Beams + fades, Aim at…, laser colours" },
   { key: "C", name: "Physical light + checks inline" },
+  { key: "D", name: "B2 table + C light panel" },
 ];
 const SCENARIOS: { key: Scenario; name: string }[] = [
   { key: "saved", name: "All saved" },
@@ -67,7 +77,7 @@ export function AimPickButton({ id }: { id: string }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [picking, id]);
-  if (variant !== "B2") return null;
+  if (!isLate(variant)) return null;
   return picking === id
     ? <button type="button" className="protoPick is-on" onClick={() => setAimPick(null)}>Click a Component on the table… (Esc)</button>
     : <button type="button" className="protoPick" onClick={() => setAimPick(id)}>⌖ Pick on table</button>;
@@ -84,13 +94,16 @@ function subscribe(callback: () => void) {
   };
 }
 const readSearch = () => window.location.search;
-export function usePrototype(): { variant: Variant; scenario: Scenario } {
+export function usePrototype(): { variant: Variant; scenario: Scenario; light: LightView; bar: Bar } {
   const search = useSyncExternalStore(subscribe, readSearch, () => "");
   const params = new URLSearchParams(search);
   const variant = VARIANTS.find((v) => v.key === params.get("variant"))?.key ?? "now";
   const scenario = SCENARIOS.find((s) => s.key === params.get("scenario"))?.key ?? "saved";
-  return { variant, scenario };
+  const light: LightView = params.get("light") === "power" ? "power" : "colours";
+  const bar = BARS.find((b) => b.key === params.get("bar"))?.key ?? "line";
+  return { variant, scenario, light, bar };
 }
+const isLate = (variant: Variant) => variant === "B2" || variant === "D";
 function setParam(name: string, value: string) {
   const url = new URL(window.location.href);
   url.searchParams.set(name, value);
@@ -147,7 +160,7 @@ export function PrototypeTableLight({
   onBeamClick: (ids: string[], clientX: number, clientY: number) => void;
   interactive: boolean;
 }) {
-  const { variant, scenario } = usePrototype();
+  const { variant, scenario, light } = usePrototype();
   const { selected, hovered } = useFocus();
   const { routes } = useRoutes(trace, beams, scenario);
   const runs = useMemo(() => undrawnRuns(routes), [routes]);
@@ -200,7 +213,29 @@ export function PrototypeTableLight({
     })}</>;
   }
 
-  if (variant === "B2") {
+  if (isLate(variant) && light === "power") {
+    // the physical view: each laser's light in its colour, brightness and width follow power
+    return <>{runs.map(({ route, points, power }, index) => {
+      if (route.saved?.hidden) return null;
+      const vectors = lifted(points);
+      const on = focused(route);
+      const mid = vectors[Math.floor((vectors.length - 1) / 2)].clone().lerp(vectors[Math.ceil((vectors.length - 1) / 2)], 0.5);
+      return (
+        <Fragment key={`${route.key}-${index}`}>
+          <BeamPath points={vectors} color={on ? route.saved?.color ?? laserColour(trace, route.laserId) : laserColour(trace, route.laserId)}
+            width={BEAM_WIDTH_MM * (0.5 + power)} opacity={on ? 1 : 0.3 + 0.6 * power} core selected={on} />
+          {hit(route, vectors)}
+          {power < 1 ? (
+            <Html position={[mid.x, mid.y + 12, mid.z]} center style={{ pointerEvents: "none" }}>
+              <span className="protoPowerTag">{Math.round(power * 100)} %</span>
+            </Html>
+          ) : null}
+        </Fragment>
+      );
+    })}</>;
+  }
+
+  if (isLate(variant)) {
     // saved Beams are the drawing; unsaved light keeps today's short fades until its row is hovered or picked
     const savedSegments = new Set(routes.filter((route) => route.saved).flatMap((route) => route.segments));
     const faded = routes.filter((route) => !route.saved && !focused(route));
@@ -215,8 +250,17 @@ export function PrototypeTableLight({
         }} />
       ))}
       {only && target ? (
-        <Line points={[referencePoint(only), referencePoint(target)]} color="#8a8178" lineWidth={1} dashed dashSize={4} gapSize={4}
-          transparent opacity={0.7} depthWrite={false} />
+        <>
+          <Line points={[referencePoint(only), referencePoint(target)]} color="#8a8178" lineWidth={1} dashed dashSize={4} gapSize={4}
+            transparent opacity={0.7} depthWrite={false} />
+          {/* a crosshair on what the part aims at */}
+          <Html position={referencePoint(target)} center style={{ pointerEvents: "none" }}>
+            <svg className="protoReticle" width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
+              <circle cx="15" cy="15" r="8" />
+              <path d="M15 1v8M15 21v8M1 15h8M21 15h8" />
+            </svg>
+          </Html>
+        </>
       ) : null}
       {runs.map(({ route, points }, index) => {
         if (route.saved?.hidden) return null;
@@ -482,7 +526,7 @@ function BoxC(ctx: Ctx) {
                 <span className="protoStack">
                   <span className="protoName">→ {nameOf(ctx.components, route.endId)}</span>
                   <span className="protoSub">
-                    {route.saved ? <><span className="protoDot" style={{ background: route.saved.color }} /> {beamDisplayName(route.saved)}</> : <em>not saved</em>}
+                    {route.saved ? <><span className="protoDot" style={{ background: route.saved.color }} /> {beamDisplayName(route.saved)}</> : <><span className="protoDot is-hollow" style={{ borderColor: laserColour(ctx.trace, route.laserId) }} /> <em>not saved</em></>}
                     {route.splitAtId && route.depth ? ` · via ${nameOf(ctx.components, route.splitAtId)}` : ""}
                   </span>
                 </span>
@@ -515,9 +559,145 @@ function BoxC(ctx: Ctx) {
   );
 }
 
+// ---------- status bar (B2, D) ----------
+type ModeHint = { label: string; hints: [string, string][] } | null;
+
+function useBarState(trace: TraceResult | null, mode: ModeHint) {
+  const { scenario } = usePrototype();
+  const picking = useAimPick();
+  const shownMode: ModeHint = picking
+    ? { label: "Aim", hints: [["Click", "a target"], ["Esc", "cancel"]] }
+    : mode;
+  const checks = trace?.checks.length ?? 0;
+  const upgraded = scenario === "handdrawn" ? "Upgraded from v16 · 1 Beam kept hand-drawn" : null;
+  return { shownMode, checks, upgraded };
+}
+
+function LightSwitch() {
+  const { light } = usePrototype();
+  return (
+    <span className="protoSeg" role="group" aria-label="Light view">
+      {(["colours", "power"] as const).map((key) => (
+        <button key={key} type="button" aria-pressed={light === key} onClick={() => setParam("light", key)}>
+          {key === "colours" ? "Colours" : "Power"}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+function ChecksState({ trace, onSelectComponent, opens }: {
+  trace: TraceResult; onSelectComponent: (id: string) => void; opens: "up" | "down";
+}) {
+  const [open, setOpen] = useState(false);
+  const checks = trace.checks.length;
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  if (!checks) return <span className="protoBarOk">✓<span className="protoWide"> Light reaches every stop</span></span>;
+  return (
+    <span className="protoChecksPop">
+      <button type="button" className="protoBarWarn protoChecksPop__btn" aria-expanded={open} onClick={() => setOpen(!open)}>
+        ⚠ {checks}<span className="protoWide"> check{checks === 1 ? "" : "s"}</span> {open ? "▾" : "▸"}
+      </button>
+      {open ? (
+        <span className={`protoChecksPop__list is-${opens}`} role="list">
+          {trace.checks.map((check) => (
+            <button type="button" role="listitem" key={`${check.kind}-${check.componentId}-${check.message}`} className="protoCheck"
+              onClick={() => { onSelectComponent(check.componentId); setOpen(false); }}>⚠ {check.message}</button>
+          ))}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/** The view switch keeps the page's other settings; ?traced=0 lasts one visit, so the way back is a plain link too. */
+function ViewSwitch({ traced }: { traced: boolean }) {
+  const go = (event: React.MouseEvent) => {
+    event.preventDefault();
+    const url = new URL(window.location.href);
+    url.searchParams.set("traced", traced ? "0" : "1");
+    window.location.assign(url);
+  };
+  return traced
+    ? <a className="protoLink" href="?traced=0" onClick={go}>Earlier view</a>
+    : <a className="protoLink is-strong" href="?traced=1" onClick={go}>Switch to traced Beams</a>;
+}
+
+export function PrototypeStatusBar({ where, mode, status, trace, onSelectComponent }: {
+  where: "top" | "bottom"; mode: ModeHint; status: string | null; trace: TraceResult | null; onSelectComponent: (id: string) => void;
+}) {
+  const { variant, bar } = usePrototype();
+  const { shownMode, upgraded } = useBarState(trace, mode);
+  useEffect(() => {
+    document.body.dataset.protoBar = isLate(variant) ? bar : "";
+    return () => { document.body.dataset.protoBar = ""; };
+  }, [variant, bar]);
+  if (!isLate(variant)) return null;
+  const traced = trace !== null;
+
+  if (bar === "line" && where === "bottom") {
+    // one hairline-topped strip along the bottom edge, like an editor's: the corner HUD lifts above it
+    return (
+      <div className="protoLine" role="status" aria-live="polite">
+        <span className="protoLine__mode">
+          {shownMode ? <><i className="protoMarker" /><b>{shownMode.label}</b>{shownMode.hints.map(([k, a]) => <span key={k + a}><kbd>{k}</kbd> {a}</span>)}</> : <span className="protoMuted">Select</span>}
+        </span>
+        {traced ? <>
+          <span className="protoLine__cell"><ChecksState trace={trace} onSelectComponent={onSelectComponent} opens="up" /></span>
+          <span className="protoLine__cell"><LightSwitch /></span>
+          {upgraded ? <span className="protoLine__cell protoBarWarn protoWide">{upgraded}</span> : null}
+        </> : <span className="protoLine__cell protoBarWarn">Earlier view: drawn Beams, not traced</span>}
+        <span className="protoLine__fill">{status}</span>
+        <span className="protoLine__cell"><ViewSwitch traced={traced} /></span>
+      </div>
+    );
+  }
+  if (bar === "strip" && where === "top") {
+    // no new place: the state joins the Show strip under the dock, and the mode badge stays as it is
+    return (
+      <p className="protoStrip">
+        {traced ? <>
+          <ChecksState trace={trace} onSelectComponent={onSelectComponent} opens="down" />
+          <span className="protoStrip__sep" />
+          <LightSwitch />
+          <span className="protoStrip__sep" />
+          {upgraded ? <span className="protoBarWarn protoWide">{upgraded} ·</span> : null}
+        </> : <span className="protoBarWarn">Earlier view: drawn Beams ·</span>}
+        <ViewSwitch traced={traced} />
+      </p>
+    );
+  }
+  if (bar === "readout" && where === "bottom") {
+    // an instrument's readout above the camera: labels left, values right, tabular figures
+    if (!trace) return (
+      <dl className="protoReadout" role="status" aria-live="polite">
+        <div className="protoReadout__mode"><dt>Mode</dt><dd>{shownMode ? <b>{shownMode.label}</b> : "Select"}</dd></div>
+        <div><dt>Light</dt><dd className="protoBarWarn">Earlier view: drawn Beams</dd></div>
+        <div><dt>View</dt><dd><ViewSwitch traced={false} /></dd></div>
+      </dl>
+    );
+    const routes = trace.trees.reduce((n, tree) => n + tree.segments.filter((s) => !tree.segments.some((o) => o.fromId === s.toId && o !== s)).length, 0);
+    return (
+      <dl className="protoReadout" role="status" aria-live="polite">
+        <div className="protoReadout__mode"><dt>Mode</dt><dd>{shownMode ? <><b>{shownMode.label}</b> {shownMode.hints.map(([k, a]) => <span key={k + a}><kbd>{k}</kbd> {a} </span>)}</> : "Select"}</dd></div>
+        <div><dt>Light</dt><dd>{trace.trees.length} laser{trace.trees.length === 1 ? "" : "s"} · {routes} end{routes === 1 ? "" : "s"}</dd></div>
+        <div><dt>Checks</dt><dd><ChecksState trace={trace} onSelectComponent={onSelectComponent} opens="up" /></dd></div>
+        <div><dt>View</dt><dd><LightSwitch /></dd></div>
+        <div><dt>File</dt><dd>{upgraded ? <span className="protoBarWarn">{upgraded}</span> : "v20 · autosaved"} · <ViewSwitch traced /></dd></div>
+      </dl>
+    );
+  }
+  return null;
+}
+
 // ---------- switcher ----------
 export function PrototypeSwitcher() {
-  const { variant, scenario } = usePrototype();
+  const { variant, scenario, bar } = usePrototype();
   const at = VARIANTS.findIndex((v) => v.key === variant);
   const go = (step: number) => setParam("variant", VARIANTS[(at + step + VARIANTS.length) % VARIANTS.length].key);
   useEffect(() => {
@@ -541,6 +721,11 @@ export function PrototypeSwitcher() {
       <select value={scenario} onChange={(event) => setParam("scenario", event.target.value)} aria-label="Scenario">
         {SCENARIOS.map((s) => <option key={s.key} value={s.key}>{s.name}</option>)}
       </select>
+      {isLate(variant) ? (
+        <select value={bar} onChange={(event) => setParam("bar", event.target.value)} aria-label="Status bar">
+          {BARS.map((b) => <option key={b.key} value={b.key}>{b.name}</option>)}
+        </select>
+      ) : null}
       <style>{PROTO_CSS}</style>
     </div>
   );
@@ -586,5 +771,45 @@ const PROTO_CSS = `
 .protoPowerTag{font:600 10px/1 system-ui,sans-serif;padding:2px 5px;border-radius:999px;background:#fff;color:#c2410c;border:1px solid #fdba74;white-space:nowrap}
 .protoPick{margin:.25rem 0 .1rem;border:1px solid var(--builder-hairline);border-radius:var(--builder-radius,4px);background:none;color:inherit;font:inherit;font-size:.78rem;padding:.3rem .55rem;cursor:pointer}
 .protoPick.is-on{border-color:var(--focus-ring);color:var(--accent-strong);background:var(--builder-hover)}
+.protoPill,.protoMini,.protoPick,.protoPower,.protoPowerTag{border-radius:var(--builder-radius,2px)!important}
+.protoSwitcher{bottom:calc(2.6rem + env(safe-area-inset-bottom,0px))}
+.protoMarker{display:inline-block;width:.5rem;height:.5rem;background:var(--accent);margin-right:.1rem}
+.protoBarOk{color:#2f8a4c}
+.protoBarWarn{color:#b45309}
+.protoLink{color:var(--accent-strong);text-decoration:underline;text-underline-offset:2px}
+.protoSeg{display:inline-flex;border:1px solid var(--builder-hairline);border-radius:var(--builder-radius,2px);overflow:hidden}
+.protoSeg button{border:0;background:none;color:inherit;font:inherit;font-size:.7rem;padding:.1rem .5rem;cursor:pointer}
+.protoSeg button[aria-pressed="true"]{background:var(--foreground);color:var(--background)}
+kbd{font:500 .62rem/1 var(--font-source-sans,system-ui);font-variant-numeric:tabular-nums;border:1px solid var(--builder-hairline);border-radius:2px;padding:.08rem .25rem;margin-right:.15rem}
+.protoLine{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;align-items:center;gap:0;height:1.7rem;padding:0 .9rem env(safe-area-inset-bottom,0px);background:var(--surface-strong);border-top:1px solid var(--builder-hairline);font-size:.72rem;font-weight:500;font-variant-numeric:tabular-nums;color:var(--foreground)}
+.protoLine>span,.protoLine>a{display:inline-flex;align-items:center;gap:.4rem;padding:0 .75rem;height:100%;border-left:1px solid var(--builder-hairline)}
+.protoLine__mode{border-left:0!important;padding-left:0!important;min-width:14rem}
+.protoLine__mode b{font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.7rem}
+.protoLine__fill{flex:1;justify-content:flex-end;color:var(--muted,inherit);border-left:0!important}
+body[data-proto-bar="line"] .builderHud__viewRow,body[data-proto-bar="line"] .builderRail{bottom:calc(0.9rem + 1.7rem)}
+body[data-proto-bar="line"] .builderHud__lists{bottom:calc(var(--builder-rail-clear) + 1.7rem)}
+body[data-proto-bar="line"] .builderPanels.is-on{bottom:1.7rem}
+body[data-proto-bar="line"] .builderPanels.is-on .builderHud__lists{bottom:var(--builder-rail-clear)}
+.protoLink.is-strong{font-weight:700}
+.protoLine>span,.protoLine>a{white-space:nowrap}
+body[data-proto-bar="line"] .builderStatus,body[data-proto-bar="line"] .builderModeBadge{display:none}
+body[data-proto-bar="readout"] .builderStatus{bottom:12.5rem}
+.protoStrip{display:flex;align-items:center;justify-content:center;gap:.6rem;margin:.35rem auto 0;font-size:.72rem;font-weight:500;font-variant-numeric:tabular-nums;color:var(--foreground);width:max-content;max-width:calc(100vw - 2rem);flex-wrap:wrap}
+.protoStrip__sep{width:1px;height:.9rem;background:var(--builder-hairline)}
+.protoReadout{position:fixed;right:.9rem;bottom:3.9rem;z-index:40;margin:0;min-width:15rem;padding:.45rem .6rem;background:var(--surface-strong);border:1px solid var(--builder-hairline);border-radius:var(--builder-radius,2px);font-size:.72rem;font-weight:500;font-variant-numeric:tabular-nums}
+.protoReadout>div{display:grid;grid-template-columns:3.6rem 1fr;align-items:center;gap:.5rem;padding:.12rem 0}
+.protoReadout>div+div{border-top:1px solid color-mix(in srgb,var(--foreground) 8%,transparent)}
+.protoReadout dt{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.6}
+.protoReadout dd{margin:0}
+.protoReadout b{font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+@media (max-width:640px){.protoLine__mode,.protoReadout__mode,.protoWide{display:none!important}.protoLine{padding-inline:.3rem}.protoLine>span,.protoLine>a{padding:0 .5rem}.protoLine>span:first-of-type+span{border-left:0}.protoReadout{left:.9rem;right:.9rem;min-width:0}.protoSwitcher span{display:none}.protoSwitcher{bottom:calc(2.6rem + env(safe-area-inset-bottom,0px))}.protoSwitcher select{max-width:7.5rem}}
+.protoReticle{display:block;fill:none;stroke:var(--accent-strong);stroke-width:1.5}
+.protoReticle circle{stroke-dasharray:none}
+.protoChecksPop{position:relative;display:inline-flex}
+.protoChecksPop__btn{border:0;background:none;font:inherit;padding:0;cursor:pointer}
+.protoChecksPop__list{position:absolute;left:-.5rem;z-index:60;display:flex;flex-direction:column;min-width:17rem;max-height:14rem;overflow-y:auto;padding:.25rem;background:var(--surface-strong);border:1px solid var(--builder-hairline);border-radius:var(--builder-radius,2px)}
+.protoChecksPop__list.is-up{bottom:calc(100% + .45rem)}
+.protoChecksPop__list.is-down{top:calc(100% + .45rem)}
+.protoReadout .protoChecksPop__list{left:auto;right:-.6rem}
 .protoNote{margin:.4rem .35rem 0;padding:.35rem .5rem;border-radius:6px;background:#111;color:#fff;font-size:.72rem}
 `;
