@@ -146,7 +146,7 @@ describe("the kind table", () => {
       ]),
     );
     assert.deepStrictEqual(fields, {
-      "laser-source": ["internalPathMm"],
+      "laser-source": ["internalPathMm", "lightColor"],
       "mirror-mount": ["aim", "fold", "free", "mountStage"],
       "beam-splitter": ["aim", "fold", "free", "mountStage"],
       lens: ["focalLength", "lensShape", "mountStage"],

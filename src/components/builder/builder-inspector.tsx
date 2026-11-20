@@ -33,6 +33,7 @@ import {
   DEFAULT_PHOTODIODE_COLOR,
   DEFAULT_HOUSING_COLORS,
   INTERNAL_PATH_RANGE_MM,
+  laserLightColor,
   lengthToPicoseconds,
   OBJECTIVE_LENGTH_RANGE_MM,
   CAVITY_LENGTH_RANGE_MM,
@@ -824,6 +825,7 @@ export function ComponentInspector({
       <PitchRollRows component={component} locked={Boolean(angleBeam)} onChange={(orientation) => onUpdate({ orientation })} />
       {component.type === "laser-source" ? (
         <>
+          <ColorField label="Light colour" value={laserLightColor(component)} onChange={(next) => onUpdate({ lightColor: next })} />
           <NumberField
             label="Built-in path"
             unit="mm"

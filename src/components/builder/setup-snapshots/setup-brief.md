@@ -32,7 +32,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 20. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 21. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: saved Beam paths and branch appearance, in order; use `[]` if no paths need labels or colours. If two aimed Components send light to one Mirror, the first path chooses its incoming direction. Light is traced from laser sources through Component surfaces.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -66,7 +66,7 @@ Some types read fields of their own; leave them out to take the default:
 - `delayMinPathMm` (`delay-line` only): mm, its minimum delay: the path a beam through it gains with its stage at 0, like a laser's `internalPathMm`. It is not drawn. 0–100000; default 50.
 - `delayTravelMm` (`delay-line` only): mm, how far its stage can travel, 0–2000; default 50. Its rail is drawn long enough for it.
 - `delayStageMm` (`delay-line` only): mm the stage has travelled, from 0 to `delayTravelMm`; default 0. A beam through it gains `delayMinPathMm` plus twice this, out and back, and counts both in its path length.
-- `lightColor` (`cavity` and `delay-line` only): a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam down to its carriage and back); default `"#ff5a36"`.
+- `lightColor` (`laser-source`, `cavity` and `delay-line` only): a hex colour for a laser's emitted light or the light drawn inside a cavity or delay line. New lasers use the first unused colour from `"#ff9d5c"`, `"#22b8cf"`, `"#d946ef"`, `"#84cc16"`, `"#f43f5e"`, `"#6366f1"`, cycling when all are used. An older laser without one is drawn in `"#ff9d5c"`; a cavity or delay line defaults to `"#ff5a36"`.
 - `lightHidden` (`cavity` and `delay-line` only): `true` leaves the light inside it out of the drawing; leave it out otherwise.
 - `sampleStage` (`sample` only): `"side"` draws its XYZ stage beside it, across the beam, holding it on an arm; `"none"` draws it floating. Leave it out for the default, the stage under it on a post.
 - `stageColor` (`objective`, `sample` and `translation-stage` only): a hex colour for a stage's plates (the micrometers stay silver). On an objective or sample this colours its built-in stage; on a `translation-stage` it colours the standalone mount. Leave it out for the theme's own: near-black by day, dark grey at night.
@@ -139,7 +139,7 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 ### Source
 
-- `laser-source`: Laser source. Height 20–300 mm, default 100. Its own fields: `internalPathMm`.
+- `laser-source`: Laser source. Height 20–300 mm, default 100. Its own fields: `lightColor`, `internalPathMm`.
 - `fiber-collimator`: Fibre collimator. Height 20–300 mm, default 100. Its own fields: `mountStage`.
 
 ### Steering
@@ -189,7 +189,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 20,
+  "version": 21,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "orientation": [0, 0, 0, 1], "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "orientation": [0, 0.9238795325112867, 0, 0.38268343236508984], "aim": "lens", "color": "#8b1e3f", "label": "M1" },
@@ -213,7 +213,7 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 
 ```json
 {
-  "version": 20,
+  "version": 21,
   "components": [
     { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "yaw": 0 },
     { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "yaw": 0 }
