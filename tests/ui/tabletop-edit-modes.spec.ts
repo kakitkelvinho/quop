@@ -188,7 +188,7 @@ test("Add stops ends when another beam is selected", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Add stops" })).toBeVisible();
 });
 
-test("Light reveals an unsaved route, saves it, and selects a check's Component", async ({ page }) => {
+test("Light reveals an unpinned route, pins it for export, and labels distances without pins", async ({ page }) => {
   await page.goto("builder/tabletop/");
   await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   await page.getByRole("button", { name: "QUOP" }).click();
@@ -206,26 +206,35 @@ test("Light reveals an unsaved route, saves it, and selects a check's Component"
   const light = page.getByRole("region", { name: "Light", exact: true });
   const route = light.locator(".builderLightList__route");
   await expect(route).toHaveCount(1);
-  await expect(route).toContainText("not saved");
+  await expect(route).toContainText("unpinned");
   await page.getByRole("button", { name: "Show", exact: true }).click();
-  await page.getByRole("toolbar", { name: "Show" }).getByRole("button", { name: "Lengths along each beam" }).click();
+  await page.getByRole("toolbar", { name: "Show" }).getByRole("button", { name: "Distances between Components reached by light" }).click();
   await expect(page.locator(".builderDistance")).toHaveText("200 mm");
   await expect(page.locator(".builderDistance")).toBeVisible();
   await page.getByRole("button", { name: "Show", exact: true }).click();
   const canvas = page.locator("canvas").first();
   const before = await canvas.screenshot();
+  await route.getByRole("button", { name: "Highlight route to Dump" }).focus();
+  await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false);
+  await page.getByRole("button", { name: "Show", exact: true }).focus();
   await route.hover();
   await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false);
-  await route.getByRole("button", { name: "Save" }).click();
+  await route.getByRole("button", { name: "Pin" }).click();
   await expect(route).toContainText("Laser → Dump");
-  await expect(route).not.toContainText("not saved");
+  await expect(route).not.toContainText("unpinned");
+  await expect(page.getByRole("heading", { name: "Pinned route" })).toBeVisible();
   await expect.poll(async () => JSON.parse(await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")) || "{}").beams?.length).toBe(1);
   const saved = JSON.parse((await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")))!);
   expect(saved.beams[0].path).toEqual(["laser", "stop"]);
   expect(saved.beams[0].color).toMatch(/^#/);
   await route.getByRole("button", { name: "Hide Laser → Dump" }).click();
   await expect(route.getByRole("button", { name: "Show Laser → Dump" })).toBeVisible();
+  await expect(page.locator(".builderDistance")).toBeVisible();
   await route.getByRole("button", { name: "Show Laser → Dump" }).click();
+  await route.getByRole("button", { name: "Unpin" }).click();
+  await expect(route).toContainText("unpinned");
+  await expect(page.locator(".builderDistance")).toBeVisible();
+  await expect.poll(async () => JSON.parse(await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")) || "{}").beams?.length).toBe(0);
   await route.getByRole("button", { name: "Blocked by stop" }).click();
   await expect(page.locator(".builderInspector")).toContainText("Beam block");
 });

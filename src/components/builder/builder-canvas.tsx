@@ -1355,8 +1355,8 @@ export default function BuilderCanvas({
   const routes = useMemo(() => trace ? traceRoutes(trace, beams) : [], [trace, beams]);
   const matchedDrawnBeamIds = useMemo(() => new Set(routes.flatMap((route) => route.beam ? [route.beam.id] : [])), [routes]);
   const traceDistances = useMemo(() => showDistances && trace
-    ? tracedDistanceLegs(routes.filter((route) => !route.beam || isBeamDrawn(route.beam, shown)), components)
-    : [], [showDistances, trace, routes, shown, components]);
+    ? tracedDistanceLegs(routes, components)
+    : [], [showDistances, trace, routes, components]);
   const shownComponents = useMemo(
     () => components.filter((component) => shown.components.has(component.id)),
     [components, shown],
@@ -1524,7 +1524,7 @@ export default function BuilderCanvas({
             {beamsInteractive ? (
               <BeamHit beamId={beam.id} points={points} width={beam.width ?? BEAM_WIDTH_MM} onClick={onBeamClick} />
             ) : null}
-            {selected || (showDistances && drawn) ? (
+            {!trace && (selected || showDistances && drawn) ? (
               <BeamDistances
                 points={points}
                 lengths={measurement.legLengthsMm}

@@ -41,14 +41,14 @@ mirrors at different heights; its path length and time of flight are 3D.
 **Beams are traced.** Light leaves each Laser source and meets Component
 surfaces in 3D. Mirrors reflect, Beam cubes split it, and apertures can be
 missed. Short orange guides fade away from the laser output and from both
-sides of each reached Component; selecting a saved Beam path reveals its full
-route in that path's colour. The saved path records the route the author intends,
-plus its label and visibility. When it disagrees with the trace, it stays drawn
-so the author can inspect it.
+sides of each reached Component. Hovering or focusing a Light route reveals its
+full path; pinning keeps it visible on the table and in a PNG export. A saved
+Beam records that presentation choice, plus its label and colour. When an older
+saved path disagrees with the trace, it stays drawn for editing.
 
 **Path length is the payoff.** Traced segments have real 3D lengths, so
 their total length and vacuum time of flight fall out. Both are
-shown per beam, which is the number a pump–probe delay line is actually built
+shown per route, which is the number a pump–probe delay line is actually built
 around. A laser source can also carry a built-in path (0–100 000 mm, set in
 its inspector, empty for none): light it adds before the aperture, such as a
 folded or internal delay, so a long beam does not need the laser placed far
@@ -85,13 +85,21 @@ as before; before the ports existed at all, beams measured a few millimetres
 differently at a detector, 56 mm longer from a laser and 10.5 mm longer at a
 fibre collimator.
 
-**Beams can be told apart.** Saved paths give traced branches their colours in
-the Beams box and when one is selected. The passive guides stay orange.
-Selecting a saved path shows its traced route, or its hand-drawn route when it
-disagrees with the trace, with the path's width (a diameter in millimetres,
-0.5–10 mm, 2 mm by default), opacity (10–100%), halo and Arrow or No arrow
+**Routes can be pinned for a figure.** Light traces from Lasers without a saved
+Beam. Hovering or focusing an unpinned route in the Light panel shows its full path; pinning
+keeps it visible on the table and in PNG exports. A pinned route saves its
+colour, label and visibility with the Setup. Unpinning removes those display
+settings and leaves the traced light in place. Older saved paths that disagree
+with the trace remain hand-drawn Beams for editing. A pinned route or hand-drawn
+Beam uses its width (a diameter in millimetres, 0.5–10 mm, 2 mm by default),
+opacity (10–100%), halo and Arrow or No arrow
 setting. Those settings are edited in its inspector; they do not change the
 passive orange guides.
+
+**Lengths show every traced span.** Show → Lengths labels each unique span
+between Components reached by traced light, whether or not a route is pinned.
+Each label uses the Components' Reference points and their 3D distance; the
+lengths are drawing aids and do not include an internal laser path or delay line.
 
 **Hide a beam for a figure.** Each beam's row in the beams box has an eye
 button that hides or shows it on the table, to drop a reference arm out of a
@@ -483,7 +491,8 @@ Keyboard shortcuts to open the menus are issue #347.
 - **Top centre**: the dock: undo, the eye (Show) and redo. The eye sits in the
   middle, so Show's row fans out symmetrically under it (`show-boxes.tsx`), a
   `toolbar` of boxes for what is drawn on the table and how: **Grid** (the
-  holes), **Labels**, **Posts**, **Lengths** (beam distances), then a wider
+  holes), **Labels**, **Posts**, **Lengths** (between Components reached by
+  traced light), then a wider
   gap, **Lighting**, **Shadows** and **Simple** (light graphics). Toggles are
   `aria-pressed`, and an off one wears a `/` slash. One slider shows at a time
   under its box: Label size while labels are on, or brightness while Lighting
@@ -634,6 +643,8 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Mount an optic on a translation stage | Place the stage from Other, select it and one compatible optic with Ctrl/⌘ click, then press Mount in their inspector; the optic's Mount on stage menu also works |
 | Duplicate / delete | `D` / `Delete`, or the inspector's buttons. Several parts are copied with the beams that run only between them, and the copies become the selection |
 | Draw a beam | + → Beam at the top left, or the empty Beams slot on the rail; click parts in order, `Enter`. The + (or the slot) pressed again stops |
+| Inspect or pin traced light | Hover or focus a route in Light to see its full path without saving it; Pin keeps the path visible in the Setup and PNG export, the eye hides it for a figure, and Unpin returns it to the short guides |
+| Show traced distances | Show → Lengths labels every unique span between Components reached by light, including unpinned routes |
 | Select a beam | Click its row in the beams box, bottom left |
 | Reorder or delete a beam | Drag its row in the beams box to a new place (or focus it and press `Alt+↑` / `Alt+↓`), or use the trash button on the row. Undo brings a deleted beam back in its place |
 | Hide or show a beam | The eye button on its row in the beams box. A hidden branch and any hand-drawn path are absent from the view and export; its row stays, dimmed. Hiding does not alter the light's route or Component orientation. Selecting a hidden hand-drawn path shows a faint glow on screen for editing. One undo step |

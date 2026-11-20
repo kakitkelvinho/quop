@@ -149,7 +149,8 @@ export type BuilderHudProps = {
   onUpdateConnection: (id: string, patch: Partial<Omit<Connection, "id">>) => void;
   onDeleteConnection: (id: string) => void;
   onSelectBeam: (id: string) => void;
-  onSaveRoute: (route: LightRoute) => void;
+  onPinRoute: (route: LightRoute) => void;
+  onUnpinRoute: (id: string) => void;
   onHoverRoute: (id: string | null) => void;
   onToggleAddStops: () => void;
   onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
@@ -438,7 +439,7 @@ function BeamList({
 }
 
 function LightList({
-  components, beams, trace, selectedId, besideParts, onSelect, onSave, onHover,
+  components, beams, trace, selectedId, besideParts, onSelect, onPin, onUnpin, onHover,
   onSetHidden, onSelectComponent,
 }: {
   components: BuilderComponent[];
@@ -447,7 +448,8 @@ function LightList({
   selectedId: string | null;
   besideParts: boolean;
   onSelect: (id: string) => void;
-  onSave: (route: LightRoute) => void;
+  onPin: (route: LightRoute) => void;
+  onUnpin: (id: string) => void;
   onHover: (id: string | null) => void;
   onSetHidden: (id: string, hidden: boolean) => void;
   onSelectComponent: (id: string) => void;
@@ -456,7 +458,7 @@ function LightList({
   const routes = traceRoutes(trace, beams);
   const routed = new Set(routes.flatMap((route) => route.beam ? [route.beam.id] : []));
   const handDrawn = beams.filter((beam) => !routed.has(beam.id));
-  const unsaved = routes.filter((route) => !route.beam);
+  const unpinned = routes.filter((route) => !route.beam);
   const looseChecks = looseTraceChecks(trace, routes);
   const nameOf = (id: string) => {
     const component = components.find((part) => part.id === id);
@@ -464,29 +466,30 @@ function LightList({
   };
   const list = (
     <div className={`builderHud__beams builderLightList${besideParts ? " is-besideParts" : ""}`} aria-label="Light" data-guide="beams">
-      {unsaved.length ? <button type="button" className="builderLightList__heading" onMouseEnter={() => onHover("*")} onMouseLeave={() => onHover(null)} onFocus={() => onHover("*")} onBlur={() => onHover(null)}>not saved · {unsaved.length}</button> : null}
+      {unpinned.length ? <button type="button" className="builderLightList__heading" onMouseEnter={() => onHover("*")} onMouseLeave={() => onHover(null)} onFocus={() => onHover("*")} onBlur={() => onHover(null)}>unpinned · {unpinned.length}</button> : null}
       {trace.trees.map((tree) => {
         const laser = components.find((part) => part.id === tree.laserId);
         const own = routes.filter((route) => route.laserId === tree.laserId);
         return <section key={tree.laserId} className="builderLightList__laser">
           <h3><span className="builderBeamRow__dot" style={{ background: laser ? laserLightColor(laser) : undefined }} />{nameOf(tree.laserId)}</h3>
-          {own.map((route) => <div key={route.id} className="builderLightList__route" onMouseEnter={() => onHover(route.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(route.id)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onHover(null); }}>
+          {own.map((route) => <div key={route.id} className="builderLightList__route" onMouseEnter={() => onHover(route.id)} onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) onHover(null); }} onFocus={() => onHover(route.id)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onHover(null); }}>
             <div className="builderLightList__row">
-              <span className="builderLightList__endpoint">→ {route.endId ? nameOf(route.endId) : "open light"}</span>
+              <button type="button" className="builderLightList__endpoint" aria-label={`Highlight route to ${route.endId ? nameOf(route.endId) : "open light"}`} onClick={() => onHover(route.id)}>→ {route.endId ? nameOf(route.endId) : "open light"}</button>
               {route.beam ? <>
                 <button type="button" className="builderLightList__beam" aria-pressed={selectedId === route.beam.id} onClick={() => onSelect(route.beam!.id)}>
                   <span className="builderBeamRow__dot" style={{ background: route.beam.color }} />{beamDisplayName(route.beam)}
                 </button>
                 <IconButton icon={route.beam.hidden ? "eyeOff" : "eye"} label={`${route.beam.hidden ? "Show" : "Hide"} ${beamDisplayName(route.beam)}`} active={Boolean(route.beam.hidden)} onClick={() => onSetHidden(route.beam!.id, !route.beam!.hidden)} />
               </> : <>
-                <span className="builderLightList__unsaved">not saved</span>
-                <button type="button" className="builderButton" disabled={route.path.length < 2} onClick={() => onSave(route)}>Save</button>
+                <span className="builderLightList__unsaved">unpinned</span>
+                <button type="button" className="builderButton" title="Keep this route visible in the Setup and PNG export" disabled={route.path.length < 2} onClick={() => onPin(route)}>Pin</button>
               </>}
             </div>
             <div className="builderLightList__readouts">
               <span>{Math.round(route.lengthMm)} mm</span>
               <span>{lengthToPicoseconds(route.lengthMm).toFixed(1)} ps</span>
               <span>{Math.round(route.power * 100)}%</span>
+              {route.beam ? <button type="button" className="builderLightList__unpin" onClick={() => onUnpin(route.beam!.id)}>Unpin</button> : null}
             </div>
             {route.checks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}
           </div>)}
@@ -1306,7 +1309,7 @@ function ShowMenu({
     distances: {
       id: "distances",
       label: "Lengths",
-      description: "Lengths along each beam",
+      description: "Distances between Components reached by light",
       icon: "ruler",
       on: distances,
       onToggle: onToggleDistances,
@@ -1552,14 +1555,16 @@ export default function BuilderHud(props: BuilderHudProps) {
       />
     );
   } else if (selectedBeam) {
+    const pinned = Boolean(props.trace && traceRoutes(props.trace, beams).some((route) => route.beam?.id === selectedBeam.id));
     inspector = (
       <BeamInspector
         beam={selectedBeam}
         components={components}
         tracedLengthMm={props.trace ? tracedBeamLengthMm(props.trace, selectedBeam) : undefined}
+        pinned={pinned}
         onUpdate={(patch, record) => props.onUpdateBeam(selectedBeam.id, patch, record)}
         onCheckpoint={props.onCheckpoint}
-        onDelete={() => props.onDeleteBeam(selectedBeam.id)}
+        onDelete={() => pinned ? props.onUnpinRoute(selectedBeam.id) : props.onDeleteBeam(selectedBeam.id)}
         addingStops={props.addingStops}
         onToggleAddStops={props.onToggleAddStops}
       />
@@ -1820,7 +1825,7 @@ export default function BuilderHud(props: BuilderHudProps) {
             { id: "grid", label: "Grid holes", icon: "grid", on: props.showGrid },
             { id: "labels", label: "Labels", icon: "labels", on: props.showLabels },
             { id: "posts", label: "Posts", icon: "posts", on: props.showPosts },
-            { id: "distances", label: "Beam distances", icon: "ruler", on: props.showDistances },
+            { id: "distances", label: "Distances between Components", icon: "ruler", on: props.showDistances },
             { id: "shadows", label: "Shadows", icon: "shadow", on: props.lighting.shadows },
             { id: "light-graphics", label: "Light graphics", icon: "gauge", on: props.quality === "light" },
           ]}
@@ -1874,7 +1879,8 @@ export default function BuilderHud(props: BuilderHudProps) {
                 selectedId={selectedBeam?.id ?? null}
                 besideParts={besideParts}
                 onSelect={props.onSelectBeam}
-                onSave={props.onSaveRoute}
+                onPin={props.onPinRoute}
+                onUnpin={props.onUnpinRoute}
                 onHover={props.onHoverRoute}
                 onSetHidden={props.onSetBeamHidden}
                 onSelectComponent={props.onSelectComponent}

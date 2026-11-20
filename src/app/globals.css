@@ -3895,6 +3895,12 @@ html[data-theme="dark"] .builderCoach {
 .builderLightList__endpoint {
   flex: 1;
   min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3938,6 +3944,20 @@ html[data-theme="dark"] .builderCoach {
   justify-content: space-between;
   margin-top: 0.25rem;
   font-variant-numeric: tabular-nums;
+}
+
+.builderLightList__unpin {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.builderLightList__unpin:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
 }
 
 .builderLightList__heading,

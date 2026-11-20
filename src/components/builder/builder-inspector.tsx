@@ -1225,6 +1225,7 @@ export function BeamInspector({
   beam,
   components,
   tracedLengthMm,
+  pinned = false,
   onUpdate,
   onCheckpoint,
   onDelete,
@@ -1234,6 +1235,7 @@ export function BeamInspector({
   beam: Beam;
   components: BuilderComponent[];
   tracedLengthMm?: number;
+  pinned?: boolean;
   onUpdate: (patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
   onCheckpoint: () => void;
   onDelete: () => void;
@@ -1251,8 +1253,8 @@ export function BeamInspector({
   return (
     <div className="builderInspector">
       <div className="builderInspector__head">
-        <h2>Beam</h2>
-        <IconButton icon="trash" label="Delete beam" onClick={onDelete} />
+        <h2>{pinned ? "Pinned route" : "Beam"}</h2>
+        <IconButton icon="trash" label={pinned ? "Unpin route" : "Delete beam"} onClick={onDelete} />
       </div>
       <label className="builderField">
         <span className="builderField__label">Name</span>
