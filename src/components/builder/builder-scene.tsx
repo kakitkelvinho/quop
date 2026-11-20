@@ -168,6 +168,7 @@ type EditMode =
   | { kind: "connection"; draft: ConnectDraft }
   | { kind: "frame"; drawing: FrameDrawing }
   | { kind: "add-stops"; beamId: string }
+  | { kind: "aim-pick"; aimerId: string }
   | { kind: "group-pick" };
 
 const IDLE: EditMode = { kind: "idle" };
@@ -394,7 +395,6 @@ export default function BuilderScene() {
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
-  const aimDragRef = useRef<string | null>(null);
   const turnRef = useRef<TurnState | null>(null);
   // the turn in flight, for drawing: its centre and how far it has gone
   const [turning, setTurning] = useState<{ centre: [number, number]; turned: number } | null>(null);
@@ -548,6 +548,16 @@ export default function BuilderScene() {
       if (event.nativeEvent.button !== 0 || editMode.kind === "frame") return;
       const pressed = componentById(sceneRef.current.components, id);
       if (!pressed) return;
+      if (editMode.kind === "aim-pick") {
+        if (id === editMode.aimerId) {
+          announce("Pick another Component to aim at.");
+          return;
+        }
+        api.setAim(editMode.aimerId, id);
+        endMode();
+        announce(`Aimed at ${componentDisplayName(pressed)}.`);
+        return;
+      }
       if (editMode.kind === "beam") {
         if (pressed.type === "translation-stage") {
           announce("A translation stage is a mount, not a beam stop.");
@@ -657,12 +667,6 @@ export default function BuilderScene() {
   const handleComponentHover = useCallback((id: string | null) => {
     hoveredRef.current = id;
     setHoveredId(id);
-  }, []);
-
-  const handleAimHandlePointerDown = useCallback((id: string, event: ThreeEvent<PointerEvent>) => {
-    if (event.nativeEvent.button !== 0) return;
-    aimDragRef.current = id;
-    setSelection([id]);
   }, []);
 
   // Ctrl/⌘ + click adds the part under the pointer to the selection, or takes it out.
@@ -858,12 +862,6 @@ export default function BuilderScene() {
 
   useEffect(() => {
     const endDrag = (event: PointerEvent) => {
-      const aimer = aimDragRef.current;
-      aimDragRef.current = null;
-      if (aimer && event.type === "pointerup" && hoveredRef.current && hoveredRef.current !== aimer) {
-        api.setAim(aimer, hoveredRef.current);
-        return;
-      }
       if (slideRef.current) {
         slideRef.current = null;
         setSliding(false);
@@ -1789,7 +1787,6 @@ export default function BuilderScene() {
           rotationHandle={rotationHandle}
           onRotationHandlePointerDown={handleRotationHandlePointerDown}
           aimStatuses={aimStatuses}
-          onAimHandlePointerDown={handleAimHandlePointerDown}
           onFlipAim={api.flipAim}
           stageHandle={stageHandle}
           onStageHandlePointerDown={handleStageHandlePointerDown}
@@ -1853,7 +1850,7 @@ export default function BuilderScene() {
         onCloseTray={() => setTrayOpen(false)}
         onCancelPlace={endMode}
         onDeselect={() => {
-          if (editMode.kind === "add-stops") endMode();
+          if (editMode.kind === "add-stops" || editMode.kind === "aim-pick") endMode();
           setSelection([]);
           setSelectedBeamId(null);
           setSelectedFrameId(null);
@@ -1862,6 +1859,7 @@ export default function BuilderScene() {
         onUpdateSelected={updateSelected}
         onUpdateComponent={api.updateComponent}
         onSelectComponent={(id) => {
+          if (editMode.kind === "aim-pick") endMode();
           setSelection([id]);
           setSelectedBeamId(null);
           setSelectedFrameId(null);
@@ -1874,7 +1872,18 @@ export default function BuilderScene() {
         onToggleTraced={toggleTraced}
         upgradeMessage={upgradeStatus}
         aimStatuses={aimStatuses}
-        onSetAim={api.setAim}
+        onSetAim={(id, targetId) => {
+          api.setAim(id, targetId);
+          if (editMode.kind === "aim-pick") endMode();
+        }}
+        aimPickId={editMode.kind === "aim-pick" ? editMode.aimerId : null}
+        onPickAim={(id) => {
+          if (editMode.kind === "aim-pick" && editMode.aimerId === id) endMode();
+          else {
+            enterMode({ kind: "aim-pick", aimerId: id });
+            announce("Pick a Component on the table. Esc cancels.");
+          }
+        }}
         onFlipAim={api.flipAim}
         onSnapAim={api.snapAim}
         onDuplicateSelected={duplicateSelected}
