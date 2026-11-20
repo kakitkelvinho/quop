@@ -80,9 +80,11 @@ import {
   BEAM_HEIGHT_MM,
   BEAM_WIDTH_MM,
   COMPONENT_SPECS,
+  LASER_LIGHT_COLORS,
   TABLE_GUARD_MM,
   bodyCentre,
   componentById,
+  laserLightColor,
   componentRadius,
   referencePoint,
   type Beam,
@@ -95,18 +97,19 @@ import {
 
 export type CameraView = "iso" | "top";
 
-function TraceGuides({ trace, beams }: { trace: TraceResult; beams: Beam[] }) {
+function TraceGuides({ trace, beams, components }: { trace: TraceResult; beams: Beam[]; components: BuilderComponent[] }) {
   const guide = useMemo(() => {
     const data = traceGuideGeometry(trace, beams);
-    const orange = new Color("#ff9d5c");
+    const laserColors = new Map(components.filter((component) => component.type === "laser-source").map((component) => [component.id, new Color(laserLightColor(component))]));
     const points: [number, number, number][] = [];
     const colors: [number, number, number, number][] = [];
     for (let at = 0; at < data.opacity.length; at++) {
+      const color = laserColors.get(data.laserIds[at]) ?? new Color(LASER_LIGHT_COLORS[0]);
       points.push([data.positions[at * 3], data.positions[at * 3 + 1], data.positions[at * 3 + 2]]);
-      colors.push([orange.r, orange.g, orange.b, data.opacity[at]]);
+      colors.push([color.r, color.g, color.b, data.opacity[at]]);
     }
     return { points, colors };
-  }, [trace, beams]);
+  }, [trace, beams, components]);
   if (guide.points.length === 0) return null;
   return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest={false} depthWrite={false} renderOrder={3} />;
 }
@@ -1541,7 +1544,7 @@ export default function BuilderCanvas({
         );
       })}
 
-      {trace ? <TraceGuides trace={trace} beams={beams} /> : null}
+      {trace ? <TraceGuides trace={trace} beams={beams} components={components} /> : null}
       {trace && selectedTraceBeam && selectedTracePath ? trace.trees.flatMap((tree) => tree.segments.map((segment, index) =>
         segment.path.length <= selectedTracePath.length && segment.path.every((id, at) => selectedTracePath[at] === id) ? (
           <BeamPath

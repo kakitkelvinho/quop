@@ -21,6 +21,7 @@ import {
   moveBeamTo as moveBeamInList,
   moveFrameTo as moveFrameInList,
   newComponent,
+  nextLaserLightColor,
   parseLabelScale,
   parseScene,
   setBeamHidden as setBeamHiddenInList,
@@ -212,7 +213,10 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
       commit((current) => {
         const placed: BuilderSceneData = {
           ...current,
-          components: [...current.components, newComponent(type, id, x, z, extra)],
+          components: [...current.components, {
+            ...newComponent(type, id, x, z, extra),
+            ...(type === "laser-source" ? { lightColor: nextLaserLightColor(current.components) } : {}),
+          }],
         };
         if (!traced) return placed;
         const aimed = settleAims(placed).scene;

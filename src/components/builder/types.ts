@@ -109,6 +109,17 @@ export function blockSize(component: BuilderComponent): Vec3 {
 
 /** The light inside a cavity or delay line, unless its colour is set. */
 export const DEFAULT_LIGHT_COLOR = "#ff5a36";
+export const LASER_LIGHT_COLORS = ["#ff9d5c", "#22b8cf", "#d946ef", "#84cc16", "#f43f5e", "#6366f1"] as const;
+
+export function laserLightColor(component: BuilderComponent): string {
+  return component.lightColor ?? LASER_LIGHT_COLORS[0];
+}
+
+export function nextLaserLightColor(components: BuilderComponent[]): string {
+  const lasers = components.filter((component) => component.type === "laser-source");
+  const used = new Set(lasers.map((component) => laserLightColor(component).toLowerCase()));
+  return LASER_LIGHT_COLORS.find((color) => !used.has(color)) ?? LASER_LIGHT_COLORS[lasers.length % LASER_LIGHT_COLORS.length];
+}
 
 /** Whether this component is drawn on a stage: an objective always, a sample unless it floats. */
 export function hasStage(component: BuilderComponent): boolean {
@@ -186,7 +197,7 @@ export type BuilderComponent = {
    * twice this, out and back.
    */
   delayStageMm?: number;
-  /** cavity and delay line only: the colour of the light drawn inside (a cavity's mode, a delay line's beam); missing means DEFAULT_LIGHT_COLOR */
+  /** laser, cavity and delay line: the colour of emitted or internal light; an old laser without one renders in the first palette colour */
   lightColor?: string;
   /** cavity and delay line only: true leaves the light inside out of the drawing; stored only when true */
   lightHidden?: true;
@@ -294,7 +305,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 20 as const;
+export const SCENE_VERSION = 21 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -405,7 +416,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 60,
     // the emitter's output face, where the beam leaves: 56
     referenceX: LASER_EMITTER.x + LASER_EMITTER.length / 2,
-    fields: ["internalPathMm"],
+    fields: ["internalPathMm", "lightColor"],
   },
   "mirror-mount": {
     label: "Mirror",
@@ -910,7 +921,7 @@ export const COMPONENT_FIELDS = {
   lightColor: {
     read: { as: "color" },
     default: DEFAULT_LIGHT_COLOR,
-    brief: `a hex colour for the light drawn inside it (a cavity's mode, a delay line's beam down to its carriage and back); default ${briefCode(DEFAULT_LIGHT_COLOR)}.`,
+    brief: `a hex colour for a laser's emitted light or the light drawn inside a cavity or delay line. New lasers use the first unused colour from ${LASER_LIGHT_COLORS.map(briefCode).join(", ")}, cycling when all are used. An older laser without one is drawn in ${briefCode(LASER_LIGHT_COLORS[0])}; a cavity or delay line defaults to ${briefCode(DEFAULT_LIGHT_COLOR)}.`,
   },
   lightHidden: {
     read: { as: "flag" },
@@ -1961,7 +1972,7 @@ function parseComponent(value: unknown, version: number): BuilderComponent | nul
   // in the kind's own order, which is the order a saved file keeps them in
   for (const field of COMPONENT_SPECS[type as ComponentType].fields) {
     const { since }: FieldSpec<KindField> = COMPONENT_FIELDS[field];
-    if (since === undefined || version >= since) Object.assign(component, readField(field, raw));
+    if ((since === undefined || version >= since) && !(field === "lightColor" && type === "laser-source" && version < 21)) Object.assign(component, readField(field, raw));
   }
   return component;
 }

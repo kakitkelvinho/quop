@@ -35,6 +35,7 @@ const FIXTURES = [
   "setup-v18.json",
   "setup-v19.json",
   "setup-v20.json",
+  "setup-v21.json",
 ];
 
 /** Older files name beam cubes these ways; they open as beam cubes. */
