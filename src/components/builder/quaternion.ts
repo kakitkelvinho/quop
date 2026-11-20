@@ -126,27 +126,6 @@ export function toYawPitchRollDeg(q: Quat): YawPitchRoll {
   return { yawDeg: wrapDeg360(degrees(yaw)), pitchDeg: degrees(pitch) + 0, rollDeg: wrapDeg180(degrees(roll)) };
 }
 
-/** Inspector angles in three.js Euler order YXZ: yaw about table Y. */
-export function fromEulerYXZDeg({ yawDeg, pitchDeg, rollDeg }: YawPitchRoll): Quat {
-  return compose(compose(turnAbout(1, yawDeg), turnAbout(0, pitchDeg)), turnAbout(2, rollDeg));
-}
-
-export function toEulerYXZDeg(q: Quat): YawPitchRoll {
-  const [x, y, z, w] = canonical(q);
-  const m11 = 1 - 2 * (y * y + z * z);
-  const m13 = 2 * (x * z + y * w);
-  const m21 = 2 * (x * y + z * w);
-  const m22 = 1 - 2 * (x * x + z * z);
-  const m23 = 2 * (y * z - x * w);
-  const m31 = 2 * (x * z - y * w);
-  const m33 = 1 - 2 * (x * x + y * y);
-  const locked = Math.abs(m23) >= 1 - 1e-12;
-  const pitch = Math.asin(Math.max(-1, Math.min(1, -m23)));
-  const yaw = locked ? Math.atan2(-m31, m11) : Math.atan2(m13, m33);
-  const roll = locked ? 0 : Math.atan2(m21, m22);
-  return { yawDeg: wrapDeg360(degrees(yaw)), pitchDeg: degrees(pitch) + 0, rollDeg: wrapDeg180(degrees(roll)) };
-}
-
 function degrees(radians: number): number {
   return (radians * 180) / Math.PI;
 }

@@ -2,6 +2,7 @@ import {
   BEAM_CUBE_EDGE_MM,
   CAMERA_OPENING_RADIUS_MM,
   AOM_CRYSTAL,
+  DELAY_RAIL_DROP_MM,
   EOM_SIDE,
   FC_TIP_RADIUS_MM,
   OPTIC_DIAMETER_MM,
@@ -81,7 +82,24 @@ export const OBJECTIVE_SURFACES = () => circularSurface(10);
 export const AOM_SURFACES = () => rectangularSurface(AOM_CRYSTAL[2], AOM_CRYSTAL[1], { kind: "pass" });
 export const EOM_SURFACES = () => rectangularSurface(EOM_SIDE, EOM_SIDE, { kind: "pass" });
 export const ISOLATOR_SURFACES = () => circularSurface(3.5, { kind: "isolator", jones: rotator(Math.PI / 4) });
-export const DELAY_LINE_SURFACES = (extraPathMm: number) => circularSurface(opticRadiusMm, { kind: "pass" }, extraPathMm);
+/**
+ * A Delay line stands across the line, so light crosses its port along local z (#360).
+ * The stage behind the port blocks a Beam that misses it; it is declared after
+ * the port so that a Beam through the port, meeting both at once, meets the port.
+ */
+export function delayLineSurfaces(extraPathMm: number, railMm: number): Surface[] {
+  return [
+    makeSurface({
+      positionMm: [0, 0, 0], normal: [0, 0, 1],
+      aperture: { kind: "circle", radiusMm: opticRadiusMm }, rule: { kind: "pass" }, extraPathMm,
+    }),
+    makeSurface({
+      positionMm: [(opticRadiusMm - railMm) / 2, 0, 0], normal: [0, 0, 1],
+      aperture: { kind: "rect", widthMm: railMm + opticRadiusMm, heightMm: 2 * DELAY_RAIL_DROP_MM, widthAxis: [1, 0, 0] },
+      rule: { kind: "block" },
+    }),
+  ];
+}
 export const PARTICLE_SURFACES = (radiusMm: number) => circularSurface(radiusMm, { kind: "block" });
 export const SAMPLE_SURFACES = () => circularSurface(opticRadiusMm);
 export const BEAM_BLOCK_SURFACES = () => rectangularSurface(50, 26);
