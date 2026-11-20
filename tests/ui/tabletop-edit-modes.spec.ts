@@ -1,5 +1,6 @@
 import { expect, test } from "./checks";
 import type { Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 
 async function clickPart(page: Page, index: number) {
   const box = await page.locator(".builderLabel").nth(index).boundingBox();
@@ -15,19 +16,18 @@ async function topView(page: Page) {
 
 test("traced light is the default and the drawn fallback lasts one visit", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  await expect(page.getByLabel("Traced Beam checks")).toBeVisible();
-  await expect(page.getByLabel("Traced Beam checks")).toContainText("No checks");
+  await expect(page.getByRole("region", { name: "Light" })).toBeVisible();
 
   await page.goto("builder/tabletop/?traced=0");
-  await expect(page.getByLabel("Traced Beam checks")).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Light" })).toHaveCount(0);
 
   await page.goto("builder/tabletop/");
-  await expect(page.getByLabel("Traced Beam checks")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Light" })).toBeVisible();
 });
 
 test("a selected traced Beam keeps its width, opacity and arrow controls", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  await page.locator(".builderBeamRow__select").first().click();
+  await page.locator(".builderLightList__beam").first().click();
   const width = page.getByRole("slider", { name: /Width/ });
   const opacity = page.getByRole("slider", { name: /Opacity/ });
   await expect(width).toBeVisible();
@@ -149,7 +149,7 @@ test("replacing the setup clears Place", async ({ page }) => {
 
 test("Add stops ends when another beam is selected", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  const rows = page.getByRole("region", { name: "Beams" }).locator(".builderBeamRow__select");
+  const rows = page.getByRole("region", { name: "Light" }).locator(".builderLightList__beam");
   await rows.first().click();
   await page.getByRole("button", { name: "Add stops" }).click();
   await expect(page.getByRole("button", { name: "Done adding stops" })).toBeVisible();
@@ -157,4 +157,57 @@ test("Add stops ends when another beam is selected", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Add stops" })).toBeVisible();
   await rows.first().click();
   await expect(page.getByRole("button", { name: "Add stops" })).toBeVisible();
+});
+
+test("Light reveals an unsaved route, saves it, and selects a check's Component", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  await page.getByRole("button", { name: "QUOP" }).click();
+  await page.getByRole("menuitem", { name: /^\.json/ }).click();
+  const setup = {
+    version: 21,
+    components: [
+      { id: "laser", type: "laser-source", position: [0, 100, 0], orientation: [0, 0, 0, 1] },
+      { id: "stop", type: "beam-block", position: [200, 100, 0], orientation: [0, 0, 0, 1] },
+    ],
+    beams: [], connections: [], frames: [], groups: [],
+  };
+  await page.locator('input[type="file"]').setInputFiles({ name: "unsaved.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(setup)) });
+  await page.getByRole("button", { name: "Replace the table" }).click();
+  const light = page.getByRole("region", { name: "Light" });
+  const route = light.locator(".builderLightList__route");
+  await expect(route).toHaveCount(1);
+  await expect(route).toContainText("not saved");
+  const canvas = page.locator("canvas").first();
+  const before = await canvas.screenshot();
+  await route.hover();
+  await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false);
+  await route.getByRole("button", { name: "Save" }).click();
+  await expect(route).toContainText("Laser → Dump");
+  await expect(route).not.toContainText("not saved");
+  await expect.poll(async () => JSON.parse(await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")) || "{}").beams?.length).toBe(1);
+  const saved = JSON.parse((await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")))!);
+  expect(saved.beams[0].path).toEqual(["laser", "stop"]);
+  expect(saved.beams[0].color).toMatch(/^#/);
+  await route.getByRole("button", { name: "Hide Laser → Dump" }).click();
+  await expect(route.getByRole("button", { name: "Show Laser → Dump" })).toBeVisible();
+  await route.getByRole("button", { name: "Show Laser → Dump" }).click();
+  await route.getByRole("button", { name: "Blocked by stop" }).click();
+  await expect(page.locator(".builderInspector")).toContainText("Beam block");
+});
+
+test("every saved Setup fixture opens with Light, including hand-drawn Beams", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.goto("builder/tabletop/");
+  await page.getByRole("button", { name: "QUOP" }).click();
+  await page.getByRole("menuitem", { name: /^\.json/ }).click();
+  const json = page.getByRole("textbox", { name: "The setup, as JSON" });
+  for (let version = 1; version <= 21; version++) {
+    const fixture = readFileSync(`src/components/builder/setup-fixtures/setup-v${version}.json`);
+    const expected = JSON.parse(fixture.toString()).components.length;
+    await page.locator('input[type="file"]').setInputFiles({ name: `setup-v${version}.json`, mimeType: "application/json", buffer: fixture });
+    await page.getByRole("button", { name: "Replace the table" }).click();
+    await expect.poll(async () => JSON.parse(await json.inputValue()).components.length).toBe(expected);
+    await expect(page.getByRole("region", { name: "Light" })).toBeVisible();
+    if (version === 1) await expect(page.getByRole("heading", { name: "Hand-drawn Beams" })).toBeVisible();
+  }
 });

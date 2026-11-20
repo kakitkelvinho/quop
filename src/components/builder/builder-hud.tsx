@@ -37,13 +37,17 @@ import {
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
+import { looseTraceChecks, traceRoutes, type LightRoute } from "@/components/builder/trace-routes";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import {
   COMPONENT_SPECS,
   CONNECTION_KINDS,
   LABEL_MAX_LENGTH,
   LABEL_SCALE_RANGE,
+  laserLightColor,
+  lengthToPicoseconds,
   beamDisplayName,
+  componentDisplayName,
   derivedAngleBeam,
   frameDisplayName,
   type Beam,
@@ -131,6 +135,8 @@ export type BuilderHudProps = {
   onUpdateConnection: (id: string, patch: Partial<Omit<Connection, "id">>) => void;
   onDeleteConnection: (id: string) => void;
   onSelectBeam: (id: string) => void;
+  onSaveRoute: (route: LightRoute) => void;
+  onHoverRoute: (id: string | null) => void;
   onToggleAddStops: () => void;
   onUpdateBeam: (id: string, patch: Partial<Omit<Beam, "id">>, record?: boolean) => void;
   /** snapshot the scene before a run of unrecorded edits (a slider drag) */
@@ -414,6 +420,79 @@ function BeamList({
       {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
+}
+
+function LightList({
+  components, beams, trace, selectedId, besideParts, onSelect, onSave, onHover,
+  onSetHidden, onSelectComponent,
+}: {
+  components: BuilderComponent[];
+  beams: Beam[];
+  trace: TraceResult;
+  selectedId: string | null;
+  besideParts: boolean;
+  onSelect: (id: string) => void;
+  onSave: (route: LightRoute) => void;
+  onHover: (id: string | null) => void;
+  onSetHidden: (id: string, hidden: boolean) => void;
+  onSelectComponent: (id: string) => void;
+}) {
+  const panel = usePanel("beams", LIST_PANEL);
+  const routes = traceRoutes(trace, beams);
+  const handDrawn = beams.filter((beam) => !trace.matchedDrawnBeamIds.includes(beam.id));
+  const unsaved = routes.filter((route) => !route.beam);
+  const looseChecks = looseTraceChecks(trace, routes);
+  const nameOf = (id: string) => {
+    const component = components.find((part) => part.id === id);
+    return component ? componentDisplayName(component) : id;
+  };
+  const list = (
+    <div className={`builderHud__beams builderLightList${besideParts ? " is-besideParts" : ""}`} aria-label="Light" data-guide="beams">
+      {unsaved.length ? <button type="button" className="builderLightList__heading" onMouseEnter={() => onHover("*")} onMouseLeave={() => onHover(null)} onFocus={() => onHover("*")} onBlur={() => onHover(null)}>not saved · {unsaved.length}</button> : null}
+      {trace.trees.map((tree) => {
+        const laser = components.find((part) => part.id === tree.laserId);
+        const own = routes.filter((route) => route.laserId === tree.laserId);
+        return <section key={tree.laserId} className="builderLightList__laser">
+          <h3><span className="builderBeamRow__dot" style={{ background: laser ? laserLightColor(laser) : undefined }} />{nameOf(tree.laserId)}</h3>
+          {own.map((route) => <div key={route.id} className="builderLightList__route" onMouseEnter={() => onHover(route.id)} onMouseLeave={() => onHover(null)} onFocus={() => onHover(route.id)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onHover(null); }}>
+            <div className="builderLightList__row">
+              <span className="builderLightList__endpoint">→ {route.endId ? nameOf(route.endId) : "open light"}</span>
+              {route.beam ? <>
+                <button type="button" className="builderLightList__beam" aria-pressed={selectedId === route.beam.id} onClick={() => onSelect(route.beam!.id)}>
+                  <span className="builderBeamRow__dot" style={{ background: route.beam.color }} />{beamDisplayName(route.beam)}
+                </button>
+                <IconButton icon={route.beam.hidden ? "eyeOff" : "eye"} label={`${route.beam.hidden ? "Show" : "Hide"} ${beamDisplayName(route.beam)}`} active={Boolean(route.beam.hidden)} onClick={() => onSetHidden(route.beam!.id, !route.beam!.hidden)} />
+              </> : <>
+                <span className="builderLightList__unsaved">not saved</span>
+                <button type="button" className="builderButton" disabled={route.path.length < 2} onClick={() => onSave(route)}>Save</button>
+              </>}
+            </div>
+            <div className="builderLightList__readouts">
+              <span>{Math.round(route.lengthMm)} mm</span>
+              <span>{lengthToPicoseconds(route.lengthMm).toFixed(1)} ps</span>
+              <span>{Math.round(route.power * 100)}%</span>
+            </div>
+            {route.checks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}
+          </div>)}
+        </section>;
+      })}
+      {handDrawn.length ? <section className="builderLightList__drawn"><h3>Hand-drawn Beams</h3>{handDrawn.map((beam) => {
+        const reason = trace.checks.find((check) => check.message.startsWith(`${beam.label || beam.id}: `))?.message ?? "Drawn path differs from traced light";
+        return <div key={beam.id} className="builderLightList__drawnRow">
+          <button type="button" onClick={() => onSelect(beam.id)}><span className="builderBeamRow__dot" style={{ background: beam.color }} />{beamDisplayName(beam)}</button>
+          <IconButton icon={beam.hidden ? "eyeOff" : "eye"} label={`${beam.hidden ? "Show" : "Hide"} ${beamDisplayName(beam)}`} active={Boolean(beam.hidden)} onClick={() => onSetHidden(beam.id, !beam.hidden)} />
+          <small>{reason}</small>
+        </div>;
+      })}</section> : null}
+      {looseChecks.length ? <section className="builderLightList__loose"><h3>Other checks</h3>{looseChecks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}</section> : null}
+    </div>
+  );
+  if (!panel.moves) return <div className="builderIsland builderLightList__panel">{list}</div>;
+  return <section {...panel.frame} className={`builderIsland builderHud__frames builderHud__beamsPanel builderLightList__panel${panel.className}`} aria-labelledby="builderLightTitle" data-guide="beams">
+    <PanelBar title="Light" titleId="builderLightTitle" grip={false} {...panel.bar} />
+    {list}
+    {panel.resize ? <PanelResize {...panel.resize} /> : null}
+  </section>;
 }
 
 /**
@@ -1567,9 +1646,9 @@ export default function BuilderHud(props: BuilderHudProps) {
   const railSlots: RailSlot[] = [
     {
       id: "beams",
-      title: "Beams",
+      title: props.trace ? "Light" : "Beams",
       icon: "beams",
-      count: beams.length,
+      count: props.trace ? traceRoutes(props.trace, beams).length : beams.length,
       shown: !listHidden("beams"),
       live: beamMode,
       canCreate: twoParts,
@@ -1762,8 +1841,20 @@ export default function BuilderHud(props: BuilderHudProps) {
         {/* the lists stack up from the rail, like windows over a taskbar */}
         {anyList ? (
           <div className={`builderHud__lists${besideParts ? " is-besideParts" : ""}`}>
-            {listOn("beams", beams.length + Number(props.trace !== null)) ? (
-              <BeamList
+            {listOn("beams", beams.length + Number(props.trace !== null)) ? (props.trace ? (
+              <LightList
+                components={components}
+                beams={beams}
+                trace={props.trace}
+                selectedId={selectedBeam?.id ?? null}
+                besideParts={besideParts}
+                onSelect={props.onSelectBeam}
+                onSave={props.onSaveRoute}
+                onHover={props.onHoverRoute}
+                onSetHidden={props.onSetBeamHidden}
+                onSelectComponent={props.onSelectComponent}
+              />
+            ) : <BeamList
                 components={components}
                 beams={beams}
                 trace={props.trace}

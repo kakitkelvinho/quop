@@ -3895,6 +3895,128 @@ html[data-theme="dark"] .builderCoach {
   scrollbar-width: thin;
 }
 
+.builderLightList {
+  width: min(22rem, 100%);
+  min-width: min(20rem, 100%);
+  gap: 0.4rem;
+  padding: 0.35rem;
+}
+
+.builderLightList__laser,
+.builderLightList__drawn,
+.builderLightList__loose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.builderLightList__laser + .builderLightList__laser,
+.builderLightList__drawn,
+.builderLightList__loose {
+  border-top: 1px solid var(--builder-hairline);
+  padding-top: 0.4rem;
+}
+
+.builderLightList h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.builderLightList__route {
+  padding: 0.3rem;
+  border: 1px solid transparent;
+}
+
+.builderLightList__route:hover,
+.builderLightList__route:focus-within {
+  border-color: var(--builder-hairline);
+  background: var(--builder-hover);
+}
+
+.builderLightList__row,
+.builderLightList__readouts {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.builderLightList__endpoint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+}
+
+.builderLightList__beam,
+.builderLightList__drawnRow > button:first-child,
+.builderLightList__heading,
+.builderLightList__check {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.builderLightList__beam,
+.builderLightList__drawnRow > button:first-child {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76rem;
+}
+
+.builderLightList__beam[aria-pressed="true"] {
+  color: var(--accent-strong);
+}
+
+.builderLightList__unsaved,
+.builderLightList__readouts,
+.builderLightList__drawnRow small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.builderLightList__readouts {
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.builderLightList__heading,
+.builderLightList__check {
+  width: 100%;
+  padding: 0.2rem 0.3rem;
+  text-align: left;
+  font-size: 0.72rem;
+}
+
+.builderLightList__heading:hover,
+.builderLightList__check:hover {
+  background: var(--builder-hover);
+}
+
+.builderLightList__drawnRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.builderLightList__drawnRow small {
+  grid-column: 1 / -1;
+  padding-left: 0.3rem;
+}
+
 /* the parts panel holds the left edge while it is open; the boxes step out beside it */
 .builderHud__lists.is-besideParts {
   left: calc(0.9rem + clamp(16rem, 25vw, 24rem) + 0.6rem);

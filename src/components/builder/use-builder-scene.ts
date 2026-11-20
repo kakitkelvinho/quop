@@ -357,8 +357,9 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
   // ---- beam edits ----------------------------------------------------------
 
   const addBeam = useCallback(
-    (path: string[], color?: string, label?: string, inheritColor = false) => {
+    (path: string[], color?: string, label?: string, inheritColor = false, fromTrace = false) => {
       if (path.length < 2) return;
+      const id = createBeamId();
       commit((current) => {
         const sameSource = current.beams.filter((beam) => beam.path[0] === path[0]);
         const parent = sameSource
@@ -367,24 +368,24 @@ export function useBuilderScene(opening: BuilderSceneData | null = null, traced 
         const added: BuilderSceneData = { ...current, beams: [
           ...current.beams,
           {
-            id: createBeamId(),
+            id,
             path,
             color: color ?? BEAM_COLORS[current.beams.length % BEAM_COLORS.length],
-            label: parent ? undefined : label,
+            label: parent && !fromTrace ? undefined : label,
             ...(parent ? {
               parentId: parent.id,
               ...(inheritColor ? { inheritColor: true } : {}),
-              inheritLabel: true,
-              inheritHidden: true,
+              ...(!fromTrace ? { inheritLabel: true, inheritHidden: true } : {}),
             } : {}),
           },
         ] };
-        if (!traced) return added;
+        if (!traced || fromTrace) return added;
         return path.slice(1).reduce((next, id, index) => {
           const from = path[index];
           return next.components.some((part) => part.id === from && canAim(part)) ? aimAt(next, from, id) : next;
         }, added);
       });
+      return id;
     },
     [commit, traced],
   );

@@ -36,6 +36,7 @@ import { readStoredScene, useBuilderScene } from "@/components/builder/use-build
 import { readTracedFlag } from "@/components/builder/traced-flag";
 import { traceScene } from "@/components/builder/trace-scene";
 import { effectiveBeams } from "@/components/builder/beam-branches";
+import type { LightRoute } from "@/components/builder/trace-routes";
 import { canAim, settleAims } from "@/components/builder/aim-settling";
 import { upgradeNotice } from "@/components/builder/setup-upgrade";
 import { hasWork, hashToScene, isShareHash, sceneToHash } from "@/components/builder/share-link";
@@ -331,6 +332,7 @@ export default function BuilderScene() {
   // component ids in the order they were picked; the last is the primary
   const [selection, setSelection] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
   // the Groups box: the row under the pointer, outlined on the table, and the one being renamed
   const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
   const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
@@ -1702,6 +1704,18 @@ export default function BuilderScene() {
     setSelectedFrameId(null);
   }, [editMode, endMode, selectedBeamId]);
 
+  const handleSaveRoute = useCallback((route: LightRoute) => {
+    if (route.path.length < 2) return;
+    const source = componentById(sceneRef.current.components, route.laserId);
+    const end = route.endId && componentById(sceneRef.current.components, route.endId);
+    const label = `${source ? componentDisplayName(source) : route.laserId} → ${end ? componentDisplayName(end) : "open light"}`;
+    const id = api.addBeam(route.path, BEAM_COLORS[sceneRef.current.beams.length % BEAM_COLORS.length], label, false, true);
+    if (id) {
+      setSelectedBeamId(id);
+      announce("Beam saved.");
+    }
+  }, [api, announce]);
+
   return (
     <div className="builderWorkspace">
       <div
@@ -1723,6 +1737,7 @@ export default function BuilderScene() {
           onSlowView={autoQuality && quality === "full" ? handleSlowView : undefined}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
+          hoveredRouteId={hoveredRouteId}
           ghostBeamId={ghostBeamId}
           selectedConnectionId={selectedConnection?.id ?? null}
           selectedFrameId={selectedFrame?.id ?? null}
@@ -1859,6 +1874,8 @@ export default function BuilderScene() {
           setSelectedConnectionId(null);
         }}
         onSelectBeam={handleSelectBeam}
+        onSaveRoute={handleSaveRoute}
+        onHoverRoute={setHoveredRouteId}
         onToggleAddStops={() => {
           if (editMode.kind === "add-stops") endMode();
           else if (selectedBeamId) enterMode({ kind: "add-stops", beamId: selectedBeamId });

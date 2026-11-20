@@ -53,7 +53,8 @@ import { BeamDistances } from "@/components/builder/beam-distances";
 import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
-import { tracePathContains, type TraceResult } from "@/components/builder/trace-scene";
+import type { TraceResult } from "@/components/builder/trace-scene";
+import { traceRoutes } from "@/components/builder/trace-routes";
 import { traceGuideGeometry } from "@/components/builder/trace-guide";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
@@ -111,7 +112,7 @@ function TraceGuides({ trace, beams, components }: { trace: TraceResult; beams: 
     return { points, colors };
   }, [trace, beams, components]);
   if (guide.points.length === 0) return null;
-  return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest={false} depthWrite={false} renderOrder={3} />;
+  return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest depthWrite={false} />;
 }
 
 /** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
@@ -1150,6 +1151,7 @@ export type BuilderCanvasProps = {
   /** the selected parts; the last is the one the orbit falls back to */
   selection: string[];
   selectedBeamId: string | null;
+  hoveredRouteId: string | null;
   /** the one hidden beam drawn as a faint ghost, if any; every other hidden beam is not drawn */
   ghostBeamId: string | null;
   selectedConnectionId: string | null;
@@ -1246,6 +1248,7 @@ export default function BuilderCanvas({
   onSlowView,
   selection,
   selectedBeamId,
+  hoveredRouteId,
   ghostBeamId,
   selectedConnectionId,
   selectedFrameId,
@@ -1349,10 +1352,7 @@ export default function BuilderCanvas({
   // count in path lengths and angle mirrors, so only drawing reads this
   const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
   const matchedDrawnBeamIds = useMemo(() => new Set(trace?.matchedDrawnBeamIds ?? []), [trace]);
-  const selectedTraceBeam = beams.find((beam) => beam.id === selectedBeamId && matchedDrawnBeamIds.has(beam.id) && !beam.hidden);
-  const selectedTracePath = selectedTraceBeam && trace?.trees.flatMap((tree) => tree.segments).findLast((segment) =>
-    segment.toId === selectedTraceBeam.path.at(-1) && tracePathContains(segment.path, selectedTraceBeam.path),
-  )?.path;
+  const routes = useMemo(() => trace ? traceRoutes(trace, beams) : [], [trace, beams]);
   const shownComponents = useMemo(
     () => components.filter((component) => shown.components.has(component.id)),
     [components, shown],
@@ -1545,22 +1545,24 @@ export default function BuilderCanvas({
       })}
 
       {trace ? <TraceGuides trace={trace} beams={beams} components={components} /> : null}
-      {trace && selectedTraceBeam && selectedTracePath ? trace.trees.flatMap((tree) => tree.segments.map((segment, index) =>
-        segment.path.length <= selectedTracePath.length && segment.path.every((id, at) => selectedTracePath[at] === id) ? (
-          <BeamPath
-            key={`${tree.laserId}-${index}`}
-            points={[
-              new Vector3(segment.fromMm[0], segment.fromMm[1] + 2, segment.fromMm[2]),
-              new Vector3(segment.toMm[0], segment.toMm[1] + 2, segment.toMm[2]),
-            ]}
-            color={selectedTraceBeam.color}
-            width={selectedTraceBeam.width}
-            opacity={selectedTraceBeam.opacity}
-            core={selectedTraceBeam.arrows !== false}
-            selected
-          />
-        ) : null,
-      )) : null}
+      {routes.flatMap((route) => {
+        const beam = route.beam;
+        const ghost = Boolean(beam?.hidden && beam.id === ghostBeamId);
+        const reveal = !beam && (hoveredRouteId === route.id || hoveredRouteId === "*");
+        if ((beam && !isBeamDrawn(beam, shown) && !ghost) || (!beam && !reveal)) return [];
+        const laser = components.find((part) => part.id === route.laserId);
+        const color = beam?.color ?? (laser ? laserLightColor(laser) : LASER_LIGHT_COLORS[0]);
+        return route.segments.map((segment, index) => <BeamPath
+          key={`${route.id}-${index}`}
+          points={[new Vector3(...segment.fromMm), new Vector3(...segment.toMm)]}
+          color={color}
+          width={beam?.width}
+          opacity={beam && isBeamFaded(beam, shown) ? (beam.opacity ?? 1) * 0.25 : beam?.opacity}
+          core={beam ? beam.arrows !== false : false}
+          selected={beam?.id === selectedBeamId || reveal}
+          ghost={ghost}
+        />);
+      })}
 
       {beamDraft.length >= 2 ? (
         <BeamPath
