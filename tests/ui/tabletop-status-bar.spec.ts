@@ -7,7 +7,12 @@ test("what's new appears once and can open the earlier view", async ({ page }) =
   await page.goto("builder/tabletop/");
   const card = page.getByRole("region", { name: "Light follows the table" });
   await expect(card).toBeVisible();
-  await expect(card).toContainText("Press F");
+  const gotItColors = await card.getByRole("button", { name: "Got it" }).evaluate((button) => {
+    const style = getComputedStyle(button);
+    return { background: style.backgroundColor, text: style.color };
+  });
+  expect(gotItColors.text).not.toBe(gotItColors.background);
+  await expect(card).toContainText("Your old hand-drawn Beams are still there");
   await card.getByRole("button", { name: "Use earlier view" }).click();
   await expect(card).toHaveCount(0);
   await expect(statusBar(page)).toContainText("Legacy view: drawn Beams, not traced");

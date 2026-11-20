@@ -4827,23 +4827,8 @@ body[data-panel-gesture="se"] * {
   line-height: 1.2;
 }
 
-.builderWhatsNew p,
-.builderWhatsNew ul {
+.builderWhatsNew p {
   margin: 0 0 0.75rem;
-}
-
-.builderWhatsNew ul {
-  padding-left: 1.2rem;
-}
-
-.builderWhatsNew li + li {
-  margin-top: 0.4rem;
-}
-
-.builderWhatsNew kbd {
-  padding: 0 0.2rem;
-  border: 1px solid var(--builder-hairline);
-  border-radius: 2px;
 }
 
 .builderWhatsNew button {
@@ -4864,9 +4849,9 @@ body[data-panel-gesture="se"] * {
 }
 
 .builderWhatsNew__actions .is-primary {
-  border-color: var(--accent-strong);
-  background: var(--accent-strong);
-  color: white;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .builderStatusBar__mode,
