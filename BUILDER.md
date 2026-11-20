@@ -513,7 +513,7 @@ Keyboard shortcuts to open the menus are issue #347.
   a height while they all stand at one (and none sits in a host), and a mount
   colour for those held in a mount. It closes when nothing is selected.
 - **Bottom left**: the *panel rail*, an island with three slots that are
-  always there: **Beams**, **Frames** and **Groups**, each with its count in
+  always there: **Light** (called **Beams** in the earlier view), **Frames** and **Groups**, each with its count in
   small mono type in its corner (`panel-rail.tsx`, `rail-slots.ts`). A slot
   with items shows or hides its list, which stacks up from the rail like a
   window over a taskbar; a slot whose list is minimised brings it back. A
@@ -526,7 +526,15 @@ Keyboard shortcuts to open the menus are issue #347.
   its mode is live, a slot stops it, and the slot is lit in the accent while
   it is. Starting any other mode ends group mode (`group-mode.ts`).
 
-  The beams box has one stacked row per beam with its colour,
+  In traced view the Light box groups routes by Laser. A route shows its
+  endpoint, length, time of flight and power as a filled battery bar with a
+  percentage. Hover or focus the route to reveal its full path. Its pin icon
+  has a slash when unpinned; pressing it pins or unpins that route. Pinned
+  routes can also be hidden with the eye. If a Setup has hand-drawn Beams,
+  they appear below the traced routes under **Legacy**; the untouched example
+  has no Legacy section and no pinned routes.
+
+  In the earlier view the Beams box has one stacked row per beam with its colour,
   name and path length; click a row to select that beam, or press anywhere on
   it and drag it to a new place in the list (the rows around it open a gap; on
   a touch screen, rest a finger on the row first, then drag; `Esc` cancels; a

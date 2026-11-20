@@ -2374,8 +2374,8 @@ function atDefaultHeight(components: BuilderComponent[]): BuilderComponent[] {
 export const DEFAULT_SCENE: BuilderSceneData = {
   version: SCENE_VERSION,
   components: atDefaultHeight([
-    // a laser, spectrometer and photodiode are placed by their ports: the
-    // the first beam runs 575 mm from the laser's opening to the spectrometer's
+    // a laser, spectrometer and photodiode are placed by their ports; the
+    // straight route runs from the laser's opening to the spectrometer's.
     { id: "laser-pump", type: "laser-source", position: [-300, 0, -150], orientation: fromYawDeg(0) },
     { id: "waveplate-1", type: "waveplate", position: [-250, 0, -150], orientation: fromYawDeg(0) },
     { id: "pbs-1", type: "beam-splitter", position: [-150, 0, -150], orientation: fromYawDeg(0), aim: "mirror-ref" },
@@ -2386,19 +2386,7 @@ export const DEFAULT_SCENE: BuilderSceneData = {
     { id: "mirror-ref", type: "mirror-mount", position: [-150, 0, 100], orientation: fromYawDeg(45), color: "#dc2626", aim: "pd-ref" },
     { id: "pd-ref", type: "photodiode", position: [150, 0, 100], orientation: fromYawDeg(0) },
   ]),
-  beams: [
-    {
-      id: "beam-pump",
-      path: ["laser-pump", "waveplate-1", "pbs-1", "lens-1", "sample-1", "filter-1", "spectrometer-1"],
-      color: "#7c3aed",
-    },
-    {
-      id: "beam-ref",
-      path: ["laser-pump", "waveplate-1", "pbs-1", "mirror-ref", "pd-ref"],
-      color: "#dc2626",
-      parentId: "beam-pump",
-    },
-  ],
+  beams: [],
   connections: [],
   frames: [],
   groups: [],

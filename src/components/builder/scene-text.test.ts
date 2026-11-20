@@ -20,8 +20,9 @@ describe("checking a setup's text", () => {
     assert.equal(check.ok, true);
     if (check.ok) {
       assert.equal(check.scene.components.length, DEFAULT_SCENE.components.length);
+      assert.equal(check.scene.beams.length, 0);
       assert.equal(check.skipped, 0);
-      assert.match(check.summary, /^\d+ parts, \d+ beams/);
+      assert.match(check.summary, /^\d+ parts$/);
     }
   });
 

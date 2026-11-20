@@ -23,7 +23,13 @@ async function topView(page: Page) {
 
 test("traced light is the default and the URL fallback lasts one visit", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  await expect(page.getByRole("region", { name: "Light", exact: true })).toBeVisible();
+  const light = page.getByRole("region", { name: "Light", exact: true });
+  await expect(light).toBeVisible();
+  await expect(light.getByRole("heading", { name: "Legacy" })).toHaveCount(0);
+  await expect(light.getByRole("meter", { name: "Power" })).toHaveCount(2);
+  await expect(light.getByRole("meter", { name: "Power" }).first()).toHaveAttribute("aria-valuenow", "50");
+  await expect(light.locator(".builderLightList__powerFill").first()).toHaveAttribute("style", "width: 50%;");
+  await expect(light.getByRole("button", { name: /^Pin route to/ })).toHaveCount(2);
 
   await page.goto("builder/tabletop/?traced=0");
   await expect(page.getByRole("region", { name: "Light", exact: true })).toHaveCount(0);
@@ -34,7 +40,7 @@ test("traced light is the default and the URL fallback lasts one visit", async (
 
 test("a selected traced Beam keeps its width, opacity and arrow controls", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  await page.locator(".builderLightList__beam").first().click();
+  await page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Pin route to/ }).first().click();
   const width = page.getByRole("slider", { name: /Width/ });
   const opacity = page.getByRole("slider", { name: /Opacity/ });
   await expect(width).toBeVisible();
@@ -178,7 +184,10 @@ test("replacing the setup clears Place", async ({ page }) => {
 
 test("Add stops ends when another beam is selected", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  const rows = page.getByRole("region", { name: "Light", exact: true }).locator(".builderLightList__beam");
+  const light = page.getByRole("region", { name: "Light", exact: true });
+  await light.getByRole("button", { name: /^Pin route to/ }).first().click();
+  await light.getByRole("button", { name: /^Pin route to/ }).first().click();
+  const rows = light.locator(".builderLightList__beam");
   await rows.first().click();
   await page.getByRole("button", { name: "Add stops" }).click();
   await expect(page.getByRole("button", { name: "Done adding stops" })).toBeVisible();
@@ -206,7 +215,9 @@ test("Light reveals an unpinned route, pins it for export, and labels distances 
   const light = page.getByRole("region", { name: "Light", exact: true });
   const route = light.locator(".builderLightList__route");
   await expect(route).toHaveCount(1);
-  await expect(route).toContainText("unpinned");
+  const pin = route.getByRole("button", { name: "Pin route to Dump" });
+  await expect(pin).toHaveAttribute("aria-pressed", "false");
+  await expect(pin.locator("svg mask")).toHaveCount(1);
   await page.getByRole("button", { name: "Show", exact: true }).click();
   await page.getByRole("toolbar", { name: "Show" }).getByRole("button", { name: "Distances between Components reached by light" }).click();
   await expect(page.locator(".builderDistance")).toHaveText("200 mm");
@@ -219,9 +230,11 @@ test("Light reveals an unpinned route, pins it for export, and labels distances 
   await page.getByRole("button", { name: "Show", exact: true }).focus();
   await route.hover();
   await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false);
-  await route.getByRole("button", { name: "Pin" }).click();
+  await pin.click();
   await expect(route).toContainText("Laser → Dump");
-  await expect(route).not.toContainText("unpinned");
+  const unpin = route.getByRole("button", { name: "Unpin Laser → Dump" });
+  await expect(unpin).toHaveAttribute("aria-pressed", "true");
+  await expect(unpin.locator("svg mask")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Pinned route" })).toBeVisible();
   await expect.poll(async () => JSON.parse(await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")) || "{}").beams?.length).toBe(1);
   const saved = JSON.parse((await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")))!);
@@ -231,8 +244,8 @@ test("Light reveals an unpinned route, pins it for export, and labels distances 
   await expect(route.getByRole("button", { name: "Show Laser → Dump" })).toBeVisible();
   await expect(page.locator(".builderDistance")).toBeVisible();
   await route.getByRole("button", { name: "Show Laser → Dump" }).click();
-  await route.getByRole("button", { name: "Unpin" }).click();
-  await expect(route).toContainText("unpinned");
+  await unpin.click();
+  await expect(route.getByRole("button", { name: "Pin route to Dump" })).toHaveAttribute("aria-pressed", "false");
   await expect(page.locator(".builderDistance")).toBeVisible();
   await expect.poll(async () => JSON.parse(await page.evaluate(() => localStorage.getItem("quop.builder.scene.v1")) || "{}").beams?.length).toBe(0);
   await route.getByRole("button", { name: "Blocked by stop" }).click();
@@ -252,6 +265,10 @@ test("every saved Setup fixture opens with Light, including hand-drawn Beams", a
     await page.getByRole("button", { name: "Replace the table" }).click();
     await expect.poll(async () => JSON.parse(await json.inputValue()).components.length).toBe(expected);
     await expect(page.getByRole("region", { name: "Light", exact: true })).toBeVisible();
-    if (version === 1) await expect(page.getByRole("heading", { name: "Hand-drawn Beams" })).toBeVisible();
+    if (version === 1) {
+      const legacy = page.getByRole("region", { name: "Legacy" });
+      await expect(legacy.getByRole("heading", { name: "Legacy" })).toBeVisible();
+      await expect(legacy.getByRole("listitem")).toHaveCount(3);
+    }
   }
 });

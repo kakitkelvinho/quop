@@ -438,6 +438,14 @@ function BeamList({
   );
 }
 
+function PowerMeter({ power }: { power: number }) {
+  const percent = Math.round(Math.min(1, Math.max(0, power)) * 100);
+  return <span className="builderLightList__power" role="meter" aria-label="Power" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={`${percent}%`}>
+    <span className="builderLightList__powerBar" aria-hidden="true"><span className="builderLightList__powerFill" style={{ width: `${percent}%` }} /></span>
+    <span aria-hidden="true">{percent}%</span>
+  </span>;
+}
+
 function LightList({
   components, beams, trace, selectedId, besideParts, onSelect, onPin, onUnpin, onHover,
   onSetHidden, onSelectComponent,
@@ -480,32 +488,36 @@ function LightList({
                   <span className="builderBeamRow__dot" style={{ background: route.beam.color }} />{beamDisplayName(route.beam)}
                 </button>
                 <IconButton icon={route.beam.hidden ? "eyeOff" : "eye"} label={`${route.beam.hidden ? "Show" : "Hide"} ${beamDisplayName(route.beam)}`} active={Boolean(route.beam.hidden)} onClick={() => onSetHidden(route.beam!.id, !route.beam!.hidden)} />
-              </> : <>
-                <span className="builderLightList__unsaved">unpinned</span>
-                <button type="button" className="builderButton" title="Keep this route visible in the Setup and PNG export" disabled={route.path.length < 2} onClick={() => onPin(route)}>Pin</button>
-              </>}
+              </> : null}
+              <IconButton
+                icon="pin"
+                off={!route.beam}
+                label={route.beam ? `Unpin ${beamDisplayName(route.beam)}` : `Pin route to ${route.endId ? nameOf(route.endId) : "open light"}`}
+                active={Boolean(route.beam)}
+                disabled={!route.beam && route.path.length < 2}
+                onClick={() => route.beam ? onUnpin(route.beam.id) : onPin(route)}
+              />
             </div>
             <div className="builderLightList__readouts">
               <span>{Math.round(route.lengthMm)} mm</span>
               <span>{lengthToPicoseconds(route.lengthMm).toFixed(1)} ps</span>
-              <span>{Math.round(route.power * 100)}%</span>
-              {route.beam ? <button type="button" className="builderLightList__unpin" onClick={() => onUnpin(route.beam!.id)}>Unpin</button> : null}
+              <PowerMeter power={route.power} />
             </div>
             {route.checks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}
           </div>)}
         </section>;
       })}
-      {handDrawn.length ? <section className="builderLightList__drawn"><h3>Hand-drawn Beams</h3>{handDrawn.map((beam) => {
+      {looseChecks.length ? <section className="builderLightList__loose"><h3>Other checks</h3>{looseChecks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}</section> : null}
+      {handDrawn.length ? <section className="builderLightList__legacy" aria-label="Legacy"><h3>Legacy</h3><div className="builderLightList__drawn" role="list">{handDrawn.map((beam) => {
         const reason = trace.matchedDrawnBeamIds.includes(beam.id)
           ? "No separate traced route for this Beam"
           : trace.checks.find((check) => check.message.startsWith(`${beam.label || beam.id}: `))?.message ?? "Drawn path differs from traced light";
-        return <div key={beam.id} className="builderLightList__drawnRow">
+        return <div key={beam.id} className="builderLightList__drawnRow" role="listitem">
           <button type="button" onClick={() => onSelect(beam.id)}><span className="builderBeamRow__dot" style={{ background: beam.color }} />{beamDisplayName(beam)}</button>
           <IconButton icon={beam.hidden ? "eyeOff" : "eye"} label={`${beam.hidden ? "Show" : "Hide"} ${beamDisplayName(beam)}`} active={Boolean(beam.hidden)} onClick={() => onSetHidden(beam.id, !beam.hidden)} />
           <small>{reason}</small>
         </div>;
-      })}</section> : null}
-      {looseChecks.length ? <section className="builderLightList__loose"><h3>Other checks</h3>{looseChecks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}</section> : null}
+      })}</div></section> : null}
     </div>
   );
   if (!panel.moves) return <div className="builderIsland builderLightList__panel">{list}</div>;
