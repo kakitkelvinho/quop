@@ -26,7 +26,7 @@ it("keeps a drawn Beam when the trace misses an aperture and is blocked", () => 
   const traced = traceScene(settleAims(parsed).scene);
   assert.deepEqual(traced.matchedDrawnBeamIds, []);
   assert.ok(traced.checks.some((check) => check.kind === "missed-aperture" && check.componentId === "iris"));
-  assert.match(upgradeNotice(parsed) ?? "", /This file was upgraded/);
+  assert.match(upgradeNotice(parsed) ?? "", /Select it in the Beams box and check the traced Beam checks in the status bar/);
   const again = parseScene({ ...raw, version: 19 });
   assert.ok(again);
   assert.equal(upgradeNotice(again), null);
