@@ -1475,7 +1475,7 @@ export default function BuilderCanvas({
                 <meshBasicMaterial color={palette.accent} transparent opacity={0.85} depthTest={false} />
               </mesh>
             ) : null}
-            {shown && prototypeVariant !== "B2" ? (
+            {shown && prototypeVariant !== "B2" && prototypeVariant !== "D" ? (
               <group position={[point[0] + componentRadius(part) + 13, 2, point[2]]}>
                 <mesh
                   onPointerDown={(event) => { event.stopPropagation(); onAimHandlePointerDown(part.id, event); }}

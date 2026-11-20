@@ -77,7 +77,8 @@ export function AimPickButton({ id }: { id: string }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [picking, id]);
-  if (!isLate(variant)) return null;
+  // aiming is split out of the shipping design (D); B2 keeps it for the aiming issue
+  if (variant !== "B2") return null;
   return picking === id
     ? <button type="button" className="protoPick is-on" onClick={() => setAimPick(null)}>Click a Component on the table… (Esc)</button>
     : <button type="button" className="protoPick" onClick={() => setAimPick(id)}>⌖ Pick on table</button>;
@@ -249,7 +250,7 @@ export function PrototypeTableLight({
           checks: [], matchedDrawnBeamIds: [],
         }} />
       ))}
-      {only && target ? (
+      {variant === "B2" && only && target ? (
         <>
           <Line points={[referencePoint(only), referencePoint(target)]} color="#8a8178" lineWidth={1} dashed dashSize={4} gapSize={4}
             transparent opacity={0.7} depthWrite={false} />
@@ -624,7 +625,7 @@ function ViewSwitch({ traced }: { traced: boolean }) {
     window.location.assign(url);
   };
   return traced
-    ? <a className="protoLink" href="?traced=0" onClick={go}>Earlier view</a>
+    ? <a className="protoLink" href="?traced=0" onClick={go}>Legacy view</a>
     : <a className="protoLink is-strong" href="?traced=1" onClick={go}>Switch to traced Beams</a>;
 }
 
@@ -651,7 +652,7 @@ export function PrototypeStatusBar({ where, mode, status, trace, onSelectCompone
           <span className="protoLine__cell"><ChecksState trace={trace} onSelectComponent={onSelectComponent} opens="up" /></span>
           <span className="protoLine__cell"><LightSwitch /></span>
           {upgraded ? <span className="protoLine__cell protoBarWarn protoWide">{upgraded}</span> : null}
-        </> : <span className="protoLine__cell protoBarWarn">Earlier view: drawn Beams, not traced</span>}
+        </> : <span className="protoLine__cell protoBarWarn">Legacy view: drawn Beams, not traced</span>}
         <span className="protoLine__fill">{status}</span>
         <span className="protoLine__cell"><ViewSwitch traced={traced} /></span>
       </div>
@@ -667,7 +668,7 @@ export function PrototypeStatusBar({ where, mode, status, trace, onSelectCompone
           <LightSwitch />
           <span className="protoStrip__sep" />
           {upgraded ? <span className="protoBarWarn protoWide">{upgraded} ·</span> : null}
-        </> : <span className="protoBarWarn">Earlier view: drawn Beams ·</span>}
+        </> : <span className="protoBarWarn">Legacy view: drawn Beams ·</span>}
         <ViewSwitch traced={traced} />
       </p>
     );
@@ -677,7 +678,7 @@ export function PrototypeStatusBar({ where, mode, status, trace, onSelectCompone
     if (!trace) return (
       <dl className="protoReadout" role="status" aria-live="polite">
         <div className="protoReadout__mode"><dt>Mode</dt><dd>{shownMode ? <b>{shownMode.label}</b> : "Select"}</dd></div>
-        <div><dt>Light</dt><dd className="protoBarWarn">Earlier view: drawn Beams</dd></div>
+        <div><dt>Light</dt><dd className="protoBarWarn">Legacy view: drawn Beams</dd></div>
         <div><dt>View</dt><dd><ViewSwitch traced={false} /></dd></div>
       </dl>
     );
