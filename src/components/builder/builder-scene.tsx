@@ -80,6 +80,7 @@ import {
   type BlockSymbol,
   type Corner,
   type Vec3,
+  wasUpgraded,
 } from "@/components/builder/types";
 
 /** A turn by the rotation handle in flight. */
@@ -327,6 +328,9 @@ export default function BuilderScene() {
   const [openingScene] = useState(scene);
   const trace = useMemo(() => traced ? traceScene(scene) : null, [traced, scene]);
   const aimStatuses = useMemo(() => traced ? settleAims(scene).statuses : null, [traced, scene]);
+  // whether the setup on the table came from an older file; cleared when another setup replaces it
+  const [fromUpgradedFile, setFromUpgradedFile] = useState(() => wasUpgraded(scene));
+  const handDrawnAfterUpgrade = fromUpgradedFile && trace ? scene.beams.length - trace.matchedDrawnBeamIds.length : 0;
 
   // component ids in the order they were picked; the last is the primary
   const [selection, setSelection] = useState<string[]>([]);
@@ -1258,6 +1262,7 @@ export default function BuilderScene() {
   const applyScene = useCallback(
     (parsed: BuilderSceneData, message: string) => {
       const notice = traced ? upgradeNotice(parsed) : null;
+      setFromUpgradedFile(wasUpgraded(parsed));
       api.replaceScene(parsed);
       setFitToken((token) => token + 1);
       setSelection([]);
@@ -1803,6 +1808,7 @@ export default function BuilderScene() {
         canUndo={api.canUndo}
         canRedo={api.canRedo}
         status={status}
+        handDrawnAfterUpgrade={handDrawnAfterUpgrade}
         emptyClicks={emptyClicks}
         onToggleTray={() => {
           if (editMode.kind === "group-pick") endMode();
@@ -1927,10 +1933,12 @@ export default function BuilderScene() {
           setSelectedBeamId(null);
           setSelectedConnectionId(null);
           setSelectedFrameId(null);
+          setFromUpgradedFile(false);
           announce("Example loaded. ⌘Z undoes.");
         }}
         onClear={() => {
           api.clearScene();
+          setFromUpgradedFile(false);
           endMode();
           setSelection([]);
           setSelectedBeamId(null);

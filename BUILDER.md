@@ -113,7 +113,7 @@ each new side runs along x or z, whichever way the pointer has moved further,
 its corner on the grid (`⇧` for fine steps). A dashed preview shows the next
 side and, fainter, the way back to the first corner, with an elbow where the
 two don't line up, and a note beside the pointer reads the outline's overall
-size in mm. The mode badge shows the keys that apply: before the first corner,
+size in mm. The status bar shows the keys that apply: before the first corner,
 drag for a rectangle; after it, a drag pans and Enter finishes. Double-click,
 click the first corner or press Enter to
 finish: the closing side and any elbow are added for you. `⌫` removes the last
@@ -489,10 +489,20 @@ Keyboard shortcuts to open the menus are issue #347.
   row. On a phone the row wraps into two, four boxes over three. Under the eye
   sits Show's status strip: the same icons at 13 px in the same order, full ink
   while on and grey and slashed while off, one button that opens Show too, so
-  what Show holds is visible at rest; it steps aside while Show is open. While placing,
-  drawing, connecting or grouping, a mode badge under the dock carries that
-  mode's key hints; on a phone it wraps, between the + and the right edge.
+  what Show holds is visible at rest; it steps aside while Show is open.
   Select has no button: it is the resting state, and Esc returns to it.
+- **Bottom edge**: the status bar, one hairline-topped strip under the
+  table; the rail, the lists, the camera and day / night sit above it, and the
+  camera fits the table to the space above it. Left to right: the mode
+  ("Select" at rest; while placing, drawing, connecting or grouping, its name
+  and key hints), the checks (✓ Light reaches every stop, or ⚠ N checks, which
+  opens the list of what didn't pass; a check selects its Component and Esc
+  closes the list), "Upgraded · N Beams kept hand-drawn" while an upgraded
+  file has Beams that differ from traced light, the last status message, and
+  **Legacy view**, which reopens the page with `?traced=0` and its other
+  settings kept. In the legacy view the bar says "Legacy view: drawn Beams,
+  not traced" and offers **Switch to traced Beams**. A phone shows no mode, and
+  the checks and view switch in short words.
 - **Top right**: Share (see *Sharing*), and right of it the ? (help). Its
   column: **Guide** (the coach marks), **Keys** (the cheat sheet) and **AI
   brief** (the setup brief).
@@ -650,7 +660,7 @@ and stay put. The geometry is `panel-geometry.ts`, the arrangement
 | Have an AI write a setup | ? → AI brief, top right: **Copy** the setup brief (or **Download .md**), paste it into an AI assistant with a description of the experiment, open the `.json` file it gives you with the JSON panel's folder (Replace), or paste its JSON into the panel |
 | Cancel anything | `Esc` (stops placing, then closes the parts panel, then cancels a beam, a frame or a connection, then leaves Add stops, then leaves group mode, then deselects) |
 
-Shortcuts live in button tooltips and in the mode badge; the cheat sheet
+Shortcuts live in button tooltips and in the status bar's mode; the cheat sheet
 gathers the ones worth learning, and stays shut until asked for.
 
 Left-drag pans the table and the wheel zooms toward the cursor; a press that
@@ -671,7 +681,7 @@ work from any angle: they land on the table plane.
 
 The floating islands stay in the site's notebook
 language: surface cards with a hairline border, lifted shadows, the
-oxblood/amber ink accent, measured values in mono. Only the transient mode badge, and the coach marks
+oxblood/amber ink accent, measured values in mono. Only the coach marks
 drawn in its dark and amber, borrow the instrument toolbar amber. The Guide
 pill is the one filled ink button, so a newcomer finds it first. A darker, instrument-console look for the islands was tried and
 rejected (see the `prototype/builder-panels` branch).
@@ -754,7 +764,8 @@ file in another wrapping.
 | `src/components/builder/builder-canvas.tsx` | Canvas, camera fit, lighting, backdrop, table, beams, post effects |
 | `src/components/builder/frame-mesh.tsx` | A frame: flat fill of its outline, one edge strip per side, label, and the edge strips that take a press |
 | `src/components/builder/connection-path.tsx` | A fibre or cable's route from part to table to part, and its tube |
-| `src/components/builder/builder-hud.tsx` | The floating islands: the QUOP and + menus, the dock and Show, Share and the ? menu, mode badge, lists, the panel rail, the camera, the setup brief and JSON panels |
+| `src/components/builder/builder-hud.tsx` | The floating islands: the QUOP and + menus, the dock and Show, Share and the ? menu, lists, the panel rail, the camera, the setup brief and JSON panels |
+| `src/components/builder/status-bar.tsx` | The status bar along the bottom edge: mode, checks, upgrade notice, status message, and the Legacy view switch |
 | `src/components/builder/corner-fan.tsx` | A corner menu: a column of boxes that unfolds from its trigger along the edge, a keyboard menu |
 | `src/components/builder/file-fan.tsx` | The QUOP mark's file menu |
 | `src/components/builder/show-boxes.tsx` | Show's row of boxes under the eye, and the slider each box pops |

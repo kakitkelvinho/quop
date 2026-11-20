@@ -58,6 +58,7 @@ import {
   serializeScene,
 } from "@/components/builder/types";
 import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
+import { StatusBar } from "@/components/builder/status-bar";
 
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
@@ -97,6 +98,8 @@ export type BuilderHudProps = {
   canUndo: boolean;
   canRedo: boolean;
   status: string | null;
+  /** Beams an upgraded file kept hand-drawn because they differ from traced light */
+  handDrawnAfterUpgrade: number;
   /** goes up on each plain click on empty table */
   emptyClicks: number;
   onToggleTray: () => void;
@@ -1712,18 +1715,6 @@ export default function BuilderHud(props: BuilderHudProps) {
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
 
-        {mode ? (
-          <p className="builderModeBadge">
-            {mode.label}
-            <span className="builderModeBadge__hints">
-              {mode.hints.map(([key, action]) => (
-                <span key={`${key} ${action}`}>
-                  <kbd>{key}</kbd> {action}
-                </span>
-              ))}
-            </span>
-          </p>
-        ) : null}
       </div>
 
       {/* Every panel, in one layer under the toolbars. Where panels stay put
@@ -1839,9 +1830,13 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
-      <p className="builderStatus" role="status" aria-live="polite">
-        {props.status}
-      </p>
+      <StatusBar
+        mode={mode}
+        status={props.status}
+        trace={props.trace}
+        handDrawnAfterUpgrade={props.handDrawnAfterUpgrade}
+        onSelectComponent={props.onSelectComponent}
+      />
     </>
   );
 }

@@ -5,7 +5,7 @@
  * than two picked it just stops.
  */
 
-/** A key and what it does, as the mode badge shows it. */
+/** A key and what it does, as the status bar shows it. */
 export type ModeHint = [key: string, action: string];
 
 /** The fewest parts a group is made of. */
@@ -16,7 +16,7 @@ export function finishGroupMode(picked: number): "group" | "stop" {
   return picked >= GROUP_MIN_PARTS ? "group" : "stop";
 }
 
-/** The badge's hints: Enter names how many it would group once there are enough. */
+/** The mode's hints: Enter names how many it would group once there are enough. */
 export function groupModeHints(picked: number): ModeHint[] {
   return [
     ["⌘ click", "pick"],
