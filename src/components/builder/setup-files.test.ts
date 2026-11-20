@@ -5,7 +5,7 @@ import { describe, it } from "node:test";
 
 import { visibility } from "./groups.ts";
 import { effectiveBeams } from "./beam-branches.ts";
-import { fromEulerYXZDeg, fromYawDeg, toEulerYXZDeg } from "./quaternion.ts";
+import { fromYawPitchRollDeg, fromYawDeg, toYawPitchRollDeg } from "./quaternion.ts";
 import { DEFAULT_OBJECTIVE_LENGTH_MM, SCENE_VERSION, parseScene, serializeScene, withYaw, type Beam, type BuilderComponent } from "./types.ts";
 
 const lengthMm = (components: BuilderComponent[], beam: Beam) => measureBeam(components, beam).lengthMm;
@@ -78,12 +78,14 @@ describe("setup-v17.json, the first version with quaternion orientation", () => 
 
   it("turns yaw without losing a component's pitch and roll", () => {
     const component = open("setup-v17.json").components.find(({ id }) => id === "rf")!;
+    const saved = toYawPitchRollDeg(component.orientation);
+    assert.ok(Math.abs(saved.pitchDeg) > 1 && Math.abs(saved.rollDeg) > 1);
     const turned = withYaw(component, 120);
-    const angles = toEulerYXZDeg(turned.orientation);
+    const angles = toYawPitchRollDeg(turned.orientation);
     assert.ok(Math.abs(angles.yawDeg - 120) < 1e-9);
-    assert.ok(Math.abs(angles.pitchDeg - 20) < 1e-9);
-    assert.ok(Math.abs(angles.rollDeg - 10) < 1e-9);
-    const inverted = { ...turned, orientation: fromEulerYXZDeg({ yawDeg: 120, pitchDeg: 20, rollDeg: 10 }).map((v) => -v) as BuilderComponent["orientation"] };
+    assert.ok(Math.abs(angles.pitchDeg - saved.pitchDeg) < 1e-9);
+    assert.ok(Math.abs(angles.rollDeg - saved.rollDeg) < 1e-9);
+    const inverted = { ...turned, orientation: fromYawPitchRollDeg({ yawDeg: 120, pitchDeg: 20, rollDeg: 10 }).map((v) => -v) as BuilderComponent["orientation"] };
     assert.ok(JSON.parse(serializeScene({ ...open("setup-v17.json"), components: [inverted] })).components[0].orientation[3] >= 0);
   });
 });

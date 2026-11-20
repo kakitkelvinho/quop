@@ -20,12 +20,12 @@ import {
   SPCM_FACE_X,
   SPECTROMETER_PORT,
 } from "./model-dimensions.ts";
-import { canonical, compose, fromEulerYXZDeg, fromYawDeg, invert, rotate, toEulerYXZDeg, type Quat } from "./quaternion.ts";
+import { canonical, compose, fromYawPitchRollDeg, fromYawDeg, invert, rotate, toYawPitchRollDeg, type Quat } from "./quaternion.ts";
 import {
-  AOM_SURFACES, BEAM_BLOCK_SURFACES, CAVITY_SURFACES, DELAY_LINE_SURFACES, EOM_SURFACES,
+  AOM_SURFACES, BEAM_BLOCK_SURFACES, CAVITY_SURFACES, EOM_SURFACES,
   FIBRE_COLLIMATOR_SURFACES, FILTER_SURFACES, IRIS_SURFACES, ISOLATOR_SURFACES,
   OBJECTIVE_SURFACES, PARTICLE_SURFACES, SAMPLE_SURFACES, TIME_TAGGER_SURFACES,
-  TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces,
+  TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces, delayLineSurfaces,
   detectorSurfaces, lensSurfaces, mirrorSurfaces, noSurfaces, rectangularSurface,
 } from "./component-surfaces.ts";
 import type { Surface } from "./surface.ts";
@@ -36,14 +36,14 @@ export function yawOf(component: Pick<BuilderComponent, "orientation">): number;
 export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined;
 export function yawOf(component: Pick<BuilderComponent, "orientation"> | undefined): number | undefined {
   if (!component) return undefined;
-  const rounded = Math.round(toEulerYXZDeg(component.orientation).yawDeg * 1e10) / 1e10;
+  const rounded = Math.round(toYawPitchRollDeg(component.orientation).yawDeg * 1e10) / 1e10;
   return rounded === 360 ? 0 : rounded;
 }
 
 /** Replace the yaw while retaining the component's pitch and roll. */
 export function withYaw(component: BuilderComponent, yaw: number): BuilderComponent {
-  const { pitchDeg, rollDeg } = toEulerYXZDeg(component.orientation);
-  const orientation = fromEulerYXZDeg({ yawDeg: wrapYaw(yaw), pitchDeg, rollDeg });
+  const { pitchDeg, rollDeg } = toYawPitchRollDeg(component.orientation);
+  const orientation = fromYawPitchRollDeg({ yawDeg: wrapYaw(yaw), pitchDeg, rollDeg });
   return orientation.every((value, index) => value === component.orientation[index]) ? component : { ...component, orientation };
 }
 
@@ -645,7 +645,7 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
   },
   "delay-line": {
     label: "Delay line",
-    surfaces: (component) => DELAY_LINE_SURFACES(delaySetting(component).path),
+    surfaces: (component) => delayLineSurfaces(delaySetting(component).path, delayRailMm(component)),
     tag: "Delay",
     aliases: ["delay stage", "translation stage", "retroreflector", "corner cube", "optical delay"],
     top: 22,
@@ -1640,7 +1640,7 @@ export function settleAngles(scene: BuilderSceneData): BuilderSceneData {
   const components = scene.components.map((component) => {
     const yaw = derivedYaw(scene, component);
     if (yaw === undefined) return component;
-    const { pitchDeg, rollDeg } = toEulerYXZDeg(component.orientation);
+    const { pitchDeg, rollDeg } = toYawPitchRollDeg(component.orientation);
     if (yaw === yawOf(component) && pitchDeg === 0 && rollDeg === 0) return component;
     changed = true;
     return { ...component, orientation: fromYawDeg(yaw) };

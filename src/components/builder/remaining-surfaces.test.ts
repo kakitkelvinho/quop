@@ -17,7 +17,9 @@ describe("surfaces for every Component kind", () => {
   it("has an explicit entry for every kind", () => {
     for (const type of Object.keys(COMPONENT_SPECS) as ComponentType[]) {
       assert.ok(COMPONENT_SPECS[type].surfaces, `${type} has no surfaces entry`);
-      for (const surface of type === "beam-splitter" ? [] : surfaces(type)) {
+      // A Beam cube's faces and a Delay line's stage sit off the Reference point by design.
+      const atReference = type === "beam-splitter" ? [] : type === "delay-line" ? surfaces(type).slice(0, 1) : surfaces(type);
+      for (const surface of atReference) {
         assert.deepEqual(surface.positionMm, [0, 0, 0], `${type} needs a Reference point offset`);
       }
     }
@@ -29,7 +31,7 @@ describe("surfaces for every Component kind", () => {
   });
 
   it("lets light pass through transparent and active optics and blocks it at opaque Components", () => {
-    for (const type of ["fiber-collimator", "waveplate", "filter", "iris", "paul-trap", "sample", "objective", "aom", "eom", "delay-line"] as ComponentType[]) {
+    for (const type of ["fiber-collimator", "waveplate", "filter", "iris", "paul-trap", "sample", "objective", "aom", "eom"] as ComponentType[]) {
       const [surface] = surfaces(type);
       assert.equal(interact(surface, beam(1))?.outgoing.length, 1, `${type} should pass light`);
     }
@@ -58,6 +60,16 @@ describe("surfaces for every Component kind", () => {
     assert.equal(surface.extraPathMm, 336);
     assert.equal(surface.aperture.kind, "circle");
     if (surface.aperture.kind === "circle") assert.equal(surface.aperture.radiusMm, 12.7);
+  });
+
+  it("passes light across the Delay line's port and blocks it on the stage behind", () => {
+    const [port, stage] = surfaces("delay-line");
+    const across = (x: number): TracedBeam => ({ originMm: [x, 0, -10], direction: [0, 0, 1], power: 1 });
+    assert.equal(interact(port, across(0))?.outgoing.length, 1);
+    assert.equal(interact(port, beam(1)), null);
+    assert.equal(interact(port, across(-20)), null);
+    assert.deepEqual(interact(stage, across(-20))?.outgoing, []);
+    assert.equal(interact(stage, across(20)), null);
   });
 
   it("carries the waveplate's Jones matrix and makes the Faraday isolator one-way", () => {
