@@ -454,7 +454,8 @@ function LightList({
 }) {
   const panel = usePanel("beams", LIST_PANEL);
   const routes = traceRoutes(trace, beams);
-  const handDrawn = beams.filter((beam) => !trace.matchedDrawnBeamIds.includes(beam.id));
+  const routed = new Set(routes.flatMap((route) => route.beam ? [route.beam.id] : []));
+  const handDrawn = beams.filter((beam) => !routed.has(beam.id));
   const unsaved = routes.filter((route) => !route.beam);
   const looseChecks = looseTraceChecks(trace, routes);
   const nameOf = (id: string) => {
@@ -492,7 +493,9 @@ function LightList({
         </section>;
       })}
       {handDrawn.length ? <section className="builderLightList__drawn"><h3>Hand-drawn Beams</h3>{handDrawn.map((beam) => {
-        const reason = trace.checks.find((check) => check.message.startsWith(`${beam.label || beam.id}: `))?.message ?? "Drawn path differs from traced light";
+        const reason = trace.matchedDrawnBeamIds.includes(beam.id)
+          ? "No separate traced route for this Beam"
+          : trace.checks.find((check) => check.message.startsWith(`${beam.label || beam.id}: `))?.message ?? "Drawn path differs from traced light";
         return <div key={beam.id} className="builderLightList__drawnRow">
           <button type="button" onClick={() => onSelect(beam.id)}><span className="builderBeamRow__dot" style={{ background: beam.color }} />{beamDisplayName(beam)}</button>
           <IconButton icon={beam.hidden ? "eyeOff" : "eye"} label={`${beam.hidden ? "Show" : "Hide"} ${beamDisplayName(beam)}`} active={Boolean(beam.hidden)} onClick={() => onSetHidden(beam.id, !beam.hidden)} />

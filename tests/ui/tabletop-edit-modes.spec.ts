@@ -207,6 +207,11 @@ test("Light reveals an unsaved route, saves it, and selects a check's Component"
   const route = light.locator(".builderLightList__route");
   await expect(route).toHaveCount(1);
   await expect(route).toContainText("not saved");
+  await page.getByRole("button", { name: "Show", exact: true }).click();
+  await page.getByRole("toolbar", { name: "Show" }).getByRole("button", { name: "Lengths along each beam" }).click();
+  await expect(page.locator(".builderDistance")).toHaveText("200 mm");
+  await expect(page.locator(".builderDistance")).toBeVisible();
+  await page.getByRole("button", { name: "Show", exact: true }).click();
   const canvas = page.locator("canvas").first();
   const before = await canvas.screenshot();
   await route.hover();

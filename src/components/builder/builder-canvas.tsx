@@ -54,7 +54,7 @@ import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
 import type { TraceResult } from "@/components/builder/trace-scene";
-import { traceRoutes } from "@/components/builder/trace-routes";
+import { traceRoutes, tracedDistanceLegs } from "@/components/builder/trace-routes";
 import { traceGuideGeometry } from "@/components/builder/trace-guide";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
@@ -1352,8 +1352,11 @@ export default function BuilderCanvas({
   // what hidden groups and frames leave in the drawing; hidden parts still
   // count in path lengths and angle mirrors, so only drawing reads this
   const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
-  const matchedDrawnBeamIds = useMemo(() => new Set(trace?.matchedDrawnBeamIds ?? []), [trace]);
   const routes = useMemo(() => trace ? traceRoutes(trace, beams) : [], [trace, beams]);
+  const matchedDrawnBeamIds = useMemo(() => new Set(routes.flatMap((route) => route.beam ? [route.beam.id] : [])), [routes]);
+  const traceDistances = useMemo(() => showDistances && trace
+    ? tracedDistanceLegs(routes.filter((route) => !route.beam || isBeamDrawn(route.beam, shown)), components)
+    : [], [showDistances, trace, routes, shown, components]);
   const shownComponents = useMemo(
     () => components.filter((component) => shown.components.has(component.id)),
     [components, shown],
@@ -1573,6 +1576,14 @@ export default function BuilderCanvas({
           ghost={ghost}
         />);
       }) : null}
+
+      {traceDistances.map((leg, index) => <BeamDistances
+        key={`${leg.fromId}-${leg.toId}-${index}`}
+        points={[new Vector3(...leg.fromMm), new Vector3(...leg.toMm)]}
+        lengths={[leg.lengthMm]}
+        color={palette.accent}
+        width={BEAM_WIDTH_MM}
+      />)}
 
       {beamDraft.length >= 2 ? (
         <BeamPath
