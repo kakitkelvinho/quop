@@ -6,7 +6,8 @@
 // ?scenario= (saved | unsaved | handdrawn) to fake the cases the starter Setup lacks.
 // Alt+← / Alt+→ cycle variants (plain arrows already nudge Components).
 import { Html, Line } from "@react-three/drei";
-import { Fragment, useEffect, useMemo, useState, useSyncExternalStore, type ComponentType } from "react";
+import { useThree } from "@react-three/fiber";
+import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentProps, type ComponentType } from "react";
 import { Color, Vector3 } from "three";
 import { traceGuideGeometry } from "@/components/builder/trace-guide";
 import {
@@ -148,7 +149,90 @@ type BeamHitLike = ComponentType<{
   beamId: string; points: Vector3[]; width: number; onClick: (ids: string[], clientX: number, clientY: number) => void;
 }>;
 
-export function PrototypeTableLight({
+export function PrototypeTableLight(props: ComponentProps<typeof TableLightInner>) {
+  const { variant } = usePrototype();
+  return (
+    <>
+      <TableLightInner {...props} />
+      {isLate(variant) ? <AimFlash trace={props.trace} components={props.components} BeamPath={props.BeamPath} /> : null}
+    </>
+  );
+}
+
+// ---------- D: when a part takes a new aim, its light draws itself in and fades ----------
+type Flash = { key: string; legs: [Vec3, Vec3][]; color: string; startMs: number };
+const GROW_MS = 400;
+const HOLD_MS = 600;
+const FADE_MS = 800;
+
+function AimFlash({ trace, components, BeamPath }: { trace: TraceResult; components: BuilderComponent[]; BeamPath: BeamPathLike }) {
+  const seen = useRef<Map<string, string | undefined> | null>(null);
+  const pending = useRef(new Set<string>());
+  const [flashes, setFlashes] = useState<Flash[]>([]);
+  const [nowMs, setNowMs] = useState(0);
+
+  useEffect(() => {
+    const aims = new Map(components.map((part) => [part.id, part.aim]));
+    const before = seen.current;
+    seen.current = aims;
+    if (!before) return;
+    for (const part of components) if (part.aim && before.get(part.id) !== part.aim) pending.current.add(part.id);
+    const found: Flash[] = [];
+    const segments = trace.trees.flatMap((tree) => tree.segments.map((segment) => ({ segment, laserId: tree.laserId })));
+    for (const id of [...pending.current]) {
+      const part = components.find((p) => p.id === id);
+      if (!part?.aim) { pending.current.delete(id); continue; }
+      // the trace can lag the new aim by a frame; wait until light leaves for the target
+      const out = segments.find(({ segment }) => segment.fromId === id && segment.toId === part.aim);
+      if (!out) continue;
+      pending.current.delete(id);
+      const into = segments.find(({ segment }) => segment.toId === id);
+      const legs: [Vec3, Vec3][] = [];
+      if (into) legs.push([into.segment.fromMm, into.segment.toMm]);
+      legs.push([out.segment.fromMm, out.segment.toMm]);
+      found.push({ key: `${id}-${part.aim}-${performance.now()}`, legs, color: laserColour(trace, out.laserId), startMs: performance.now() });
+    }
+    // prototype: the flash is transient view state started by a scene change
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (found.length) setFlashes((current) => [...current, ...found]);
+  }, [components, trace]);
+
+  // the canvas draws on demand, so the flash runs its own clock and asks for each frame
+  const invalidate = useThree((state) => state.invalidate);
+  useEffect(() => {
+    if (!flashes.length) return;
+    let frame = 0;
+    const tick = () => {
+      const now = performance.now();
+      setNowMs(now);
+      invalidate();
+      const live = flashes.filter((flash) => now - flash.startMs < flash.legs.length * GROW_MS + HOLD_MS + FADE_MS);
+      if (live.length !== flashes.length) setFlashes(live);
+      else frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [flashes, invalidate]);
+
+  // new meshes don't ask for a frame themselves: redraw after each committed step
+  useEffect(() => {
+    if (flashes.length) invalidate();
+  }, [nowMs, flashes, invalidate]);
+
+  return <>{flashes.map((flash) => {
+    const age = nowMs - flash.startMs;
+    const grown = flash.legs.length * GROW_MS;
+    const opacity = age < grown + HOLD_MS ? 1 : Math.max(0, 1 - (age - grown - HOLD_MS) / FADE_MS);
+    return flash.legs.map(([from, to], leg) => {
+      const progress = Math.min(1, Math.max(0, (age - leg * GROW_MS) / GROW_MS));
+      if (progress <= 0) return null;
+      const end: Vec3 = [from[0] + (to[0] - from[0]) * progress, from[1] + (to[1] - from[1]) * progress, from[2] + (to[2] - from[2]) * progress];
+      return <BeamPath key={`${flash.key}-${leg}`} points={lifted([from, end])} color={flash.color} opacity={opacity} core selected />;
+    });
+  })}</>;
+}
+
+function TableLightInner({
   trace, beams, selectedBeamId, BeamPath, BeamHit, onBeamClick, interactive, components, selectedIds,
 }: {
   components: BuilderComponent[];
