@@ -63,6 +63,14 @@ import {
 } from "@/components/builder/types";
 import { editJson, jsonPanelView, type JsonDraft } from "@/components/builder/json-panel-text";
 
+const WHATS_NEW_KEY = "quop:builder:whats-new:1.2.0";
+
+function readWhatsNew(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.localStorage.getItem(WHATS_NEW_KEY) !== "dismissed"; }
+  catch { return true; }
+}
+
 /** Connect mode: the kind being drawn, and the part clicked first once there is one. */
 export type ConnectDraft = { kind: ConnectionKind; from: string | null };
 
@@ -1380,6 +1388,11 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [checksOpen, setChecksOpen] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(readWhatsNew);
+  const dismissWhatsNew = useCallback(() => {
+    try { window.localStorage.setItem(WHATS_NEW_KEY, "dismissed"); } catch { /* storage can be unavailable */ }
+    setWhatsNewOpen(false);
+  }, []);
   useEffect(() => {
     if (!checksOpen) return;
     const close = (event: KeyboardEvent) => {
@@ -1933,6 +1946,24 @@ export default function BuilderHud(props: BuilderHudProps) {
         </button>
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
+
+      {whatsNewOpen ? <section className="builderWhatsNew" aria-labelledby="builder-whats-new-title">
+        <div className="builderWhatsNew__heading">
+          <span>New in 1.2.0</span>
+          <button type="button" aria-label="Dismiss what’s new" onClick={dismissWhatsNew}>×</button>
+        </div>
+        <h2 id="builder-whats-new-title">Light follows the table</h2>
+        <p>Beams now trace from each laser through Component surfaces. Saved Beam paths still show where you meant the light to go.</p>
+        <ul>
+          <li>Aim a Mirror or Beam cube in the Inspector, with the aim knob, by drawing a Beam, or by dropping it into the light.</li>
+          <li>Press <kbd>F</kbd> to flip the selected Mirror’s fold.</li>
+          <li>Use the checks in the status bar to find blocked light and paths that differ from the trace.</li>
+        </ul>
+        <div className="builderWhatsNew__actions">
+          <button type="button" onClick={() => { dismissWhatsNew(); if (props.traced) props.onToggleTraced(); }}>Use earlier view</button>
+          <button type="button" className="is-primary" onClick={dismissWhatsNew}>Got it</button>
+        </div>
+      </section> : null}
 
       <div className={`builderStatusBar${props.traced ? "" : " is-legacy"}`} role="toolbar" aria-label="Tabletop status">
         <div className="builderStatusBar__mode">

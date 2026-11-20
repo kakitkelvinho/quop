@@ -4785,6 +4785,89 @@ body[data-panel-gesture="se"] * {
   white-space: nowrap;
 }
 
+.builderWhatsNew {
+  position: absolute;
+  z-index: 31;
+  left: 50%;
+  bottom: calc(var(--builder-status-height) + 1rem);
+  width: min(25rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  max-height: calc(100% - var(--builder-status-height) - 2rem);
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  background: var(--surface-strong);
+  box-shadow: 0 12px 36px rgb(0 0 0 / 18%);
+  color: var(--foreground);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.builderWhatsNew__heading,
+.builderWhatsNew__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.builderWhatsNew__heading {
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.builderWhatsNew h2 {
+  margin: 0.3rem 0 0.65rem;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.builderWhatsNew p,
+.builderWhatsNew ul {
+  margin: 0 0 0.75rem;
+}
+
+.builderWhatsNew ul {
+  padding-left: 1.2rem;
+}
+
+.builderWhatsNew li + li {
+  margin-top: 0.4rem;
+}
+
+.builderWhatsNew kbd {
+  padding: 0 0.2rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: 2px;
+}
+
+.builderWhatsNew button {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.builderWhatsNew__heading button {
+  padding: 0 0.3rem;
+  border: 0;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.builderWhatsNew__actions .is-primary {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: white;
+}
+
 .builderStatusBar__mode,
 .builderStatusBar__hints,
 .builderStatusBar__lightView {

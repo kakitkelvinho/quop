@@ -3,6 +3,21 @@ import { readFileSync } from "node:fs";
 
 const statusBar = (page: import("@playwright/test").Page) => page.getByRole("toolbar", { name: "Tabletop status" });
 
+test("what's new appears once and can open the earlier view", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  const card = page.getByRole("region", { name: "Light follows the table" });
+  await expect(card).toBeVisible();
+  await expect(card).toContainText("Press F");
+  await card.getByRole("button", { name: "Use earlier view" }).click();
+  await expect(card).toHaveCount(0);
+  await expect(statusBar(page)).toContainText("Legacy view: drawn Beams, not traced");
+  await page.reload();
+  await expect(card).toHaveCount(0);
+  await expect(statusBar(page)).toContainText("Legacy view: drawn Beams, not traced");
+  await page.goto("builder/tabletop/");
+  await expect(statusBar(page)).toContainText("Legacy view: drawn Beams, not traced");
+});
+
 test("mode hints move to the bar and Select shows at rest", async ({ page }) => {
   await page.goto("builder/tabletop/");
   const bar = statusBar(page);
@@ -42,6 +57,7 @@ test("checks popover closes with Esc and selects its Component", async ({ page }
 
 test("Legacy switch and back keep query settings and the page view", async ({ page }) => {
   await page.goto("builder/tabletop/?foo=bar");
+  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   await page.getByRole("button", { name: "Camera" }).click();
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
   const bar = statusBar(page);
@@ -53,7 +69,7 @@ test("Legacy switch and back keep query settings and the page view", async ({ pa
   await bar.getByRole("button", { name: "Legacy view" }).click();
   await expect(bar).toContainText("Legacy view: drawn Beams, not traced");
   await expect(page).toHaveURL(/foo=bar.*light=power.*traced=0/);
-  await expect(page.getByRole("region", { name: "Light" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Light", exact: true })).toHaveCount(0);
   await bar.getByRole("button", { name: "Switch to traced Beams" }).click();
   await expect(page).toHaveURL(/foo=bar.*light=power/);
   await expect(page).not.toHaveURL(/traced=0/);

@@ -33,12 +33,12 @@ import { groupSubset, leftOutNotice, visibility, type GroupShow } from "@/compon
 import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
 import { readStoredScene, useBuilderScene } from "@/components/builder/use-builder-scene";
-import { readTracedFlag } from "@/components/builder/traced-flag";
+import { readTracedFlag, storeTracedFlag } from "@/components/builder/traced-flag";
 import { traceScene } from "@/components/builder/trace-scene";
 import { effectiveBeams } from "@/components/builder/beam-branches";
 import type { LightRoute } from "@/components/builder/trace-routes";
 import { canAim, settleAims } from "@/components/builder/aim-settling";
-import { upgradeNotice } from "@/components/builder/setup-upgrade";
+import { upgradeNotice, upgradeNoticeText } from "@/components/builder/setup-upgrade";
 import { hasWork, hashToScene, isShareHash, sceneToHash } from "@/components/builder/share-link";
 import { resetPanels } from "@/components/builder/panel-store";
 import { finishGroupMode } from "@/components/builder/group-mode";
@@ -330,9 +330,7 @@ export default function BuilderScene() {
   const [upgradeMessage, setUpgradeMessage] = useState(() => upgradeNotice(openingScene));
   const trace = useMemo(() => traced ? traceScene(scene) : null, [traced, scene]);
   const upgradedDrawnCount = upgradeMessage && trace ? scene.beams.length - trace.matchedDrawnBeamIds.length : 0;
-  const upgradeStatus = upgradedDrawnCount > 0
-    ? `This file was upgraded. ${upgradedDrawnCount} drawn Beam${upgradedDrawnCount === 1 ? "" : "s"} ${upgradedDrawnCount === 1 ? "differs" : "differ"} from traced light and ${upgradedDrawnCount === 1 ? "remains" : "remain"} on the table.`
-    : null;
+  const upgradeStatus = upgradedDrawnCount > 0 ? upgradeNoticeText(upgradedDrawnCount) : null;
   const aimStatuses = useMemo(() => traced ? settleAims(scene).statuses : null, [traced, scene]);
 
   // component ids in the order they were picked; the last is the primary
@@ -382,6 +380,7 @@ export default function BuilderScene() {
     if (next) url.searchParams.delete("traced");
     else url.searchParams.set("traced", "0");
     window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    storeTracedFlag(next);
     setTraced(next);
     setEditMode(IDLE);
   }, [traced]);
