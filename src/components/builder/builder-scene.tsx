@@ -321,12 +321,18 @@ function shareUrl(scene: BuilderSceneData): string {
 export default function BuilderScene() {
   // the page renders only on the client, so the address can be read up front
   const [arrival] = useState(arrive);
-  const [traced] = useState(readTracedFlag);
+  const [traced, setTraced] = useState(readTracedFlag);
+  const [lightView, setLightView] = useState<"colours" | "power">(() => new URLSearchParams(window.location.search).get("light") === "power" ? "power" : "colours");
   const api = useBuilderScene(arrival.open, traced);
   const palette = useScenePalette();
   const { scene } = api;
   const [openingScene] = useState(scene);
+  const [upgradeMessage, setUpgradeMessage] = useState(() => upgradeNotice(openingScene));
   const trace = useMemo(() => traced ? traceScene(scene) : null, [traced, scene]);
+  const upgradedDrawnCount = upgradeMessage && trace ? scene.beams.length - trace.matchedDrawnBeamIds.length : 0;
+  const upgradeStatus = upgradedDrawnCount > 0
+    ? `This file was upgraded. ${upgradedDrawnCount} drawn Beam${upgradedDrawnCount === 1 ? "" : "s"} ${upgradedDrawnCount === 1 ? "differs" : "differ"} from traced light and ${upgradedDrawnCount === 1 ? "remains" : "remain"} on the table.`
+    : null;
   const aimStatuses = useMemo(() => traced ? settleAims(scene).statuses : null, [traced, scene]);
 
   // component ids in the order they were picked; the last is the primary
@@ -370,6 +376,22 @@ export default function BuilderScene() {
   // the straight line a dragged part is locked onto, while it is
   const [snapGuide, setSnapGuide] = useState<[Vec3, Vec3] | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const toggleTraced = useCallback(() => {
+    const next = !traced;
+    const url = new URL(window.location.href);
+    if (next) url.searchParams.delete("traced");
+    else url.searchParams.set("traced", "0");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    setTraced(next);
+    setEditMode(IDLE);
+  }, [traced]);
+  const changeLightView = useCallback((next: "colours" | "power") => {
+    const url = new URL(window.location.href);
+    if (next === "colours") url.searchParams.delete("light");
+    else url.searchParams.set("light", "power");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    setLightView(next);
+  }, []);
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
@@ -1259,7 +1281,8 @@ export default function BuilderScene() {
   // a setup the JSON panel checked, or a shared link, replaces the table, as one undo step
   const applyScene = useCallback(
     (parsed: BuilderSceneData, message: string) => {
-      const notice = traced ? upgradeNotice(parsed) : null;
+      const notice = upgradeNotice(parsed);
+      setUpgradeMessage(notice);
       api.replaceScene(parsed);
       setFitToken((token) => token + 1);
       setSelection([]);
@@ -1267,7 +1290,7 @@ export default function BuilderScene() {
       setSelectedFrameId(null);
       setSelectedConnectionId(null);
       endMode();
-      announce(notice ?? message);
+      announce(traced ? notice ?? message : message);
     },
     [announce, api, endMode, traced],
   );
@@ -1727,6 +1750,7 @@ export default function BuilderScene() {
           components={scene.components}
           beams={shownBeams}
           trace={trace}
+          lightView={lightView}
           connections={scene.connections}
           frames={scene.frames}
           groups={scene.groups}
@@ -1846,6 +1870,10 @@ export default function BuilderScene() {
         }}
         onRotateSelected={rotateSelected}
         traced={traced}
+        lightView={lightView}
+        onLightViewChange={changeLightView}
+        onToggleTraced={toggleTraced}
+        upgradeMessage={upgradeStatus}
         aimStatuses={aimStatuses}
         onSetAim={api.setAim}
         onFlipAim={api.flipAim}
