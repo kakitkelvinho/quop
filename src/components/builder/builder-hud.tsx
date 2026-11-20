@@ -101,6 +101,7 @@ export type BuilderHudProps = {
   canUndo: boolean;
   canRedo: boolean;
   status: string | null;
+  upgradeMessage: string | null;
   /** goes up on each plain click on empty table */
   emptyClicks: number;
   onToggleTray: () => void;
@@ -114,6 +115,9 @@ export type BuilderHudProps = {
   onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
   traced: boolean;
+  lightView: "colours" | "power";
+  onLightViewChange: (view: "colours" | "power") => void;
+  onToggleTraced: () => void;
   aimStatuses: Map<string, AimStatus> | null;
   onSetAim: (id: string, targetId: string) => void;
   onFlipAim: (id: string) => void;
@@ -1375,6 +1379,18 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [checksOpen, setChecksOpen] = useState(false);
+  useEffect(() => {
+    if (!checksOpen) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setChecksOpen(false);
+    };
+    window.addEventListener("keydown", close, true);
+    return () => window.removeEventListener("keydown", close, true);
+  }, [checksOpen]);
   // whether Show is open: held here, so the eye and the status strip both open it
   const [showOpen, setShowOpen] = useState(false);
   const statusRowRef = useRef<HTMLButtonElement>(null);
@@ -1791,18 +1807,6 @@ export default function BuilderHud(props: BuilderHudProps) {
 
         {sheetOpen ? <CheatSheet id="builder-cheat-sheet" onClose={() => setSheetOpen(false)} /> : null}
 
-        {mode ? (
-          <p className="builderModeBadge">
-            {mode.label}
-            <span className="builderModeBadge__hints">
-              {mode.hints.map(([key, action]) => (
-                <span key={`${key} ${action}`}>
-                  <kbd>{key}</kbd> {action}
-                </span>
-              ))}
-            </span>
-          </p>
-        ) : null}
       </div>
 
       {/* Every panel, in one layer under the toolbars. Where panels stay put
@@ -1930,9 +1934,35 @@ export default function BuilderHud(props: BuilderHudProps) {
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
-      <p className="builderStatus" role="status" aria-live="polite">
-        {props.status}
-      </p>
+      <div className={`builderStatusBar${props.traced ? "" : " is-legacy"}`} role="toolbar" aria-label="Tabletop status">
+        <div className="builderStatusBar__mode">
+          <strong>{mode?.label ?? "Select"}</strong>
+          {mode ? <span className="builderStatusBar__hints">{mode.hints.map(([key, action]) => <span key={`${key} ${action}`}><kbd>{key}</kbd> {action}</span>)}</span> : null}
+        </div>
+        {props.trace ? <div className="builderStatusBar__checksWrap">
+          <button type="button" className="builderStatusBar__checks" aria-expanded={checksOpen} aria-controls="builder-status-checks" disabled={props.trace.checks.length === 0} onClick={() => setChecksOpen((open) => !open)}>
+            {props.trace.checks.length ? `⚠ ${props.trace.checks.length} ${props.trace.checks.length === 1 ? "check" : "checks"}` : "✓ Light reaches every stop"}
+          </button>
+          {checksOpen && props.trace.checks.length ? <div id="builder-status-checks" className="builderStatusBar__popover" role="dialog" aria-label="Checks">
+            <strong>{props.trace.checks.length} {props.trace.checks.length === 1 ? "check" : "checks"}</strong>
+            {props.trace.checks.map((check) => <button type="button" key={`${check.kind}-${check.componentId}-${check.routeId ?? ""}`} onClick={() => { props.onSelectComponent(check.componentId); setChecksOpen(false); }}>
+              {check.message}
+            </button>)}
+          </div> : null}
+        </div> : null}
+        {props.traced ? <div className="builderStatusBar__lightView" role="group" aria-label="Light view">
+          <button type="button" aria-pressed={props.lightView === "colours"} onClick={() => props.onLightViewChange("colours")}>Colours</button>
+          <span aria-hidden="true">|</span>
+          <button type="button" aria-pressed={props.lightView === "power"} onClick={() => props.onLightViewChange("power")}>Power</button>
+        </div> : <span className="builderStatusBar__legacyNote">Legacy view: drawn Beams, not traced</span>}
+        {props.upgradeMessage ? <span className="builderStatusBar__upgrade" aria-label={props.upgradeMessage} title={props.upgradeMessage}>
+          <strong>Upgraded</strong><span className="builderStatusBar__upgradeDetail"> · {props.upgradeMessage.replace(/^This file was upgraded\.\s*/, "")}</span>
+        </span> : null}
+        <span className="builderStatusBar__message" role="status" aria-live="polite" title={props.status ?? undefined}>{props.status}</span>
+        <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
+          {props.traced ? "Legacy view" : "Switch to traced Beams"}
+        </button>
+      </div>
     </>
   );
 }

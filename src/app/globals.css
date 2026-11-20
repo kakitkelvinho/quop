@@ -816,7 +816,7 @@ html[data-theme="dark"] .beamProfile {
 }
 
 /* Labels can't be pressed, so they wear no plate: muted, uppercase and
-   tracked, behind a small square of the ink, as the builder's mode badge */
+   tracked, behind a small square of ink */
 :is(.sectionCard__kicker, .buttonCluster__label, .builderSheet__groupTitle, .betaBadge, .chapter__status) {
   display: inline-flex;
   align-items: center;
@@ -2742,8 +2742,7 @@ html[data-theme="dark"] .fitsColorControl__select {
    A full-window workspace: the canvas fills the viewport and a few small
    islands sit over its edges. The HUD is drawn on the glass, not set on the
    table: flat, opaque, square plates with a clear hairline, no shadow and no
-   blur. Hovers are a neutral wash; the accent is spent only on what is live
-   (the active tool, the selection, the mode badge's marker).
+   blur. Hovers are a neutral wash; the accent is spent on the active tool and selection.
    =========================================================================== */
 
 /* the builder follows the site's one radius (--radius); things round by
@@ -2767,8 +2766,9 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 .builderWorkspace {
-  /* the lists' foot: clear of the panel rail under them */
-  --builder-rail-clear: 3.95rem;
+  --builder-status-height: 2.5rem;
+  /* the lists' foot clears the panel rail and status bar */
+  --builder-rail-clear: calc(3.95rem + var(--builder-status-height));
   position: relative;
   height: 100%;
   overflow: hidden;
@@ -3006,7 +3006,7 @@ html[data-theme="dark"] .fitsColorControl__select {
   display: inline-grid;
 }
 
-/* top centre: the dock (undo, the eye, redo), the cheat sheet, and the mode badge */
+/* top centre: the dock (undo, the eye, redo) and the cheat sheet */
 .builderHud__center {
   position: absolute;
   z-index: 6;
@@ -3030,7 +3030,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 /* left: the parts panel, opened from the + below the top-left island */
 .builderParts {
   top: 7.3rem;
-  bottom: 3.8rem;
+  bottom: calc(3.8rem + var(--builder-status-height));
   left: 0.9rem;
   z-index: 6;
   flex-direction: column;
@@ -3131,60 +3131,6 @@ html[data-theme="dark"] .fitsColorControl__select {
 .builderPart__name {
   font-size: 0.84rem;
   font-weight: 600;
-}
-
-/* the mode is the headline while it lasts, set straight on the glass with no
-   plate (a solid one glared, a white slab on the night void): its name in
-   tracked capitals after a small accent square, then the keys in sentence case */
-.builderModeBadge {
-  display: flex;
-  align-items: center;
-  gap: 1.1rem;
-  margin: 0;
-  padding: 0.55rem 0.9rem 0.55rem 0.8rem;
-  color: var(--foreground);
-  font-size: 1.1rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  line-height: 1.2;
-  text-transform: uppercase;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.builderModeBadge::before {
-  content: "";
-  flex: none;
-  width: 0.6rem;
-  height: 0.6rem;
-  margin-right: -0.5rem;
-  background: var(--accent);
-}
-
-.builderModeBadge__hints {
-  display: inline-flex;
-  gap: 0.7rem;
-  color: color-mix(in srgb, currentColor 65%, transparent);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-.builderModeBadge kbd {
-  display: inline-grid;
-  place-items: center;
-  height: 1.1rem;
-  padding: 0 0.3rem;
-  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-  border-bottom-width: 2px;
-  border-radius: var(--builder-radius);
-  background: transparent;
-  color: inherit;
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.62rem;
-  font-weight: 500;
 }
 
 /* beside the pointer while a frame is drawn: the outline's size, or why a click there is refused */
@@ -3491,7 +3437,7 @@ html[data-theme="dark"] .builderCoach {
   right: 0.9rem;
   display: block;
   width: 16.5rem;
-  max-height: calc(100% - 9.5rem);
+  max-height: calc(100% - 9.5rem - var(--builder-status-height));
   overflow-y: auto;
   padding: 0.35rem 0 0;
   animation: builderSlide 220ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -4208,7 +4154,7 @@ html[data-theme="dark"] .builderCoach {
 
 .builderPanels.is-on {
   position: absolute;
-  inset: 0;
+  inset: 0 0 var(--builder-status-height);
   z-index: 4;
   display: block;
   pointer-events: none;
@@ -4218,6 +4164,11 @@ html[data-theme="dark"] .builderCoach {
   pointer-events: auto;
 }
 
+.builderPanels.is-on .builderParts,
+.builderPanels.is-on .builderBrief {
+  bottom: 3.8rem;
+}
+
 /* The lists column spans the workspace, so a box moved out of it is placed in
    the workspace's own pixels; the column still stacks the others bottom left. */
 .builderPanels.is-on .builderHud__lists {
@@ -4225,7 +4176,7 @@ html[data-theme="dark"] .builderCoach {
   z-index: auto;
   justify-content: flex-end;
   max-width: none;
-  padding: 0 0 var(--builder-rail-clear) 0.9rem;
+  padding: 0 0 3.95rem 0.9rem;
 }
 
 .builderPanels.is-on .builderHud__lists.is-besideParts {
@@ -4657,7 +4608,7 @@ body[data-panel-gesture="se"] * {
   position: absolute;
   z-index: 5;
   right: 0.9rem;
-  bottom: 0.9rem;
+  bottom: calc(0.9rem + var(--builder-status-height));
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -4670,7 +4621,7 @@ body[data-panel-gesture="se"] * {
 /* bottom left: the panel rail, three slots that are always there */
 .builderRail {
   left: 0.9rem;
-  bottom: 0.9rem;
+  bottom: calc(0.9rem + var(--builder-status-height));
 }
 
 .builderRail__slot {
@@ -4715,7 +4666,7 @@ body[data-panel-gesture="se"] * {
 
 /* The brief and JSON panel share a size; their text scrolls inside the box. */
 .builderBrief {
-  bottom: 3.8rem;
+  bottom: calc(3.8rem + var(--builder-status-height));
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -4818,28 +4769,137 @@ body[data-panel-gesture="se"] * {
   cursor: pointer;
 }
 
-.builderStatus {
+.builderStatusBar {
   position: absolute;
-  z-index: 5;
-  right: 0.9rem;
-  bottom: 4rem;
-  margin: 0;
-  max-width: min(22rem, calc(100% - 1.8rem));
-  padding: 0.3rem 0.7rem;
-  border-radius: var(--builder-radius);
-  background: var(--foreground);
-  color: var(--background);
-  font-size: 0.8rem;
-  font-weight: 600;
-  line-height: 1.4;
-  text-align: right;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 200ms ease;
+  z-index: 30;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  height: var(--builder-status-height);
+  padding: 0 0.9rem;
+  border-top: 1px solid var(--builder-hairline);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
-.builderStatus:not(:empty) {
-  opacity: 1;
+.builderStatusBar__mode,
+.builderStatusBar__hints,
+.builderStatusBar__lightView {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+}
+
+.builderStatusBar__mode strong {
+  font-size: 0.76rem;
+}
+
+.builderStatusBar__hints {
+  color: var(--muted);
+}
+
+.builderStatusBar__hints kbd {
+  padding: 0.1rem 0.25rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 0.64rem;
+}
+
+.builderStatusBar__checksWrap {
+  position: relative;
+  flex: none;
+}
+
+.builderStatusBar__checks,
+.builderStatusBar__lightView button,
+.builderStatusBar__switch {
+  padding: 0.25rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.builderStatusBar__checks:hover:not(:disabled),
+.builderStatusBar__lightView button:hover,
+.builderStatusBar__switch:hover {
+  background: var(--builder-hover);
+}
+
+.builderStatusBar__checks:disabled {
+  cursor: default;
+}
+
+.builderStatusBar__lightView {
+  gap: 0;
+}
+
+.builderStatusBar__lightView button[aria-pressed="true"] {
+  border-color: var(--builder-hairline);
+  font-weight: 700;
+}
+
+.builderStatusBar__upgrade,
+.builderStatusBar__message,
+.builderStatusBar__legacyNote {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.builderStatusBar__upgrade {
+  max-width: min(22rem, 24vw);
+  color: var(--accent-strong);
+}
+
+.builderStatusBar__message {
+  flex: 1;
+  color: var(--muted);
+}
+
+.builderStatusBar__switch {
+  flex: none;
+  margin-left: auto;
+  border-color: var(--builder-hairline);
+}
+
+.builderStatusBar__popover {
+  position: absolute;
+  bottom: calc(100% + 0.75rem);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: min(21rem, calc(100vw - 1rem));
+  max-height: 40vh;
+  overflow-y: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  background: var(--surface-strong);
+  white-space: normal;
+}
+
+.builderStatusBar__popover button {
+  padding: 0.3rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.builderStatusBar__popover button:hover {
+  background: var(--builder-hover);
 }
 
 @keyframes builderDrop {
@@ -4879,12 +4939,6 @@ body[data-panel-gesture="se"] * {
 
 /* Narrow screens: the parts panel spans the width, the inspector becomes a bottom sheet and
    the beams box rides above the bottom row. */
-@media (max-width: 900px) {
-  .builderStatus {
-    bottom: 7.2rem;
-  }
-}
-
 /* below this the cheat sheet's four columns would run under the inspector: it
    folds to two, and scrolls if the screen is short */
 @media (max-width: 1350px) {
@@ -4901,27 +4955,23 @@ body[data-panel-gesture="se"] * {
 }
 
 @media (max-width: 640px) {
-  /* too wide for one line here: the marker and the mode's name top its keys,
-     which wrap on a line of their own. It keeps between the + and the right
-     edge, so it never sits on the + */
-  .builderModeBadge {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.3rem 1.1rem;
-    max-width: calc(100vw - 8.4rem);
-    padding: 0.4rem 0.6rem;
-    white-space: normal;
+  .builderStatusBar {
+    gap: 0.2rem;
+    padding: 0 0.35rem;
+    font-size: 0.66rem;
   }
 
-  .builderModeBadge__hints {
-    flex-basis: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.3rem 0.7rem;
+  .builderStatusBar__mode {
+    display: none;
   }
 
-  .builderModeBadge__hints > span {
-    white-space: nowrap;
+  .builderStatusBar__upgrade {
+    flex: none;
+    max-width: none;
+  }
+
+  .builderStatusBar__upgradeDetail {
+    display: none;
   }
 
   .builderSheet {
@@ -4931,7 +4981,7 @@ body[data-panel-gesture="se"] * {
   .builderParts {
     top: 7.3rem;
     right: 0.9rem;
-    bottom: 7.2rem;
+    bottom: calc(7.2rem + var(--builder-status-height));
     width: auto;
   }
 
@@ -4941,7 +4991,7 @@ body[data-panel-gesture="se"] * {
   }
 
   .builderBrief {
-    bottom: 7.2rem;
+    bottom: calc(7.2rem + var(--builder-status-height));
   }
 
   /* no room beside a full-width parts panel: the box returns when it closes */
@@ -4953,17 +5003,13 @@ body[data-panel-gesture="se"] * {
     top: auto;
     left: 0.9rem;
     right: 0.9rem;
-    bottom: 7.2rem;
+    bottom: calc(7.2rem + var(--builder-status-height));
     /* over the beams and frames boxes, which reach up past its foot: editing is the job in hand */
     z-index: 6;
     width: auto;
     max-height: 45vh;
   }
 
-  /* the inspector's foot sits where the status line does: the line goes over it while it shows */
-  .builderStatus {
-    z-index: 7;
-  }
 }
 
 /* drei renders each in-scene label into a wrapper div laid over the canvas.
@@ -4971,6 +5017,18 @@ body[data-panel-gesture="se"] * {
 .builderHtmlLayer,
 .builderHtmlLayer * {
   pointer-events: none !important;
+}
+
+.builderPowerTag {
+  padding: 0.1rem 0.3rem;
+  border: 1px solid var(--builder-hairline);
+  border-radius: var(--builder-radius);
+  background: var(--surface-strong);
+  color: var(--foreground);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* a label's size: the setup's label size (--label-scale, on the canvas host)
