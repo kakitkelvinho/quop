@@ -66,19 +66,16 @@ test("Legacy switch and back keep query settings and the page view", async ({ pa
   await page.getByRole("button", { name: "Camera" }).click();
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
   const bar = statusBar(page);
-  const canvas = page.locator("canvas").first();
-  const colours = await canvas.screenshot();
-  await bar.getByRole("button", { name: "Power" }).click();
-  await expect.poll(async () => (await canvas.screenshot()).equals(colours)).toBe(false);
-  await expect(bar.getByRole("button", { name: "Power" })).toHaveAttribute("aria-pressed", "true");
+  await expect(bar.getByRole("group", { name: "Light view" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("meter", { name: "Power" }).first()).toBeVisible();
   await bar.getByRole("button", { name: "Legacy view" }).click();
   await expect(bar).toContainText("Legacy view: drawn Beams, not traced");
-  await expect(page).toHaveURL(/foo=bar.*light=power.*traced=0/);
+  await expect(page).toHaveURL(/foo=bar.*traced=0/);
   await expect(page.getByRole("region", { name: "Light", exact: true })).toHaveCount(0);
   await bar.getByRole("button", { name: "Switch to traced Beams" }).click();
-  await expect(page).toHaveURL(/foo=bar.*light=power/);
+  await expect(page).toHaveURL(/foo=bar/);
   await expect(page).not.toHaveURL(/traced=0/);
-  await expect(bar.getByRole("button", { name: "Power" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("meter", { name: "Power" }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Camera" })).toHaveAttribute("title", "Camera: top");
 });
 
