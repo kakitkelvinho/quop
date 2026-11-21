@@ -1138,7 +1138,6 @@ export type BuilderCanvasProps = {
   components: BuilderComponent[];
   beams: Beam[];
   trace: TraceResult | null;
-  lightView: "colours" | "power";
   connections: Connection[];
   frames: Frame[];
   /** a member of hidden groups only is left out of the drawing, and can't be picked */
@@ -1239,7 +1238,6 @@ export default function BuilderCanvas({
   components,
   beams,
   trace,
-  lightView,
   connections,
   frames,
   groups,
@@ -1537,28 +1535,8 @@ export default function BuilderCanvas({
         );
       })}
 
-      {trace && lightView === "colours" ? <TraceGuides trace={trace} beams={beams} components={components} /> : null}
-      {trace && lightView === "power" ? trace.trees.flatMap((tree) => {
-        const laser = components.find((part) => part.id === tree.laserId);
-        const color = laser ? laserLightColor(laser) : LASER_LIGHT_COLORS[0];
-        return tree.segments.flatMap((segment, index) => {
-          const source = segment.fromId ? components.find((part) => part.id === segment.fromId) : undefined;
-          return <Fragment key={`${tree.laserId}-${index}`}>
-            <BeamPath
-              points={[new Vector3(...segment.fromMm), new Vector3(...segment.toMm)]}
-              color={color}
-              width={BEAM_WIDTH_MM * Math.max(0.4, Math.sqrt(segment.power))}
-              opacity={Math.max(0.2, segment.power)}
-            />
-            {source?.type === "beam-splitter" ? <Html position={[
-              segment.fromMm[0] + (segment.toMm[0] - segment.fromMm[0]) * 0.3,
-              segment.fromMm[1] + 12,
-              segment.fromMm[2] + (segment.toMm[2] - segment.fromMm[2]) * 0.3,
-            ]} className="builderPowerTag" center>{Math.round(segment.power * 100)}%</Html> : null}
-          </Fragment>;
-        });
-      }) : null}
-      {lightView === "colours" ? routes.flatMap((route) => {
+      {trace ? <TraceGuides trace={trace} beams={beams} components={components} /> : null}
+      {routes.flatMap((route) => {
         const beam = route.beam;
         const ghost = Boolean(beam?.hidden && beam.id === ghostBeamId);
         const reveal = !beam && (hoveredRouteId === route.id || hoveredRouteId === "*");
@@ -1575,7 +1553,7 @@ export default function BuilderCanvas({
           selected={beam?.id === selectedBeamId || reveal}
           ghost={ghost}
         />);
-      }) : null}
+      })}
 
       {traceDistances.map((leg, index) => <BeamDistances
         key={`${leg.fromId}-${leg.toId}-${index}`}

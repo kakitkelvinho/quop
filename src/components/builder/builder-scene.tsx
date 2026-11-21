@@ -323,7 +323,6 @@ export default function BuilderScene() {
   // the page renders only on the client, so the address can be read up front
   const [arrival] = useState(arrive);
   const [traced, setTraced] = useState(readTracedFlag);
-  const [lightView, setLightView] = useState<"colours" | "power">(() => new URLSearchParams(window.location.search).get("light") === "power" ? "power" : "colours");
   const api = useBuilderScene(arrival.open, traced);
   const palette = useScenePalette();
   const { scene } = api;
@@ -385,13 +384,6 @@ export default function BuilderScene() {
     setTraced(next);
     setEditMode(IDLE);
   }, [traced]);
-  const changeLightView = useCallback((next: "colours" | "power") => {
-    const url = new URL(window.location.href);
-    if (next === "colours") url.searchParams.delete("light");
-    else url.searchParams.set("light", "power");
-    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-    setLightView(next);
-  }, []);
   const [trayOpen, setTrayOpen] = useState(false);
 
   const dragRef = useRef<DragState | null>(null);
@@ -1754,7 +1746,6 @@ export default function BuilderScene() {
           components={scene.components}
           beams={shownBeams}
           trace={trace}
-          lightView={lightView}
           connections={scene.connections}
           frames={scene.frames}
           groups={scene.groups}
@@ -1874,8 +1865,6 @@ export default function BuilderScene() {
         }}
         onRotateSelected={rotateSelected}
         traced={traced}
-        lightView={lightView}
-        onLightViewChange={changeLightView}
         onToggleTraced={toggleTraced}
         upgradeMessage={upgradeStatus}
         aimStatuses={aimStatuses}

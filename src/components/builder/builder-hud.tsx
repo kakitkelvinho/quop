@@ -123,8 +123,6 @@ export type BuilderHudProps = {
   onSelectComponent: (id: string) => void;
   onRotateSelected: (direction: 1 | -1) => void;
   traced: boolean;
-  lightView: "colours" | "power";
-  onLightViewChange: (view: "colours" | "power") => void;
   onToggleTraced: () => void;
   aimStatuses: Map<string, AimStatus> | null;
   onSetAim: (id: string, targetId: string) => void;
@@ -2002,11 +2000,7 @@ export default function BuilderHud(props: BuilderHudProps) {
             </button>)}
           </div> : null}
         </div> : null}
-        {props.traced ? <div className="builderStatusBar__lightView" role="group" aria-label="Light view">
-          <button type="button" aria-pressed={props.lightView === "colours"} onClick={() => props.onLightViewChange("colours")}>Colours</button>
-          <span aria-hidden="true">|</span>
-          <button type="button" aria-pressed={props.lightView === "power"} onClick={() => props.onLightViewChange("power")}>Power</button>
-        </div> : <span className="builderStatusBar__legacyNote">Legacy view: drawn Beams, not traced</span>}
+        {!props.traced ? <span className="builderStatusBar__legacyNote">Legacy view: drawn Beams, not traced</span> : null}
         {props.upgradeMessage ? <span className="builderStatusBar__upgrade" aria-label={props.upgradeMessage} title={props.upgradeMessage}>
           <strong>Upgraded</strong><span className="builderStatusBar__upgradeDetail"> · {props.upgradeMessage.replace(/^This file was upgraded\.\s*/, "")}</span>
         </span> : null}
