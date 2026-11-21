@@ -215,7 +215,7 @@ graph LR
 | `corner-fan.tsx` | The HUD's corner menus that unfold as columns of boxes. |
 | `file-fan.tsx` | The QUOP-mark file menu (Home, open, save). |
 | `show-boxes.tsx` | The view toggles/sliders shown as labelled boxes. |
-| `use-box-select.ts` | Ctrl/⌘-drag box selection on the canvas. |
+| `use-box-select.ts` | Ctrl/⌘ box selection on the canvas, or plain box selection in Group mode. |
 | `use-bubble-dismiss.ts` | Closes a toolbar bubble on outside press or Esc. |
 | `use-row-drag.ts` | Drag-to-reorder for list rows. |
 

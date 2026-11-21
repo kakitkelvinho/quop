@@ -89,8 +89,8 @@ describe("group mode", () => {
 
   it("names in its badge how many Enter would group", () => {
     assert.deepEqual(groupModeHints(3), [
-      ["⌘ click", "pick"],
-      ["⌘ drag", "box"],
+      ["Click", "pick"],
+      ["Drag", "box"],
       ["Enter", "group 3"],
       ["Esc", "cancel"],
     ]);
