@@ -223,6 +223,16 @@ test("Light reveals an unpinned route, pins it for export, and labels distances 
   await expect(page.locator(".builderDistance")).toHaveText("200 mm");
   await expect(page.locator(".builderDistance")).toBeVisible();
   await page.getByRole("button", { name: "Show", exact: true }).click();
+  const panel = light;
+  const pathLength = route.getByRole("button", { name: /^Path length:/ });
+  const closedWidth = await panel.evaluate((element) => element.getBoundingClientRect().width);
+  await expect(pathLength).toHaveAttribute("aria-pressed", "false");
+  await pathLength.click();
+  await expect(pathLength).toHaveAttribute("aria-pressed", "true");
+  await expect(route.locator(".builderLightList__readoutValue").nth(1)).toContainText("mm");
+  await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(closedWidth);
+  await pathLength.click();
+  await expect(pathLength).toHaveAttribute("aria-pressed", "false");
   const canvas = page.locator("canvas").first();
   const before = await canvas.screenshot();
   await route.getByRole("button", { name: "Highlight route to Dump" }).focus();
