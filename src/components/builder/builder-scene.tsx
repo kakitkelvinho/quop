@@ -406,7 +406,7 @@ export default function BuilderScene() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const projectRef = useRef<CanvasApi["project"] | null>(null);
   const tableAtRef = useRef<CanvasApi["tableAt"] | null>(null);
-  // the part under the pointer, for a Ctrl/⌘ click the canvas never sees
+  // the part under the pointer, for a selection click the canvas never sees
   const hoveredRef = useRef<string | null>(null);
   // Pointer handlers run outside React's render pass and need the newest
   // scene without re-subscribing on every edit.
@@ -669,7 +669,7 @@ export default function BuilderScene() {
     setHoveredId(id);
   }, []);
 
-  // Ctrl/⌘ + click adds the part under the pointer to the selection, or takes it out.
+  // A selection click adds the part under the pointer, or takes it out.
   const togglePointedPart = useCallback(() => {
     const id = hoveredRef.current;
     if (!id) return;
@@ -681,8 +681,8 @@ export default function BuilderScene() {
     setSelectedConnectionId(null);
   }, []);
 
-  // Ctrl/⌘ + drag selects every part whose body's centre falls in the box;
-  // with Shift as well, it adds them to the selection.
+  // A selection drag takes parts whose body centres fall in the box.
+  // Group mode adds them to picks already made; otherwise Shift adds them.
   const selectInBox = useCallback((box: ScreenBox, adding: boolean) => {
     const project = projectRef.current;
     if (!project) return;
@@ -695,15 +695,16 @@ export default function BuilderScene() {
       })
       .map((component) => component.id);
     setSelection((current) =>
-      adding ? [...current, ...inside.filter((id) => !current.includes(id))] : inside,
+      adding || editMode.kind === "group-pick" ? [...current, ...inside.filter((id) => !current.includes(id))] : inside,
     );
     setSelectedBeamId(null);
     setSelectedFrameId(null);
     setSelectedConnectionId(null);
-  }, []);
+  }, [editMode.kind]);
 
   const selectionBox = useBoxSelect(hostRef, {
     enabled: editMode.kind === "idle" || editMode.kind === "group-pick",
+    plain: editMode.kind === "group-pick",
     onClick: togglePointedPart,
     onBox: selectInBox,
   });
