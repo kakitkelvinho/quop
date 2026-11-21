@@ -4903,8 +4903,7 @@ body[data-panel-gesture="se"] * {
 }
 
 .builderStatusBar__mode,
-.builderStatusBar__hints,
-.builderStatusBar__lightView {
+.builderStatusBar__hints {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -4934,7 +4933,6 @@ body[data-panel-gesture="se"] * {
 }
 
 .builderStatusBar__checks,
-.builderStatusBar__lightView button,
 .builderStatusBar__switch {
   padding: 0.25rem 0.35rem;
   border: 1px solid transparent;
@@ -4946,22 +4944,12 @@ body[data-panel-gesture="se"] * {
 }
 
 .builderStatusBar__checks:hover:not(:disabled),
-.builderStatusBar__lightView button:hover,
 .builderStatusBar__switch:hover {
   background: var(--builder-hover);
 }
 
 .builderStatusBar__checks:disabled {
   cursor: default;
-}
-
-.builderStatusBar__lightView {
-  gap: 0;
-}
-
-.builderStatusBar__lightView button[aria-pressed="true"] {
-  border-color: var(--builder-hairline);
-  font-weight: 700;
 }
 
 .builderStatusBar__upgrade,
@@ -5134,18 +5122,6 @@ body[data-panel-gesture="se"] * {
 .builderHtmlLayer,
 .builderHtmlLayer * {
   pointer-events: none !important;
-}
-
-.builderPowerTag {
-  padding: 0.1rem 0.3rem;
-  border: 1px solid var(--builder-hairline);
-  border-radius: var(--builder-radius);
-  background: var(--surface-strong);
-  color: var(--foreground);
-  font-size: 0.66rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  pointer-events: none;
 }
 
 /* a label's size: the setup's label size (--label-scale, on the canvas host)
