@@ -818,6 +818,24 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
   );
 }
 
+function FaradayRotator({ palette, axis }: ModelProps) {
+  return (
+    <group>
+      <Pillar palette={palette} top={axis - 16} />
+      <mesh position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[13, 13, 28, 32]} />
+        <meshStandardMaterial color={palette.anodise} roughness={0.43} metalness={0.45} />
+      </mesh>
+      {[-1, 1].map((end) => (
+        <mesh key={end} position={[end * 14.1, axis, 0]} rotation={[0, end * Math.PI / 2, 0]}>
+          <circleGeometry args={[5, 24]} />
+          <meshStandardMaterial color="#366c80" roughness={0.15} metalness={0.2} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 /** Half the gap between a delay line's two fold mirrors, and so between its beams out and back, mm. */
 const DELAY_FOLD_MM = 10;
 
@@ -2297,6 +2315,7 @@ const COMPONENT_MODELS: Record<
     />
   ),
   waveplate: (_, { modelProps }) => <Waveplate {...modelProps} />,
+  polarizer: (_, { modelProps }) => <Waveplate {...modelProps} />,
   filter: (_, { modelProps }) => <Filter {...modelProps} />,
   iris: (_, { modelProps }) => <Iris {...modelProps} />,
   sample: (component, { modelProps: { palette, axis } }) => (
@@ -2340,6 +2359,7 @@ const COMPONENT_MODELS: Record<
   aom: (_, { modelProps }) => <Aom {...modelProps} />,
   eom: (_, { modelProps }) => <Eom {...modelProps} />,
   "faraday-isolator": (_, { modelProps }) => <FaradayIsolator {...modelProps} />,
+  "faraday-rotator": (_, { modelProps }) => <FaradayRotator {...modelProps} />,
   "delay-line": (component, { modelProps }) => (
     <DelayLine
       {...modelProps}

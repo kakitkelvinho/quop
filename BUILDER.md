@@ -46,6 +46,16 @@ full path; pinning keeps it visible on the table and in a PNG export. A saved
 Beam records that presentation choice, plus its label and colour. When an older
 saved path disagrees with the trace, it stays drawn for editing.
 
+**Polarization changes the traced power.** A Laser starts with an editable
+linear polarization angle. Turning a λ/2 plate's fast axis rotates that
+polarization; a polarizing Beam cube sends local P through and reflects local
+S, while an older or non-polarizing cube still divides power 50/50. A
+Polarizer projects onto its transmission axis and removes the rejected power.
+Those axes are adjusted by turning the part around its optical axis in the
+Inspector. A standalone Faraday rotator has an editable rotation, and a Mirror
+can have a specified S/P phase difference. Each route's power is a fraction
+of its Laser's output. The trace does not recombine branches for interference.
+
 **Path length is the payoff.** Traced segments have real 3D lengths, so
 their total length and vacuum time of flight fall out. Both are
 shown per route, which is the number a pump–probe delay line is actually built
@@ -283,7 +293,7 @@ arriving light. Only the old drawn-mode fallback turns a detector that is a
 Beam's last stop to the stop before it, with its yaw read-only.
 
 **Mount colour marks the beam line.** Any part held in a mount (mirror, beam
-cube, waveplate, filter, iris, fiber collimator) can have its mount tinted; the
+cube, waveplate, polarizer, filter, iris, fiber collimator) can have its mount tinted; the
 convention is that the tint matches the beam it serves, so a crowded table can
 still be read at a glance. This is a user-facing convention, not a design-system
 colour — see `DESIGN.md` on keeping the section wayfinding colours out of it.
@@ -528,7 +538,9 @@ Keyboard shortcuts to open the menus are issue #347.
 
   In traced view the Light box groups routes by Laser. A route shows its
   endpoint, length, time of flight and power as a filled battery bar with a
-  percentage. Hover or focus the route to reveal its full path. Its pin icon
+  percentage and polarization. Selecting a Component shows live power and
+  polarization in its Inspector; a Polarizer's absorbed power appears under its
+  Laser's routes. Hover or focus the route to reveal its full path. Its pin icon
   has a slash when unpinned; pressing it pins or unpins that route. Pinned
   routes can also be hidden with the eye. If a Setup has hand-drawn Beams,
   they appear below the traced routes under **Legacy**; the untouched example

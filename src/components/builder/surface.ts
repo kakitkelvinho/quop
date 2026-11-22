@@ -9,6 +9,7 @@
 
 import { add, cross, dot, length, normalize, type Quat, rotate, scale, type Vec3 } from "./quaternion.ts";
 import type { Jones } from "./jones.ts";
+import { faradayField, mirrorField, pbsFields, polarizerField, transportField, waveplateField, type Field } from "./polarization.ts";
 
 export type Aperture =
   | { kind: "circle"; radiusMm: number }
@@ -17,12 +18,14 @@ export type Aperture =
 
 export type SurfaceRule =
   | { kind: "block" }
-  | { kind: "pass"; jones?: Jones }
-  | { kind: "reflect" }
+  | { kind: "pass"; jones?: Jones; waveplate?: { axis: Vec3; retardanceRad: number } }
+  | { kind: "polarizer"; axis: Vec3 }
+  | { kind: "faraday"; magneticAxis: Vec3; angleDeg: number }
+  | { kind: "reflect"; phaseDeg?: number }
   | { kind: "isolator"; jones: Jones }
   | { kind: "thin-lens"; focalLengthMm: number }
   // R and T are power fractions; R + T = 1 when lossless, less when the surface absorbs.
-  | { kind: "split"; reflectance: number; transmittance: number };
+  | { kind: "split"; reflectance: number; transmittance: number; polarizing?: true };
 
 export type Surface = {
   positionMm: Vec3;
@@ -38,6 +41,7 @@ export type TracedBeam = {
   originMm: Vec3;
   direction: Vec3;
   power: number;
+  field?: Field;
 };
 
 export type Pose = { positionMm: Vec3; orientation: Quat };
@@ -68,6 +72,19 @@ export function makeSurface(surface: Surface): Surface {
     const { reflectance: r, transmittance: t } = rule;
     if (!(r >= 0 && t >= 0 && r + t <= 1 + UNIT_TOLERANCE)) throw new Error("split needs R, T ≥ 0 and R + T ≤ 1");
   }
+  if (rule.kind === "reflect" && rule.phaseDeg !== undefined && !Number.isFinite(rule.phaseDeg)) {
+    throw new Error("mirror phase must be finite");
+  }
+  const transverseAxis = rule.kind === "pass" ? rule.waveplate?.axis : rule.kind === "polarizer" ? rule.axis : undefined;
+  if (transverseAxis && (Math.abs(length(transverseAxis) - 1) > UNIT_TOLERANCE || Math.abs(dot(transverseAxis, normal)) > UNIT_TOLERANCE)) {
+    throw new Error("optic axis must be unit length and transverse to its normal");
+  }
+  if (rule.kind === "pass" && rule.waveplate && !Number.isFinite(rule.waveplate.retardanceRad)) {
+    throw new Error("waveplate retardance must be finite");
+  }
+  if (rule.kind === "faraday" && (Math.abs(length(rule.magneticAxis) - 1) > UNIT_TOLERANCE || Math.abs(Math.abs(dot(rule.magneticAxis, normal)) - 1) > UNIT_TOLERANCE || !Number.isFinite(rule.angleDeg))) {
+    throw new Error("Faraday axis and angle must be finite and aligned to its normal");
+  }
   if (rule.kind === "thin-lens" && !(rule.focalLengthMm > 0 && Number.isFinite(rule.focalLengthMm))) {
     throw new Error("thin lens needs a finite positive focal length");
   }
@@ -80,12 +97,19 @@ export function makeSurface(surface: Surface): Surface {
 /** The surface where its Component stands: its position and axes turned by the orientation, then moved. */
 export function placeSurface(surface: Surface, pose: Pose): Surface {
   const { aperture } = surface;
+  const { rule } = surface;
+  const placedRule: SurfaceRule = rule.kind === "pass" && rule.waveplate
+    ? { ...rule, waveplate: { ...rule.waveplate, axis: rotate(pose.orientation, rule.waveplate.axis) } }
+    : rule.kind === "polarizer" ? { ...rule, axis: rotate(pose.orientation, rule.axis) }
+    : rule.kind === "faraday" ? { ...rule, magneticAxis: rotate(pose.orientation, rule.magneticAxis) }
+    : rule;
   return {
     ...surface,
     positionMm: add(pose.positionMm, rotate(pose.orientation, surface.positionMm)),
     normal: rotate(pose.orientation, surface.normal),
     aperture:
       aperture.kind === "rect" ? { ...aperture, widthAxis: rotate(pose.orientation, aperture.widthAxis) } : aperture,
+    rule: placedRule,
   };
 }
 
@@ -114,32 +138,57 @@ export function reflectDirection(direction: Vec3, normal: Vec3): Vec3 {
 
 /** What a rule does to one beam arriving at `hitMm`: zero, one or two beams leave from there. */
 export function applyRule(rule: SurfaceRule, normal: Vec3, beam: TracedBeam, hitMm: Vec3, centreMm: Vec3 = hitMm): TracedBeam[] {
-  const leaving = (direction: Vec3, fraction: number): TracedBeam => ({
+  const leaving = (direction: Vec3, fraction: number, field = beam.field): TracedBeam => ({
     originMm: hitMm,
     direction,
     power: beam.power * fraction,
+    ...(field ? { field } : {}),
   });
   switch (rule.kind) {
     case "block":
       return [];
     case "pass":
-      return [leaving(beam.direction, 1)];
+      return [leaving(beam.direction, 1, beam.field && rule.waveplate
+        ? waveplateField(beam.field, beam.direction, rule.waveplate.axis, rule.waveplate.retardanceRad)
+        : beam.field)];
+    case "polarizer": {
+      if (!beam.field) return [leaving(beam.direction, 1)];
+      const result = polarizerField(beam.field, beam.direction, rule.axis);
+      return result.field ? [leaving(beam.direction, result.fraction, result.field)] : [];
+    }
+    case "faraday":
+      return [leaving(beam.direction, 1, beam.field
+        ? faradayField(beam.field, beam.direction, rule.magneticAxis, rule.angleDeg)
+        : undefined)];
     case "isolator":
       return dot(beam.direction, normal) > 0 ? [leaving(beam.direction, 1)] : [];
     case "reflect":
-      return [leaving(reflectDirection(beam.direction, normal), 1)];
+      return [leaving(reflectDirection(beam.direction, normal), 1, beam.field
+        ? mirrorField(beam.field, beam.direction, reflectDirection(beam.direction, normal), normal, rule.phaseDeg)
+        : undefined)];
     case "thin-lens": {
       const displacement = subtract(hitMm, centreMm);
       const bend = Math.abs(dot(beam.direction, normal)) / rule.focalLengthMm;
-      return [leaving(normalize(add(beam.direction, scale(displacement, -bend))), 1)];
+      const direction = normalize(add(beam.direction, scale(displacement, -bend)));
+      return [leaving(direction, 1, beam.field ? transportField(beam.field, beam.direction, direction) : undefined)];
     }
     case "split": {
+      if (rule.polarizing && beam.field) {
+        const reflected = reflectDirection(beam.direction, normal);
+        const result = pbsFields(beam.field, beam.direction, normal);
+        return [
+          ...(result.through ? [leaving(beam.direction, result.through.fraction, result.through.field)] : []),
+          ...(result.reflected ? [leaving(reflected, result.reflected.fraction, result.reflected.field)] : []),
+        ];
+      }
       // A branch with no power isn't a beam; dropping it keeps "two outgoing" meaning two.
       const branches = [
-        { direction: beam.direction, fraction: rule.transmittance },
-        { direction: reflectDirection(beam.direction, normal), fraction: rule.reflectance },
+        { direction: beam.direction, fraction: rule.transmittance, field: beam.field },
+        { direction: reflectDirection(beam.direction, normal), fraction: rule.reflectance, field: beam.field
+          ? mirrorField(beam.field, beam.direction, reflectDirection(beam.direction, normal), normal)
+          : undefined },
       ];
-      return branches.filter((b) => b.fraction > 0).map((b) => leaving(b.direction, b.fraction));
+      return branches.filter((b) => b.fraction > 0).map((b) => leaving(b.direction, b.fraction, b.field));
     }
   }
 }

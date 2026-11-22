@@ -9,6 +9,8 @@ import { useScenePalette } from "@/components/builder/scene-theme";
 import { useRowDrag } from "@/components/builder/use-row-drag";
 import { fromYawPitchRollDeg, toYawPitchRollDeg } from "@/components/builder/quaternion";
 import { canAim, type AimStatus } from "@/components/builder/aim-settling";
+import { polarizationLabel } from "@/components/builder/polarization";
+import type { TraceResult } from "@/components/builder/trace-scene";
 import { isPendingDraft, useNumberDraft } from "@/components/use-number-draft";
 import {
   BEAM_COLORS,
@@ -628,14 +630,15 @@ function YawRow({
   );
 }
 
-function PitchRollRows({ component, labelPrefix = "", locked, onChange }: {
+function PitchRollRows({ component, labelPrefix = "", locked, omitRoll = false, onChange }: {
   component: BuilderComponent;
   labelPrefix?: string;
   locked: boolean;
+  omitRoll?: boolean;
   onChange: (orientation: BuilderComponent["orientation"]) => void;
 }) {
   const angles = toYawPitchRollDeg(component.orientation);
-  return (["pitchDeg", "rollDeg"] as const).map((angle) => (
+  return (omitRoll ? ["pitchDeg"] as const : ["pitchDeg", "rollDeg"] as const).map((angle) => (
     <div className="builderFieldRow" key={angle}>
       <NumberField
         label={`${labelPrefix}${angle === "pitchDeg" ? "Pitch" : "Roll"}`}
@@ -652,6 +655,7 @@ function PitchRollRows({ component, labelPrefix = "", locked, onChange }: {
 export function ComponentInspector({
   component,
   components,
+  trace,
   angleBeam,
   traced,
   aimStatus,
@@ -673,6 +677,7 @@ export function ComponentInspector({
   groupsField?: ReactNode;
   component: BuilderComponent;
   components: BuilderComponent[];
+  trace?: TraceResult | null;
   /** set when a beam turns this part; its yaw is then read-only */
   angleBeam?: Beam;
   traced?: boolean;
@@ -698,6 +703,13 @@ export function ComponentInspector({
   const mountedPart = component.type === "translation-stage"
     ? components.find((part) => part.mountStage === component.id)
     : undefined;
+  const outgoingLight = trace?.trees.flatMap((tree) => tree.segments
+    .filter((segment) => segment.fromId === component.id && segment.toId !== component.id)
+    .map((segment) => ({ laserId: tree.laserId, segment }))) ?? [];
+  const incomingLight = outgoingLight.length ? [] : trace?.trees.flatMap((tree) => tree.segments
+    .filter((segment) => segment.toId === component.id)
+    .map((segment) => ({ laserId: tree.laserId, segment }))) ?? [];
+  const liveLight = outgoingLight.length ? outgoingLight : incomingLight;
   const moveTo = (nextX: number, nextZ: number) => {
     onUpdate({ position: [nextX, component.position[1], nextZ] as Vec3 });
   };
@@ -829,9 +841,29 @@ export function ComponentInspector({
         onChange={(yaw) => onUpdate({ orientation: withYaw(component, yaw).orientation })}
         onRotate={onRotate}
       />
-      <PitchRollRows component={component} locked={Boolean(angleBeam)} onChange={(orientation) => onUpdate({ orientation })} />
+      <PitchRollRows component={component} locked={Boolean(angleBeam)} omitRoll={component.type === "waveplate" || component.type === "polarizer"} onChange={(orientation) => onUpdate({ orientation })} />
+      {component.type === "waveplate" || component.type === "polarizer" ? (
+        <SliderField
+          label={component.type === "waveplate" ? "Fast axis" : "Transmission axis"}
+          value={toYawPitchRollDeg(component.orientation).rollDeg}
+          display={`${toYawPitchRollDeg(component.orientation).rollDeg.toFixed(1)}°`}
+          range={component.type === "waveplate" ? [-90, 90] : [-180, 180]}
+          step={0.5}
+          onBegin={onCheckpoint}
+          onChange={(rollDeg) => onUpdate({ orientation: fromYawPitchRollDeg({ ...toYawPitchRollDeg(component.orientation), rollDeg }) }, false)}
+        />
+      ) : null}
       {component.type === "laser-source" ? (
         <>
+          <SliderField
+            label="Linear polarization"
+            value={fieldValue(component, "polarizationAngleDeg")}
+            display={`${fieldValue(component, "polarizationAngleDeg")}°`}
+            range={[0, 180]}
+            step={0.5}
+            onBegin={onCheckpoint}
+            onChange={(next) => onUpdate({ polarizationAngleDeg: next }, false)}
+          />
           <ColorField label="Light colour" value={laserLightColor(component)} onChange={(next) => onUpdate({ lightColor: next })} />
           <NumberField
             label="Built-in path"
@@ -845,6 +877,39 @@ export function ComponentInspector({
             onClear={() => onUpdate({ internalPathMm: undefined })}
           />
         </>
+      ) : null}
+      {component.type === "beam-splitter" ? (
+        <label className="builderField">
+          <span className="builderField__label">Optical rule</span>
+          <span className="builderField__control">
+            <select value={fieldValue(component, "cubeMode")} onChange={(event) => onUpdate({ cubeMode: event.target.value as "non-polarizing" | "polarizing" })}>
+              <option value="non-polarizing">Non-polarizing · 50/50</option>
+              <option value="polarizing">Polarizing · P through, S reflected</option>
+            </select>
+          </span>
+        </label>
+      ) : null}
+      {component.type === "mirror-mount" ? (
+        <SliderField
+          label="S/P phase"
+          value={fieldValue(component, "mirrorPhaseDeg")}
+          display={`${fieldValue(component, "mirrorPhaseDeg")}°`}
+          range={[-180, 180]}
+          step={1}
+          onBegin={onCheckpoint}
+          onChange={(next) => onUpdate({ mirrorPhaseDeg: next }, false)}
+        />
+      ) : null}
+      {component.type === "faraday-rotator" ? (
+        <SliderField
+          label="Rotation"
+          value={fieldValue(component, "faradayAngleDeg")}
+          display={`${fieldValue(component, "faradayAngleDeg")}°`}
+          range={[-90, 90]}
+          step={1}
+          onBegin={onCheckpoint}
+          onChange={(next) => onUpdate({ faradayAngleDeg: next }, false)}
+        />
       ) : null}
       {component.type === "lens" ? (
         <>
@@ -1020,6 +1085,16 @@ export function ComponentInspector({
           value={component.color ?? DEFAULT_HOUSING_COLORS[component.type]!}
           onChange={(color) => onUpdate({ color })}
         />
+      ) : null}
+      {liveLight.length ? (
+        <div className="builderField" aria-label="Live light">
+          <span className="builderField__label">Live light</span>
+          {liveLight.map(({ laserId, segment }, index) => (
+            <p className="builderInspector__hint" key={`${laserId}-${segment.routeId}-${index}`}>
+              {componentDisplayName(componentById(components, laserId) ?? component)}{component.type === "beam-splitter" ? ` · ${segment.arm}` : ""}: {Math.round(segment.power * 100)}% · {segment.field && segment.direction ? polarizationLabel(segment.field, segment.direction) : "polarization unavailable"}
+            </p>
+          ))}
+        </div>
       ) : null}
       {groupsField}
     </div>
