@@ -293,7 +293,7 @@ const SHEET: { title: string; lines: Line[] }[] = [
       { icon: "beam", text: "Click parts, Enter" },
       { icon: "frame", text: "Drag, or corners + Enter" },
       { icon: "connect", text: "From, then to" },
-      { icon: "groups", text: "⌘ click parts, Enter" },
+      { icon: "groups", text: "Click parts, Enter" },
     ],
   },
   {

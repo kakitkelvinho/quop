@@ -1,6 +1,6 @@
 /**
  * Group mode: the empty Groups slot on the panel rail starts it. The author
- * picks parts as usual (⌘ click, ⌘ drag), then Enter, or the slot pressed
+ * picks parts with plain clicks or box drags, then Enter, or the slot pressed
  * again, makes them a group; Esc cancels. One part is no group, so with fewer
  * than two picked it just stops.
  */
@@ -19,8 +19,8 @@ export function finishGroupMode(picked: number): "group" | "stop" {
 /** The badge's hints: Enter names how many it would group once there are enough. */
 export function groupModeHints(picked: number): ModeHint[] {
   return [
-    ["⌘ click", "pick"],
-    ["⌘ drag", "box"],
+    ["Click", "pick"],
+    ["Drag", "box"],
     ["Enter", finishGroupMode(picked) === "group" ? `group ${picked}` : "group"],
     ["Esc", "cancel"],
   ];
