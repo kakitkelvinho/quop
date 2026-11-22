@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE — Polarization in the Tabletop</title>
+<style>
+  :root { font-family: system-ui, sans-serif; color: #e9f0f5; background: #101923; }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  button, input, select { font: inherit; }
+  button { cursor: pointer; }
+  header { padding: 14px 24px; border-bottom: 1px solid #304350; display: flex; align-items: center; gap: 18px; background: #16232f; }
+  header strong { font-size: 1.1rem; }
+  header span { color: #9eb4c2; font-size: .88rem; }
+  .intro { padding: 17px 24px; background: #193441; border-bottom: 1px solid #41616b; line-height: 1.5; }
+  .intro strong { color: #f5cd84; }
+  .intro small { display: block; color: #bfd0d6; margin-top: 5px; }
+  .layout { display: grid; grid-template-columns: minmax(500px, 1fr) 310px; gap: 14px; padding: 14px; max-width: 1500px; margin: auto; }
+  .left { min-width: 0; }
+  .panel { background: #1b2935; border: 1px solid #3b5262; border-radius: 10px; overflow: hidden; }
+  .panel + .panel { margin-top: 14px; }
+  .panel h2 { font-size: .95rem; margin: 0; padding: 12px 15px; border-bottom: 1px solid #3b5262; background: #223443; }
+  .panel-body { padding: 14px; }
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .toolbar button, .presets button, .remove { background: #253c4b; color: #e9f0f5; border: 1px solid #557487; border-radius: 6px; padding: 7px 10px; }
+  .toolbar button:hover, .presets button:hover, .remove:hover { background: #315467; }
+  .toolbar button:disabled { opacity: .45; cursor: default; }
+  .table { background-color: #192833; background-image: radial-gradient(#3a4c55 1px, transparent 1px); background-size: 18px 18px; width: 100%; display: block; }
+  .beam { stroke: #e9a54e; stroke-linecap: round; }
+  .beam-label { fill: #f6cf91; font-size: 15px; font-weight: 700; paint-order: stroke; stroke: #192833; stroke-width: 4px; }
+  .part { cursor: pointer; }
+  .part rect, .part circle { fill: #385064; stroke: #9ebaca; stroke-width: 2; }
+  .part:hover rect, .part:hover circle, .part.selected rect, .part.selected circle { stroke: #ffd18b; stroke-width: 4; }
+  .part text { fill: #edf4f6; text-anchor: middle; font-size: 13px; pointer-events: none; }
+  .part.off { opacity: .32; }
+  .table-note { color: #a6bac4; margin: 10px 2px 0; font-size: .85rem; }
+  .power-row { display: grid; grid-template-columns: 92px minmax(55px,1fr) 52px; align-items: center; gap: 6px; margin: 10px 0; }
+  .power-row div { height: 12px; background: #344957; border-radius: 7px; overflow: hidden; }
+  .power-row i { display: block; height: 100%; background: #e9a54e; }
+  .power-row b { text-align: right; font-variant-numeric: tabular-nums; }
+  .muted { color: #a9bbc6; font-size: .87rem; line-height: 1.5; }
+  .field { margin: 18px 0; }
+  .field label { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 9px; font-weight: 650; }
+  .field output { color: #f6cf91; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: #e9a54e; }
+  select { width: 100%; background: #14222e; color: white; border: 1px solid #557487; border-radius: 5px; padding: 8px; }
+  .presets { display: flex; gap: 8px; flex-wrap: wrap; }
+  .presets button.active { background: #805923; border-color: #f2be72; }
+  .state { color: #c0d0d8; font-size: .85rem; line-height: 1.6; }
+  .state code { color: #f6cf91; }
+  @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } .table { min-width: 500px; } .canvas-wrap { overflow-x: auto; } }
+</style>
+<header><strong>Tabletop</strong><span>Polarization workflow · throwaway prototype</span></header>
+<div class="intro"><strong>Try this:</strong> Click the λ/2 plate on the table, set its <em>fast axis</em> to 22.5° in the Inspector, and watch the two detector powers become 50% each in the Light panel.
+  <small>Question: do polarization controls make sense in the Tabletop's select → inspect → adjust workflow? Positions are fixed in this demo; no setup file is saved. The optical calculation is a pure Jones model behind the view.</small>
+</div>
+<div class="layout">
+  <main class="left">
+    <section class="panel"><h2>Table</h2><div class="panel-body">
+      <div class="toolbar"><button id="add-polarizer">Add Polarizer</button><button id="add-faraday">Add Faraday rotator</button></div>
+      <div class="canvas-wrap"><svg class="table" id="table" viewBox="0 0 930 500" role="img" aria-label="Optical table with clickable components and traced beams"></svg></div>
+      <p class="table-note">Select a component on the table to edit its optical setting. The Beam paths stay fixed; their power changes.</p>
+    </div></section>
+    <section class="panel"><h2>Load an example setup</h2><div class="panel-body presets" id="presets"></div></section>
+  </main>
+  <aside>
+    <section class="panel"><h2>Inspector</h2><div class="panel-body" id="inspector"></div></section>
+    <section class="panel"><h2>Light</h2><div class="panel-body" id="light"></div></section>
+    <section class="panel"><h2>Computed Beam state</h2><div class="panel-body state" id="state"></div></section>
+  </aside>
+</div>
+<script>
+// Pure setup calculation: the Tabletop view only reads its result.
+const C = (re, im = 0) => ({ re, im });
+const add = (a, b) => C(a.re + b.re, a.im + b.im);
+const mul = (a, b) => C(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
+const scale = (a, n) => C(a.re * n, a.im * n);
+const abs2 = a => a.re * a.re + a.im * a.im;
+const norm2 = field => abs2(field[0]) + abs2(field[1]);
+const unit = field => field.map(z => scale(z, 1 / Math.sqrt(norm2(field))));
+const phase = angle => C(Math.cos(angle), Math.sin(angle));
+const radians = degrees => degrees * Math.PI / 180;
+const rotate = (field, degrees) => {
+  const co = Math.cos(radians(degrees)), si = Math.sin(radians(degrees));
+  return [add(scale(field[0], co), scale(field[1], -si)), add(scale(field[0], si), scale(field[1], co))];
+};
+const waveplate = (field, angleDeg) => {
+  const local = rotate(field, -angleDeg);
+  return unit(rotate([mul(local[0], phase(-Math.PI / 2)), mul(local[1], phase(Math.PI / 2))], angleDeg));
+};
+const polarizer = (field, angleDeg) => {
+  const axis = [Math.cos(radians(angleDeg)), Math.sin(radians(angleDeg))];
+  const amplitude = add(scale(field[0], axis[0]), scale(field[1], axis[1]));
+  const fraction = abs2(amplitude);
+  return { fraction, field: fraction < 1e-12 ? null : unit(axis.map(x => scale(amplitude, x))) };
+};
+function calculate(setup) {
+  const source = [C(Math.cos(radians(setup.laserAngle))), C(Math.sin(radians(setup.laserAngle)))];
+  const afterHwp = waveplate(source, setup.hwpAngle);
+  const filter = setup.polarizer ? polarizer(afterHwp, setup.polarizerAngle) : { fraction: 1, field: afterHwp };
+  const afterFaraday = filter.field && setup.faraday ? rotate(filter.field, setup.faradayAngle) : filter.field;
+  const powerAtCube = filter.fraction;
+  const through = setup.cubeMode === 'polarizing' ? powerAtCube * (afterFaraday ? abs2(afterFaraday[0]) : 0) : powerAtCube / 2;
+  const reflected = setup.cubeMode === 'polarizing' ? powerAtCube * (afterFaraday ? abs2(afterFaraday[1]) : 0) : powerAtCube / 2;
+  return { source, afterHwp, atCube: afterFaraday, powerAtCube, through, reflected, absorbed: 1 - powerAtCube };
+}
+</script>
+<script>
+const defaults = { laserAngle: 0, hwpAngle: 0, polarizer: false, polarizerAngle: 45, faraday: false, faradayAngle: 45, cubeMode: 'polarizing' };
+const examples = [
+  { name: 'HWP + polarizing cube', setup: { ...defaults } },
+  { name: 'Polarizer loss', setup: { ...defaults, polarizer: true } },
+  { name: 'Faraday rotation', setup: { ...defaults, faraday: true } },
+  { name: 'Old 50/50 cube', setup: { ...defaults, cubeMode: 'non-polarizing' } }
+];
+let setup = { ...defaults }, selected = 'hwp', example = 0;
+const pct = value => `${(value * 100).toFixed(1)}%`;
+const complex = z => `${z.re.toFixed(2)} ${z.im < 0 ? '−' : '+'} ${Math.abs(z.im).toFixed(2)}i`;
+const safe = x => String(x).replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+const component = (id, x, y, label, shape = 'rect', off = false) => `<g class="part ${selected === id ? 'selected' : ''} ${off ? 'off' : ''}" data-part="${id}" tabindex="0" role="button" aria-label="Select ${label}">
+  ${shape === 'circle' ? `<circle cx="${x}" cy="${y}" r="30"/>` : `<rect x="${x-35}" y="${y-30}" width="70" height="60" rx="8"/>`}
+  <text x="${x}" y="${y+5}">${label}</text></g>`;
+function beam(x1, y1, x2, y2, power, label, labelX, labelY) {
+  if (power < .00001) return '';
+  return `<line class="beam" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${3 + 7 * power}" opacity="${.32 + .68 * power}"/>
+    ${label ? `<text class="beam-label" x="${labelX}" y="${labelY}">${safe(label)}</text>` : ''}`;
+}
+function fieldText(field) { return field ? `H = ${complex(field[0])}<br>V = ${complex(field[1])}` : 'No light remains.'; }
+function inspector() {
+  if (selected === 'laser') return `<h3>Laser source</h3><p class="muted">Starting linear polarization.</p>${slider('laserAngle','Polarization angle',0,180,1,setup.laserAngle)}`;
+  if (selected === 'hwp') return `<h3>λ/2 plate</h3><p class="muted">Turn the plate around the Beam. Horizontal input turns by twice this angle.</p>${slider('hwpAngle','Fast axis',0,90,.5,setup.hwpAngle)}`;
+  if (selected === 'polarizer') return `<h3>Polarizer</h3><p class="muted">Projects light onto its axis and absorbs the rejected part.</p>${slider('polarizerAngle','Transmission axis',0,180,1,setup.polarizerAngle)}<button class="remove" data-remove="polarizer">Remove Polarizer</button>`;
+  if (selected === 'faraday') return `<h3>Faraday rotator</h3><p class="muted">Turns linear polarization without changing total power. This view shows one pass.</p>${slider('faradayAngle','Rotation',-90,90,1,setup.faradayAngle)}<button class="remove" data-remove="faraday">Remove rotator</button>`;
+  if (selected === 'cube') return `<h3>Beam cube</h3><p class="muted">A polarizing cube transmits P and reflects S. A non-polarizing cube divides power 50/50.</p><div class="field"><label for="cubeMode">Optical rule</label><select id="cubeMode"><option value="polarizing" ${setup.cubeMode === 'polarizing' ? 'selected' : ''}>Polarizing: P through, S reflected</option><option value="non-polarizing" ${setup.cubeMode === 'non-polarizing' ? 'selected' : ''}>Non-polarizing: 50/50</option></select></div>`;
+  if (selected === 'through' || selected === 'reflected') return `<h3>${selected === 'through' ? 'Through detector' : 'Reflected detector'}</h3><p class="muted">${pct(selected === 'through' ? calculate(setup).through : calculate(setup).reflected)} of the Laser source reaches this detector.</p>`;
+  return '<p class="muted">Click a component on the Table.</p>';
+}
+function slider(key, label, min, max, step, value) { return `<div class="field"><label for="${key}">${label}<output id="${key}Value">${value}°</output></label><input id="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"></div>`; }
+function bar(label, value) { return `<div class="power-row"><span>${label}</span><div><i style="width:${Math.max(0,Math.min(100,value*100))}%"></i></div><b>${pct(value)}</b></div>`; }
+function renderTable(result) {
+  return `
+    ${beam(115,215,215,215,1)}${beam(285,215,355,215,1)}
+    ${setup.polarizer ? '' : beam(355,215,425,215,1)}
+    ${beam(425,215,475,215,setup.polarizer ? result.powerAtCube : 1)}
+    ${setup.faraday ? '' : beam(475,215,545,215,result.powerAtCube)}
+    ${beam(545,215,615,215,result.powerAtCube)}
+    ${beam(685,215,805,215,result.through,pct(result.through),714,194)}
+    ${beam(650,245,650,400,result.reflected,pct(result.reflected),664,335)}
+    ${component('laser',80,215,'Laser')}${component('hwp',250,215,'λ/2')}
+    ${setup.polarizer ? component('polarizer',390,215,'Pol.') : ''}
+    ${setup.faraday ? component('faraday',510,215,'FR') : ''}
+    ${component('cube',650,215,'Cube','circle')}
+    ${component('through',840,215,setup.cubeMode === 'polarizing' ? 'P det.' : 'T det.')}${component('reflected',650,430,setup.cubeMode === 'polarizing' ? 'S det.' : 'R det.')}
+    <text x="35" y="55" fill="#9eb4c2" font-size="15">Beam travels left → right, then splits at the cube</text>`;
+}
+function renderLight(result) { return `${bar('Before cube',result.powerAtCube)}${bar(setup.cubeMode === 'polarizing' ? 'P through' : 'Through',result.through)}${bar(setup.cubeMode === 'polarizing' ? 'S reflected' : 'Reflected',result.reflected)}${bar('Absorbed',result.absorbed)}<p class="muted">All values are fractions of the Laser source. The Beam cube conserves the power that reaches it.</p>`; }
+function renderState(result) { return `<strong>Setup settings</strong><br>Laser angle: ${setup.laserAngle}°<br>λ/2 fast axis: ${setup.hwpAngle}°<br>Polarizer: ${setup.polarizer ? `${setup.polarizerAngle}°` : 'absent'}<br>Faraday rotator: ${setup.faraday ? `${setup.faradayAngle}°` : 'absent'}<br>Cube: ${setup.cubeMode}<hr><strong>Jones field arriving at cube</strong><br><code>${fieldText(result.atCube)}</code>`; }
+function renderPresets() { return examples.map((item,i) => `<button data-example="${i}" class="${example === i ? 'active' : ''}">${item.name}</button>`).join(''); }
+function render() {
+  const result = calculate(setup);
+  document.getElementById('table').innerHTML = renderTable(result);
+  document.getElementById('light').innerHTML = renderLight(result);
+  document.getElementById('inspector').innerHTML = inspector();
+  document.getElementById('state').innerHTML = renderState(result);
+  document.getElementById('presets').innerHTML = renderPresets();
+  document.getElementById('add-polarizer').disabled = setup.polarizer;
+  document.getElementById('add-faraday').disabled = setup.faraday;
+}
+document.addEventListener('click', event => {
+  const part = event.target.closest('[data-part]');
+  if (part) { selected = part.dataset.part; render(); return; }
+  const preset = event.target.closest('[data-example]');
+  if (preset) { example = Number(preset.dataset.example); setup = { ...examples[example].setup }; selected = 'hwp'; render(); return; }
+  const remove = event.target.closest('[data-remove]');
+  if (remove) { setup[remove.dataset.remove] = false; selected = 'hwp'; example = -1; render(); return; }
+  if (event.target.id === 'add-polarizer') { setup.polarizer = true; selected = 'polarizer'; example = -1; render(); }
+  if (event.target.id === 'add-faraday') { setup.faraday = true; selected = 'faraday'; example = -1; render(); }
+});
+document.addEventListener('input', event => {
+  const key = event.target.id;
+  if (key in setup && event.target.type === 'range') {
+    setup[key] = Number(event.target.value); example = -1;
+    // Keep the active slider under the pointer while the beams update.
+    document.getElementById(`${key}Value`).textContent = `${setup[key]}°`;
+    const result = calculate(setup);
+    document.getElementById('table').innerHTML = renderTable(result);
+    document.getElementById('light').innerHTML = renderLight(result);
+    document.getElementById('state').innerHTML = renderState(result);
+    document.getElementById('presets').innerHTML = renderPresets();
+  }
+});
+document.addEventListener('change', event => {
+  if (event.target.id === 'cubeMode') { setup.cubeMode = event.target.value; example = -1; render(); }
+});
+document.addEventListener('keydown', event => {
+  if ((event.key === 'Enter' || event.key === ' ') && event.target.dataset.part) { selected = event.target.dataset.part; render(); }
+});
+render();
+</script>
+</html>
