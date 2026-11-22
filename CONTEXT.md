@@ -44,6 +44,12 @@ The visible result of following light from a Laser source through Component surf
 The paths one Laser source's light takes. A Beam cube splits a path into transmitted and reflected branches, each carrying its own Path length and share of the source's power.
 Saved Beam paths with the same first Component form a matching tree: one is the trunk and later paths can name a parent branch. A branch may inherit its parent's colour, label and hidden state until it sets its own. The saved tree records intent and appearance; the traced tree follows surfaces.
 
+**Polarization**:
+The orientation and relative phase of a Beam's electric field across its direction of travel. A Laser starts with linear polarization; a λ/2 plate turns it, a Polarizer projects it and removes rejected power, and a Faraday rotator turns it in the same lab direction on a return trip. A Mirror carries it through a 3D turn and may add a specified phase difference between S and P. Each traced branch carries its own polarization and fraction of the Laser's power. Branches are not recombined for interference.
+
+**S and P**:
+The two field directions at a surface: S is perpendicular to its plane of incidence, P lies in that plane. They depend on the incoming Beam direction and the surface, rather than table-wide horizontal and vertical.
+
 **Beam list**:
 A Setup's saved Beam paths in the order the author keeps them, shown in the beams box and saved with the Setup. When two aimed Components send light to the same Mirror, the first path in this list chooses which incoming direction settles its orientation. Branch indentation shows parentage while each row remains in list order. A saved path that agrees with traced light gives its branch a label and colour for inspection, without drawing a second Beam; a path that differs remains visible as a hand-drawn Beam. A matching row shows the traced Path length.
 _Avoid_: beam order, layer order
@@ -79,7 +85,7 @@ A fibre (optical) or a cable (electrical, such as coax) between any two differen
 _Avoid_: link, wire, patch cord, fibre beam
 
 **Beam cube**:
-A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of component; which one it is goes in its label.
+A cube that divides a beam in two, at the reflective plane across its diagonal. Polarizing and non-polarizing cubes look the same on a bench, so they are one kind of Component with an optical-rule setting. A non-polarizing cube divides power 50/50; a polarizing cube transmits P and reflects S. Older Setups keep the non-polarizing rule.
 _Avoid_: beam splitter, PBS, PBS cube, beamsplitter plate
 
 **Delay line**:

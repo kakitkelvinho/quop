@@ -32,7 +32,7 @@ You are helping someone draw an optics experiment in the QUOP Tabletop, a notebo
 
 A JSON object with these keys:
 
-- `version`: always 21. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
+- `version`: always 22. A file without it is read as the oldest version, and every height in it is reset to 100 mm.
 - `components`: the parts on the table. Required.
 - `beams`: saved Beam paths and branch appearance, in order; use `[]` if no paths need labels or colours. If two aimed Components send light to one Mirror, the first path chooses its incoming direction. Light is traced from laser sources through Component surfaces.
 - `connections`: fibres and cables between parts; `[]` when there are none.
@@ -48,11 +48,15 @@ Every component has:
 - `type`: one of the type ids under **Component types**. A part of another type is dropped.
 - `position`: `[x, y, z]`, mm. x and z place the part on the table (within ±5000): its centre, or for a part with a port (a laser's opening, a fibre collimator's lens, a detector's window, an objective's threaded plate) that port, where the beam meets it, so the distance between two parts' positions is the beam between them. y is its height, its optical centre above the table, held to the type's range.
 - `orientation`: unit quaternion `[x, y, z, w]` with w ≥ 0; default `[0, 0, 0, 1]`. You may write `yaw` in degrees instead. See **Aims and orientation**.
-- `color`: a hex colour such as `"#8b1e3f"`; missing means the part's own colour. On a `mirror-mount`, `beam-splitter`, `waveplate`, `filter`, `iris` or `fiber-collimator` it tints the mount, to mark the beam line the part serves.
+- `color`: a hex colour such as `"#8b1e3f"`; missing means the part's own colour. On a `mirror-mount`, `beam-splitter`, `waveplate`, `polarizer`, `filter`, `iris` or `fiber-collimator` it tints the mount, to mark the beam line the part serves.
 - `label`: text drawn on the part's tag, such as `PBS`, `λ/2` or `780 nm ECDL`; missing shows the type's short name.
 
 Some types read fields of their own; leave them out to take the default:
 
+- `polarizationAngleDeg` (`laser-source` only): degrees from the Laser source's local horizontal axis for its emitted linear polarization; default 0 (horizontal).
+- `cubeMode` (`beam-splitter` only): `"non-polarizing"` (the default, 50/50) or `"polarizing"` (local P through, S reflected). Old Setups remain 50/50.
+- `mirrorPhaseDeg` (`mirror-mount` only): degrees of relative S/P phase added by a Mirror; default 0. Enter a measured value for the light and coating in use.
+- `faradayAngleDeg` (`faraday-rotator` only): degrees of non-reciprocal polarization rotation by a standalone Faraday rotator; default 45.
 - `aim` (`mirror-mount` and `beam-splitter` only): the id of the Component this Mirror or Beam cube sends its reflected light toward. The Tabletop derives its orientation from incoming light and this target; leave it out to use a 45° fold.
 - `fold` (`mirror-mount` and `beam-splitter` only): `1` or `-1`, choosing the side of an unaimed 45° fold; default `1`. Press F to flip it.
 - `free` (`mirror-mount` and `beam-splitter` only): `true` keeps an unaimed Mirror or Beam cube at its hand-turned orientation until it is aimed or snapped back to 45°.
@@ -62,7 +66,7 @@ Some types read fields of their own; leave them out to take the default:
 - `objectiveLength` (`objective` only): mm from the back of its thread to its nose, 30–130; default 54. Only the barrel stretches.
 - `opacity` (`sample` only): 0.1–1; default 0.8.
 - `host` (`particle` only): the id of the `paul-trap` or `cavity` it sits in. It is then drawn at its host's centre, whatever its own position says, and moves with it.
-- `mountStage` (`mirror-mount`, `beam-splitter`, `lens`, `waveplate`, `filter`, `iris`, `fiber-collimator`, `objective` and `sample` only): the id of a `translation-stage` carrying this optic. Its x and z follow the stage; its height stays its own. A stage carries at most one optic.
+- `mountStage` (`mirror-mount`, `beam-splitter`, `lens`, `waveplate`, `polarizer`, `filter`, `iris`, `fiber-collimator`, `objective` and `sample` only): the id of a `translation-stage` carrying this optic. Its x and z follow the stage; its height stays its own. A stage carries at most one optic.
 - `delayMinPathMm` (`delay-line` only): mm, its minimum delay: the path a beam through it gains with its stage at 0, like a laser's `internalPathMm`. It is not drawn. 0–100000; default 50.
 - `delayTravelMm` (`delay-line` only): mm, how far its stage can travel, 0–2000; default 50. Its rail is drawn long enough for it.
 - `delayStageMm` (`delay-line` only): mm the stage has travelled, from 0 to `delayTravelMm`; default 0. A beam through it gains `delayMinPathMm` plus twice this, out and back, and counts both in its path length.
@@ -139,13 +143,13 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 ### Source
 
-- `laser-source`: Laser source. Height 20–300 mm, default 100. Its own fields: `lightColor`, `internalPathMm`.
+- `laser-source`: Laser source. Height 20–300 mm, default 100. Its own fields: `polarizationAngleDeg`, `lightColor`, `internalPathMm`.
 - `fiber-collimator`: Fibre collimator. Height 20–300 mm, default 100. Its own fields: `mountStage`.
 
 ### Steering
 
-- `mirror-mount`: Mirror. Height 27–300 mm, default 100. Its own fields: `aim`, `fold`, `free`, `mountStage`.
-- `beam-splitter`: Beam cube. Height 25–300 mm, default 100. Its own fields: `aim`, `fold`, `free`, `mountStage`.
+- `mirror-mount`: Mirror. Height 27–300 mm, default 100. Its own fields: `mirrorPhaseDeg`, `aim`, `fold`, `free`, `mountStage`.
+- `beam-splitter`: Beam cube. Height 25–300 mm, default 100. Its own fields: `cubeMode`, `aim`, `fold`, `free`, `mountStage`.
 - `delay-line`: Delay line. Height 30–300 mm, default 100. Its own fields: `delayMinPathMm`, `delayTravelMm`, `delayStageMm`, `lightColor`, `lightHidden`.
 
 ### Shaping
@@ -153,6 +157,7 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 - `lens`: Lens. Height 17–300 mm, default 100. Its own fields: `lensShape`, `focalLength`, `mountStage`.
 - `objective`: Objective. Height 24–300 mm, default 100. Its own fields: `objectiveLength`, `mountStage`, `stageColor`.
 - `waveplate`: Waveplate. Height 36–300 mm, default 100. Its own fields: `mountStage`.
+- `polarizer`: Polarizer. Height 36–300 mm, default 100. Its own fields: `mountStage`.
 - `filter`: Filter. Height 25–300 mm, default 100. Its own fields: `mountStage`.
 - `iris`: Iris. Height 27–300 mm, default 100. Its own fields: `mountStage`.
 
@@ -160,6 +165,7 @@ Each type below gives its id, what it is, and the heights it can take: a height 
 
 - `aom`: AOM. Height 24–300 mm, default 100.
 - `eom`: EOM. Height 24–300 mm, default 100.
+- `faraday-rotator`: Faraday rotator. Height 26–300 mm, default 100. Its own fields: `faradayAngleDeg`.
 - `faraday-isolator`: Faraday isolator. Height 26–300 mm, default 100.
 
 ### Target
@@ -189,7 +195,7 @@ A laser fires along +x into a mirror, which turns the beam toward −z, through 
 
 ```json
 {
-  "version": 21,
+  "version": 22,
   "components": [
     { "id": "laser", "type": "laser-source", "position": [-300, 100, 0], "orientation": [0, 0, 0, 1], "label": "780 nm" },
     { "id": "m1", "type": "mirror-mount", "position": [0, 100, 0], "orientation": [0, 0.9238795325112867, 0, 0.38268343236508984], "aim": "lens", "color": "#8b1e3f", "label": "M1" },
@@ -213,7 +219,7 @@ For an electronics chain, place a mixer and a scope as symbol blocks, then conne
 
 ```json
 {
-  "version": 21,
+  "version": 22,
   "components": [
     { "id": "mixer", "type": "block", "symbol": "mixer", "position": [0, 15, 0], "yaw": 0 },
     { "id": "scope", "type": "block", "symbol": "scope", "position": [250, 60, 0], "yaw": 0 }

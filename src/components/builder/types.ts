@@ -23,9 +23,9 @@ import {
 import { canonical, compose, fromYawPitchRollDeg, fromYawDeg, invert, rotate, toYawPitchRollDeg, type Quat } from "./quaternion.ts";
 import {
   AOM_SURFACES, BEAM_BLOCK_SURFACES, CAVITY_SURFACES, EOM_SURFACES,
-  FIBRE_COLLIMATOR_SURFACES, FILTER_SURFACES, IRIS_SURFACES, ISOLATOR_SURFACES,
+  FARADAY_ROTATOR_SURFACES, FIBRE_COLLIMATOR_SURFACES, FILTER_SURFACES, IRIS_SURFACES, ISOLATOR_SURFACES,
   OBJECTIVE_SURFACES, PARTICLE_SURFACES, SAMPLE_SURFACES, TIME_TAGGER_SURFACES,
-  TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces, delayLineSurfaces,
+  POLARIZER_SURFACES, TRAP_SURFACES, WAVEPLATE_SURFACES, beamCubeSurfaces, delayLineSurfaces,
   detectorSurfaces, lensSurfaces, mirrorSurfaces, noSurfaces, rectangularSurface,
 } from "./component-surfaces.ts";
 import type { Surface } from "./surface.ts";
@@ -54,6 +54,7 @@ export type ComponentType =
   | "beam-splitter"
   | "lens"
   | "waveplate"
+  | "polarizer"
   | "filter"
   | "iris"
   | "sample"
@@ -71,6 +72,7 @@ export type ComponentType =
   | "aom"
   | "eom"
   | "faraday-isolator"
+  | "faraday-rotator"
   | "delay-line"
   | "translation-stage";
 
@@ -148,6 +150,14 @@ export type BuilderComponent = {
   fold?: 1 | -1;
   /** mirror or Beam cube: its orientation was turned by hand */
   free?: true;
+  /** laser source: initial linear polarization, measured from its local horizontal axis */
+  polarizationAngleDeg?: number;
+  /** Beam cube: its optical splitting rule; old files remain 50/50 */
+  cubeMode?: "non-polarizing" | "polarizing";
+  /** Mirror: relative phase of reflected S and P components */
+  mirrorPhaseDeg?: number;
+  /** Faraday rotator: rotation about its magnetic axis */
+  faradayAngleDeg?: number;
   /** hex colour — body tint; on a mirror it marks which beam line it serves */
   color?: string;
   /** sample only, 0.1–1; missing means SAMPLE_OPACITY */
@@ -305,7 +315,7 @@ export type Group = {
 /** The most groups a setup holds; the JSON panel refuses more, and the parser keeps the first this many. */
 export const GROUP_LIMIT = 100;
 
-export const SCENE_VERSION = 21 as const;
+export const SCENE_VERSION = 22 as const;
 
 /** how large the labels on the table are drawn, as a fraction of their standard size */
 export const LABEL_SCALE_RANGE: [number, number] = [0.5, 2];
@@ -416,30 +426,30 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     radius: 60,
     // the emitter's output face, where the beam leaves: 56
     referenceX: LASER_EMITTER.x + LASER_EMITTER.length / 2,
-    fields: ["internalPathMm", "lightColor"],
+    fields: ["internalPathMm", "lightColor", "polarizationAngleDeg"],
   },
   "mirror-mount": {
     label: "Mirror",
-    surfaces: mirrorSurfaces,
+    surfaces: (component) => mirrorSurfaces(fieldValue(component, "mirrorPhaseDeg")),
     tag: "Mirror",
     aliases: ["mirror mount"],
     top: 25,
     minHeight: 27,
     radius: 34,
-    fields: ["aim", "fold", "free", "mountStage"],
+    fields: ["aim", "fold", "free", "mountStage", "mirrorPhaseDeg"],
     created: { color: DEFAULT_MOUNT_COLOR },
     mounted: true,
     angle: "mirror",
   },
   "beam-splitter": {
     label: "Beam cube",
-    surfaces: beamCubeSurfaces,
+    surfaces: (component) => beamCubeSurfaces(fieldValue(component, "cubeMode") === "polarizing"),
     tag: "Cube",
     aliases: ["beam splitter", "BS", "PBS"],
     top: 13,
     minHeight: 25,
     radius: 30,
-    fields: ["aim", "fold", "free", "mountStage"],
+    fields: ["aim", "fold", "free", "mountStage", "cubeMode"],
     mounted: true,
   },
   lens: {
@@ -456,6 +466,16 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     label: "Waveplate",
     surfaces: WAVEPLATE_SURFACES,
     tag: "λ/2",
+    top: 30,
+    minHeight: 36,
+    radius: 26,
+    fields: ["mountStage"],
+    mounted: true,
+  },
+  polarizer: {
+    label: "Polarizer",
+    surfaces: POLARIZER_SURFACES,
+    tag: "Pol",
     top: 30,
     minHeight: 36,
     radius: 26,
@@ -648,11 +668,20 @@ export const COMPONENT_SPECS: Record<ComponentType, ComponentSpec> = {
     label: "Faraday isolator",
     surfaces: ISOLATOR_SURFACES,
     tag: "FI",
-    aliases: ["isolator", "optical isolator", "Faraday rotator", "optical diode"],
+    aliases: ["isolator", "optical isolator", "optical diode"],
     top: 20,
     minHeight: 26,
     radius: 38,
     fields: [],
+  },
+  "faraday-rotator": {
+    label: "Faraday rotator",
+    surfaces: (component) => FARADAY_ROTATOR_SURFACES(fieldValue(component, "faradayAngleDeg")),
+    tag: "FR",
+    top: 20,
+    minHeight: 26,
+    radius: 38,
+    fields: ["faradayAngleDeg"],
   },
   "delay-line": {
     label: "Delay line",
@@ -704,8 +733,8 @@ export type PartCategory = { name: string; types: ComponentType[] };
 export const PART_CATEGORIES: PartCategory[] = [
   { name: "Source", types: ["laser-source", "fiber-collimator"] },
   { name: "Steering", types: ["mirror-mount", "beam-splitter", "delay-line"] },
-  { name: "Shaping", types: ["lens", "objective", "waveplate", "filter", "iris"] },
-  { name: "Modulation", types: ["aom", "eom", "faraday-isolator"] },
+  { name: "Shaping", types: ["lens", "objective", "waveplate", "polarizer", "filter", "iris"] },
+  { name: "Modulation", types: ["aom", "eom", "faraday-rotator", "faraday-isolator"] },
   { name: "Target", types: ["sample", "paul-trap", "cavity", "particle"] },
   { name: "Detection", types: ["photodiode", "camera", "spectrometer", "single-photon-detector", "time-tagger", "beam-block"] },
   { name: "Other", types: ["translation-stage", "block"] },
@@ -851,6 +880,31 @@ export function briefTypeList(types: Iterable<ComponentType>, last: "and" | "or"
  * is each kind's `fields` in COMPONENT_SPECS.
  */
 export const COMPONENT_FIELDS = {
+  polarizationAngleDeg: {
+    read: { as: "number", range: [0, 180] },
+    default: 0,
+    since: 22,
+    brief: "degrees from the Laser source's local horizontal axis for its emitted linear polarization; default 0 (horizontal).",
+  },
+  cubeMode: {
+    read: { as: "own", read: (raw: Record<string, unknown>) =>
+      raw.cubeMode === "polarizing" || raw.cubeMode === "non-polarizing" ? { cubeMode: raw.cubeMode } : {} },
+    default: "non-polarizing",
+    since: 22,
+    brief: "`\"non-polarizing\"` (the default, 50/50) or `\"polarizing\"` (local P through, S reflected). Old Setups remain 50/50.",
+  },
+  mirrorPhaseDeg: {
+    read: { as: "number", range: [-180, 180] },
+    default: 0,
+    since: 22,
+    brief: "degrees of relative S/P phase added by a Mirror; default 0. Enter a measured value for the light and coating in use.",
+  },
+  faradayAngleDeg: {
+    read: { as: "number", range: [-90, 90] },
+    default: 45,
+    since: 22,
+    brief: "degrees of non-reciprocal polarization rotation by a standalone Faraday rotator; default 45.",
+  },
   aim: {
     read: { as: "id" },
     since: 18,

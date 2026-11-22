@@ -1,6 +1,7 @@
 import { add, dot, length, rotate, scale, type Vec3 } from "./quaternion.ts";
 import { OPTIC_DIAMETER_MM } from "./model-dimensions.ts";
 import { applyRule, intersect, placeSurface, type Surface, type TracedBeam } from "./surface.ts";
+import { sourceField, type Field } from "./polarization.ts";
 import {
   AIMED_DETECTORS, COMPONENT_SPECS, componentRadius, fieldValue, referencePoint,
   type BuilderComponent, type BuilderSceneData,
@@ -10,15 +11,19 @@ export type TraceSegment = {
   routeId?: string;
   fromMm: Vec3;
   toMm: Vec3;
+  direction?: Vec3;
   fromId: string | null;
   toId: string | null;
   path: string[];
   power: number;
+  field?: Field;
   pathLengthMm: number;
   arm: "through" | "reflected";
 };
 
 export type BeamTree = { laserId: string; segments: TraceSegment[] };
+
+export type TraceLoss = { laserId: string; componentId: string; routeId: string; power: number };
 
 export type TraceCheck = {
   routeId?: string;
@@ -27,7 +32,7 @@ export type TraceCheck = {
   message: string;
 };
 
-export type TraceResult = { trees: BeamTree[]; checks: TraceCheck[]; matchedDrawnBeamIds: string[] };
+export type TraceResult = { trees: BeamTree[]; checks: TraceCheck[]; matchedDrawnBeamIds: string[]; losses?: TraceLoss[] };
 
 export function tracePathContains(actual: string[], expected: string[]): boolean {
   if (expected.length === 0) return true;
@@ -146,12 +151,18 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
   const reached = new Set<string>();
   const addCheck = (check: TraceCheck) => checks.set(checkKey(check), check);
   const trees: BeamTree[] = [];
+  const losses: TraceLoss[] = [];
 
   for (const laser of scene.components.filter((component) => component.type === "laser-source")) {
     const start = referencePoint(laser);
     const states: TraceState[] = [{
       routeId: encodeURIComponent(laser.id),
-      beam: { originMm: start, direction: rotate(laser.orientation, [1, 0, 0]), power: 1 },
+      beam: {
+        originMm: start,
+        direction: rotate(laser.orientation, [1, 0, 0]),
+        power: 1,
+        field: sourceField(rotate(laser.orientation, [0, 0, -1]), rotate(laser.orientation, [0, 1, 0]), fieldValue(laser, "polarizationAngleDeg")),
+      },
       fromId: laser.id, path: [laser.id], pathLengthMm: fieldValue(laser, "internalPathMm"), bounces: 0, depth: 0,
       arm: "through",
     }];
@@ -167,7 +178,7 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
       const toId = hit?.located.component.id ?? null;
       const path = toId && toId !== state.path.at(-1) ? [...state.path, toId] : state.path;
       const pathLengthMm = state.pathLengthMm + distanceMm + (hit?.located.surface.extraPathMm ?? 0);
-      segments.push({ routeId: state.routeId, fromMm: state.beam.originMm, toMm, fromId: state.fromId, toId, path, power: state.beam.power, pathLengthMm, arm: state.arm });
+      segments.push({ routeId: state.routeId, fromMm: state.beam.originMm, toMm, direction: state.beam.direction, fromId: state.fromId, toId, path, power: state.beam.power, field: state.beam.field, pathLengthMm, arm: state.arm });
       if (!hit) continue;
       reached.add(toId!);
       const { component, surface } = hit.located;
@@ -176,11 +187,18 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
       }
       if (state.depth >= 64) continue;
       const outgoing = applyRule(surface.rule, surface.normal, state.beam, hit.hitMm, surface.positionMm);
+      if (surface.rule.kind === "polarizer") {
+        const absorbed = state.beam.power - outgoing.reduce((power, next) => power + next.power, 0);
+        if (absorbed > 1e-12) losses.push({ laserId: laser.id, componentId: component.id, routeId: state.routeId, power: absorbed });
+      }
+      if (surface.rule.kind === "polarizer" && outgoing.length === 0) {
+        addCheck({ kind: "blocked", routeId: state.routeId, componentId: component.id, message: `Blocked by ${component.label || component.id}` });
+      }
       for (let index = outgoing.length - 1; index >= 0; index--) {
         const next = outgoing[index];
-        const reflected = surface.rule.kind === "reflect" || surface.rule.kind === "split" && index === 1;
+        const reflected = surface.rule.kind === "reflect" || surface.rule.kind === "split" && length(add(next.direction, scale(state.beam.direction, -1))) > 1e-9;
         if (state.bounces + Number(reflected) > maxBounces) continue;
-        states.push({ routeId: outgoing.length > 1 ? `${state.routeId}/${encodeURIComponent(component.id)}:${reflected ? "reflected" : "through"}` : state.routeId, beam: next, fromId: component.id, path, pathLengthMm, bounces: state.bounces + Number(reflected), depth: state.depth + 1, arm: reflected ? "reflected" : "through" });
+        states.push({ routeId: surface.rule.kind === "split" ? `${state.routeId}/${encodeURIComponent(component.id)}:${reflected ? "reflected" : "through"}` : state.routeId, beam: next, fromId: component.id, path, pathLengthMm, bounces: state.bounces + Number(reflected), depth: state.depth + 1, arm: reflected ? "reflected" : "through" });
       }
     }
     if (states.length > 0) addCheck({ kind: "segment-limit", routeId: states[0].routeId, componentId: laser.id, message: `${laser.label || laser.id}: trace limit reached` });
@@ -208,5 +226,5 @@ export function traceScene(scene: BuilderSceneData, options: TraceOptions = {}):
       addCheck({ kind: "waiting-for-light", componentId: component.id, message: `${component.label || component.id}: waiting for light` });
     }
   }
-  return { trees, checks: [...checks.values()], matchedDrawnBeamIds };
+  return { trees, checks: [...checks.values()], matchedDrawnBeamIds, losses };
 }
