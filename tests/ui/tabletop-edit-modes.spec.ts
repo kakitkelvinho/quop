@@ -21,6 +21,43 @@ async function topView(page: Page) {
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
 }
 
+test("Group mode picks with plain clicks and additive box drags, then restores normal clicks", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  await topView(page);
+
+  const groups = page.locator('[data-slot="groups"]');
+  const mode = page.getByRole("toolbar", { name: "Tabletop status" }).locator(".builderStatusBar__mode");
+  await groups.click();
+  await expect(mode).toContainText("Click pick");
+  await expect(mode).toContainText("Drag box");
+  await clickPart(page, 0);
+  await clickPart(page, 8);
+  await expect(page.getByRole("heading", { name: "2 parts selected" })).toBeVisible();
+  await clickPart(page, 0);
+  await expect(page.getByRole("heading", { name: "2 parts selected" })).toHaveCount(0);
+
+  await page.keyboard.press("Escape");
+  await expect(mode).toContainText("Select");
+  await clickPart(page, 0);
+  await expect(page.getByRole("heading", { name: "2 parts selected" })).toHaveCount(0);
+
+  await groups.click();
+  const second = await page.locator(".builderLabel").nth(8).boundingBox();
+  expect(second).not.toBeNull();
+  const x = second!.x + second!.width / 2;
+  const y = second!.y + second!.height + 20;
+  await page.mouse.move(x - 24, y - 24);
+  await page.mouse.down();
+  await page.mouse.move(x + 24, y + 24, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByRole("heading", { name: "2 parts selected" })).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(mode).toContainText("Select");
+  await expect(groups.locator(".builderRail__count")).toHaveText("1");
+  await clickPart(page, 2);
+  await expect(page.getByRole("heading", { name: "2 parts selected" })).toHaveCount(0);
+});
+
 test("traced light is the default and the URL fallback lasts one visit", async ({ page }) => {
   await page.goto("builder/tabletop/");
   const light = page.getByRole("region", { name: "Light", exact: true });
