@@ -34,6 +34,7 @@ import {
   GroupInspector,
   GroupsMenu,
 } from "@/components/builder/builder-inspector";
+import { BUILDER_LOOKS, useBuilderLook } from "@/components/builder/builder-look";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
@@ -1418,23 +1419,27 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // the checks list opens while a mouse rests on the triangle, and stays open once clicked
+  const [look, setLook] = useBuilderLook();
   const [checksOpen, setChecksOpen] = useState(false);
+  const [checksHovered, setChecksHovered] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(readWhatsNew);
   const dismissWhatsNew = useCallback(() => {
     try { window.localStorage.setItem(WHATS_NEW_KEY, "dismissed"); } catch { /* storage can be unavailable */ }
     setWhatsNewOpen(false);
   }, []);
   useEffect(() => {
-    if (!checksOpen) return;
+    if (!checksOpen && !checksHovered) return;
     const close = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
       setChecksOpen(false);
+      setChecksHovered(false);
     };
     window.addEventListener("keydown", close, true);
     return () => window.removeEventListener("keydown", close, true);
-  }, [checksOpen]);
+  }, [checksOpen, checksHovered]);
   // whether Show is open: held here, so the eye and the status strip both open it
   const [showOpen, setShowOpen] = useState(false);
   const statusRowRef = useRef<HTMLButtonElement>(null);
@@ -2002,17 +2007,34 @@ export default function BuilderHud(props: BuilderHudProps) {
           <strong>{mode?.label ?? "Select"}</strong>
           {mode ? <span className="builderStatusBar__hints">{mode.hints.map(([key, action]) => <span key={`${key} ${action}`}><kbd>{key}</kbd> {action}</span>)}</span> : null}
         </div>
-        {props.trace ? <div className="builderStatusBar__checksWrap">
-          <button type="button" className="builderStatusBar__checks" aria-expanded={checksOpen} aria-controls="builder-status-checks" disabled={props.trace.checks.length === 0} onClick={() => setChecksOpen((open) => !open)}>
-            {props.trace.checks.length ? `⚠ ${props.trace.checks.length} ${props.trace.checks.length === 1 ? "check" : "checks"}` : "✓ Light reaches every stop"}
-          </button>
-          {checksOpen && props.trace.checks.length ? <div id="builder-status-checks" className="builderStatusBar__popover" role="dialog" aria-label="Checks">
-            <strong>{props.trace.checks.length} {props.trace.checks.length === 1 ? "check" : "checks"}</strong>
-            {props.trace.checks.map((check) => <button type="button" key={`${check.kind}-${check.componentId}-${check.routeId ?? ""}`} onClick={() => { props.onSelectComponent(check.componentId); setChecksOpen(false); }}>
-              {check.message}
-            </button>)}
-          </div> : null}
-        </div> : null}
+        {props.trace ? props.trace.checks.length === 0 ? (
+          <span className="builderStatusBar__clear" role="img" aria-label="Light reaches every stop" title="Light reaches every stop">
+            <Icon name="check" size={16} />
+          </span>
+        ) : (
+          <div
+            className="builderStatusBar__checksWrap"
+            onPointerEnter={(event) => { if (event.pointerType === "mouse") setChecksHovered(true); }}
+            onPointerLeave={(event) => { if (event.pointerType === "mouse") setChecksHovered(false); }}
+          >
+            <button
+              type="button"
+              className="builderStatusBar__checks"
+              aria-label={`${props.trace.checks.length} ${props.trace.checks.length === 1 ? "check" : "checks"}`}
+              aria-expanded={checksOpen || checksHovered}
+              aria-controls="builder-status-checks"
+              onClick={() => { setChecksHovered(false); setChecksOpen((open) => !open); }}
+            >
+              <Icon name="warning" size={16} />
+            </button>
+            {checksOpen || checksHovered ? <div id="builder-status-checks" className="builderStatusBar__popover" role="dialog" aria-label="Checks">
+              <strong>{props.trace.checks.length} {props.trace.checks.length === 1 ? "check" : "checks"}</strong>
+              {props.trace.checks.map((check) => <button type="button" key={`${check.kind}-${check.componentId}-${check.routeId ?? ""}`} onClick={() => { props.onSelectComponent(check.componentId); setChecksOpen(false); setChecksHovered(false); }}>
+                {check.message}
+              </button>)}
+            </div> : null}
+          </div>
+        ) : null}
         {!props.traced ? <span className="builderStatusBar__legacyNote">Legacy view: drawn Beams, not traced</span> : null}
         {props.upgradeMessage ? <span className="builderStatusBar__upgrade" aria-label={props.upgradeMessage} title={props.upgradeMessage}>
           <strong>Upgraded</strong><span className="builderStatusBar__upgradeDetail"> · {props.upgradeMessage.replace(/^This file was upgraded\.\s*/, "")}</span>
@@ -2021,6 +2043,13 @@ export default function BuilderHud(props: BuilderHudProps) {
         <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
           {props.traced ? "Legacy view" : "Switch to traced Beams"}
         </button>
+        <div className="builderStatusBar__look" role="group" aria-label="Look">
+          {BUILDER_LOOKS.map((option) => (
+            <button type="button" key={option} aria-pressed={look === option} onClick={() => setLook(option)}>
+              {option === "station" ? "Station" : "2001"}
+            </button>
+          ))}
+        </div>
       </div>
     </>
   );

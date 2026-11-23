@@ -65,6 +65,11 @@ html[data-theme="dark"] {
   --font-sans: var(--font-source-sans), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --font-serif: var(--font-eb-garamond), Georgia, "Times New Roman", serif;
+  /* the Tabletop's 2001 look; display and credits are both Jost until Gillius ADF is self-hosted */
+  --font-display: var(--font-jost), "Gill Sans", "Century Gothic", sans-serif;
+  --font-credits: var(--font-jost), Futura, "Century Gothic", sans-serif;
+  --font-panel: var(--font-michroma), "Eurostile", "Arial Black", sans-serif;
+  --font-data: var(--font-archivo-narrow), "Arial Narrow", sans-serif;
 }
 
 /* Element defaults sit in the base layer, under Tailwind's utilities, so a
@@ -4948,8 +4953,65 @@ body[data-panel-gesture="se"] * {
   background: var(--builder-hover);
 }
 
-.builderStatusBar__checks:disabled {
-  cursor: default;
+.builderStatusBar__checks,
+.builderStatusBar__clear {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
+.builderStatusBar__clear {
+  color: var(--muted);
+}
+
+/* a check is a warning, so it takes the Clear box's orange, never the ink */
+.builderStatusBar__checks {
+  color: #c2410c;
+}
+
+html[data-theme="dark"] .builderStatusBar__checks {
+  color: #fb8c4a;
+}
+
+/* the look picker: two words, the current one pressed in neutrally (wash and foot bar), never the ink */
+.builderStatusBar__look {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+}
+
+.builderStatusBar__look button {
+  padding: 0.25rem 0.45rem;
+  border: 0;
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.builderStatusBar__look button:hover {
+  background: var(--builder-hover);
+  color: var(--foreground);
+}
+
+.builderStatusBar__look button[aria-pressed="true"] {
+  background: var(--builder-hover);
+  background-image: linear-gradient(var(--foreground), var(--foreground));
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  color: var(--foreground);
+}
+
+/* bridges the gap up to the popover, so a mouse can travel into the list */
+.builderStatusBar__popover::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 0.75rem;
 }
 
 .builderStatusBar__upgrade,

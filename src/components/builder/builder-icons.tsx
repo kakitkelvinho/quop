@@ -263,6 +263,14 @@ const ICONS = {
       <circle cx="12" cy="14" r="1" fill="currentColor" />
     </>
   ),
+  // the status bar's checks: something on the table stops or loses the light
+  warning: (
+    <>
+      <path d="M12 3.5 21.5 20h-19z" />
+      <path d="M12 10v4.5" />
+      <circle cx="12" cy="17.3" r="0.6" fill="currentColor" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof ICONS;

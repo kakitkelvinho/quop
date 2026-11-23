@@ -49,7 +49,9 @@ test("checks popover closes with Esc and selects its Component", async ({ page }
   await page.locator('input[type="file"]').setInputFiles({ name: "blocked.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(setup)) });
   await page.getByRole("button", { name: "Replace the table" }).click();
   const checks = statusBar(page).getByRole("button", { name: /check/ });
-  await expect(checks).toContainText("1 check");
+  await expect(checks).toHaveAccessibleName("1 check");
+  await checks.hover();
+  await expect(page.getByRole("dialog", { name: "Checks" })).toContainText("Blocked by stop");
   await checks.click();
   await expect(page.getByRole("dialog", { name: "Checks" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -117,4 +119,16 @@ test("an upgraded Setup keeps its notice in the bar", async ({ page }) => {
   await page.getByRole("button", { name: "Replace the table" }).click();
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toContainText("Upgraded");
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toHaveAttribute("aria-label", /This file was upgraded/);
+});
+
+test("the look picker switches to 2001, survives a reload, and leaves the rest of the site alone", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  const look = statusBar(page).getByRole("group", { name: "Look" });
+  await expect(look.getByRole("button", { name: "Station" })).toHaveAttribute("aria-pressed", "true");
+  await look.getByRole("button", { name: "2001" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-look", "2001");
+  await page.reload();
+  await expect(statusBar(page).getByRole("group", { name: "Look" }).getByRole("button", { name: "2001" })).toHaveAttribute("aria-pressed", "true");
+  await page.goto("calculators/");
+  await expect(page.locator("html")).not.toHaveAttribute("data-look", /.+/);
 });

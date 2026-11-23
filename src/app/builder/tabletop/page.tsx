@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import BuilderSceneLoader from "@/components/builder/builder-scene-loader";
 
+import "./builder-look-2001.css";
+
 export const metadata: Metadata = {
   title: "Tabletop",
   description:
