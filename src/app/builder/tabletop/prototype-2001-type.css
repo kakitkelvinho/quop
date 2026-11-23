@@ -1,0 +1,64 @@
+/* PROTOTYPE, throwaway: type for the 2001 look. Gillius ADF (GPL with font
+   exception, from CTAN) is served raw from public/prototype-fonts. */
+
+@font-face { font-family: "Gillius ADF"; src: url("/prototype-fonts/GilliusADF-Regular.otf"); font-weight: 400; }
+@font-face { font-family: "Gillius ADF"; src: url("/prototype-fonts/GilliusADF-Bold.otf"); font-weight: 700; }
+@font-face { font-family: "Gillius ADF Cond"; src: url("/prototype-fonts/GilliusADFCond-Regular.otf"); font-weight: 400; }
+@font-face { font-family: "Gillius ADF Cond"; src: url("/prototype-fonts/GilliusADFCond-Bold.otf"); font-weight: 700; }
+
+/* labels the interface asserts */
+html[data-look="2001"]:is([data-proto-type="B"], [data-proto-type="C"], [data-proto-type="D"], [data-proto-type="E"], [data-proto-type="F"])
+  :is(
+    .builderPanelBar__title, .builderParts__groupName, .builderHud__listTitle, .builderSheet__groupTitle,
+    .builderField__label, .builderStatusBar__mode strong, .builderWhatsNew__heading > span,
+    .builderStatusBar__lookTrigger, .builderStatusBar__lookMenu button
+  ) {
+  font-family: "Gillius ADF", "Gill Sans", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+}
+
+html[data-look="2001"][data-proto-type="E"]
+  :is(
+    .builderPanelBar__title, .builderParts__groupName, .builderHud__listTitle, .builderSheet__groupTitle,
+    .builderField__label, .builderStatusBar__mode strong, .builderWhatsNew__heading > span,
+    .builderStatusBar__lookTrigger, .builderStatusBar__lookMenu button
+  ) {
+  font-family: "Gill Sans", "Gillius ADF", sans-serif;
+}
+
+/* D: Gill's humanist shapes without the shouting: mixed case, light tracking */
+html[data-look="2001"][data-proto-type="D"]
+  :is(
+    .builderPanelBar__title, .builderParts__groupName, .builderHud__listTitle, .builderSheet__groupTitle,
+    .builderField__label, .builderStatusBar__mode strong, .builderWhatsNew__heading > span,
+    .builderStatusBar__lookTrigger, .builderStatusBar__lookMenu button
+  ) {
+  font-size: 0.86rem;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+/* titles: B keeps Futura (Jost); C, D, E, F take Gill. F keeps Archivo Narrow readouts: Gillius has no tabular figures */
+html[data-look="2001"]:is([data-proto-type="C"], [data-proto-type="D"], [data-proto-type="F"]) :is(.builderWhatsNew h2, .builderCoach__title, .builderInspector__head h2) {
+  font-family: "Gillius ADF", "Gill Sans", sans-serif;
+  font-weight: 400;
+}
+html[data-look="2001"][data-proto-type="E"] :is(.builderWhatsNew h2, .builderCoach__title, .builderInspector__head h2) {
+  font-family: "Gill Sans", "Gillius ADF", sans-serif;
+  font-weight: 400;
+}
+html[data-look="2001"][data-proto-type="D"] :is(.builderWhatsNew h2, .builderCoach__title) {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/* readouts: C, D, E drop Archivo Narrow for Gill's condensed cut */
+html[data-look="2001"]:is([data-proto-type="C"], [data-proto-type="D"]) :is(.builderReadout, .builderLightList__readouts) {
+  font-family: "Gillius ADF Cond", "Gill Sans", sans-serif;
+  font-size: 0.92rem;
+}
+html[data-look="2001"][data-proto-type="E"] :is(.builderReadout, .builderLightList__readouts) {
+  font-family: "Gill Sans", "Gillius ADF Cond", sans-serif;
+  font-size: 0.88rem;
+}
