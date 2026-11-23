@@ -513,11 +513,6 @@ function LightList({
                 onClick={() => route.beam ? onUnpin(route.beam.id) : onPin(route)}
               />
             </div>
-            <div className="builderLightList__readouts">
-              <span>{Math.round(route.lengthMm)} mm</span>
-              <span>{lengthToPicoseconds(route.lengthMm).toFixed(1)} ps</span>
-              <PowerMeter power={route.power} />
-            </div>
             {route.segments.at(-1)?.field && route.segments.at(-1)?.direction ? (
               <div className="builderLightList__readouts">Polarization: {polarizationLabel(route.segments.at(-1)!.field!, route.segments.at(-1)!.direction!)}</div>
             ) : null}
@@ -527,7 +522,7 @@ function LightList({
             <div key={`${loss.routeId}-${loss.componentId}-${index}`} className="builderLightList__route">
               <div className="builderLightList__readouts">
                 <span>Absorbed by {nameOf(loss.componentId)}</span>
-                <PowerMeter power={loss.power} />
+                <span>{Math.round(loss.power * 100)}%</span>
               </div>
             </div>
           ))}
