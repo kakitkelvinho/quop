@@ -49,6 +49,8 @@ import {
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
+// PROTOTYPE (Blueprint look): remove with the variants
+import { BlueprintPass, useProtoBlueprint } from "@/components/builder/prototype-blueprint";
 import { BeamDistances } from "@/components/builder/beam-distances";
 import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
@@ -1360,7 +1362,12 @@ export default function BuilderCanvas({
     [components, shown],
   );
   const shownFrames = useMemo(() => frames.filter((frame) => isFrameDrawn(frame, shown)), [frames, shown]);
-  const settings = QUALITY_SETTINGS[quality];
+  const blueprint = useProtoBlueprint();
+  const paperStops = useMemo<ScenePalette["backdrop"] | null>(
+    () => (blueprint ? [blueprint.paper, blueprint.paper, blueprint.paper] : null),
+    [blueprint],
+  );
+  const settings = blueprint ? { ...QUALITY_SETTINGS.light, dpr: [1, 1.5] as [number, number], effects: false } : QUALITY_SETTINGS[quality];
   return (
     <Canvas
       orthographic
@@ -1383,16 +1390,17 @@ export default function BuilderCanvas({
       <LabelZoom />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights
+      {blueprint ? <BlueprintPass style={blueprint} /> : null}
+      {blueprint ? null : <Lights
         palette={palette}
         lighting={lighting}
         components={shownComponents}
         dragging={dragging}
         shadowMapSize={settings.shadowMapSize}
-      />
+      />}
       {onSlowView ? <FrameWatcher dragging={dragging} onSlow={onSlowView} /> : null}
-      <RingRoom dark={palette.mode === "dark"} />
-      <Backdrop stops={palette.backdrop} />
+      {blueprint ? null : <RingRoom dark={palette.mode === "dark"} />}
+      <Backdrop stops={paperStops ?? palette.backdrop} />
 
       <TableSurface palette={palette} lighting={lighting} onSurfaceClick={onSurfaceClick} />
       <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
