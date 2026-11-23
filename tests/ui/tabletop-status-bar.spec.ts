@@ -69,7 +69,7 @@ test("Legacy switch and back keep query settings and the page view", async ({ pa
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
   const bar = statusBar(page);
   await expect(bar.getByRole("group", { name: "Light view" })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("meter", { name: "Power" }).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Power:/ }).first()).toBeVisible();
   await bar.getByRole("button", { name: "Legacy view" }).click();
   await expect(bar).toContainText("Legacy view: drawn Beams, not traced");
   await expect(page).toHaveURL(/foo=bar.*traced=0/);
@@ -77,7 +77,7 @@ test("Legacy switch and back keep query settings and the page view", async ({ pa
   await bar.getByRole("button", { name: "Switch to traced Beams" }).click();
   await expect(page).toHaveURL(/foo=bar/);
   await expect(page).not.toHaveURL(/traced=0/);
-  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("meter", { name: "Power" }).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Power:/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Camera" })).toHaveAttribute("title", "Camera: top");
 });
 
@@ -121,14 +121,20 @@ test("an upgraded Setup keeps its notice in the bar", async ({ page }) => {
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toHaveAttribute("aria-label", /This file was upgraded/);
 });
 
-test("the look picker switches to 2001, survives a reload, and leaves the rest of the site alone", async ({ page }) => {
+test("the look menu opens upward, switches to 2001, survives a reload, and leaves the rest of the site alone", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  const look = statusBar(page).getByRole("group", { name: "Look" });
-  await expect(look.getByRole("button", { name: "Station" })).toHaveAttribute("aria-pressed", "true");
-  await look.getByRole("button", { name: "2001" }).click();
+  const trigger = statusBar(page).getByRole("button", { name: /^Look:/ });
+  await expect(trigger).toHaveText(/Station/);
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Look" });
+  const [menuBox, triggerBox] = [await menu.boundingBox(), await trigger.boundingBox()];
+  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(triggerBox!.y);
+  await expect(menu.getByRole("menuitemradio", { name: "Station" })).toHaveAttribute("aria-checked", "true");
+  await menu.getByRole("menuitemradio", { name: "2001" }).click();
+  await expect(menu).toHaveCount(0);
   await expect(page.locator("html")).toHaveAttribute("data-look", "2001");
   await page.reload();
-  await expect(statusBar(page).getByRole("group", { name: "Look" }).getByRole("button", { name: "2001" })).toHaveAttribute("aria-pressed", "true");
+  await expect(statusBar(page).getByRole("button", { name: /^Look:/ })).toHaveText(/2001/);
   await page.goto("calculators/");
   await expect(page.locator("html")).not.toHaveAttribute("data-look", /.+/);
 });

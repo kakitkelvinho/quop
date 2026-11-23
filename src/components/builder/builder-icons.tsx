@@ -81,6 +81,12 @@ const ICONS = {
       <path d="m7.5 11.5 2 2M10.5 8.5 12 10M13.5 5.5l2 2M6 13l1.5 1.5" />
     </g>
   ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 6.5V12l3.5 2" />
+    </>
+  ),
   // a fluted classical column: abacus and echinus, three flutes, base and plinth
   posts: (
     <>

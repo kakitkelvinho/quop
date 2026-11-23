@@ -82,7 +82,8 @@ html[data-look="2001"]
     .builderField__label,
     .builderStatusBar__mode strong,
     .builderWhatsNew__heading > span,
-    .builderStatusBar__look button
+    .builderStatusBar__lookTrigger,
+    .builderStatusBar__lookMenu button
   ) {
   font-family: var(--font-panel);
   font-size: 0.66rem;

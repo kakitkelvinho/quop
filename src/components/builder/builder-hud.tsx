@@ -34,7 +34,7 @@ import {
   GroupInspector,
   GroupsMenu,
 } from "@/components/builder/builder-inspector";
-import { BUILDER_LOOKS, useBuilderLook } from "@/components/builder/builder-look";
+import { BUILDER_LOOK_NAMES, BUILDER_LOOKS, useBuilderLook } from "@/components/builder/builder-look";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
@@ -438,10 +438,52 @@ function BeamList({
   );
 }
 
+/**
+ * The look picker at the status bar's right end: the current look's name, and
+ * a menu that opens upward from it, so more looks can join without widening
+ * the bar.
+ */
+function LookMenu() {
+  const [look, setLook] = useBuilderLook();
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, [open]);
+  return <div className="builderStatusBar__look" ref={wrapRef}>
+    <button type="button" className="builderStatusBar__lookTrigger" aria-haspopup="menu" aria-expanded={open} aria-controls="builder-look-menu" onClick={() => setOpen((current) => !current)}>
+      Look: {BUILDER_LOOK_NAMES[look]} <Icon name="up" size={12} />
+    </button>
+    {open ? <div id="builder-look-menu" className="builderStatusBar__popover builderStatusBar__lookMenu" role="menu" aria-label="Look">
+      {BUILDER_LOOKS.map((option) => (
+        <button type="button" role="menuitemradio" key={option} aria-checked={look === option} onClick={() => { setLook(option); setOpen(false); }}>
+          {BUILDER_LOOK_NAMES[option]}
+        </button>
+      ))}
+    </div> : null}
+  </div>;
+}
+
+/** a loss's share of the light: the Power sign's battery, read-only */
 function PowerMeter({ power }: { power: number }) {
   const percent = Math.round(Math.min(1, Math.max(0, power)) * 100);
   return <span className="builderLightList__power" role="meter" aria-label="Power" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={`${percent}%`}>
-    <span className="builderLightList__powerBar" aria-hidden="true"><span className="builderLightList__powerFill" style={{ width: `${percent}%` }} /></span>
+    <span className="builderLightList__battery" aria-hidden="true" style={{ "--power": `${percent}%` } as CSSProperties}><span /></span>
     <span aria-hidden="true">{percent}%</span>
   </span>;
 }
@@ -463,6 +505,7 @@ function LightList({
   onSelectComponent: (id: string) => void;
 }) {
   const panel = usePanel("beams", LIST_PANEL);
+  const [openReadout, setOpenReadout] = useState<string | null>(null);
   const routes = traceRoutes(trace, beams);
   const routed = new Set(routes.flatMap((route) => route.beam ? [route.beam.id] : []));
   const handDrawn = beams.filter((beam) => !routed.has(beam.id));
@@ -472,6 +515,7 @@ function LightList({
     const component = components.find((part) => part.id === id);
     return component ? componentDisplayName(component) : id;
   };
+  const toggleReadout = (id: string) => setOpenReadout((current) => current === id ? null : id);
   const list = (
     <div className={`builderHud__beams builderLightList${besideParts ? " is-besideParts" : ""}`} aria-label="Light" data-guide="beams">
       {unpinned.length ? <button type="button" className="builderLightList__heading" onMouseEnter={() => onHover("*")} onMouseLeave={() => onHover(null)} onFocus={() => onHover("*")} onBlur={() => onHover(null)}>unpinned · {unpinned.length}</button> : null}
@@ -482,13 +526,35 @@ function LightList({
           <h3><span className="builderBeamRow__dot" style={{ background: laser ? laserLightColor(laser) : undefined }} />{nameOf(tree.laserId)}</h3>
           {own.map((route) => <div key={route.id} className="builderLightList__route" onMouseEnter={() => onHover(route.id)} onMouseLeave={(event) => { if (!event.currentTarget.contains(document.activeElement)) onHover(null); }} onFocus={() => onHover(route.id)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) onHover(null); }}>
             <div className="builderLightList__row">
-              <button type="button" className="builderLightList__endpoint" aria-label={`Highlight route to ${route.endId ? nameOf(route.endId) : "open light"}`} onClick={() => onHover(route.id)}>→ {route.endId ? nameOf(route.endId) : "open light"}</button>
-              {route.beam ? <>
+              {route.beam ? (
                 <button type="button" className="builderLightList__beam" aria-pressed={selectedId === route.beam.id} onClick={() => onSelect(route.beam!.id)}>
                   <span className="builderBeamRow__dot" style={{ background: route.beam.color }} />{beamDisplayName(route.beam)}
                 </button>
-                <IconButton icon={route.beam.hidden ? "eyeOff" : "eye"} label={`${route.beam.hidden ? "Show" : "Hide"} ${beamDisplayName(route.beam)}`} active={Boolean(route.beam.hidden)} onClick={() => onSetHidden(route.beam!.id, !route.beam!.hidden)} />
-              </> : null}
+              ) : (
+                <button type="button" className="builderLightList__endpoint" aria-label={`Highlight route to ${route.endId ? nameOf(route.endId) : "open light"}`} onClick={() => onHover(route.id)}><span className="builderBeamRow__dot" style={{ background: laser ? laserLightColor(laser) : undefined }} /><span className="builderLightList__endpointName">{nameOf(tree.laserId)} → {route.endId ? nameOf(route.endId) : "open light"}</span></button>
+              )}
+              <span className="builderLightList__readouts">
+                {([
+                  { kind: "wavelength", label: "Wavelength", value: "—", icon: "ruler" as const },
+                  { kind: "length", label: "Path length", value: `${Math.round(route.lengthMm)} mm`, icon: "clock" as const },
+                  { kind: "power", label: "Power", value: `${Math.round(route.power * 100)}%`, icon: null },
+                ]).map((readout) => {
+                  const id = `${route.id}:${readout.kind}`;
+                  return <button
+                    key={readout.kind}
+                    type="button"
+                    className="builderLightList__readout"
+                    aria-label={`${readout.label}: ${readout.value === "—" ? "unavailable" : readout.value}`}
+                    aria-pressed={openReadout === id}
+                    title={readout.kind === "length" ? `Path length · ${lengthToPicoseconds(route.lengthMm).toFixed(1)} ps travel time` : readout.label}
+                    onClick={() => toggleReadout(id)}
+                  >
+                    {readout.icon ? <Icon name={readout.icon} size={16} /> : <span className="builderLightList__battery" style={{ "--power": `${Math.max(0, Math.min(100, route.power * 100))}%` } as CSSProperties}><span /></span>}
+                    <span className="builderLightList__readoutValue">{readout.value}</span>
+                  </button>;
+                })}
+              </span>
+              {route.beam ? <IconButton icon={route.beam.hidden ? "eyeOff" : "eye"} label={`${route.beam.hidden ? "Show" : "Hide"} ${beamDisplayName(route.beam)}`} active={Boolean(route.beam.hidden)} onClick={() => onSetHidden(route.beam!.id, !route.beam!.hidden)} /> : null}
               <IconButton
                 icon="pin"
                 off={!route.beam}
@@ -497,11 +563,6 @@ function LightList({
                 disabled={!route.beam && route.path.length < 2}
                 onClick={() => route.beam ? onUnpin(route.beam.id) : onPin(route)}
               />
-            </div>
-            <div className="builderLightList__readouts">
-              <span>{Math.round(route.lengthMm)} mm</span>
-              <span>{lengthToPicoseconds(route.lengthMm).toFixed(1)} ps</span>
-              <PowerMeter power={route.power} />
             </div>
             {route.segments.at(-1)?.field && route.segments.at(-1)?.direction ? (
               <div className="builderLightList__readouts">Polarization: {polarizationLabel(route.segments.at(-1)!.field!, route.segments.at(-1)!.direction!)}</div>
@@ -1420,7 +1481,6 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   // the checks list opens while a mouse rests on the triangle, and stays open once clicked
-  const [look, setLook] = useBuilderLook();
   const [checksOpen, setChecksOpen] = useState(false);
   const [checksHovered, setChecksHovered] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(readWhatsNew);
@@ -2043,13 +2103,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
           {props.traced ? "Legacy view" : "Switch to traced Beams"}
         </button>
-        <div className="builderStatusBar__look" role="group" aria-label="Look">
-          {BUILDER_LOOKS.map((option) => (
-            <button type="button" key={option} aria-pressed={look === option} onClick={() => setLook(option)}>
-              {option === "station" ? "Station" : "2001"}
-            </button>
-          ))}
-        </div>
+        <LookMenu />
       </div>
     </>
   );

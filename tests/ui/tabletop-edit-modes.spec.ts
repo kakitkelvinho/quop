@@ -63,9 +63,9 @@ test("traced light is the default and the URL fallback lasts one visit", async (
   const light = page.getByRole("region", { name: "Light", exact: true });
   await expect(light).toBeVisible();
   await expect(light.getByRole("heading", { name: "Legacy" })).toHaveCount(0);
-  await expect(light.getByRole("meter", { name: "Power" })).toHaveCount(2);
-  await expect(light.getByRole("meter", { name: "Power" }).first()).toHaveAttribute("aria-valuenow", "50");
-  await expect(light.locator(".builderLightList__powerFill").first()).toHaveAttribute("style", "width: 50%;");
+  await expect(light.getByRole("button", { name: /^Power:/ })).toHaveCount(2);
+  await expect(light.getByRole("button", { name: /^Power:/ }).first()).toHaveAccessibleName("Power: 50%");
+  await expect(light.locator(".builderLightList__battery").first()).toHaveAttribute("style", "--power: 50%;");
   await expect(light.getByRole("button", { name: /^Pin route to/ })).toHaveCount(2);
 
   await page.goto("builder/tabletop/?traced=0");
@@ -77,6 +77,8 @@ test("traced light is the default and the URL fallback lasts one visit", async (
 
 test("a selected traced Beam keeps its width, opacity and arrow controls", async ({ page }) => {
   await page.goto("builder/tabletop/");
+  // the wider Light panel runs under the centred what's-new card at this width
+  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   await page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Pin route to/ }).first().click();
   const width = page.getByRole("slider", { name: /Width/ });
   const opacity = page.getByRole("slider", { name: /Opacity/ });
@@ -221,6 +223,8 @@ test("replacing the setup clears Place", async ({ page }) => {
 
 test("Add stops ends when another beam is selected", async ({ page }) => {
   await page.goto("builder/tabletop/");
+  // the wider Light panel runs under the centred what's-new card at this width
+  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   const light = page.getByRole("region", { name: "Light", exact: true });
   await light.getByRole("button", { name: /^Pin route to/ }).first().click();
   await light.getByRole("button", { name: /^Pin route to/ }).first().click();
@@ -260,6 +264,16 @@ test("Light reveals an unpinned route, pins it for export, and labels distances 
   await expect(page.locator(".builderDistance")).toHaveText("200 mm");
   await expect(page.locator(".builderDistance")).toBeVisible();
   await page.getByRole("button", { name: "Show", exact: true }).click();
+  const panel = light;
+  const pathLength = route.getByRole("button", { name: /^Path length:/ });
+  const closedWidth = await panel.evaluate((element) => element.getBoundingClientRect().width);
+  await expect(pathLength).toHaveAttribute("aria-pressed", "false");
+  await pathLength.click();
+  await expect(pathLength).toHaveAttribute("aria-pressed", "true");
+  await expect(route.locator(".builderLightList__readoutValue").nth(1)).toContainText("mm");
+  await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(closedWidth);
+  await pathLength.click();
+  await expect(pathLength).toHaveAttribute("aria-pressed", "false");
   const canvas = page.locator("canvas").first();
   const before = await canvas.screenshot();
   await route.getByRole("button", { name: "Highlight route to Dump" }).focus();

@@ -10,6 +10,7 @@ import { useCallback, useLayoutEffect, useState } from "react";
  */
 export const BUILDER_LOOKS = ["station", "2001"] as const;
 export type BuilderLook = (typeof BUILDER_LOOKS)[number];
+export const BUILDER_LOOK_NAMES: Record<BuilderLook, string> = { station: "Station", "2001": "2001" };
 
 const STORAGE_KEY = "builder-look";
 
