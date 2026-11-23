@@ -16,14 +16,14 @@ const opticRadiusMm = OPTIC_DIAMETER_MM / 2;
 const cubeHalfMm = BEAM_CUBE_EDGE_MM / 2;
 const diagonal = Math.SQRT1_2;
 
-export function mirrorSurfaces(): Surface[] {
+export function mirrorSurfaces(phaseDeg = 0): Surface[] {
   return [makeSurface({
     positionMm: [0, 0, 0], normal: [1, 0, 0],
-    aperture: { kind: "circle", radiusMm: opticRadiusMm }, rule: { kind: "reflect" },
+    aperture: { kind: "circle", radiusMm: opticRadiusMm }, rule: { kind: "reflect", phaseDeg },
   })];
 }
 
-export function beamCubeSurfaces(): Surface[] {
+export function beamCubeSurfaces(polarizing = false): Surface[] {
   const face = (x: number): Surface => makeSurface({
     positionMm: [x, 0, 0], normal: [1, 0, 0],
     aperture: { kind: "rect", widthMm: BEAM_CUBE_EDGE_MM, heightMm: BEAM_CUBE_EDGE_MM, widthAxis: [0, 0, 1] },
@@ -34,7 +34,7 @@ export function beamCubeSurfaces(): Surface[] {
     makeSurface({
       positionMm: [0, 0, 0], normal: [diagonal, 0, -diagonal],
       aperture: { kind: "rect", widthMm: BEAM_CUBE_EDGE_MM * Math.SQRT2, heightMm: BEAM_CUBE_EDGE_MM, widthAxis: [diagonal, 0, diagonal] },
-      rule: { kind: "split", reflectance: 0.5, transmittance: 0.5 },
+      rule: { kind: "split", reflectance: 0.5, transmittance: 0.5, ...(polarizing ? { polarizing: true as const } : {}) },
     }),
   ];
 }
@@ -73,7 +73,9 @@ export function rectangularSurface(widthMm: number, heightMm: number, rule: Surf
 }
 
 export const FIBRE_COLLIMATOR_SURFACES = () => circularSurface(4.5);
-export const WAVEPLATE_SURFACES = () => circularSurface(opticRadiusMm, { kind: "pass", jones: waveplate(Math.PI, 0) });
+export const WAVEPLATE_SURFACES = () => circularSurface(opticRadiusMm, { kind: "pass", jones: waveplate(Math.PI, 0), waveplate: { axis: [0, 0, -1], retardanceRad: Math.PI } });
+export const POLARIZER_SURFACES = () => circularSurface(opticRadiusMm, { kind: "polarizer", axis: [0, 0, -1] });
+export const FARADAY_ROTATOR_SURFACES = (angleDeg: number) => circularSurface(opticRadiusMm, { kind: "faraday", magneticAxis: [1, 0, 0], angleDeg });
 export const FILTER_SURFACES = () => circularSurface(12);
 export const IRIS_SURFACES = () => circularSurface(5);
 export const TRAP_SURFACES = () => circularSurface(6);

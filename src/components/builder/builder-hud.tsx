@@ -38,6 +38,7 @@ import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-them
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
 import { looseTraceChecks, traceRoutes, type LightRoute } from "@/components/builder/trace-routes";
+import { polarizationLabel } from "@/components/builder/polarization";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import {
   COMPONENT_SPECS,
@@ -512,8 +513,24 @@ function LightList({
                 onClick={() => route.beam ? onUnpin(route.beam.id) : onPin(route)}
               />
             </div>
+            <div className="builderLightList__readouts">
+              <span>{Math.round(route.lengthMm)} mm</span>
+              <span>{lengthToPicoseconds(route.lengthMm).toFixed(1)} ps</span>
+              <PowerMeter power={route.power} />
+            </div>
+            {route.segments.at(-1)?.field && route.segments.at(-1)?.direction ? (
+              <div className="builderLightList__readouts">Polarization: {polarizationLabel(route.segments.at(-1)!.field!, route.segments.at(-1)!.direction!)}</div>
+            ) : null}
             {route.checks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}
           </div>)}
+          {trace.losses?.filter((loss) => loss.laserId === tree.laserId).map((loss, index) => (
+            <div key={`${loss.routeId}-${loss.componentId}-${index}`} className="builderLightList__route">
+              <div className="builderLightList__readouts">
+                <span>Absorbed by {nameOf(loss.componentId)}</span>
+                <PowerMeter power={loss.power} />
+              </div>
+            </div>
+          ))}
         </section>;
       })}
       {looseChecks.length ? <section className="builderLightList__loose"><h3>Other checks</h3>{looseChecks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}</section> : null}
@@ -1551,6 +1568,7 @@ export default function BuilderHud(props: BuilderHudProps) {
       <ComponentInspector
         component={selected[0]}
         components={components}
+        trace={props.trace}
         angleBeam={props.traced ? undefined : derivedAngleBeam(beams, selected[0])}
         traced={props.traced}
         aimStatus={props.aimStatuses?.get(selected[0].id)}

@@ -1,7 +1,7 @@
 /**
- * Jones matrices for polarisation (ADR 0002, #359). Optional in the trace:
- * nothing reads these until the tracer carries polarisation.
- * The basis is (horizontal, vertical) in the beam's own frame.
+ * Jones matrices for polarization (ADR 0002, #359). The tracer carries the
+ * equivalent complex field in table coordinates, which stays transverse through
+ * 3D turns; these matrices state the local waveplate convention and its laws.
  */
 
 export type Complex = { re: number; im: number };

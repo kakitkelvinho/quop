@@ -46,6 +46,9 @@ the lower mirror aims at the upper one, which aims at the old next stop.
 v20 links Beams with the same first Component into a saved tree. The return
 branch has its own colour and an explicit shown state.
 v21 saves each laser's light colour; older lasers keep no saved colour and draw orange.
+v22 saves Laser polarization, Mirror S/P phase, and a polarizing Beam cube mode;
+it also includes the new Polarizer and Faraday rotator kinds away from the
+older traced paths. Earlier Beam cubes remain non-polarizing 50/50.
 v1 also carries the beam cube names from
 before files were versioned (`beamsplitter`, `pbs-cube`), which open as beam cubes.
 

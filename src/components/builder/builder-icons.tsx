@@ -391,6 +391,12 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <path d="M12 4v2.5M20 12h-2.5M12 20v-2.5M4 12h2.5" />
     </>
   ),
+  polarizer: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M6 18 18 6" />
+    </>
+  ),
   filter: (
     <>
       <rect x="9" y="4" width="6" height="16" rx="1" />
@@ -506,6 +512,12 @@ const PART_ICONS: Record<ComponentType, ReactNode> = {
       <rect x="5.5" y="9" width="13" height="9" rx="1.2" />
       <path d="M8.5 5.5h6.5M13 3.5l2 2-2 2" />
       <path d="M12 18v3" />
+    </>
+  ),
+  "faraday-rotator": (
+    <>
+      <rect x="5" y="7" width="14" height="10" rx="2" />
+      <path d="M8 12a4 4 0 0 1 7-3m1-1v3h-3" />
     </>
   ),
   // the beam line along the top, folded down the rail to the carriage's V of mirrors and back

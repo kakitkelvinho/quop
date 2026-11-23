@@ -40,6 +40,7 @@ const BUILT: Record<ComponentType, BuilderComponent> = {
     focalLength: 100,
   },
   waveplate: { id: "p", type: "waveplate", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  polarizer: { id: "p", type: "polarizer", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   filter: { id: "p", type: "filter", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   iris: { id: "p", type: "iris", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   sample: { id: "p", type: "sample", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
@@ -72,6 +73,7 @@ const BUILT: Record<ComponentType, BuilderComponent> = {
   aom: { id: "p", type: "aom", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   eom: { id: "p", type: "eom", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "faraday-isolator": { id: "p", type: "faraday-isolator", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
+  "faraday-rotator": { id: "p", type: "faraday-rotator", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "delay-line": { id: "p", type: "delay-line", position: [10, 100, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
   "translation-stage": { id: "p", type: "translation-stage", position: [10, 0, 20], orientation: fromYawDeg(0), color: undefined, label: undefined },
 };
@@ -127,6 +129,7 @@ describe("the kind table", () => {
       "mirror-mount",
       "beam-splitter",
       "waveplate",
+      "polarizer",
       "filter",
       "iris",
       "fiber-collimator",
@@ -146,11 +149,12 @@ describe("the kind table", () => {
       ]),
     );
     assert.deepStrictEqual(fields, {
-      "laser-source": ["internalPathMm", "lightColor"],
-      "mirror-mount": ["aim", "fold", "free", "mountStage"],
-      "beam-splitter": ["aim", "fold", "free", "mountStage"],
+      "laser-source": ["internalPathMm", "lightColor", "polarizationAngleDeg"],
+      "mirror-mount": ["aim", "fold", "free", "mirrorPhaseDeg", "mountStage"],
+      "beam-splitter": ["aim", "cubeMode", "fold", "free", "mountStage"],
       lens: ["focalLength", "lensShape", "mountStage"],
       waveplate: ["mountStage"],
+      polarizer: ["mountStage"],
       filter: ["mountStage"],
       iris: ["mountStage"],
       "fiber-collimator": ["mountStage"],
@@ -159,6 +163,7 @@ describe("the kind table", () => {
       particle: ["host", "particleRadius"],
       objective: ["mountStage", "objectiveLength", "stageColor"],
       block: ["size", "symbol"],
+      "faraday-rotator": ["faradayAngleDeg"],
       "delay-line": ["delayMinPathMm", "delayStageMm", "delayTravelMm", "lightColor", "lightHidden"],
       "translation-stage": ["stageAxes", "stageColor"],
     });

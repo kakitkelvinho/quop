@@ -29,6 +29,10 @@ const kindsWith = (field: KindField) => KINDS.filter((type) => COMPONENT_SPECS[t
 
 /** A usable value for each field, unlike its default where it has one. */
 const GOOD: Record<KindField, unknown> = {
+  polarizationAngleDeg: 30,
+  cubeMode: "polarizing",
+  mirrorPhaseDeg: 90,
+  faradayAngleDeg: 60,
   aim: "host",
   fold: -1,
   free: true,
@@ -176,7 +180,7 @@ describe("COMPONENT_FIELDS", () => {
 
   it("ignores a field in a file from before its version, and reads it from that version on", () => {
     const versioned = FIELDS.filter((field) => "since" in COMPONENT_FIELDS[field]);
-    assert.deepEqual(versioned, ["aim", "fold", "free", "objectiveLength", "mountStage", "sampleStage", "stageColor", "stageAxes", "sampleStageLeft", "symbol"]);
+    assert.deepEqual(versioned, ["polarizationAngleDeg", "cubeMode", "mirrorPhaseDeg", "faradayAngleDeg", "aim", "fold", "free", "objectiveLength", "mountStage", "sampleStage", "stageColor", "stageAxes", "sampleStageLeft", "symbol"]);
     for (const field of versioned) {
       const { since } = COMPONENT_FIELDS[field] as { since: number };
       const extra = field === "sampleStageLeft" ? { sampleStage: "side", [field]: GOOD[field] } : { [field]: GOOD[field] };
