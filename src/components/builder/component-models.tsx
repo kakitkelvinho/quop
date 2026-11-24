@@ -29,6 +29,7 @@ import { useThree, type ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import { BlockSymbolFaces } from "@/components/builder/block-symbol";
+import { HalEye, TraceRing } from "@/components/builder/theme-2001-parts";
 import {
   CAVITY_LENGTH_RANGE_MM,
   DEFAULT_BLOCK_COLOR,
@@ -1900,6 +1901,7 @@ function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean
           <boxGeometry args={[0.2, PD_CHIP_SIDE_MM, PD_CHIP_SIDE_MM]} />
           <meshStandardMaterial color={SENSOR_SILICON} roughness={0.12} metalness={0.5} />
         </mesh>
+        {palette.theme === "2001" ? <HalEye xMm={-2.3} radiusMm={PD_CUP_RADIUS - 0.3} /> : null}
         <mesh rotation={[0, 0, -Math.PI / 2]}>
           <sphereGeometry args={[PD_RADIUS, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <Enamel color={color ?? DEFAULT_PHOTODIODE_COLOR} />
@@ -2038,6 +2040,12 @@ function CameraBody({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[CAMERA_OPENING_RADIUS_MM, CAMERA_OPENING_RADIUS_MM, CAMERA_MOUNT_RING.depth, 28]} />
         <Enamel color="#12161d" />
       </mesh>
+      {palette.theme === "2001" ? (
+        <group position={[0, axis, 0]}>
+          {/* a hair in front of the opening's face, so the two never fight */}
+          <HalEye xMm={CAMERA_MOUNT_RING.x - CAMERA_MOUNT_RING.depth / 2 - 0.1} radiusMm={CAMERA_OPENING_RADIUS_MM} />
+        </group>
+      ) : null}
     </group>
   );
 }
@@ -2055,6 +2063,11 @@ function Spectrometer({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT.length, 20]} />
         <Enamel color="#1b1f26" />
       </mesh>
+      {palette.theme === "2001" ? (
+        <group position={[0, axis, 0]}>
+          <HalEye xMm={SPECTROMETER_PORT.x - SPECTROMETER_PORT.length / 2 - 0.1} radiusMm={SPECTROMETER_PORT_RADIUS_MM} />
+        </group>
+      ) : null}
       <mesh position={[0, body + 1, 0]}>
         <boxGeometry args={[100, 2, 70]} />
         <Hardware palette={palette} />
@@ -2480,10 +2493,18 @@ export const ComponentMesh = memo(function ComponentMesh({
         </MountedOnStage.Provider>
 
         {hovered && !selected ? (
-          <HoverRing radius={radius} color={palette.hover} />
+          palette.trace ? (
+            <TraceRing radiusMm={radius} coreMm={0.6} color={palette.trace} opacity={0.45} bloom={false} liftMm={0.4} />
+          ) : (
+            <HoverRing radius={radius} color={palette.hover} />
+          )
         ) : null}
         {selected ? (
-          <SelectionRing radius={radius} color={palette.accent} />
+          palette.trace ? (
+            <TraceRing radiusMm={radius} coreMm={1} color={palette.trace} opacity={0.95} bloom liftMm={0.6} />
+          ) : (
+            <SelectionRing radius={radius} color={palette.accent} />
+          )
         ) : null}
         {beamOrder ? (
           <BeamOrderBadge order={beamOrder} height={axis + top} />

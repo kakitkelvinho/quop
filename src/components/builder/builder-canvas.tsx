@@ -1502,7 +1502,7 @@ export default function BuilderCanvas({
       {stageHandle ? (
         <StageHandle
           component={stageHandle.component}
-          color={palette.accent}
+          color={palette.trace ?? palette.accent}
           dark={palette.mode === "dark"}
           sliding={stageHandle.sliding}
           onPointerDown={onStageHandlePointerDown}

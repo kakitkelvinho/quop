@@ -42,7 +42,7 @@ function arrowheads(): BufferGeometry {
 
 export type StageHandleProps = {
   component: BuilderComponent;
-  /** the selection ring's colour, the theme's accent */
+  /** the selection ring's colour: the theme's accent, or 2001's trace */
   color: string;
   dark: boolean;
   /** being dragged now */
