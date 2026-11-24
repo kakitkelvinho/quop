@@ -108,6 +108,7 @@ test("the Flip keycap acts on the selected Mirror without dismissing it", async 
 test("Pick on table re-aims a Mirror and Esc cancels without changing it", async ({ page }) => {
   await page.goto("builder/tabletop/");
   await topView(page);
+  await page.getByRole("button", { name: "Minimise Light" }).click();
   await clickLabeledPart(page, "Mirror");
   const aim = page.getByRole("combobox", { name: "Aim reflected light at" });
   await expect(aim).toHaveValue("pd-ref");
