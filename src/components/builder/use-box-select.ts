@@ -64,8 +64,12 @@ export function useBoxSelect(
 
       const onMove = (event: PointerEvent) => {
         if (event.pointerId !== down.pointerId) return;
+        const wasClick = !travelled;
         track(event);
         if (!travelled) return;
+        // Once it is a box, the parts it crosses would each light up as hovered
+        // and redraw the scene. Not before: a click toggles the hovered part.
+        if (wasClick) host.setPointerCapture(down.pointerId);
         const origin = host.getBoundingClientRect();
         const box = boxTo(event);
         setDrawn({
