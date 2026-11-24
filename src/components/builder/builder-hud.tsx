@@ -573,7 +573,7 @@ function LightList({
             <div key={`${loss.routeId}-${loss.componentId}-${index}`} className="builderLightList__route">
               <div className="builderLightList__readouts">
                 <span>Absorbed by {nameOf(loss.componentId)}</span>
-                <PowerMeter power={loss.power} />
+                <span>{Math.round(loss.power * 100)}%</span>
               </div>
             </div>
           ))}
