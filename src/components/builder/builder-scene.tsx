@@ -1369,7 +1369,7 @@ export default function BuilderScene() {
   const handleSlowView = useCallback(() => {
     setQuality("light");
     setAutoQuality(false);
-    announce("Switched to light graphics. Turn it off with Simple, under the eye.");
+    announce("Switched to light graphics.");
   }, [announce]);
 
   const toggleQuality = useCallback(() => {
