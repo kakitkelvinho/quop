@@ -1,0 +1,96 @@
+/* Blueprint uses the 2001 screen geometry and type in paper and ink. */
+html[data-theme="blueprint"] {
+  --bp-paper: #ffffff;
+  --bp-ink: #111111;
+  --bp-ink-rgb: 17 17 17;
+  --focus-ring: var(--bp-ink);
+}
+
+html[data-theme="blueprint"][data-mode="dark"] {
+  --bp-paper: #0a1f3d;
+  --bp-ink: #dce8f8;
+  --bp-ink-rgb: 220 232 248;
+}
+
+html[data-theme="blueprint"] .builderPage {
+  --builder-radius: 0;
+}
+
+html[data-theme="blueprint"]
+  :is(
+    .builderIsland, .builderParts, .builderBrief, .builderStatusBar, .builderWhatsNew,
+    .builderMenu__list, .builderCoach__card, .builderGroupsMenu__list,
+    .builderImportChoice, .builderStatusBar__popover, .builderLabel
+  ) {
+  --foreground: var(--bp-ink);
+  --muted: rgb(var(--bp-ink-rgb) / 0.62);
+  --border: rgb(var(--bp-ink-rgb) / 0.2);
+  --builder-hairline: rgb(var(--bp-ink-rgb) / 0.55);
+  --builder-hover: rgb(var(--bp-ink-rgb) / 0.1);
+  --surface-strong: var(--bp-paper);
+  --background: var(--bp-paper);
+  --accent: var(--bp-ink);
+  --accent-strong: var(--bp-ink);
+  --accent-text: var(--bp-ink);
+  --accent-soft: rgb(var(--bp-ink-rgb) / 0.14);
+  --focus-ring: var(--bp-ink);
+  --on-accent: var(--bp-paper);
+  border: 1px solid var(--builder-hairline);
+  border-radius: 0;
+  background: var(--bp-paper);
+  color: var(--bp-ink);
+  box-shadow: none;
+}
+
+html[data-theme="blueprint"] :is(
+  .builderIconBtn.is-active, .builderIconBtn.is-active:hover:not(:disabled),
+  .builderButton--primary, .builderWhatsNew__actions .is-primary, .builderLabel.is-selected
+) {
+  background: var(--bp-ink);
+  color: var(--bp-paper);
+}
+
+html[data-theme="blueprint"] :is(.builderField__control input, .builderField__control select) {
+  color: var(--bp-ink);
+}
+
+html[data-theme="blueprint"] .builderField__control select option {
+  background: var(--bp-paper);
+}
+
+html[data-theme="blueprint"] :is(
+  .builderPanelBar__title, .builderParts__groupName, .builderHud__listTitle,
+  .builderSheet__groupTitle, .builderField__label, .builderStatusBar__mode strong,
+  .builderWhatsNew__heading > span, .builderStatusBar__themeTrigger,
+  .builderStatusBar__themeMenu button
+) {
+  font-family: var(--font-gillius, var(--font-panel)), "Gill Sans", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+html[data-theme="blueprint"] :is(.builderWhatsNew h2, .builderCoach__title, .builderInspector__head h2) {
+  font-family: var(--font-gillius, var(--font-credits)), "Gill Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme="blueprint"] :is(.builderReadout, .builderLightList__readouts) {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="blueprint"] .builderLabel {
+  font-family: var(--font-gillius, var(--font-display)), "Gill Sans", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--bp-ink);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+html[data-theme="blueprint"] .builderBeamRow__dot {
+  background: var(--bp-ink) !important;
+}

@@ -86,7 +86,7 @@ const preferencesScript = `
       return null;
     };
     const theme = migrate("site-theme", ["builder", "look"].join("-"), ["station", "2001"]);
-    document.documentElement.dataset.theme = theme === "2001" ? "2001" : "station";
+    document.documentElement.dataset.theme = theme === "2001" || theme === "blueprint" ? theme : "station";
     migrate("mode-preference", ["theme", "preference"].join("-"), ["light", "dark"]);
     const applyMode = () => {
       const savedMode = read("mode-preference");

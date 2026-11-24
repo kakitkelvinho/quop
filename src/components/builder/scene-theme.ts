@@ -2,6 +2,7 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 import { Color } from "three";
+import type { SiteTheme } from "@/components/site-theme";
 
 /**
  * The canvas can't read CSS custom properties, so the day/night swap has to be
@@ -15,6 +16,7 @@ import { Color } from "three";
  * in a dark void, with a cool rim light to lift them off it.
  */
 export type ScenePalette = {
+  theme: SiteTheme;
   mode: "light" | "dark";
   /** radial studio sweep behind the parts: centre, middle, edge */
   backdrop: [string, string, string];
@@ -81,7 +83,7 @@ export const DEFAULT_LIGHTING: Lighting = { brightness: 1, shadows: true };
 export const BRIGHTNESS_RANGE: [number, number] = [0.25, 2];
 
 /** a palette without its ink, which comes from the page's tokens */
-type Inkless = Omit<ScenePalette, "accent" | "hover">;
+type Inkless = Omit<ScenePalette, "theme" | "accent" | "hover">;
 
 export const LIGHT_PALETTE: Inkless = {
   mode: "light",
@@ -172,6 +174,18 @@ export const DARK_2001_PALETTE: Inkless = {
   stageSeam: "#aeb8c6",
 };
 
+export const LIGHT_BLUEPRINT_PALETTE: Inkless = {
+  ...LIGHT_PALETTE,
+  backdrop: ["#ffffff", "#ffffff", "#ffffff"],
+  holeGrid: { plate: "#ffffff", plateOpacity: 0, hole: "#111111", rim: "#ffffff", row: "#d5d5d5" },
+};
+
+export const DARK_BLUEPRINT_PALETTE: Inkless = {
+  ...DARK_PALETTE,
+  backdrop: ["#0a1f3d", "#0a1f3d", "#0a1f3d"],
+  holeGrid: { plate: "#0a1f3d", plateOpacity: 0, hole: "#dce8f8", rim: "#0a1f3d", row: "#42617d" },
+};
+
 /** The root attributes carry both preferences; the scene redraws when either changes. */
 function subscribe(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange);
@@ -205,7 +219,7 @@ let cached: { key: string; snapshot: string } | null = null;
 function getSnapshot(): string {
   const root = document.documentElement;
   const mode = root.dataset.mode === "dark" ? "dark" : "light";
-  const theme = root.dataset.theme === "2001" ? "2001" : "station";
+  const theme = root.dataset.theme === "2001" || root.dataset.theme === "blueprint" ? root.dataset.theme : "station";
   const key = `${mode} ${theme}`;
   if (!cached || cached.key !== key) {
     cached = { key, snapshot: `${key} ${readRing(root)}` };
@@ -221,12 +235,14 @@ export function useScenePalette(): ScenePalette {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return useMemo(() => {
     const [mode, theme, ring] = snapshot.split(" ");
-    const base = theme === "2001"
+    const base = theme === "blueprint"
+      ? mode === "dark" ? DARK_BLUEPRINT_PALETTE : LIGHT_BLUEPRINT_PALETTE
+      : theme === "2001"
       ? mode === "dark" ? DARK_2001_PALETTE : LIGHT_2001_PALETTE
       : mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
     // before the tokens are read (the server render), a neutral the canvas never shows
-    const accent = new Color(ring || base.post);
+    const accent = new Color(theme === "blueprint" ? mode === "dark" ? "#dce8f8" : "#111111" : ring || base.post);
     const hover = accent.clone().lerp(new Color(base.backdrop[0]), 1 / 3);
-    return { ...base, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}` };
+    return { ...base, theme: theme as SiteTheme, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}` };
   }, [snapshot]);
 }

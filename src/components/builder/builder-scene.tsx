@@ -1754,7 +1754,7 @@ export default function BuilderScene() {
           palette={palette}
           lighting={lighting}
           quality={exporting ? "full" : quality}
-          onSlowView={autoQuality && quality === "full" ? handleSlowView : undefined}
+          onSlowView={palette.theme !== "blueprint" && autoQuality && quality === "full" ? handleSlowView : undefined}
           selection={selectedIds}
           selectedBeamId={selectedBeamId}
           hoveredRouteId={hoveredRouteId}

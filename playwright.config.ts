@@ -6,7 +6,7 @@ import nextConfig from "./next.config";
 // serves. `npm run test:ui` builds it first. On GitHub Actions next.config.ts
 // builds under /quop, so the server and the tests use that path too.
 const basePath = nextConfig.basePath ?? "";
-const port = 3100;
+const port = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
 
 export default defineConfig({
   testDir: "tests/ui",
