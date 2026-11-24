@@ -50,6 +50,7 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
+import { BLUEPRINT_STYLES, BlueprintPass } from "@/components/builder/blueprint-pass";
 import { beamPoints, measureBeam } from "@/components/builder/beam-measurement";
 import { beamsHit } from "@/components/builder/beam-pick";
 import { ComponentMesh } from "@/components/builder/component-models";
@@ -98,7 +99,7 @@ import {
 
 export type CameraView = "iso" | "top";
 
-function TraceGuides({ trace, beams, components }: { trace: TraceResult; beams: Beam[]; components: BuilderComponent[] }) {
+function TraceGuides({ trace, beams, components, blueprintInk }: { trace: TraceResult; beams: Beam[]; components: BuilderComponent[]; blueprintInk?: string }) {
   const guide = useMemo(() => {
     const data = traceGuideGeometry(trace, beams);
     const laserColors = new Map(components.filter((component) => component.type === "laser-source").map((component) => [component.id, new Color(laserLightColor(component))]));
@@ -112,6 +113,7 @@ function TraceGuides({ trace, beams, components }: { trace: TraceResult; beams: 
     return { points, colors };
   }, [trace, beams, components]);
   if (guide.points.length === 0) return null;
+  if (blueprintInk) return <Line segments points={guide.points} color={blueprintInk} lineWidth={1} dashed dashSize={6} gapSize={4} depthTest depthWrite={false} />;
   return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest depthWrite={false} />;
 }
 
@@ -863,6 +865,7 @@ type BeamPathProps = {
   core?: boolean;
   /** a hidden beam that is selected: only a faint glow, so it can be found and edited */
   ghost?: boolean;
+  blueprintInk?: string;
 };
 
 const BeamPath = memo(function BeamPath({
@@ -873,6 +876,7 @@ const BeamPath = memo(function BeamPath({
   selected = false,
   core: coreWanted = true,
   ghost = false,
+  blueprintInk,
 }: BeamPathProps) {
   const core = coreWanted && !ghost;
   const alpha = ghost ? GHOST_OPACITY : opacity;
@@ -926,6 +930,10 @@ const BeamPath = memo(function BeamPath({
       opacity={alpha}
     />
   );
+
+  if (blueprintInk) {
+    return <Line points={points} color={blueprintInk} lineWidth={1} dashed dashSize={6} gapSize={4} depthTest />;
+  }
 
   return (
     <group>
@@ -1360,12 +1368,14 @@ export default function BuilderCanvas({
     [components, shown],
   );
   const shownFrames = useMemo(() => frames.filter((frame) => isFrameDrawn(frame, shown)), [frames, shown]);
-  const settings = QUALITY_SETTINGS[quality];
+  const blueprint = palette.theme === "blueprint";
+  const blueprintInk = blueprint ? BLUEPRINT_STYLES[palette.mode].ink : undefined;
+  const settings = blueprint ? QUALITY_SETTINGS.light : QUALITY_SETTINGS[quality];
   return (
     <Canvas
       orthographic
       // PCF: three r18x dropped PCFSoftShadowMap (R3F's "soft"); PCF is now the soft one.
-      shadows="percentage"
+      shadows={blueprint ? false : "percentage"}
       frameloop="demand"
       // deep enough for a layout reaching the guard, in any view
       camera={{ position: [1400, 1150, 1400], near: -16000, far: 20000, zoom: 1 }}
@@ -1383,16 +1393,17 @@ export default function BuilderCanvas({
       <LabelZoom />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
       <color attach="background" args={[palette.backdrop[2]]} />
-      <Lights
+      {blueprint ? <BlueprintPass style={BLUEPRINT_STYLES[palette.mode]} /> : null}
+      {blueprint ? null : <Lights
         palette={palette}
         lighting={lighting}
         components={shownComponents}
         dragging={dragging}
         shadowMapSize={settings.shadowMapSize}
-      />
-      {onSlowView ? <FrameWatcher dragging={dragging} onSlow={onSlowView} /> : null}
-      <RingRoom dark={palette.mode === "dark"} />
-      <Backdrop stops={palette.backdrop} />
+      />}
+      {!blueprint && onSlowView ? <FrameWatcher dragging={dragging} onSlow={onSlowView} /> : null}
+      {blueprint ? null : <RingRoom dark={palette.mode === "dark"} />}
+      {blueprint ? null : <Backdrop stops={palette.backdrop} />}
 
       <TableSurface palette={palette} lighting={lighting} onSurfaceClick={onSurfaceClick} />
       <SurfaceDrag dragging={dragging} onSurfaceDrag={onSurfaceDrag} />
@@ -1511,6 +1522,7 @@ export default function BuilderCanvas({
           <Fragment key={beam.id}>
             <BeamPath
               points={points}
+              blueprintInk={blueprintInk}
               color={beam.color}
               width={beam.width}
               // a beam through faded parts only fades with them
@@ -1526,7 +1538,7 @@ export default function BuilderCanvas({
               <BeamDistances
                 points={points}
                 lengths={measurement.legLengthsMm}
-                color={beam.color}
+                color={blueprintInk ?? beam.color}
                 width={beam.width ?? BEAM_WIDTH_MM}
                 faded={ghost}
               />
@@ -1535,7 +1547,7 @@ export default function BuilderCanvas({
         );
       })}
 
-      {trace ? <TraceGuides trace={trace} beams={beams} components={components} /> : null}
+      {trace ? <TraceGuides trace={trace} beams={beams} components={components} blueprintInk={blueprintInk} /> : null}
       {routes.flatMap((route) => {
         const beam = route.beam;
         const ghost = Boolean(beam?.hidden && beam.id === ghostBeamId);
@@ -1546,6 +1558,7 @@ export default function BuilderCanvas({
         return route.segments.map((segment, index) => <BeamPath
           key={`${route.id}-${index}`}
           points={[new Vector3(...segment.fromMm), new Vector3(...segment.toMm)]}
+          blueprintInk={blueprintInk}
           color={color}
           width={beam?.width}
           opacity={beam && isBeamFaded(beam, shown) ? (beam.opacity ?? 1) * 0.25 : beam?.opacity}
@@ -1559,13 +1572,14 @@ export default function BuilderCanvas({
         key={`${leg.fromId}-${leg.toId}-${index}`}
         points={[new Vector3(...leg.fromMm), new Vector3(...leg.toMm)]}
         lengths={[leg.lengthMm]}
-        color={palette.accent}
+        color={blueprintInk ?? palette.accent}
         width={BEAM_WIDTH_MM}
       />)}
 
       {beamDraft.length >= 2 ? (
         <BeamPath
           points={beamVectors(components, beamDraft)}
+          blueprintInk={blueprintInk}
           color={palette.accent}
         />
       ) : null}
