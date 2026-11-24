@@ -127,7 +127,7 @@ export const DARK_PALETTE: Inkless = {
 };
 
 /*
- * The 2001 look (`data-look="2001"`, see builder-look.ts): the same parts in
+ * The 2001 theme (`data-theme="2001"`, see site-theme.ts): the same parts in
  * the film's colour and light, never a new shape. Day is the space station's
  * lounge: a cooler, brighter white sweep, pure white enamel and blacker
  * anodise, with softer shadows from a stronger ambient. Night is space itself:
@@ -172,12 +172,12 @@ export const DARK_2001_PALETTE: Inkless = {
   stageSeam: "#aeb8c6",
 };
 
-/** The site writes its theme to `data-theme` and the Tabletop its look to `data-look`; treat those as the store. */
+/** The root attributes carry both preferences; the scene redraws when either changes. */
 function subscribe(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ["data-theme", "data-look"],
+    attributeFilter: ["data-mode", "data-theme"],
   });
   return () => observer.disconnect();
 }
@@ -197,16 +197,16 @@ function readRing(root: HTMLElement): string {
 }
 
 /**
- * The theme, the look and the ring ink as one string, so the snapshot stays a
- * primitive. The token is read once per theme and look, not on every render.
+ * The mode, theme and ring ink share one primitive snapshot. The token is read
+ * once per preference pair, rather than on every render.
  */
 let cached: { key: string; snapshot: string } | null = null;
 
 function getSnapshot(): string {
   const root = document.documentElement;
-  const mode = root.dataset.theme === "dark" ? "dark" : "light";
-  const look = root.dataset.look === "2001" ? "2001" : "station";
-  const key = `${mode} ${look}`;
+  const mode = root.dataset.mode === "dark" ? "dark" : "light";
+  const theme = root.dataset.theme === "2001" ? "2001" : "station";
+  const key = `${mode} ${theme}`;
   if (!cached || cached.key !== key) {
     cached = { key, snapshot: `${key} ${readRing(root)}` };
   }
@@ -220,8 +220,8 @@ function getServerSnapshot(): string {
 export function useScenePalette(): ScenePalette {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return useMemo(() => {
-    const [mode, look, ring] = snapshot.split(" ");
-    const base = look === "2001"
+    const [mode, theme, ring] = snapshot.split(" ");
+    const base = theme === "2001"
       ? mode === "dark" ? DARK_2001_PALETTE : LIGHT_2001_PALETTE
       : mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
     // before the tokens are read (the server render), a neutral the canvas never shows

@@ -7,6 +7,17 @@ the **Builder** section; the glossary keeps its own name for it.
 
 ## Experiment Builder
 
+**Theme**:
+The site's saved visual setting: Station (the default), 2001, or Blueprint. It
+belongs to the browser, not a Setup. The Tabletop currently has Station and
+2001 designs; other pages use Station styling while their themes are developed.
+_Avoid_: look, skin, appearance
+
+**Mode**:
+Day or night lighting and colours, chosen independently of Theme. It follows
+the browser's colour scheme until the viewer chooses a mode.
+_Avoid_: look, skin, appearance
+
 **Table**:
 The working plane components stand on: the breadboard's surface, at height 0. It has no edges; a setup is as large as its components make it.
 _Avoid_: board, bench, grid

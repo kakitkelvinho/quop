@@ -34,7 +34,7 @@ import {
   GroupInspector,
   GroupsMenu,
 } from "@/components/builder/builder-inspector";
-import { BUILDER_LOOK_NAMES, BUILDER_LOOKS, useBuilderLook } from "@/components/builder/builder-look";
+import { SITE_THEME_NAMES, SITE_THEMES, useTheme } from "@/components/site-theme";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
@@ -216,7 +216,7 @@ export type BuilderHudProps = {
   onLabelScaleChange: (scale: number) => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
-  onToggleTheme: () => void;
+  onToggleMode: () => void;
   quality: GraphicsQuality;
   onToggleQuality: () => void;
   onUndo: () => void;
@@ -439,12 +439,12 @@ function BeamList({
 }
 
 /**
- * The look picker at the status bar's right end: the current look's name, and
- * a menu that opens upward from it, so more looks can join without widening
+ * The theme picker at the status bar's right end: the current theme's name, and
+ * a menu that opens upward from it, so more themes can join without widening
  * the bar.
  */
-function LookMenu() {
-  const [look, setLook] = useBuilderLook();
+function ThemeMenu() {
+  const [theme, setTheme] = useTheme();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -465,14 +465,14 @@ function LookMenu() {
       window.removeEventListener("pointerdown", onPointer, true);
     };
   }, [open]);
-  return <div className="builderStatusBar__look" ref={wrapRef}>
-    <button type="button" className="builderStatusBar__lookTrigger" aria-haspopup="menu" aria-expanded={open} aria-controls="builder-look-menu" onClick={() => setOpen((current) => !current)}>
-      Look: {BUILDER_LOOK_NAMES[look]} <Icon name="up" size={12} />
+  return <div className="builderStatusBar__theme" ref={wrapRef}>
+    <button type="button" className="builderStatusBar__themeTrigger" aria-haspopup="menu" aria-expanded={open} aria-controls="builder-theme-menu" onClick={() => setOpen((current) => !current)}>
+      Theme: {SITE_THEME_NAMES[theme]} <Icon name="up" size={12} />
     </button>
-    {open ? <div id="builder-look-menu" className="builderStatusBar__popover builderStatusBar__lookMenu" role="menu" aria-label="Look">
-      {BUILDER_LOOKS.map((option) => (
-        <button type="button" role="menuitemradio" key={option} aria-checked={look === option} onClick={() => { setLook(option); setOpen(false); }}>
-          {BUILDER_LOOK_NAMES[option]}
+    {open ? <div id="builder-theme-menu" className="builderStatusBar__popover builderStatusBar__themeMenu" role="menu" aria-label="Theme">
+      {SITE_THEMES.map((option) => (
+        <button type="button" role="menuitemradio" key={option} aria-checked={theme === option} onClick={() => { setTheme(option); setOpen(false); }}>
+          {SITE_THEME_NAMES[option]}
         </button>
       ))}
     </div> : null}
@@ -2038,11 +2038,11 @@ export default function BuilderHud(props: BuilderHudProps) {
         </div>
         <button
           type="button"
-          className="builderIconBtn builderTheme"
+          className="builderIconBtn builderMode"
           aria-label="Day / night"
           title="Day / night"
-          data-guide="theme"
-          onClick={props.onToggleTheme}
+          data-guide="mode"
+          onClick={props.onToggleMode}
         >
           <Icon name="theme" />
         </button>
@@ -2103,7 +2103,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
           {props.traced ? "Legacy view" : "Switch to traced Beams"}
         </button>
-        <LookMenu />
+        <ThemeMenu />
       </div>
     </>
   );

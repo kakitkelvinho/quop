@@ -121,20 +121,45 @@ test("an upgraded Setup keeps its notice in the bar", async ({ page }) => {
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toHaveAttribute("aria-label", /This file was upgraded/);
 });
 
-test("the look menu opens upward, switches to 2001, survives a reload, and leaves the rest of the site alone", async ({ page }) => {
+test("the theme menu opens upward, switches to 2001 and persists across pages", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  const trigger = statusBar(page).getByRole("button", { name: /^Look:/ });
+  const trigger = statusBar(page).getByRole("button", { name: /^Theme:/ });
   await expect(trigger).toHaveText(/Station/);
   await trigger.click();
-  const menu = page.getByRole("menu", { name: "Look" });
+  const menu = page.getByRole("menu", { name: "Theme" });
   const [menuBox, triggerBox] = [await menu.boundingBox(), await trigger.boundingBox()];
   expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(triggerBox!.y);
   await expect(menu.getByRole("menuitemradio", { name: "Station" })).toHaveAttribute("aria-checked", "true");
   await menu.getByRole("menuitemradio", { name: "2001" }).click();
   await expect(menu).toHaveCount(0);
-  await expect(page.locator("html")).toHaveAttribute("data-look", "2001");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
   await page.reload();
-  await expect(statusBar(page).getByRole("button", { name: /^Look:/ })).toHaveText(/2001/);
+  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/2001/);
   await page.goto("calculators/");
-  await expect(page.locator("html")).not.toHaveAttribute("data-look", /.+/);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+});
+
+test("saved preferences migrate without resetting night mode or the 2001 theme", async ({ page }, testInfo) => {
+  await page.goto("./");
+  await page.evaluate(() => {
+    localStorage.setItem(["theme", "preference"].join("-"), "dark");
+    localStorage.setItem(["builder", "look"].join("-"), "2001");
+  });
+  await page.goto("builder/tabletop/");
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/2001/);
+  const saved = await page.evaluate(() => ({
+    mode: localStorage.getItem("mode-preference"),
+    theme: localStorage.getItem("site-theme"),
+    oldMode: localStorage.getItem(["theme", "preference"].join("-")),
+    oldTheme: localStorage.getItem(["builder", "look"].join("-")),
+  }));
+  expect(saved).toEqual({ mode: "dark", theme: "2001", oldMode: null, oldTheme: null });
+  await page.goto("calculators/");
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await page.evaluate(() => localStorage.removeItem("mode-preference"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-mode", testInfo.project.name);
 });

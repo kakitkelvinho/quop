@@ -1,20 +1,20 @@
 /* ===========================================================================
-   The Tabletop's 2001 look (html[data-look="2001"], set by builder-look.ts).
-   Every HUD surface is a flat dark screen in either site theme, like the
+   The Tabletop's 2001 theme (html[data-theme="2001"], set by site-theme.ts).
+   Every HUD surface is a flat dark screen in either site mode, like the
    film's displays set into a white console. It keeps the builder's own rules:
    opaque, square, one 1px hairline, no shadow, glow or texture. Light text
    on a screen is the ink; the one colour is the fault orange, for what is
    actually wrong. The scene's colour and light change in scene-theme.ts.
    =========================================================================== */
 
-html[data-look="2001"] {
+html[data-theme="2001"] {
   --look-screen: #05080b;
   --look-phosphor: #e8f1f5;
   /* about 6:1 on the screen */
   --look-fault: #ff6a3d;
 }
 
-html[data-look="2001"]
+html[data-theme="2001"]
   :is(
     .builderIsland,
     .builderParts,
@@ -49,21 +49,21 @@ html[data-look="2001"]
   color: var(--look-phosphor);
 }
 
-html[data-look="2001"] :is(.builderIconBtn.is-active, .builderIconBtn.is-active:hover:not(:disabled), .builderButton--primary, .builderWhatsNew__actions .is-primary, .builderLabel.is-selected) {
+html[data-theme="2001"] :is(.builderIconBtn.is-active, .builderIconBtn.is-active:hover:not(:disabled), .builderButton--primary, .builderWhatsNew__actions .is-primary, .builderLabel.is-selected) {
   background: var(--look-phosphor);
   color: var(--look-screen);
 }
 
-html[data-look="2001"] :is(.builderField__control input, .builderField__control select) {
+html[data-theme="2001"] :is(.builderField__control input, .builderField__control select) {
   color: var(--look-phosphor);
 }
 
-html[data-look="2001"] .builderField__control select option {
+html[data-theme="2001"] .builderField__control select option {
   background: var(--look-screen);
 }
 
 /* faults are the only colour on the glass */
-html[data-look="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:hover:not(:disabled), .fanBoxes__box.is-danger:focus-visible) {
+html[data-theme="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:hover:not(:disabled), .fanBoxes__box.is-danger:focus-visible) {
   color: var(--look-fault);
 }
 
@@ -73,7 +73,7 @@ html[data-look="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:h
    take Archivo Narrow's tabular figures. Names, messages and anything a user
    typed stay in Source Sans and their own case: λ/2 must not become Λ/2. */
 
-html[data-look="2001"]
+html[data-theme="2001"]
   :is(
     .builderPanelBar__title,
     .builderParts__groupName,
@@ -82,8 +82,8 @@ html[data-look="2001"]
     .builderField__label,
     .builderStatusBar__mode strong,
     .builderWhatsNew__heading > span,
-    .builderStatusBar__lookTrigger,
-    .builderStatusBar__lookMenu button
+    .builderStatusBar__themeTrigger,
+    .builderStatusBar__themeMenu button
   ) {
   font-family: var(--font-panel);
   font-size: 0.66rem;
@@ -92,7 +92,7 @@ html[data-look="2001"]
   text-transform: uppercase;
 }
 
-html[data-look="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
+html[data-theme="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
   font-family: var(--font-credits);
   font-weight: 500;
   letter-spacing: 0.12em;
@@ -100,13 +100,13 @@ html[data-look="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
 }
 
 /* a part's name is content, so it keeps its case */
-html[data-look="2001"] .builderInspector__head h2 {
+html[data-theme="2001"] .builderInspector__head h2 {
   font-family: var(--font-credits);
   font-weight: 500;
   letter-spacing: 0.04em;
 }
 
-html[data-look="2001"] :is(.builderReadout, .builderLightList__readouts) {
+html[data-theme="2001"] :is(.builderReadout, .builderLightList__readouts) {
   font-family: var(--font-data);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;

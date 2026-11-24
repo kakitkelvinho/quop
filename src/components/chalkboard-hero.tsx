@@ -139,7 +139,7 @@ function markRGB(): [number, number, number] {
 
 /** Graphite on paper smudges far less than chalk dust on slate. */
 function ghostScale() {
-  return document.documentElement.dataset.theme === "dark" ? 1 : 0.42;
+  return document.documentElement.dataset.mode === "dark" ? 1 : 0.42;
 }
 
 export function ChalkboardHero({ children }: { children: ReactNode }) {
@@ -584,13 +584,13 @@ export function ChalkboardHero({ children }: { children: ReactNode }) {
     };
     window.addEventListener("resize", onResize);
 
-    // the theme toggle swaps html[data-theme]; the canvases have to be redrawn
+    // the mode toggle swaps html[data-mode]; the canvases have to be redrawn
     const themeObserver = new MutationObserver(() => {
       drawGrain();
       drawGhosts();
     });
     themeObserver.observe(document.documentElement, {
-      attributeFilter: ["data-theme"],
+      attributeFilter: ["data-mode"],
       attributes: true,
     });
 
