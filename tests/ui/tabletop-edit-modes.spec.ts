@@ -22,6 +22,8 @@ async function topView(page: Page) {
 }
 
 test("Group mode picks with plain clicks and additive box drags, then restores normal clicks", async ({ page }) => {
+  // a dozen picks, each redrawing the table in software WebGL
+  test.setTimeout(90_000);
   await page.goto("builder/tabletop/");
   await topView(page);
 

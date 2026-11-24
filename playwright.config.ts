@@ -12,6 +12,9 @@ export default defineConfig({
   testDir: "tests/ui",
   // CI fails if a test.only was left in
   forbidOnly: !!process.env.CI,
+  // The Tabletop draws in software WebGL (swiftshader), which takes whole
+  // cores: two workers starve each other and the slower tests time out.
+  workers: 1,
   // progress in the terminal, and a report with screenshot diffs in playwright-report/
   reporter: [["list"], ["html", { open: "never" }]],
   expect: {

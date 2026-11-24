@@ -28,7 +28,8 @@ import {
 import { DEFAULT_LIGHTING, useScenePalette, type Lighting } from "@/components/builder/scene-theme";
 import { readStoredQuality, storeQuality, type GraphicsQuality } from "@/components/builder/graphics-quality";
 import { SETUP_BRIEF_FILENAME, setupBrief } from "@/components/builder/setup-brief";
-import { useBoxSelect, type ScreenBox } from "@/components/builder/use-box-select";
+import { BoxSelect } from "@/components/builder/box-select";
+import type { ScreenBox } from "@/components/builder/use-box-select";
 import { groupSubset, leftOutNotice, visibility, type GroupShow } from "@/components/builder/groups";
 import { existingGroups, mergeSetup, type OnExisting } from "@/components/builder/merge-setup";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
@@ -693,13 +694,6 @@ export default function BuilderScene() {
     setSelectedFrameId(null);
     setSelectedConnectionId(null);
   }, [editMode.kind]);
-
-  const selectionBox = useBoxSelect(hostRef, {
-    enabled: editMode.kind === "idle" || editMode.kind === "group-pick",
-    plain: editMode.kind === "group-pick",
-    onClick: togglePointedPart,
-    onBox: selectInBox,
-  });
 
   const handleSurfaceDrag = useCallback(
     (x: number, z: number, event: PointerEvent) => {
@@ -1793,17 +1787,13 @@ export default function BuilderScene() {
           onFramePointerDown={handleFramePointerDown}
           onCanvasReady={handleCanvasReady}
         />
-        {selectionBox ? (
-          <div
-            className="builderBoxSelect"
-            style={{
-              left: selectionBox.left,
-              top: selectionBox.top,
-              width: selectionBox.right - selectionBox.left,
-              height: selectionBox.bottom - selectionBox.top,
-            }}
-          />
-        ) : null}
+        <BoxSelect
+          hostRef={hostRef}
+          enabled={editMode.kind === "idle" || editMode.kind === "group-pick"}
+          plain={editMode.kind === "group-pick"}
+          onClick={togglePointedPart}
+          onBox={selectInBox}
+        />
       </div>
 
       <BuilderHud
