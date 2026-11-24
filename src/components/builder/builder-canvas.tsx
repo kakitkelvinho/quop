@@ -65,6 +65,7 @@ import {
   type RotationHandleSpec,
 } from "@/components/builder/rotation-handle";
 import { StageHandle } from "@/components/builder/stage-handle";
+import { motionShade } from "@/components/builder/motion-shading";
 import { ConnectionPath } from "@/components/builder/connection-path";
 import { FrameDraft, FrameMesh } from "@/components/builder/frame-mesh";
 import HoleGrid from "@/components/builder/hole-grid";
@@ -583,6 +584,53 @@ function FrameWatcher({ dragging, onSlow }: { dragging: boolean; onSlow: () => v
   });
   return null;
 }
+
+/**
+ * Drops the occlusion pass while the view or a part moves and fades it back
+ * in after (see motion-shading.ts). `ao` gives null in Light quality, which has none.
+ */
+function MotionShading({ ao, occlusion, dragging }: { ao: () => AoPass | null; occlusion: number; dragging: boolean }) {
+  const invalidate = useThree((state) => state.invalidate);
+  const lastView = useRef({ matrix: new Matrix4(), zoom: 0 });
+  const fade = useRef(1);
+  const lastFrame = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!dragging) invalidate();
+  }, [dragging, invalidate]);
+
+  useFrame(({ camera }) => {
+    const now = performance.now();
+    // the camera, not the controls' events: it also glides on after a
+    // release (the controls damp) and a wheel zoom never starts an orbit
+    const view = lastView.current;
+    const zoom = camera instanceof OrthographicCamera ? camera.zoom : 1;
+    // the first frame has nothing to compare with, and a page should open fully shaded
+    const cameraMoving = lastFrame.current !== null && (!view.matrix.equals(camera.matrixWorld) || view.zoom !== zoom);
+    view.matrix.copy(camera.matrixWorld);
+    view.zoom = zoom;
+    const shade = motionShade(
+      { cameraMoving, dragging },
+      fade.current,
+      lastFrame.current === null ? 0 : now - lastFrame.current,
+    );
+    lastFrame.current = now;
+    fade.current = shade.occlusionFade;
+    const pass = ao();
+    if (pass) {
+      pass.enabled = shade.occlusion;
+      // AO is raised to this power, so 0 draws none and the full value the miniature finish
+      const intensity = occlusion * shade.occlusionFade;
+      if (pass.configuration.intensity !== intensity) pass.configuration.intensity = intensity;
+    }
+    // one more frame either way: a still one starts the fade, a fading one carries it on
+    if (cameraMoving || shade.fading) invalidate();
+  });
+  return null;
+}
+
+/** the part of n8ao's N8AOPostPass this reaches; n8ao ships no types */
+type AoPass = { enabled: boolean; configuration: { intensity: number } };
 
 type EventDispatcherLike = {
   addEventListener: (type: string, listener: () => void) => void;
@@ -1371,6 +1419,8 @@ export default function BuilderCanvas({
   const blueprint = palette.theme === "blueprint";
   const blueprintInk = blueprint ? BLUEPRINT_STYLES[palette.mode].ink : undefined;
   const settings = blueprint ? QUALITY_SETTINGS.light : QUALITY_SETTINGS[quality];
+  const aoRef = useRef<AoPass>(null);
+  const aoPass = useCallback(() => aoRef.current, []);
   return (
     <Canvas
       orthographic
@@ -1402,6 +1452,7 @@ export default function BuilderCanvas({
         shadowMapSize={settings.shadowMapSize}
       />}
       {!blueprint && onSlowView ? <FrameWatcher dragging={dragging} onSlow={onSlowView} /> : null}
+      {blueprint ? null : <MotionShading ao={aoPass} occlusion={palette.occlusion} dragging={dragging} />}
       {blueprint ? null : <RingRoom dark={palette.mode === "dark"} />}
       {blueprint ? null : <Backdrop stops={palette.backdrop} />}
 
@@ -1655,6 +1706,7 @@ export default function BuilderCanvas({
         {settings.effects ? (
           <>
             <N8AO
+              ref={aoRef}
               aoRadius={30}
               distanceFalloff={1}
               intensity={palette.occlusion}
