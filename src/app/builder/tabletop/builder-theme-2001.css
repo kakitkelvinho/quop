@@ -34,6 +34,7 @@ html[data-theme="2001"]
   --border: rgb(232 241 245 / 0.16);
   --builder-hairline: rgb(232 241 245 / 0.28);
   --builder-hover: rgb(232 241 245 / 0.1);
+  --surface: var(--look-screen);
   --surface-strong: var(--look-screen);
   --background: #0b1014;
   /* what is live inverts to a lit block, as the film's readouts do; no hue */
@@ -68,10 +69,12 @@ html[data-theme="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:
 }
 
 /* --- type ----------------------------------------------------------------
-   Michroma (the film's extended panel lettering) only on the labels the
-   interface asserts, uppercase per the Case Rule, never under 11px. Readouts
-   take Archivo Narrow's tabular figures. Names, messages and anything a user
-   typed stay in Source Sans and their own case: λ/2 must not become Λ/2. */
+   Gill Sans (Gillius ADF) on the labels and titles the interface asserts,
+   uppercase per the Case Rule. Numbers and long text take Archivo Narrow,
+   standing in for the Univers Condensed of the film's instruction panels:
+   Gillius has no tabular figures, so its readouts would jitter while
+   dragging. Names and anything a user typed keep their own case: λ/2 must
+   not become Λ/2. */
 
 html[data-theme="2001"]
   :is(
@@ -85,24 +88,25 @@ html[data-theme="2001"]
     .builderStatusBar__themeTrigger,
     .builderStatusBar__themeMenu button
   ) {
-  font-family: var(--font-panel);
-  font-size: 0.66rem;
+  font-family: var(--font-label);
+  /* Gill is narrower than an extended face, so it needs the larger size */
+  font-size: 0.78rem;
   font-weight: 400;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 html[data-theme="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
-  font-family: var(--font-credits);
-  font-weight: 500;
+  font-family: var(--font-label);
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 /* a part's name is content, so it keeps its case */
 html[data-theme="2001"] .builderInspector__head h2 {
-  font-family: var(--font-credits);
-  font-weight: 500;
+  font-family: var(--font-label);
+  font-weight: 400;
   letter-spacing: 0.04em;
 }
 
@@ -110,4 +114,10 @@ html[data-theme="2001"] :is(.builderReadout, .builderLightList__readouts) {
   font-family: var(--font-data);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="2001"] :is(.builderWhatsNew p, .builderCoach__card p, .builderInspector p, .builderBrief p) {
+  font-family: var(--font-data);
+  font-size: 1.04em;
+  letter-spacing: 0.01em;
 }
