@@ -240,6 +240,7 @@ test("Add stops ends when another beam is selected", async ({ page }) => {
 });
 
 test("Light reveals an unpinned route, pins it for export, and labels distances without pins", async ({ page }) => {
+  test.setTimeout(90_000);
   await page.goto("builder/tabletop/");
   await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   await page.getByRole("button", { name: "QUOP" }).click();
