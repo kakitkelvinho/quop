@@ -112,6 +112,9 @@ const CRYSTAL_AMBER = "#f3d9a0";
 const ACOUSTIC_TEAL = "#2f7f86";
 
 /** `axis` is the component's height: the model draws its optical centre there. */
+// PROTOTYPE (2001 parts): remove with the variants
+import { AccentBand, BAND, HalEye, TraceRing, useProto2001, useProto2001Trace } from "@/components/builder/prototype-2001-parts";
+
 type ModelProps = { palette: ScenePalette; color?: string; axis: number };
 
 /**
@@ -549,6 +552,7 @@ const LASER_FOOT_MM = 6;
 
 function LaserSource({ palette, axis }: ModelProps) {
   const posts = useContext(PostsVisible);
+  const bands = useProto2001("bands");
   const feet = Math.max(1, axis - 18);
   return (
     <group>
@@ -570,6 +574,7 @@ function LaserSource({ palette, axis }: ModelProps) {
       >
         <Enamel color={palette.body} />
       </RoundedBox>
+      {bands ? <AccentBand size={[LASER_BODY_MM, 40, 40]} centre={[0, axis, 0]} color={BAND.source} /> : null}
       <mesh position={[LASER_EMITTER.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[7, 7, LASER_EMITTER.length, 22]} />
         <meshStandardMaterial
@@ -1802,6 +1807,8 @@ function Objective({
  */
 function GenericBlock({ palette, color, axis, size, symbol, yaw }: ModelProps & { size: Vec3; symbol?: BlockSymbol; yaw?: number }) {
   const [dx, dy, dz] = size;
+  const bands = useProto2001("bands");
+  const band = bands && dy >= 16 ? <AccentBand size={[dx, dy, dz]} centre={[0, axis, 0]} color={BAND.instrument} fromTop={Math.min(6, dy / 5)} height={Math.min(3.5, dy / 8)} /> : null;
   if (symbol) return (
     <group>
       <Pillar palette={palette} top={axis - dy / 2} />
@@ -1810,6 +1817,7 @@ function GenericBlock({ palette, color, axis, size, symbol, yaw }: ModelProps & 
         <Edges color={palette.anodise} threshold={18} />
       </RoundedBox>
       <BlockSymbolFaces symbol={symbol} size={size} axis={axis} color={palette.anodise} yaw={yaw ?? 0} />
+      {band}
     </group>
   );
   return (
@@ -1823,6 +1831,7 @@ function GenericBlock({ palette, color, axis, size, symbol, yaw }: ModelProps & 
       >
         <Enamel color={color ?? DEFAULT_BLOCK_COLOR} />
       </RoundedBox>
+      {band}
       {/* the clear aperture on each beam face */}
       {[-1, 1].map((side) => (
         <mesh
@@ -1873,6 +1882,7 @@ const PD_CUP_BLACK = "#20252d";
 const PD_FACE_GEOMETRY = annulus(PD_RADIUS, PD_CUP_RADIUS, PD_FACE_DEPTH);
 
 function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean }) {
+  const eye = useProto2001("eye");
   const fiber = useMemo(() => stubCurve(photodiodeStubPoints(axis)), [axis]);
   return (
     <group>
@@ -1900,6 +1910,7 @@ function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean
           <boxGeometry args={[0.2, PD_CHIP_SIDE_MM, PD_CHIP_SIDE_MM]} />
           <meshStandardMaterial color={SENSOR_SILICON} roughness={0.12} metalness={0.5} />
         </mesh>
+        {eye ? <HalEye x={-2.3} radius={PD_CUP_RADIUS - 0.3} /> : null}
         <mesh rotation={[0, 0, -Math.PI / 2]}>
           <sphereGeometry args={[PD_RADIUS, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <Enamel color={color ?? DEFAULT_PHOTODIODE_COLOR} />
@@ -2017,6 +2028,8 @@ function Eom({ palette, axis }: ModelProps) {
 const CAMERA_HALF_MM = 25;
 
 function CameraBody({ palette, color, axis }: ModelProps) {
+  const eye = useProto2001("eye");
+  const bands = useProto2001("bands");
   return (
     <group>
       {/* flush with the body's underside, not sunk into it */}
@@ -2038,12 +2051,26 @@ function CameraBody({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[CAMERA_OPENING_RADIUS_MM, CAMERA_OPENING_RADIUS_MM, CAMERA_MOUNT_RING.depth, 28]} />
         <Enamel color="#12161d" />
       </mesh>
+      {eye ? (
+        <group position={[0, axis, 0]}>
+          <HalEye x={CAMERA_MOUNT_RING.x - CAMERA_MOUNT_RING.depth / 2 - 0.1} radius={CAMERA_OPENING_RADIUS_MM} />
+        </group>
+      ) : null}
+      {bands ? (
+        <AccentBand
+          size={[CAMERA_DEPTH_MM, 2 * CAMERA_HALF_MM, 2 * CAMERA_HALF_MM]}
+          centre={[CAMERA_FRONT_X + CAMERA_DEPTH_MM / 2, axis, 0]}
+          color={BAND.analyser}
+        />
+      ) : null}
     </group>
   );
 }
 
 function Spectrometer({ palette, color, axis }: ModelProps) {
   const body = axis + 20;
+  const eye = useProto2001("eye");
+  const bands = useProto2001("bands");
   return (
     <group>
       <mesh position={[0, body / 2, 0]}>
@@ -2055,6 +2082,12 @@ function Spectrometer({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT.length, 20]} />
         <Enamel color="#1b1f26" />
       </mesh>
+      {eye ? (
+        <group position={[0, axis, 0]}>
+          <HalEye x={SPECTROMETER_PORT.x - SPECTROMETER_PORT.length / 2 - 0.1} radius={SPECTROMETER_PORT_RADIUS_MM} />
+        </group>
+      ) : null}
+      {bands ? <AccentBand size={[SPECTROMETER_BODY_MM, body, 80]} centre={[0, body / 2, 0]} color={BAND.analyser} fromTop={10} height={5} /> : null}
       <mesh position={[0, body + 1, 0]}>
         <boxGeometry args={[100, 2, 70]} />
         <Hardware palette={palette} />
@@ -2197,6 +2230,8 @@ function TimeTagger({ palette, axis }: ModelProps) {
 }
 
 function SelectionRing({ radius, color }: { radius: number; color: string }) {
+  const trace = useProto2001Trace();
+  if (trace) return <TraceRing radius={radius} color={trace} core={1} glow={0.22} />;
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.6, 0]}>
       <ringGeometry args={[radius, radius + 3, 48]} />
@@ -2211,6 +2246,8 @@ function SelectionRing({ radius, color }: { radius: number; color: string }) {
 }
 
 function HoverRing({ radius, color }: { radius: number; color: string }) {
+  const trace = useProto2001Trace();
+  if (trace) return <TraceRing radius={radius} color={trace} core={0.6} glow={0} opacity={0.45} />;
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.4, 0]}>
       <ringGeometry args={[radius, radius + 1.6, 48]} />

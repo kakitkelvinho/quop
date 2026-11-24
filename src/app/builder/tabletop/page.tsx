@@ -6,8 +6,9 @@ import "./builder-look-2001.css";
 // PROTOTYPE (2001 type): remove with the variants
 import "./prototype-2001-type.css";
 import "./prototype-blueprint.css";
+import "./prototype-2001-parts.css";
 import { Suspense } from "react";
-import { PrototypeBlueprintSwitch } from "./prototype-blueprint-switch";
+import { Prototype2001Switch } from "./prototype-2001-switch";
 
 export const metadata: Metadata = {
   title: "Tabletop",
@@ -21,7 +22,7 @@ export default function BuilderPage() {
       <h1 className="sr-only">Tabletop</h1>
       <BuilderSceneLoader />
       <Suspense>
-        <PrototypeBlueprintSwitch />
+        <Prototype2001Switch />
       </Suspense>
     </section>
   );
