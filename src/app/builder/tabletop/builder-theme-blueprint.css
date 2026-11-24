@@ -64,7 +64,7 @@ html[data-theme="blueprint"] :is(
   .builderWhatsNew__heading > span, .builderStatusBar__themeTrigger,
   .builderStatusBar__themeMenu button
 ) {
-  font-family: var(--font-gillius, var(--font-panel)), "Gill Sans", sans-serif;
+  font-family: var(--font-label);
   font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 0.16em;
@@ -72,7 +72,7 @@ html[data-theme="blueprint"] :is(
 }
 
 html[data-theme="blueprint"] :is(.builderWhatsNew h2, .builderCoach__title, .builderInspector__head h2) {
-  font-family: var(--font-gillius, var(--font-credits)), "Gill Sans", sans-serif;
+  font-family: var(--font-label);
   font-weight: 400;
   letter-spacing: 0.04em;
 }
@@ -83,7 +83,7 @@ html[data-theme="blueprint"] :is(.builderReadout, .builderLightList__readouts) {
 }
 
 html[data-theme="blueprint"] .builderLabel {
-  font-family: var(--font-gillius, var(--font-display)), "Gill Sans", sans-serif;
+  font-family: var(--font-label);
   font-weight: 400;
   letter-spacing: 0.06em;
   border: 1px solid var(--bp-ink);

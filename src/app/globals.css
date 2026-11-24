@@ -65,10 +65,8 @@ html[data-mode="dark"] {
   --font-sans: var(--font-source-sans), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --font-serif: var(--font-eb-garamond), Georgia, "Times New Roman", serif;
-  /* the Tabletop's 2001 theme; display and credits are both Jost until Gillius ADF is self-hosted */
-  --font-display: var(--font-jost), "Gill Sans", "Century Gothic", sans-serif;
-  --font-credits: var(--font-jost), Futura, "Century Gothic", sans-serif;
-  --font-panel: var(--font-michroma), "Eurostile", "Arial Black", sans-serif;
+  /* the Tabletop's 2001 and Blueprint themes; Source Sans catches the Greek Gillius lacks */
+  --font-label: var(--font-gillius), "Gill Sans", var(--font-source-sans), sans-serif;
   --font-data: var(--font-archivo-narrow), "Arial Narrow", sans-serif;
 }
 

@@ -26,17 +26,15 @@ const ebGaramond = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
-// The Tabletop's 2001 theme (builder-theme-2001.css): open stand-ins for the
-// film's faces. Michroma for Eurostile Extended, Jost for Futura and for Gill
-// Sans (Gillius ADF is not on Google Fonts), Archivo Narrow for Univers
-// Condensed. Vendored from Google Fonts like the others.
-const jost = localFont({
-  src: [{ path: "./fonts/jost-300-500-normal.woff2", weight: "300 500", style: "normal" }],
-  variable: "--font-jost",
-});
-const michroma = localFont({
-  src: [{ path: "./fonts/michroma-400-normal.woff2", weight: "400", style: "normal" }],
-  variable: "--font-michroma",
+// The Tabletop's 2001 and Blueprint themes: open stand-ins for the film's
+// faces. Gillius ADF (from CTAN, GPL with the font exception) for Gill Sans,
+// and Archivo Narrow (Google Fonts) for Univers Condensed.
+const gillius = localFont({
+  src: [
+    { path: "./fonts/gillius-adf-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/gillius-adf-700-normal.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-gillius",
 });
 const archivoNarrow = localFont({
   src: [{ path: "./fonts/archivo-narrow-400-600-normal.woff2", weight: "400 600", style: "normal" }],
@@ -106,7 +104,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${sourceSans.variable} ${ebGaramond.variable} ${jost.variable} ${michroma.variable} ${archivoNarrow.variable}`}
+      className={`${sourceSans.variable} ${ebGaramond.variable} ${gillius.variable} ${archivoNarrow.variable}`}
       lang="en"
       suppressHydrationWarning
     >
