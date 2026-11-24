@@ -36,6 +36,12 @@ export type ScenePalette = {
   accent: string;
   /** the hover ring: the ink a third of the way back to the backdrop */
   hover: string;
+  /**
+   * 2001 only: the CRT trace colour that selection and hover rings, the stage
+   * handle and the Flip chip take instead of the accent. Must match
+   * `--look-trace` in builder-theme-2001.css (scene-theme.test.ts checks)
+   */
+  trace: string | null;
   ambient: number;
   keyLight: number;
   rimLight: number;
@@ -83,7 +89,13 @@ export const DEFAULT_LIGHTING: Lighting = { brightness: 1, shadows: true };
 export const BRIGHTNESS_RANGE: [number, number] = [0.25, 2];
 
 /** a palette without its ink, which comes from the page's tokens */
-type Inkless = Omit<ScenePalette, "theme" | "accent" | "hover">;
+type Inkless = Omit<ScenePalette, "theme" | "accent" | "hover" | "trace">;
+
+/**
+ * Phosphor yellow by night; by day a darker amber, as pure yellow vanishes
+ * on the white sweep.
+ */
+export const TRACE_2001 = { light: "#c08600", dark: "#ffd23f" } as const;
 
 export const LIGHT_PALETTE: Inkless = {
   mode: "light",
@@ -243,6 +255,7 @@ export function useScenePalette(): ScenePalette {
     // before the tokens are read (the server render), a neutral the canvas never shows
     const accent = new Color(theme === "blueprint" ? mode === "dark" ? "#dce8f8" : "#111111" : ring || base.post);
     const hover = accent.clone().lerp(new Color(base.backdrop[0]), 1 / 3);
-    return { ...base, theme: theme as SiteTheme, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}` };
+    const trace = theme === "2001" ? TRACE_2001[mode === "dark" ? "dark" : "light"] : null;
+    return { ...base, theme: theme as SiteTheme, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}`, trace };
   }, [snapshot]);
 }
