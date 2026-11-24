@@ -35,7 +35,7 @@ const TAGS: { key: string; text: string; sides: Side[] }[] = [
   { key: "groups", text: "Groups: click to select, eye to fade or hide", sides: ["right", "above"] },
   { key: "rail", text: "Beams · frames · groups: show a list, or start one", sides: ["above", "right"] },
   { key: "view", text: "Camera: fit · top · iso", sides: ["above", "left"] },
-  { key: "theme", text: "Day / night", sides: ["above", "left"] },
+  { key: "mode", text: "Day / night", sides: ["above", "left"] },
 ];
 
 const GAP = 10;

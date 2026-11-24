@@ -125,7 +125,7 @@ function getDocumentColorMode(): "light" | "dark" {
     return "light";
   }
 
-  return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  return document.documentElement.dataset.mode === "dark" ? "dark" : "light";
 }
 
 function getTickMultiplierFromExponent(exponent: number) {
@@ -354,7 +354,7 @@ function InteractiveScatterChartInner({
     const observer = new MutationObserver(syncColorMode);
     observer.observe(root, {
       attributes: true,
-      attributeFilter: ["data-theme"],
+      attributeFilter: ["data-mode"],
     });
 
     return () => {

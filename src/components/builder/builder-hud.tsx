@@ -34,6 +34,7 @@ import {
   GroupInspector,
   GroupsMenu,
 } from "@/components/builder/builder-inspector";
+import { SITE_THEME_NAMES, SITE_THEMES, useTheme } from "@/components/site-theme";
 import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-theme";
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
@@ -215,7 +216,7 @@ export type BuilderHudProps = {
   onLabelScaleChange: (scale: number) => void;
   onViewChange: (view: CameraView) => void;
   onFit: () => void;
-  onToggleTheme: () => void;
+  onToggleMode: () => void;
   quality: GraphicsQuality;
   onToggleQuality: () => void;
   onUndo: () => void;
@@ -435,6 +436,56 @@ function BeamList({
       {panel.resize ? <PanelResize {...panel.resize} /> : null}
     </section>
   );
+}
+
+/**
+ * The theme picker at the status bar's right end: the current theme's name, and
+ * a menu that opens upward from it, so more themes can join without widening
+ * the bar.
+ */
+function ThemeMenu() {
+  const [theme, setTheme] = useTheme();
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+    const onPointer = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("pointerdown", onPointer, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("pointerdown", onPointer, true);
+    };
+  }, [open]);
+  return <div className="builderStatusBar__theme" ref={wrapRef}>
+    <button type="button" className="builderStatusBar__themeTrigger" aria-haspopup="menu" aria-expanded={open} aria-controls="builder-theme-menu" onClick={() => setOpen((current) => !current)}>
+      Theme: {SITE_THEME_NAMES[theme]} <Icon name="up" size={12} />
+    </button>
+    {open ? <div id="builder-theme-menu" className="builderStatusBar__popover builderStatusBar__themeMenu" role="menu" aria-label="Theme">
+      {SITE_THEMES.map((option) => (
+        <button type="button" role="menuitemradio" key={option} aria-checked={theme === option} onClick={() => { setTheme(option); setOpen(false); }}>
+          {SITE_THEME_NAMES[option]}
+        </button>
+      ))}
+    </div> : null}
+  </div>;
+}
+
+/** a loss's share of the light: the Power sign's battery, read-only */
+function PowerMeter({ power }: { power: number }) {
+  const percent = Math.round(Math.min(1, Math.max(0, power)) * 100);
+  return <span className="builderLightList__power" role="meter" aria-label="Power" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent} aria-valuetext={`${percent}%`}>
+    <span className="builderLightList__battery" aria-hidden="true" style={{ "--power": `${percent}%` } as CSSProperties}><span /></span>
+    <span aria-hidden="true">{percent}%</span>
+  </span>;
 }
 
 function LightList({
@@ -1429,23 +1480,26 @@ export default function BuilderHud(props: BuilderHudProps) {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // the checks list opens while a mouse rests on the triangle, and stays open once clicked
   const [checksOpen, setChecksOpen] = useState(false);
+  const [checksHovered, setChecksHovered] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(readWhatsNew);
   const dismissWhatsNew = useCallback(() => {
     try { window.localStorage.setItem(WHATS_NEW_KEY, "dismissed"); } catch { /* storage can be unavailable */ }
     setWhatsNewOpen(false);
   }, []);
   useEffect(() => {
-    if (!checksOpen) return;
+    if (!checksOpen && !checksHovered) return;
     const close = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
       event.stopPropagation();
       setChecksOpen(false);
+      setChecksHovered(false);
     };
     window.addEventListener("keydown", close, true);
     return () => window.removeEventListener("keydown", close, true);
-  }, [checksOpen]);
+  }, [checksOpen, checksHovered]);
   // whether Show is open: held here, so the eye and the status strip both open it
   const [showOpen, setShowOpen] = useState(false);
   const statusRowRef = useRef<HTMLButtonElement>(null);
@@ -1984,11 +2038,11 @@ export default function BuilderHud(props: BuilderHudProps) {
         </div>
         <button
           type="button"
-          className="builderIconBtn builderTheme"
+          className="builderIconBtn builderMode"
           aria-label="Day / night"
           title="Day / night"
-          data-guide="theme"
-          onClick={props.onToggleTheme}
+          data-guide="mode"
+          onClick={props.onToggleMode}
         >
           <Icon name="theme" />
         </button>
@@ -2013,17 +2067,34 @@ export default function BuilderHud(props: BuilderHudProps) {
           <strong>{mode?.label ?? "Select"}</strong>
           {mode ? <span className="builderStatusBar__hints">{mode.hints.map(([key, action]) => <span key={`${key} ${action}`}><kbd>{key}</kbd> {action}</span>)}</span> : null}
         </div>
-        {props.trace ? <div className="builderStatusBar__checksWrap">
-          <button type="button" className="builderStatusBar__checks" aria-expanded={checksOpen} aria-controls="builder-status-checks" disabled={props.trace.checks.length === 0} onClick={() => setChecksOpen((open) => !open)}>
-            {props.trace.checks.length ? `⚠ ${props.trace.checks.length} ${props.trace.checks.length === 1 ? "check" : "checks"}` : "✓ Light reaches every stop"}
-          </button>
-          {checksOpen && props.trace.checks.length ? <div id="builder-status-checks" className="builderStatusBar__popover" role="dialog" aria-label="Checks">
-            <strong>{props.trace.checks.length} {props.trace.checks.length === 1 ? "check" : "checks"}</strong>
-            {props.trace.checks.map((check) => <button type="button" key={`${check.kind}-${check.componentId}-${check.routeId ?? ""}`} onClick={() => { props.onSelectComponent(check.componentId); setChecksOpen(false); }}>
-              {check.message}
-            </button>)}
-          </div> : null}
-        </div> : null}
+        {props.trace ? props.trace.checks.length === 0 ? (
+          <span className="builderStatusBar__clear" role="img" aria-label="Light reaches every stop" title="Light reaches every stop">
+            <Icon name="check" size={16} />
+          </span>
+        ) : (
+          <div
+            className="builderStatusBar__checksWrap"
+            onPointerEnter={(event) => { if (event.pointerType === "mouse") setChecksHovered(true); }}
+            onPointerLeave={(event) => { if (event.pointerType === "mouse") setChecksHovered(false); }}
+          >
+            <button
+              type="button"
+              className="builderStatusBar__checks"
+              aria-label={`${props.trace.checks.length} ${props.trace.checks.length === 1 ? "check" : "checks"}`}
+              aria-expanded={checksOpen || checksHovered}
+              aria-controls="builder-status-checks"
+              onClick={() => { setChecksHovered(false); setChecksOpen((open) => !open); }}
+            >
+              <Icon name="warning" size={16} />
+            </button>
+            {checksOpen || checksHovered ? <div id="builder-status-checks" className="builderStatusBar__popover" role="dialog" aria-label="Checks">
+              <strong>{props.trace.checks.length} {props.trace.checks.length === 1 ? "check" : "checks"}</strong>
+              {props.trace.checks.map((check) => <button type="button" key={`${check.kind}-${check.componentId}-${check.routeId ?? ""}`} onClick={() => { props.onSelectComponent(check.componentId); setChecksOpen(false); setChecksHovered(false); }}>
+                {check.message}
+              </button>)}
+            </div> : null}
+          </div>
+        ) : null}
         {!props.traced ? <span className="builderStatusBar__legacyNote">Legacy view: drawn Beams, not traced</span> : null}
         {props.upgradeMessage ? <span className="builderStatusBar__upgrade" aria-label={props.upgradeMessage} title={props.upgradeMessage}>
           <strong>Upgraded</strong><span className="builderStatusBar__upgradeDetail"> · {props.upgradeMessage.replace(/^This file was upgraded\.\s*/, "")}</span>
@@ -2032,6 +2103,7 @@ export default function BuilderHud(props: BuilderHudProps) {
         <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
           {props.traced ? "Legacy view" : "Switch to traced Beams"}
         </button>
+        <ThemeMenu />
       </div>
     </>
   );

@@ -35,7 +35,7 @@
   --chalk-filter: url(#quop-graphite);
 }
 
-html[data-theme="dark"] {
+html[data-mode="dark"] {
   --background: #000000;
   --background-muted: #000000;
   --surface: rgb(10 10 10 / 0.92);
@@ -65,6 +65,11 @@ html[data-theme="dark"] {
   --font-sans: var(--font-source-sans), -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --font-serif: var(--font-eb-garamond), Georgia, "Times New Roman", serif;
+  /* the Tabletop's 2001 theme; display and credits are both Jost until Gillius ADF is self-hosted */
+  --font-display: var(--font-jost), "Gill Sans", "Century Gothic", sans-serif;
+  --font-credits: var(--font-jost), Futura, "Century Gothic", sans-serif;
+  --font-panel: var(--font-michroma), "Eurostile", "Arial Black", sans-serif;
+  --font-data: var(--font-archivo-narrow), "Arial Narrow", sans-serif;
 }
 
 /* Element defaults sit in the base layer, under Tailwind's utilities, so a
@@ -119,7 +124,7 @@ html[data-theme="dark"] {
   }
 
   /* 28% of the blue on black is barely there */
-  html[data-theme="dark"] ::selection {
+  html[data-mode="dark"] ::selection {
     background: var(--accent-soft);
   }
 
@@ -133,19 +138,19 @@ html[data-theme="dark"] {
   }
 }
 
-.themeToggle__iconWrap {
+.modeToggle__iconWrap {
   display: contents;
 }
 
-.themeToggle__iconWrap--sun {
+.modeToggle__iconWrap--sun {
   display: none;
 }
 
-html[data-theme="dark"] .themeToggle__iconWrap--moon {
+html[data-mode="dark"] .modeToggle__iconWrap--moon {
   display: none;
 }
 
-html[data-theme="dark"] .themeToggle__iconWrap--sun {
+html[data-mode="dark"] .modeToggle__iconWrap--sun {
   display: contents;
 }
 
@@ -209,13 +214,13 @@ h2 {
 
 /* at night a link's words are white like the text round it, so it keeps a
    fine underline, and hovering washes it in the ink */
-html[data-theme="dark"] :is(.siteFooter a, .chapter__links a) {
+html[data-mode="dark"] :is(.siteFooter a, .chapter__links a) {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.18em;
 }
 
-html[data-theme="dark"] .chapter__links a:hover {
+html[data-mode="dark"] .chapter__links a:hover {
   background: var(--accent-soft);
 }
 
@@ -643,7 +648,7 @@ select.linkedField__unit {
 }
 
 /* on the black board the station blue sinks; the night ring's lighter blue holds */
-html[data-theme="dark"] .beamProfile {
+html[data-mode="dark"] .beamProfile {
   --beam: #4f8dd6;
 }
 
@@ -1554,7 +1559,7 @@ html[data-theme="dark"] .beamProfile {
   backdrop-filter: blur(4px);
 }
 
-html[data-theme="dark"] .visualizerOverlayState {
+html[data-mode="dark"] .visualizerOverlayState {
   background: rgb(21 24 33 / 0.78);
 }
 
@@ -2077,7 +2082,7 @@ main:focus {
   font: inherit;
 }
 
-html[data-theme="dark"] .fitsColorControl__select {
+html[data-mode="dark"] .fitsColorControl__select {
   background: rgb(12 17 26 / 0.82);
 }
 
@@ -3159,7 +3164,7 @@ html[data-theme="dark"] .fitsColorControl__select {
 }
 
 /* the note is a light plate at night, so its refusal darkens to stay legible */
-html[data-theme="dark"] .builderDraftNote.is-refused {
+html[data-mode="dark"] .builderDraftNote.is-refused {
   color: #9b1c1c;
 }
 
@@ -3279,7 +3284,7 @@ html[data-theme="dark"] .builderDraftNote.is-refused {
   animation: builderGuideFade 200ms ease-out;
 }
 
-html[data-theme="dark"] .builderCoach {
+html[data-mode="dark"] .builderCoach {
   background: rgb(0 0 0 / 0.55);
 }
 
@@ -4031,6 +4036,13 @@ html[data-theme="dark"] .builderCoach {
 .builderLightList__readout[aria-pressed="true"] .builderLightList__readoutValue {
   max-width: 7rem;
   opacity: 1;
+}
+
+.builderLightList__power {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
 }
 
 .builderLightList__battery {
@@ -5019,8 +5031,78 @@ body[data-panel-gesture="se"] * {
   background: var(--builder-hover);
 }
 
-.builderStatusBar__checks:disabled {
-  cursor: default;
+.builderStatusBar__checks,
+.builderStatusBar__clear {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
+.builderStatusBar__clear {
+  color: var(--muted);
+}
+
+/* a check is a warning, so it takes the Clear box's orange, never the ink */
+.builderStatusBar__checks {
+  color: #c2410c;
+}
+
+html[data-mode="dark"] .builderStatusBar__checks {
+  color: #fb8c4a;
+}
+
+/* the look picker: the current look's name; its menu opens upward from the
+   bar's right end, so the popover anchors right rather than left */
+.builderStatusBar__theme {
+  position: relative;
+  flex: none;
+}
+
+.builderStatusBar__themeTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.35rem;
+  border: 0;
+  border-radius: var(--builder-radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.builderStatusBar__themeTrigger:hover,
+.builderStatusBar__themeTrigger[aria-expanded="true"] {
+  background: var(--builder-hover);
+}
+
+.builderStatusBar__themeMenu {
+  right: 0;
+  left: auto;
+  width: 10rem;
+}
+
+/* the current look is pressed in neutrally, wash and foot bar, never the ink */
+.builderStatusBar__themeMenu [aria-checked="true"] {
+  background: var(--builder-hover);
+  background-image: linear-gradient(var(--foreground), var(--foreground));
+  background-position: bottom;
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+}
+
+.builderStatusBar__themeMenu button:hover {
+  background-color: var(--builder-hover);
+}
+
+/* bridges the gap up to the popover, so a mouse can travel into the list */
+.builderStatusBar__popover::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 0.75rem;
 }
 
 .builderStatusBar__upgrade,
@@ -5440,7 +5522,7 @@ body:has(.chalkboard) {
 }
 
 /* the blue mixed with white chalk goes grey: at night the chalk is the ring's lighter blue */
-html[data-theme="dark"] .chalkEq__ink--accent {
+html[data-mode="dark"] .chalkEq__ink--accent {
   color: var(--focus-ring);
 }
 
@@ -5838,11 +5920,11 @@ html[data-theme="dark"] .chalkEq__ink--accent {
   fill: color-mix(in srgb, var(--accent) 80%, rgb(var(--mark)));
 }
 
-html[data-theme="dark"] :is(.chapter__beam, .chapter__accent) {
+html[data-mode="dark"] :is(.chapter__beam, .chapter__accent) {
   stroke: var(--focus-ring);
 }
 
-html[data-theme="dark"] .chapter__chalk .chapter__accentText {
+html[data-mode="dark"] .chapter__chalk .chapter__accentText {
   fill: var(--focus-ring);
 }
 
@@ -6457,10 +6539,10 @@ html[data-theme="dark"] .chapter__chalk .chapter__accentText {
   color: #c2410c;
 }
 
-html[data-theme="dark"] .fanBoxes__box.is-danger:hover:not(:disabled),
-html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible,
-html[data-theme="dark"] .fanBoxes__box.is-danger:hover .fanBoxes__name,
-html[data-theme="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
+html[data-mode="dark"] .fanBoxes__box.is-danger:hover:not(:disabled),
+html[data-mode="dark"] .fanBoxes__box.is-danger:focus-visible,
+html[data-mode="dark"] .fanBoxes__box.is-danger:hover .fanBoxes__name,
+html[data-mode="dark"] .fanBoxes__box.is-danger:focus-visible .fanBoxes__name {
   color: #fb8c4a;
 }
 

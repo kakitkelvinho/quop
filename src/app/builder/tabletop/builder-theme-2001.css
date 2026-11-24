@@ -1,0 +1,113 @@
+/* ===========================================================================
+   The Tabletop's 2001 theme (html[data-theme="2001"], set by site-theme.ts).
+   Every HUD surface is a flat dark screen in either site mode, like the
+   film's displays set into a white console. It keeps the builder's own rules:
+   opaque, square, one 1px hairline, no shadow, glow or texture. Light text
+   on a screen is the ink; the one colour is the fault orange, for what is
+   actually wrong. The scene's colour and light change in scene-theme.ts.
+   =========================================================================== */
+
+html[data-theme="2001"] {
+  --look-screen: #05080b;
+  --look-phosphor: #e8f1f5;
+  /* about 6:1 on the screen */
+  --look-fault: #ff6a3d;
+}
+
+html[data-theme="2001"]
+  :is(
+    .builderIsland,
+    .builderParts,
+    .builderBrief,
+    .builderStatusBar,
+    .builderWhatsNew,
+    .builderMenu__list,
+    .builderCoach__card,
+    .builderGroupsMenu__list,
+    .builderImportChoice,
+    .builderStatusBar__popover,
+    .builderLabel
+  ) {
+  /* the HUD reads these tokens, so a screen restyles everything inside it */
+  --foreground: var(--look-phosphor);
+  --muted: rgb(232 241 245 / 0.62);
+  --border: rgb(232 241 245 / 0.16);
+  --builder-hairline: rgb(232 241 245 / 0.28);
+  --builder-hover: rgb(232 241 245 / 0.1);
+  --surface-strong: var(--look-screen);
+  --background: #0b1014;
+  /* what is live inverts to a lit block, as the film's readouts do; no hue */
+  --accent: var(--look-phosphor);
+  --accent-strong: var(--look-phosphor);
+  --accent-text: var(--look-phosphor);
+  --accent-soft: rgb(232 241 245 / 0.14);
+  --focus-ring: var(--look-phosphor);
+  --on-accent: var(--look-screen);
+
+  border-color: var(--builder-hairline);
+  background: var(--look-screen);
+  color: var(--look-phosphor);
+}
+
+html[data-theme="2001"] :is(.builderIconBtn.is-active, .builderIconBtn.is-active:hover:not(:disabled), .builderButton--primary, .builderWhatsNew__actions .is-primary, .builderLabel.is-selected) {
+  background: var(--look-phosphor);
+  color: var(--look-screen);
+}
+
+html[data-theme="2001"] :is(.builderField__control input, .builderField__control select) {
+  color: var(--look-phosphor);
+}
+
+html[data-theme="2001"] .builderField__control select option {
+  background: var(--look-screen);
+}
+
+/* faults are the only colour on the glass */
+html[data-theme="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:hover:not(:disabled), .fanBoxes__box.is-danger:focus-visible) {
+  color: var(--look-fault);
+}
+
+/* --- type ----------------------------------------------------------------
+   Michroma (the film's extended panel lettering) only on the labels the
+   interface asserts, uppercase per the Case Rule, never under 11px. Readouts
+   take Archivo Narrow's tabular figures. Names, messages and anything a user
+   typed stay in Source Sans and their own case: λ/2 must not become Λ/2. */
+
+html[data-theme="2001"]
+  :is(
+    .builderPanelBar__title,
+    .builderParts__groupName,
+    .builderHud__listTitle,
+    .builderSheet__groupTitle,
+    .builderField__label,
+    .builderStatusBar__mode strong,
+    .builderWhatsNew__heading > span,
+    .builderStatusBar__themeTrigger,
+    .builderStatusBar__themeMenu button
+  ) {
+  font-family: var(--font-panel);
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+html[data-theme="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
+  font-family: var(--font-credits);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* a part's name is content, so it keeps its case */
+html[data-theme="2001"] .builderInspector__head h2 {
+  font-family: var(--font-credits);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme="2001"] :is(.builderReadout, .builderLightList__readouts) {
+  font-family: var(--font-data);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}

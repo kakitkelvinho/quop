@@ -126,12 +126,58 @@ export const DARK_PALETTE: Inkless = {
   stageSeam: "#b8bfc9",
 };
 
-/** The site writes its theme to `data-theme`; treat that attribute as the store. */
+/*
+ * The 2001 theme (`data-theme="2001"`, see site-theme.ts): the same parts in
+ * the film's colour and light, never a new shape. Day is the space station's
+ * lounge: a cooler, brighter white sweep, pure white enamel and blacker
+ * anodise, with softer shadows from a stronger ambient. Night is space itself:
+ * a near-black void, a harder cold rim light and a deeper vignette.
+ */
+export const LIGHT_2001_PALETTE: Inkless = {
+  ...LIGHT_PALETTE,
+  backdrop: ["#f3f4f5", "#e3e5e8", "#b9bec5"],
+  shadow: "#1d2733",
+  shadowOpacity: 0.26,
+  holeGrid: { plate: "#d9dce0", plateOpacity: 0.8, hole: "#1a1d22", rim: "#ffffff", row: "#c3c7cd" },
+  ambient: 0.28,
+  keyLight: 1.7,
+  rimLight: 0.4,
+  rimColor: "#cfe0ff",
+  occlusion: 2.6,
+  vignette: 0.2,
+  body: "#ffffff",
+  post: "#9aa0a7",
+  metal: "#e4e8ee",
+  anodise: "#0d0e10",
+  stage: "#121316",
+  stageSeam: "#c4cad2",
+};
+
+export const DARK_2001_PALETTE: Inkless = {
+  ...DARK_PALETTE,
+  backdrop: ["#10131a", "#05060a", "#000000"],
+  shadowOpacity: 0.6,
+  holeGrid: { plate: "#111318", plateOpacity: 0.9, hole: "#000000", rim: "#3a4250", row: "#1e222a" },
+  ambient: 0.06,
+  keyLight: 2.4,
+  rimLight: 2.8,
+  rimColor: "#8fb8ff",
+  occlusion: 3.2,
+  vignette: 0.7,
+  body: "#f4f4f2",
+  post: "#5f656d",
+  metal: "#cdd4de",
+  anodise: "#3c3f46",
+  stage: "#383c43",
+  stageSeam: "#aeb8c6",
+};
+
+/** The root attributes carry both preferences; the scene redraws when either changes. */
 function subscribe(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange);
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ["data-theme"],
+    attributeFilter: ["data-mode", "data-theme"],
   });
   return () => observer.disconnect();
 }
@@ -151,30 +197,33 @@ function readRing(root: HTMLElement): string {
 }
 
 /**
- * The theme and its ring ink as one string, so the snapshot stays a primitive.
- * The token is read once per theme, not on every render.
+ * The mode, theme and ring ink share one primitive snapshot. The token is read
+ * once per preference pair, rather than on every render.
  */
-let cached: { theme: string | undefined; snapshot: string } | null = null;
+let cached: { key: string; snapshot: string } | null = null;
 
 function getSnapshot(): string {
   const root = document.documentElement;
-  const theme = root.dataset.theme;
-  if (!cached || cached.theme !== theme) {
-    const mode = theme === "dark" ? "dark" : "light";
-    cached = { theme, snapshot: `${mode} ${readRing(root)}` };
+  const mode = root.dataset.mode === "dark" ? "dark" : "light";
+  const theme = root.dataset.theme === "2001" ? "2001" : "station";
+  const key = `${mode} ${theme}`;
+  if (!cached || cached.key !== key) {
+    cached = { key, snapshot: `${key} ${readRing(root)}` };
   }
   return cached.snapshot;
 }
 
 function getServerSnapshot(): string {
-  return "light ";
+  return "light station ";
 }
 
 export function useScenePalette(): ScenePalette {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return useMemo(() => {
-    const [mode, ring] = snapshot.split(" ");
-    const base = mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
+    const [mode, theme, ring] = snapshot.split(" ");
+    const base = theme === "2001"
+      ? mode === "dark" ? DARK_2001_PALETTE : LIGHT_2001_PALETTE
+      : mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
     // before the tokens are read (the server render), a neutral the canvas never shows
     const accent = new Color(ring || base.post);
     const hover = accent.clone().lerp(new Color(base.backdrop[0]), 1 / 3);

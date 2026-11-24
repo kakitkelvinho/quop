@@ -26,6 +26,23 @@ const ebGaramond = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
+// The Tabletop's 2001 theme (builder-theme-2001.css): open stand-ins for the
+// film's faces. Michroma for Eurostile Extended, Jost for Futura and for Gill
+// Sans (Gillius ADF is not on Google Fonts), Archivo Narrow for Univers
+// Condensed. Vendored from Google Fonts like the others.
+const jost = localFont({
+  src: [{ path: "./fonts/jost-300-500-normal.woff2", weight: "300 500", style: "normal" }],
+  variable: "--font-jost",
+});
+const michroma = localFont({
+  src: [{ path: "./fonts/michroma-400-normal.woff2", weight: "400", style: "normal" }],
+  variable: "--font-michroma",
+});
+const archivoNarrow = localFont({
+  src: [{ path: "./fonts/archivo-narrow-400-600-normal.woff2", weight: "400 600", style: "normal" }],
+  variable: "--font-archivo-narrow",
+});
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://kakitkelvinho.github.io/quop";
 const description = "Quantum optics notes, calculators, theory, and plotters.";
 
@@ -49,21 +66,36 @@ export const metadata: Metadata = {
   other: { "quop-version": SITE_VERSION },
 };
 
-const themeScript = `
+const preferencesScript = `
   (() => {
     const query = window.matchMedia("(prefers-color-scheme: dark)");
-    const apply = () => {
-      const savedTheme = localStorage.getItem("theme-preference");
-      const theme = savedTheme === "dark" || savedTheme === "light"
-        ? savedTheme
-        : query.matches
-          ? "dark"
-          : "light";
-      document.documentElement.dataset.theme = theme;
+    const read = (key) => {
+      try { return localStorage.getItem(key); } catch { return null; }
     };
-    apply();
+    const migrate = (key, oldKey, valid) => {
+      const current = read(key);
+      if (current !== null) return current;
+      const old = read(oldKey);
+      if (valid.includes(old)) {
+        try {
+          localStorage.setItem(key, old);
+          localStorage.removeItem(oldKey);
+        } catch { /* storage can be unavailable */ }
+        return old;
+      }
+      return null;
+    };
+    const theme = migrate("site-theme", ["builder", "look"].join("-"), ["station", "2001"]);
+    document.documentElement.dataset.theme = theme === "2001" ? "2001" : "station";
+    migrate("mode-preference", ["theme", "preference"].join("-"), ["light", "dark"]);
+    const applyMode = () => {
+      const savedMode = read("mode-preference");
+      document.documentElement.dataset.mode = savedMode === "dark" || savedMode === "light"
+        ? savedMode : query.matches ? "dark" : "light";
+    };
+    applyMode();
     // with no saved choice, follow the system as it changes
-    query.addEventListener("change", apply);
+    query.addEventListener("change", applyMode);
   })();
 `;
 
@@ -74,12 +106,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${sourceSans.variable} ${ebGaramond.variable}`}
+      className={`${sourceSans.variable} ${ebGaramond.variable} ${jost.variable} ${michroma.variable} ${archivoNarrow.variable}`}
       lang="en"
       suppressHydrationWarning
     >
       <body className="antialiased">
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: preferencesScript }} />
         <AppShell footer={<SiteFooter />}>{children}</AppShell>
       </body>
     </html>

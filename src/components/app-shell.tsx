@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { navSections } from "@/components/navigation";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ModeToggle } from "@/components/mode-toggle";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") {
@@ -125,7 +125,7 @@ function MobileNav() {
           QUOP
         </Link>
         <div className="flex items-stretch">
-          <ThemeToggle />
+          <ModeToggle />
           <button
             className={`navTab inline-flex h-full items-center gap-2 px-3 text-xs font-bold uppercase tracking-[0.12em]${
               open ? " is-current" : ""
@@ -224,7 +224,7 @@ export function AppShell({
             <div className="flex items-stretch justify-end gap-1">
               <NavItem href="/plotters" label="plotters" align="right" />
               <NavItem href="/calculators" label="calculators" align="right" />
-              <ThemeToggle />
+              <ModeToggle />
             </div>
           </nav>
         </header>

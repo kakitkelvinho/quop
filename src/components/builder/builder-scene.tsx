@@ -46,7 +46,7 @@ import { posesOf, turnCentre, type Pose } from "@/components/builder/group-edits
 import type { RotationHandleSpec } from "@/components/builder/rotation-handle";
 import { dragGrip, type FrameGrip } from "@/components/builder/frame-reshape";
 import { useFrameDrawing } from "@/components/builder/use-frame-drawing";
-import { getTheme, setTheme } from "@/components/theme-toggle";
+import { getMode, setMode } from "@/components/mode-toggle";
 import { type BeamPick, pickBeam } from "@/components/builder/beam-pick";
 import {
   BEAM_COLORS,
@@ -1960,7 +1960,7 @@ export default function BuilderScene() {
           setFitToken((token) => token + 1);
         }}
         onFit={() => setFitToken((token) => token + 1)}
-        onToggleTheme={() => setTheme(getTheme() === "dark" ? "light" : "dark")}
+        onToggleMode={() => setMode(getMode() === "dark" ? "light" : "dark")}
         quality={quality}
         onToggleQuality={toggleQuality}
         onUndo={api.undo}

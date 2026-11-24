@@ -49,7 +49,9 @@ test("checks popover closes with Esc and selects its Component", async ({ page }
   await page.locator('input[type="file"]').setInputFiles({ name: "blocked.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(setup)) });
   await page.getByRole("button", { name: "Replace the table" }).click();
   const checks = statusBar(page).getByRole("button", { name: /check/ });
-  await expect(checks).toContainText("1 check");
+  await expect(checks).toHaveAccessibleName("1 check");
+  await checks.hover();
+  await expect(page.getByRole("dialog", { name: "Checks" })).toContainText("Blocked by stop");
   await checks.click();
   await expect(page.getByRole("dialog", { name: "Checks" })).toBeVisible();
   await page.keyboard.press("Escape");
@@ -67,7 +69,7 @@ test("Legacy switch and back keep query settings and the page view", async ({ pa
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
   const bar = statusBar(page);
   await expect(bar.getByRole("group", { name: "Light view" })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("meter", { name: "Power" }).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Power:/ }).first()).toBeVisible();
   await bar.getByRole("button", { name: "Legacy view" }).click();
   await expect(bar).toContainText("Legacy view: drawn Beams, not traced");
   await expect(page).toHaveURL(/foo=bar.*traced=0/);
@@ -75,7 +77,7 @@ test("Legacy switch and back keep query settings and the page view", async ({ pa
   await bar.getByRole("button", { name: "Switch to traced Beams" }).click();
   await expect(page).toHaveURL(/foo=bar/);
   await expect(page).not.toHaveURL(/traced=0/);
-  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("meter", { name: "Power" }).first()).toBeVisible();
+  await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Power:/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Camera" })).toHaveAttribute("title", "Camera: top");
 });
 
@@ -117,4 +119,47 @@ test("an upgraded Setup keeps its notice in the bar", async ({ page }) => {
   await page.getByRole("button", { name: "Replace the table" }).click();
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toContainText("Upgraded");
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toHaveAttribute("aria-label", /This file was upgraded/);
+});
+
+test("the theme menu opens upward, switches to 2001 and persists across pages", async ({ page }) => {
+  await page.goto("builder/tabletop/");
+  const trigger = statusBar(page).getByRole("button", { name: /^Theme:/ });
+  await expect(trigger).toHaveText(/Station/);
+  await trigger.click();
+  const menu = page.getByRole("menu", { name: "Theme" });
+  const [menuBox, triggerBox] = [await menu.boundingBox(), await trigger.boundingBox()];
+  expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(triggerBox!.y);
+  await expect(menu.getByRole("menuitemradio", { name: "Station" })).toHaveAttribute("aria-checked", "true");
+  await menu.getByRole("menuitemradio", { name: "2001" }).click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await page.reload();
+  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/2001/);
+  await page.goto("calculators/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+});
+
+test("saved preferences migrate without resetting night mode or the 2001 theme", async ({ page }, testInfo) => {
+  await page.goto("./");
+  await page.evaluate(() => {
+    localStorage.setItem(["theme", "preference"].join("-"), "dark");
+    localStorage.setItem(["builder", "look"].join("-"), "2001");
+  });
+  await page.goto("builder/tabletop/");
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/2001/);
+  const saved = await page.evaluate(() => ({
+    mode: localStorage.getItem("mode-preference"),
+    theme: localStorage.getItem("site-theme"),
+    oldMode: localStorage.getItem(["theme", "preference"].join("-")),
+    oldTheme: localStorage.getItem(["builder", "look"].join("-")),
+  }));
+  expect(saved).toEqual({ mode: "dark", theme: "2001", oldMode: null, oldTheme: null });
+  await page.goto("calculators/");
+  await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await page.evaluate(() => localStorage.removeItem("mode-preference"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-mode", testInfo.project.name);
 });
