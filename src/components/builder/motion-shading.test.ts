@@ -28,6 +28,10 @@ describe("motionShade", () => {
     assert.equal(frames, Math.ceil(AO_FADE_IN_MS / (1000 / 60)));
   });
 
+  it("brings the occlusion straight back when motion is reduced", () => {
+    assert.deepEqual(motionShade(still, 0, 16, true), { occlusion: true, occlusionFade: 1, fading: false });
+  });
+
   it("leaves a still view exactly as before: full occlusion", () => {
     assert.deepEqual(motionShade(still, 1, 16), { occlusion: true, occlusionFade: 1, fading: false });
   });

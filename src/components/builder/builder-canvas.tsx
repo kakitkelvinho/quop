@@ -591,9 +591,10 @@ function FrameWatcher({ dragging, onSlow }: { dragging: boolean; onSlow: () => v
  */
 function MotionShading({ ao, occlusion, dragging }: { ao: () => AoPass | null; occlusion: number; dragging: boolean }) {
   const invalidate = useThree((state) => state.invalidate);
-  const lastView = useRef({ matrix: new Matrix4(), zoom: 0 });
+  const lastView = useRef({ position: new Vector3(), quaternion: new Quaternion(), zoom: 0 });
   const fade = useRef(1);
   const lastFrame = useRef<number | null>(null);
+  const reducedMotion = useMemo(() => window.matchMedia("(prefers-reduced-motion: reduce)"), []);
 
   useEffect(() => {
     if (!dragging) invalidate();
@@ -605,14 +606,23 @@ function MotionShading({ ao, occlusion, dragging }: { ao: () => AoPass | null; o
     // release (the controls damp) and a wheel zoom never starts an orbit
     const view = lastView.current;
     const zoom = camera instanceof OrthographicCamera ? camera.zoom : 1;
-    // the first frame has nothing to compare with, and a page should open fully shaded
-    const cameraMoving = lastFrame.current !== null && (!view.matrix.equals(camera.matrixWorld) || view.zoom !== zoom);
-    view.matrix.copy(camera.matrixWorld);
+    // within the controls' own threshold for a change: past it their damping
+    // keeps nudging the camera by rounding errors, and an exact comparison
+    // would never let the view rest. The first frame has nothing to compare
+    // with, and a page should open fully shaded.
+    const cameraMoving =
+      lastFrame.current !== null &&
+      (view.position.distanceToSquared(camera.position) > CAMERA_REST_EPS ||
+        8 * (1 - Math.abs(view.quaternion.dot(camera.quaternion))) > CAMERA_REST_EPS ||
+        Math.abs(view.zoom - zoom) > CAMERA_REST_EPS);
+    view.position.copy(camera.position);
+    view.quaternion.copy(camera.quaternion);
     view.zoom = zoom;
     const shade = motionShade(
       { cameraMoving, dragging },
       fade.current,
       lastFrame.current === null ? 0 : now - lastFrame.current,
+      reducedMotion.matches,
     );
     lastFrame.current = now;
     fade.current = shade.occlusionFade;
@@ -628,6 +638,9 @@ function MotionShading({ ao, occlusion, dragging }: { ao: () => AoPass | null; o
   });
   return null;
 }
+
+/** OrbitControls' own EPS for whether the camera changed */
+const CAMERA_REST_EPS = 0.000001;
 
 /** the part of n8ao's N8AOPostPass this reaches; n8ao ships no types */
 type AoPass = { enabled: boolean; configuration: { intensity: number } };

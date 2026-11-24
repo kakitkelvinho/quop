@@ -31,11 +31,15 @@ export function isMoving(motion: Motion): boolean {
   return motion.cameraMoving || motion.dragging;
 }
 
-/** The shading for this frame, from the motion and the fade so far; `gapMs` is the time since the last frame. */
-export function motionShade(motion: Motion, fade: number, gapMs: number): MotionShade {
+/**
+ * The shading for this frame, from the motion and the fade so far; `gapMs` is
+ * the time since the last frame. With `reducedMotion` the occlusion comes
+ * straight back instead of fading.
+ */
+export function motionShade(motion: Motion, fade: number, gapMs: number, reducedMotion = false): MotionShade {
   if (isMoving(motion)) {
     return { occlusion: false, occlusionFade: 0, fading: false };
   }
-  const next = Math.min(1, fade + Math.min(gapMs, MAX_FADE_STEP_MS) / AO_FADE_IN_MS);
+  const next = reducedMotion ? 1 : Math.min(1, fade + Math.min(gapMs, MAX_FADE_STEP_MS) / AO_FADE_IN_MS);
   return { occlusion: true, occlusionFade: next, fading: next < 1 };
 }
