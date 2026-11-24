@@ -1455,7 +1455,7 @@ export default function BuilderCanvas({
       {rotationHandle?.kind === "part" ? (
         <PartRotationHandle
           component={rotationHandle.component}
-          color={palette.accent}
+          color={palette.trace ?? palette.accent}
           dark={palette.mode === "dark"}
           locked={rotationHandle.locked}
           rotating={rotationHandle.rotating}
@@ -1466,7 +1466,7 @@ export default function BuilderCanvas({
           centre={rotationHandle.centre}
           radius={rotationHandle.radius}
           turned={rotationHandle.turned}
-          color={palette.accent}
+          color={palette.trace ?? palette.accent}
           dark={palette.mode === "dark"}
           rotating={rotationHandle.rotating}
           onPointerDown={onRotationHandlePointerDown}

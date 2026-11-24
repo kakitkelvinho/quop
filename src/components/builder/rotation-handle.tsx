@@ -249,7 +249,7 @@ export type RotationHandleSpec =
 
 export type PartRotationHandleProps = {
   component: BuilderComponent;
-  /** the selection ring's colour, the theme's accent */
+  /** the selection ring's colour: the theme's accent, or 2001's trace */
   color: string;
   dark: boolean;
   /** a beam sets this part's angle: the bubble shows a padlock and won't turn it */

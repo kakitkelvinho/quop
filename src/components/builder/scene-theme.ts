@@ -37,9 +37,9 @@ export type ScenePalette = {
   /** the hover ring: the ink a third of the way back to the backdrop */
   hover: string;
   /**
-   * 2001 only: the CRT trace colour that selection and hover rings, the stage
-   * handle and the Flip chip take instead of the accent. Must match
-   * `--look-trace` in builder-theme-2001.css (scene-theme.test.ts checks)
+   * 2001 only: the CRT trace colour that selection and hover rings, the
+   * rotation and stage handles and the Flip chip take instead of the accent.
+   * Must match `--look-trace` in builder-theme-2001.css (scene-theme.test.ts checks)
    */
   trace: string | null;
   ambient: number;
