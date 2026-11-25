@@ -13,7 +13,7 @@ import {
   useThree,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
 import {
   Fragment,
   memo,
@@ -57,6 +57,8 @@ import { ComponentMesh } from "@/components/builder/component-models";
 import type { TraceResult } from "@/components/builder/trace-scene";
 import { traceRoutes, tracedDistanceLegs } from "@/components/builder/trace-routes";
 import { traceGuideGeometry } from "@/components/builder/trace-guide";
+import { polarizationMarkGeometry } from "@/components/builder/polarization-marks";
+import { beamForTracePath } from "@/components/builder/beam-branches";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import { leavesFromStub } from "@/components/builder/connection-jacks";
 import {
@@ -116,6 +118,31 @@ function TraceGuides({ trace, beams, components, blueprintInk }: { trace: TraceR
   if (guide.points.length === 0) return null;
   if (blueprintInk) return <Line segments points={guide.points} color={blueprintInk} lineWidth={1} dashed dashSize={6} gapSize={4} depthTest depthWrite={false} />;
   return <Line segments points={guide.points} vertexColors={guide.colors} lineWidth={2.5} depthTest depthWrite={false} />;
+}
+
+/**
+ * The polarization marks on the guides, in the laser's colour. A hidden
+ * Beam's segments carry none.
+ */
+function PolarizationMarks({ trace, beams, components, isDrawn, blueprintInk }: { trace: TraceResult; beams: Beam[]; components: BuilderComponent[]; isDrawn: (beam: Beam) => boolean; blueprintInk?: string }) {
+  const marks = useMemo(() => {
+    const data = polarizationMarkGeometry(trace, (segment) => {
+      const beam = beamForTracePath(beams, segment.path, segment.toId === null);
+      return Boolean(beam && !isDrawn(beam));
+    });
+    const laserColors = new Map(components.filter((component) => component.type === "laser-source").map((component) => [component.id, new Color(laserLightColor(component))]));
+    const points: [number, number, number][] = [];
+    const colors: [number, number, number][] = [];
+    for (let at = 0; at < data.laserIds.length; at++) {
+      const color = laserColors.get(data.laserIds[at]) ?? new Color(LASER_LIGHT_COLORS[0]);
+      points.push([data.positions[at * 3], data.positions[at * 3 + 1], data.positions[at * 3 + 2]]);
+      colors.push([color.r, color.g, color.b]);
+    }
+    return { points, colors };
+  }, [trace, beams, components, isDrawn]);
+  if (marks.points.length === 0) return null;
+  if (blueprintInk) return <Line segments points={marks.points} color={blueprintInk} lineWidth={1.2} depthTest depthWrite={false} />;
+  return <Line segments points={marks.points} vertexColors={marks.colors} lineWidth={1.8} depthTest depthWrite={false} />;
 }
 
 /** the beam-line snap guide lies on the table, just above the grid (0.4 mm) */
@@ -635,6 +662,38 @@ function MotionShading({ ao, occlusion, dragging }: { ao: () => AoPass | null; o
     }
     // one more frame either way: a still one starts the fade, a fading one carries it on
     if (cameraMoving || shade.fading) invalidate();
+  });
+  return null;
+}
+
+/**
+ * Two savings on every frame that leave a still view looking the same.
+ *
+ * The key light's shadow map is redrawn only when the scene changes: an
+ * orbit, pan or zoom moves the camera, never a caster or the light, and the
+ * shadow pass is a full redraw of every part. This re-renders with the canvas,
+ * so any change of parts, selection, lighting or quality marks the map stale
+ * for the next frame.
+ *
+ * The glass refracts a copy of the opaque scene that three draws in an extra
+ * pass; drawn at half the resolution it costs a quarter of the pixels, and
+ * what shows through a cube or lens is bent and tinted anyway.
+ */
+const TRANSMISSION_RESOLUTION_SCALE = 0.5;
+
+function RenderBudget() {
+  const get = useThree((state) => state.get);
+  useLayoutEffect(() => {
+    const { gl } = get();
+    gl.shadowMap.autoUpdate = false;
+    gl.transmissionResolutionScale = TRANSMISSION_RESOLUTION_SCALE;
+    return () => {
+      gl.shadowMap.autoUpdate = true;
+      gl.transmissionResolutionScale = 1;
+    };
+  }, [get]);
+  useLayoutEffect(() => {
+    get().gl.shadowMap.needsUpdate = true;
   });
   return null;
 }
@@ -1419,6 +1478,7 @@ export default function BuilderCanvas({
   // what hidden groups and frames leave in the drawing; hidden parts still
   // count in path lengths and angle mirrors, so only drawing reads this
   const shown = useMemo(() => visibility({ components, frames, groups }), [components, frames, groups]);
+  const isTracedBeamDrawn = useCallback((beam: Beam) => isBeamDrawn(beam, shown), [shown]);
   const routes = useMemo(() => trace ? traceRoutes(trace, beams) : [], [trace, beams]);
   const matchedDrawnBeamIds = useMemo(() => new Set(routes.flatMap((route) => route.beam ? [route.beam.id] : [])), [routes]);
   const traceDistances = useMemo(() => showDistances && trace
@@ -1464,6 +1524,7 @@ export default function BuilderCanvas({
         dragging={dragging}
         shadowMapSize={settings.shadowMapSize}
       />}
+      {blueprint ? null : <RenderBudget />}
       {!blueprint && onSlowView ? <FrameWatcher dragging={dragging} onSlow={onSlowView} /> : null}
       {blueprint ? null : <MotionShading ao={aoPass} occlusion={palette.occlusion} dragging={dragging} />}
       {blueprint ? null : <RingRoom dark={palette.mode === "dark"} />}
@@ -1612,6 +1673,7 @@ export default function BuilderCanvas({
       })}
 
       {trace ? <TraceGuides trace={trace} beams={beams} components={components} blueprintInk={blueprintInk} /> : null}
+      {trace ? <PolarizationMarks trace={trace} beams={beams} components={components} isDrawn={isTracedBeamDrawn} blueprintInk={blueprintInk} /> : null}
       {routes.flatMap((route) => {
         const beam = route.beam;
         const ghost = Boolean(beam?.hidden && beam.id === ghostBeamId);
@@ -1716,7 +1778,11 @@ export default function BuilderCanvas({
           vignette pulls the eye to the middle of the layout. Light quality
           keeps only the composer's anti-aliasing. */}
       <EffectComposer multisampling={4}>
-        {settings.effects ? (
+        {blueprint && palette.mode === "dark" ? (
+          // Blueprint's night: neon lines on black glow like a vector display.
+          // Only the ink is bright enough to bloom; the black paper never does.
+          <Bloom mipmapBlur luminanceThreshold={0.25} luminanceSmoothing={0.2} intensity={1.4} radius={0.55} />
+        ) : settings.effects ? (
           <>
             <N8AO
               ref={aoRef}

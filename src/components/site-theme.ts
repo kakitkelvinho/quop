@@ -2,9 +2,9 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-export const SITE_THEMES = ["station", "2001", "blueprint"] as const;
+export const SITE_THEMES = ["station", "space", "blueprint"] as const;
 export type SiteTheme = (typeof SITE_THEMES)[number];
-export const SITE_THEME_NAMES: Record<SiteTheme, string> = { station: "Station", "2001": "2001", blueprint: "Blueprint" };
+export const SITE_THEME_NAMES: Record<SiteTheme, string> = { station: "Station", space: "Space", blueprint: "Blueprint" };
 
 function subscribe(onChange: () => void): () => void {
   const observer = new MutationObserver(onChange);
@@ -14,7 +14,7 @@ function subscribe(onChange: () => void): () => void {
 
 function getTheme(): SiteTheme {
   const theme = document.documentElement.dataset.theme;
-  return theme === "2001" || theme === "blueprint" ? theme : "station";
+  return theme === "space" || theme === "blueprint" ? theme : "station";
 }
 
 /** Theme belongs to the browser, not to a saved Setup. The root layout restores it on every page. */

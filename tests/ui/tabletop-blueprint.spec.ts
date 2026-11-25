@@ -42,7 +42,7 @@ test("Blueprint persists, exports the drawing, and restores the lit scene", asyn
     context.drawImage(bitmap, 0, 0);
     return [...context.getImageData(0, 0, 1, 1).data];
   }, png.toString("base64"));
-  expect(corner.slice(0, 3)).toEqual(testInfo.project.name === "dark" ? [10, 31, 61] : [255, 255, 255]);
+  expect(corner.slice(0, 3)).toEqual(testInfo.project.name === "dark" ? [0, 0, 0] : [255, 255, 255]);
 
   await chooseTheme(page, "Station");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "station");
