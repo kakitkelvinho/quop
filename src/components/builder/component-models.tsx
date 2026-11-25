@@ -316,28 +316,17 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
         <cylinderGeometry args={[13, 14.5, PILLAR_BASE_HEIGHT, 36]} />
         <Enamel color={palette.post} />
       </mesh> : null}
-      {palette.theme === "space" ? (
-        <RoundedBox
-          args={[2 * PILLAR_RADIUS, length, 2 * PILLAR_RADIUS]}
-          radius={2}
-          smoothness={2}
-          position={[0, base + length / 2, 0]}
-        >
-          <Acrylic palette={palette} />
-        </RoundedBox>
-      ) : (
-        <mesh position={[0, base + length / 2, 0]}>
-          <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
-          <Enamel color={palette.post} />
-        </mesh>
-      )}
+      <mesh position={[0, base + length / 2, 0]}>
+        <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
+        {palette.theme === "space" ? <Acrylic palette={palette} /> : <Enamel color={palette.post} />}
+      </mesh>
     </group>
   );
 }
 
 /**
- * Space's posts are clear acrylic blocks, like HAL's memory modules, with the
- * part's name etched in. Alpha rather than `Glass`'s transmission: a
+ * Space's posts, lens rods and laser plinth are clear acrylic, like HAL's
+ * memory modules. Alpha rather than `Glass`'s transmission: a
  * transmissive material costs the scene a second render pass, and a bench
  * has many posts. The clearcoat keeps a bright edge on the block.
  */
@@ -374,7 +363,7 @@ function SlimRod({ palette, top }: { palette: ScenePalette; top: number }) {
       </mesh> : null}
       <mesh position={[0, (base + top) / 2, 0]}>
         <cylinderGeometry args={[3, 3, Math.max(1, top - base), 16]} />
-        <Hardware palette={palette} />
+        {palette.theme === "space" ? <Acrylic palette={palette} /> : <Hardware palette={palette} />}
       </mesh>
       {/* the collar that grips the lens edge */}
       <mesh position={[0, top - 2, 0]}>
@@ -681,8 +670,8 @@ const LASER_PLINTH = {
 } as const;
 
 /**
- * The Space laser's base: a wide foot plate and a solid block, heavy for
- * mechanical and thermal stability. Raising the laser makes the block taller.
+ * The Space laser's base: a wide foot plate and an acrylic block, matching
+ * the posts. Raising the laser makes the block taller.
  */
 function LaserPlinth({ palette, axis }: Pick<ModelProps, "palette" | "axis">) {
   const { foot, block, cradleMm } = LASER_PLINTH;
@@ -694,7 +683,7 @@ function LaserPlinth({ palette, axis }: Pick<ModelProps, "palette" | "axis">) {
         <Enamel color={palette.post} />
       </Bevelled>
       <Bevelled args={[block.lengthMm, blockHeight, block.widthMm]} radiusMm={4} position={[0, foot.heightMm + blockHeight / 2, 0]}>
-        <Enamel color={palette.post} />
+        <Acrylic palette={palette} />
       </Bevelled>
     </group>
   );
