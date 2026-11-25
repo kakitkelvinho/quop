@@ -8,9 +8,9 @@ the **Builder** section; the glossary keeps its own name for it.
 ## Experiment Builder
 
 **Theme**:
-The site's saved visual setting: Station (the default), 2001, or Blueprint. It
+The site's saved visual setting: Station (the default), Space (once called 2001), or Blueprint. It
 belongs to the browser, not a Setup. The Tabletop currently has Station and
-2001 designs; other pages use Station styling while their themes are developed.
+Space designs; other pages use Station styling while their themes are developed.
 _Avoid_: look, skin, appearance
 
 **Mode**:
@@ -56,7 +56,7 @@ The paths one Laser source's light takes. A Beam cube splits a path into transmi
 Saved Beam paths with the same first Component form a matching tree: one is the trunk and later paths can name a parent branch. A branch may inherit its parent's colour, label and hidden state until it sets its own. The saved tree records intent and appearance; the traced tree follows surfaces.
 
 **Polarization**:
-The orientation and relative phase of a Beam's electric field across its direction of travel. A Laser starts with linear polarization; a λ/2 plate turns it, a Polarizer projects it and removes rejected power, and a Faraday rotator turns it in the same lab direction on a return trip. A Mirror carries it through a 3D turn and may add a specified phase difference between S and P. Each traced branch carries its own polarization and fraction of the Laser's power. Branches are not recombined for interference.
+The orientation and relative phase of a Beam's electric field across its direction of travel. A Laser starts with linear polarization; a λ/2 plate turns it, a Polarizer projects it and removes rejected power, and a Faraday rotator turns it in the same lab direction on a return trip. A Mirror carries it through a 3D turn and may add a specified phase difference between S and P. Each traced branch carries its own polarization and fraction of the Laser's power. Branches are not recombined for interference. A small mark on the guides just before and after each Component shows it: a double arrow for linear light, an ellipse or circle with an arrowhead in the field's turning sense for elliptical or circular light, drawn across the beam in the plane the field swings in.
 
 **S and P**:
 The two field directions at a surface: S is perpendicular to its plane of incidence, P lies in that plane. They depend on the incoming Beam direction and the surface, rather than table-wide horizontal and vertical.

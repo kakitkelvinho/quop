@@ -1,5 +1,5 @@
 /* ===========================================================================
-   The Tabletop's 2001 theme (html[data-theme="2001"], set by site-theme.ts).
+   The Tabletop's Space theme (html[data-theme="space"], set by site-theme.ts).
    Every HUD surface is a flat dark screen in either site mode, like the
    film's displays set into a white console. It keeps the builder's own rules:
    opaque, square, one 1px hairline, no shadow, glow or texture. Light text
@@ -7,22 +7,22 @@
    actually wrong. The scene's colour and light change in scene-theme.ts.
    =========================================================================== */
 
-html[data-theme="2001"] {
+html[data-theme="space"] {
   --look-screen: #05080b;
   --look-phosphor: #e8f1f5;
   /* about 6:1 on the screen */
   --look-fault: #ff6a3d;
-  /* the CRT trace that marks a selection in the scene; TRACE_2001 in
+  /* the CRT trace that marks a selection in the scene; TRACE_SPACE in
      scene-theme.ts must match. By day a darker amber: pure phosphor yellow
      vanishes on the white sweep */
   --look-trace: #c08600;
 }
 
-html[data-theme="2001"][data-mode="dark"] {
+html[data-theme="space"][data-mode="dark"] {
   --look-trace: #ffd23f;
 }
 
-html[data-theme="2001"]
+html[data-theme="space"]
   :is(
     .builderIsland,
     .builderParts,
@@ -57,21 +57,21 @@ html[data-theme="2001"]
   color: var(--look-phosphor);
 }
 
-html[data-theme="2001"] :is(.builderIconBtn.is-active, .builderIconBtn.is-active:hover:not(:disabled), .builderButton--primary, .builderWhatsNew__actions .is-primary) {
+html[data-theme="space"] :is(.builderIconBtn.is-active, .builderIconBtn.is-active:hover:not(:disabled), .builderButton--primary, .builderWhatsNew__actions .is-primary) {
   background: var(--look-phosphor);
   color: var(--look-screen);
 }
 
-html[data-theme="2001"] :is(.builderField__control input, .builderField__control select) {
+html[data-theme="space"] :is(.builderField__control input, .builderField__control select) {
   color: var(--look-phosphor);
 }
 
-html[data-theme="2001"] .builderField__control select option {
+html[data-theme="space"] .builderField__control select option {
   background: var(--look-screen);
 }
 
 /* faults are the only colour on the glass */
-html[data-theme="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:hover:not(:disabled), .fanBoxes__box.is-danger:focus-visible) {
+html[data-theme="space"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:hover:not(:disabled), .fanBoxes__box.is-danger:focus-visible) {
   color: var(--look-fault);
 }
 
@@ -83,7 +83,7 @@ html[data-theme="2001"] :is(.builderStatusBar__checks, .fanBoxes__box.is-danger:
    dragging. Names and anything a user typed keep their own case: λ/2 must
    not become Λ/2. */
 
-html[data-theme="2001"]
+html[data-theme="space"]
   :is(
     .builderPanelBar__title,
     .builderParts__groupName,
@@ -103,7 +103,7 @@ html[data-theme="2001"]
   text-transform: uppercase;
 }
 
-html[data-theme="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
+html[data-theme="space"] :is(.builderWhatsNew h2, .builderCoach__title) {
   font-family: var(--font-label);
   font-weight: 400;
   letter-spacing: 0.12em;
@@ -111,19 +111,19 @@ html[data-theme="2001"] :is(.builderWhatsNew h2, .builderCoach__title) {
 }
 
 /* a part's name is content, so it keeps its case */
-html[data-theme="2001"] .builderInspector__head h2 {
+html[data-theme="space"] .builderInspector__head h2 {
   font-family: var(--font-label);
   font-weight: 400;
   letter-spacing: 0.04em;
 }
 
-html[data-theme="2001"] :is(.builderReadout, .builderLightList__readouts) {
+html[data-theme="space"] :is(.builderReadout, .builderLightList__readouts) {
   font-family: var(--font-data);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
 
-html[data-theme="2001"] :is(.builderWhatsNew p, .builderCoach__card p, .builderInspector p, .builderBrief p) {
+html[data-theme="space"] :is(.builderWhatsNew p, .builderCoach__card p, .builderInspector p, .builderBrief p) {
   font-family: var(--font-data);
   font-size: 1.04em;
   letter-spacing: 0.01em;
@@ -135,7 +135,7 @@ html[data-theme="2001"] :is(.builderWhatsNew p, .builderCoach__card p, .builderI
    thickness. By night the acrylic is smoked, dark enough that light type
    reads over a white part (clear acrylic at night was unreadable). */
 
-html[data-theme="2001"] .builderLabel {
+html[data-theme="space"] .builderLabel {
   border: calc(1px * var(--label-size, 1)) solid rgb(255 255 255 / 0.8);
   background: linear-gradient(165deg, rgb(255 255 255 / 0.42), rgb(196 214 228 / 0.16) 55%, rgb(255 255 255 / 0.26));
   backdrop-filter: blur(1.5px);
@@ -151,7 +151,7 @@ html[data-theme="2001"] .builderLabel {
   text-shadow: 0 1px 0 rgb(255 255 255 / 0.55);
 }
 
-html[data-theme="2001"][data-mode="dark"] .builderLabel {
+html[data-theme="space"][data-mode="dark"] .builderLabel {
   border-color: rgb(220 235 245 / 0.6);
   background: linear-gradient(165deg, rgb(40 52 62 / 0.82), rgb(12 16 20 / 0.74) 55%, rgb(40 52 62 / 0.8));
   box-shadow:
@@ -161,9 +161,18 @@ html[data-theme="2001"][data-mode="dark"] .builderLabel {
   text-shadow: none;
 }
 
+/* etched low on the part's acrylic post (component-models.tsx,
+   spaceLabelHeightMm) rather than lifted above it; nudged down a little in
+   screen space so a top-down view shows it beside the part, not over it */
+html[data-theme="space"] .builderLabel.is-etched {
+  transform: translateY(calc(0.6rem * var(--label-size, 1)));
+  font-size: calc(0.68rem * var(--label-size, 1));
+  letter-spacing: 0.08em;
+}
+
 /* the selected slide is edge-lit in the trace ring's colour, so selection
    has one colour */
-html[data-theme="2001"] .builderLabel.is-selected {
+html[data-theme="space"] .builderLabel.is-selected {
   border-color: var(--look-trace);
   background: linear-gradient(165deg, rgb(255 214 120 / 0.5), rgb(255 200 80 / 0.2) 60%, rgb(255 225 150 / 0.36));
   box-shadow:
@@ -173,7 +182,7 @@ html[data-theme="2001"] .builderLabel.is-selected {
   color: #1d1400;
 }
 
-html[data-theme="2001"][data-mode="dark"] .builderLabel.is-selected {
+html[data-theme="space"][data-mode="dark"] .builderLabel.is-selected {
   background: linear-gradient(165deg, rgb(70 56 12 / 0.88), rgb(30 24 4 / 0.82) 60%, rgb(70 56 12 / 0.86));
   box-shadow:
     inset 0 1px 0 rgb(255 240 190 / 0.5),
@@ -183,7 +192,7 @@ html[data-theme="2001"][data-mode="dark"] .builderLabel.is-selected {
 }
 
 /* the Flip chip on a selected part takes the trace, as the stage handle does */
-html[data-theme="2001"] .builderAimHint {
+html[data-theme="space"] .builderAimHint {
   --accent: var(--look-trace);
   --on-accent: #0d1317;
   --focus-ring: var(--look-trace);

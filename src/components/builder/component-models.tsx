@@ -29,7 +29,7 @@ import { useThree, type ThreeEvent } from "@react-three/fiber";
 
 import type { ScenePalette } from "@/components/builder/scene-theme";
 import { BlockSymbolFaces } from "@/components/builder/block-symbol";
-import { HalEye, TraceRing } from "@/components/builder/theme-2001-parts";
+import { HalEye, TraceRing } from "@/components/builder/theme-space-parts";
 import {
   CAVITY_LENGTH_RANGE_MM,
   DEFAULT_BLOCK_COLOR,
@@ -49,6 +49,7 @@ import {
   delayArmMm,
   delayRailMm,
   fieldValue,
+  laserLightColor,
   stageAxes,
   type BuilderComponent,
   type ComponentType,
@@ -315,11 +316,44 @@ function Pillar({ palette, top }: { palette: ScenePalette; top: number }) {
         <cylinderGeometry args={[13, 14.5, PILLAR_BASE_HEIGHT, 36]} />
         <Enamel color={palette.post} />
       </mesh> : null}
-      <mesh position={[0, base + length / 2, 0]}>
-        <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
-        <Enamel color={palette.post} />
-      </mesh>
+      {palette.theme === "space" ? (
+        <RoundedBox
+          args={[2 * PILLAR_RADIUS, length, 2 * PILLAR_RADIUS]}
+          radius={2}
+          smoothness={2}
+          position={[0, base + length / 2, 0]}
+        >
+          <Acrylic palette={palette} />
+        </RoundedBox>
+      ) : (
+        <mesh position={[0, base + length / 2, 0]}>
+          <cylinderGeometry args={[PILLAR_RADIUS, PILLAR_RADIUS, length, 32]} />
+          <Enamel color={palette.post} />
+        </mesh>
+      )}
     </group>
+  );
+}
+
+/**
+ * Space's posts are clear acrylic blocks, like HAL's memory modules, with the
+ * part's name etched in. Alpha rather than `Glass`'s transmission: a
+ * transmissive material costs the scene a second render pass, and a bench
+ * has many posts. The clearcoat keeps a bright edge on the block.
+ */
+function Acrylic({ palette }: { palette: ScenePalette }) {
+  const night = palette.mode === "dark";
+  return (
+    <meshPhysicalMaterial
+      color={night ? "#9fb7c8" : "#d6e6f0"}
+      roughness={0.08}
+      metalness={0}
+      transparent
+      opacity={night ? 0.34 : 0.42}
+      clearcoat={1}
+      clearcoatRoughness={0.05}
+      depthWrite={false}
+    />
   );
 }
 
@@ -435,7 +469,7 @@ function TranslationStage({ palette, axes, color, standalone = false }: { palett
     <group>
       <RoundedBox
         args={[STAGE_SIZE + 6, STAGE_BASE_MM, STAGE_SIZE + 6]}
-        radius={1}
+        radius={1.5}
         smoothness={2}
         position={[0, STAGE_BASE_MM / 2, 0]}
       >
@@ -445,7 +479,7 @@ function TranslationStage({ palette, axes, color, standalone = false }: { palett
         <RoundedBox
           key={index}
           args={[STAGE_SIZE, STAGE_PLATE_MM - 0.8, STAGE_SIZE]}
-          radius={1}
+          radius={1.5}
           smoothness={2}
           position={[0, carriageY(index) + 0.4, 0]}
         >
@@ -548,8 +582,9 @@ function StageBase({
 /** thickness of the laser's mounting plates, along the laser */
 const LASER_FOOT_MM = 6;
 
-function LaserSource({ palette, axis }: ModelProps) {
+function LaserSource({ palette, axis, light }: ModelProps & { light: string }) {
   const posts = useContext(PostsVisible);
+  if (palette.theme === "space") return <SpaceLaser palette={palette} axis={axis} light={light} />;
   const feet = Math.max(1, axis - 18);
   return (
     <group>
@@ -557,15 +592,14 @@ function LaserSource({ palette, axis }: ModelProps) {
           brackets; raising the laser lengthens them */}
       {posts
         ? [-34, 34].map((x) => (
-            <mesh key={x} position={[x, feet / 2, 0]}>
-              <boxGeometry args={[LASER_FOOT_MM, feet, 40]} />
+            <Bevelled args={[LASER_FOOT_MM, feet, 40]} radiusMm={1.5} key={x} position={[x, feet / 2, 0]}>
               <Enamel color={palette.post} />
-            </mesh>
+            </Bevelled>
           ))
         : null}
       <RoundedBox
         args={[LASER_BODY_MM, 40, 40]}
-        radius={0.8}
+        radius={3}
         smoothness={3}
         position={[0, axis, 0]}
       >
@@ -591,6 +625,103 @@ function LaserSource({ palette, axis }: ModelProps) {
         />
       </mesh>
     </group>
+  );
+}
+
+const SPACE_LASER_RADIUS_MM = 20;
+/** the head's rounded shoulder, front and back */
+const SPACE_LASER_SHOULDER_MM = 4;
+/** the eye's steel bezel, from the head's front to the output face */
+const SPACE_LASER_BEZEL_RADIUS_MM = 13;
+
+/**
+ * Space's laser: a white enamel cylinder on a heavy plinth, firing from a HAL eye
+ * that glows in the beam's colour. Same length and output face as Station's,
+ * so it stands and traces the same.
+ */
+function SpaceLaser({ palette, axis, light }: Pick<ModelProps, "palette" | "axis"> & { light: string }) {
+  const posts = useContext(PostsVisible);
+  const head = LASER_BODY_MM - 2 * SPACE_LASER_SHOULDER_MM;
+  const front = LASER_BODY_MM / 2;
+  const bezelLength = LASER_EMITTER.x + LASER_EMITTER.length / 2 - front;
+  return (
+    <group>
+      {posts ? <LaserPlinth palette={palette} axis={axis} /> : null}
+      <group position={[0, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <mesh>
+          <cylinderGeometry args={[SPACE_LASER_RADIUS_MM, SPACE_LASER_RADIUS_MM, head, 48]} />
+          <Enamel color={palette.body} />
+        </mesh>
+        {[-1, 1].map((end) => (
+          <mesh key={end} position={[0, (end * (head + SPACE_LASER_SHOULDER_MM)) / 2, 0]}>
+            <cylinderGeometry
+              args={end > 0
+                ? [SPACE_LASER_RADIUS_MM - SPACE_LASER_SHOULDER_MM, SPACE_LASER_RADIUS_MM, SPACE_LASER_SHOULDER_MM, 48]
+                : [SPACE_LASER_RADIUS_MM, SPACE_LASER_RADIUS_MM - SPACE_LASER_SHOULDER_MM, SPACE_LASER_SHOULDER_MM, 48]}
+            />
+            <Enamel color={palette.body} />
+          </mesh>
+        ))}
+        <mesh position={[0, -(front + bezelLength / 2), 0]}>
+          <cylinderGeometry args={[SPACE_LASER_BEZEL_RADIUS_MM, SPACE_LASER_BEZEL_RADIUS_MM + 1, bezelLength, 48]} />
+          <Stainless palette={palette} />
+        </mesh>
+      </group>
+      <HalEye xMm={front + bezelLength + 0.05} yMm={axis} radiusMm={SPACE_LASER_BEZEL_RADIUS_MM - 1} facing={1} iris={light} />
+    </group>
+  );
+}
+
+/** the heavy base's foot plate on the table, and the block above it the head sits down into */
+const LASER_PLINTH = {
+  foot: { lengthMm: 92, widthMm: 58, heightMm: 6 },
+  block: { lengthMm: 78, widthMm: 34 },
+  /** how far the head sits down into the block */
+  cradleMm: 6,
+} as const;
+
+/**
+ * The Space laser's base: a wide foot plate and a solid block, heavy for
+ * mechanical and thermal stability. Raising the laser makes the block taller.
+ */
+function LaserPlinth({ palette, axis }: Pick<ModelProps, "palette" | "axis">) {
+  const { foot, block, cradleMm } = LASER_PLINTH;
+  const blockTop = Math.max(foot.heightMm + 2, axis - SPACE_LASER_RADIUS_MM + cradleMm);
+  const blockHeight = blockTop - foot.heightMm;
+  return (
+    <group>
+      <Bevelled args={[foot.lengthMm, foot.heightMm, foot.widthMm]} radiusMm={2} position={[0, foot.heightMm / 2, 0]}>
+        <Enamel color={palette.post} />
+      </Bevelled>
+      <Bevelled args={[block.lengthMm, blockHeight, block.widthMm]} radiusMm={4} position={[0, foot.heightMm + blockHeight / 2, 0]}>
+        <Enamel color={palette.post} />
+      </Bevelled>
+    </group>
+  );
+}
+
+/**
+ * A box with its edges rounded off, so no corner reads as a knife edge. The
+ * radius is held under half the thinnest side, which a rounded box needs.
+ */
+function Bevelled({
+  args,
+  radiusMm,
+  position,
+  rotation,
+  children,
+}: {
+  args: Vec3 | readonly [number, number, number];
+  radiusMm: number;
+  position?: Vec3;
+  rotation?: Vec3;
+  children: ReactNode;
+}) {
+  const radius = Math.min(radiusMm, Math.min(...args) / 2 - 0.05);
+  return (
+    <RoundedBox args={[...args] as Vec3} radius={Math.max(0.05, radius)} smoothness={2} position={position} rotation={rotation}>
+      {children}
+    </RoundedBox>
   );
 }
 
@@ -776,7 +907,7 @@ function FaradayIsolator({ palette, axis }: ModelProps) {
   return (
     <group>
       <Pillar palette={palette} top={axis - height / 2 - 4} />
-      <RoundedBox args={[length - 6, 4, width - 4]} radius={0.8} smoothness={2} position={[0, axis - height / 2 - 2, 0]}>
+      <RoundedBox args={[length - 6, 4, width - 4]} radius={1.5} smoothness={2} position={[0, axis - height / 2 - 2, 0]}>
         <Anodised color={palette.anodise} />
       </RoundedBox>
       <RoundedBox args={ISOLATOR_BODY} radius={2} smoothness={3} position={[0, axis, 0]}>
@@ -858,10 +989,9 @@ function FoldPair({ palette, axis, bottom, facing }: Pick<ModelProps, "palette" 
   const top = axis + 20;
   return (
     <group>
-      <mesh position={[-facing * 9, (top + bottom) / 2, 0]}>
-        <boxGeometry args={[6, top - bottom, 2 * DELAY_FOLD_MM + 26]} />
+      <Bevelled args={[6, top - bottom, 2 * DELAY_FOLD_MM + 26]} radiusMm={1.5} position={[-facing * 9, (top + bottom) / 2, 0]}>
         <meshStandardMaterial color={palette.anodise} roughness={0.5} metalness={0.35} />
-      </mesh>
+      </Bevelled>
       {[-1, 1].map((side) => (
         // each mirror's face looks along its own +x: half way between down the rail and across it
         <group
@@ -941,17 +1071,16 @@ function DelayLine({
       {/* the rail runs on past the port, under the fold mirrors' plate, so the plate stands on it */}
       <RoundedBox
         args={[rail + DELAY_PORT_PLATE_MM, 10, 34]}
-        radius={1}
+        radius={2}
         smoothness={2}
         position={[DELAY_PORT_PLATE_MM / 2, railY, 0]}
       >
         <Anodised color={palette.anodise} />
       </RoundedBox>
       {/* the guide on top of the rail */}
-      <mesh position={[0, railY + 6, 0]}>
-        <boxGeometry args={[rail - 8, 2, 12]} />
+      <Bevelled args={[rail - 8, 2, 12]} radiusMm={1.5} position={[0, railY + 6, 0]}>
         <Hardware palette={palette} />
-      </mesh>
+      </Bevelled>
       {/* the fold mirrors on the beam line */}
       <group position={[front, 0, 0]}>
         <FoldPair palette={palette} axis={axis} bottom={railY - 5} facing={-1} />
@@ -1000,16 +1129,15 @@ function BeamSplitter({ palette, color, axis }: ModelProps) {
       {/* cube platform: a plain anodised plate, the way a PBS actually sits */}
       <RoundedBox
         args={[44, 8, 44]}
-        radius={0.8}
+        radius={2}
         smoothness={3}
         position={[0, axis - cube / 2 - 4, 0]}
       >
         <Anodised color={mount} />
       </RoundedBox>
-      <mesh position={[0, axis, 0]}>
-        <boxGeometry args={[cube, cube, cube]} />
+      <Bevelled args={[cube, cube, cube]} radiusMm={1} position={[0, axis, 0]}>
         <Glass tint={GLASS_CYAN} />
-      </mesh>
+      </Bevelled>
       {/* the coating on the cemented diagonal, corner to corner; polarizing or
           not, it looks the same. It runs along local x = z, so a beam arriving
           along +x turns to +z. Opaque, because the glass's transmission pass
@@ -1111,10 +1239,9 @@ function Waveplate({ palette, color, axis }: ModelProps) {
     <group>
       <Pillar palette={palette} top={axis - 30} />
       {posts ? (
-        <mesh position={[0, axis - 26, 0]}>
-          <boxGeometry args={[12, 8, 20]} />
+        <Bevelled args={[12, 8, 20]} radiusMm={1.5} position={[0, axis - 26, 0]}>
           <Anodised color={mount} />
-        </mesh>
+        </Bevelled>
       ) : null}
       <mesh
         geometry={ROTATION_BODY_GEOMETRY}
@@ -1231,10 +1358,9 @@ function Iris({ palette, color, axis }: ModelProps) {
       </mesh>
       {/* the post adapter under the ring */}
       {posts ? (
-        <mesh position={[0, axis - 19, 0]}>
-          <boxGeometry args={[14, 8, 14]} />
+        <Bevelled args={[14, 8, 14]} radiusMm={1.5} position={[0, axis - 19, 0]}>
           <Anodised color={mount} />
-        </mesh>
+        </Bevelled>
       ) : null}
     </group>
   );
@@ -1325,7 +1451,7 @@ function SampleStageSide({
       {/* the angle bracket: a foot on the block, an upright, a ledge on top */}
       <RoundedBox
         args={[36, SIDE_FOOT_MM, 20]}
-        radius={0.8}
+        radius={1.5}
         smoothness={2}
         position={[0, base + SIDE_FOOT_MM / 2, bracketZ + 10]}
       >
@@ -1333,7 +1459,7 @@ function SampleStageSide({
       </RoundedBox>
       <RoundedBox
         args={[36, top - base, SIDE_BRACKET_DEPTH]}
-        radius={0.8}
+        radius={1.5}
         smoothness={2}
         position={[0, (base + top) / 2, bracketZ + SIDE_BRACKET_DEPTH / 2]}
       >
@@ -1341,7 +1467,7 @@ function SampleStageSide({
       </RoundedBox>
       <RoundedBox
         args={[22, 5, SIDE_SLIDE_DEPTH + SIDE_BRACKET_DEPTH]}
-        radius={0.8}
+        radius={1.5}
         smoothness={2}
         position={[0, top - 2.5, SIDE_SLIDE_Z + (SIDE_SLIDE_DEPTH + SIDE_BRACKET_DEPTH) / 2]}
       >
@@ -1350,7 +1476,7 @@ function SampleStageSide({
       {/* the Z slide, and the bright bearing seam behind it */}
       <RoundedBox
         args={[30, SIDE_SLIDE_HEIGHT, SIDE_SLIDE_DEPTH - 0.8]}
-        radius={0.8}
+        radius={1.5}
         smoothness={2}
         position={[0, axis, SIDE_SLIDE_Z + (SIDE_SLIDE_DEPTH - 0.8) / 2]}
       >
@@ -1681,10 +1807,9 @@ function BeamBlock({ palette, axis }: ModelProps) {
           <meshStandardMaterial color={black} roughness={0.5} metalness={0.35} />
         </RoundedBox>
       ))}
-      <mesh position={[0, axis, 0]}>
-        <boxGeometry args={[BLOCK_FINS_X, BLOCK_FINS_Y, BLOCK_FINS_Z]} />
+      <Bevelled args={[BLOCK_FINS_X, BLOCK_FINS_Y, BLOCK_FINS_Z]} radiusMm={1} position={[0, axis, 0]}>
         <meshStandardMaterial color={black} roughness={0.7} metalness={0.2} />
-      </mesh>
+      </Bevelled>
       {/* the fin stack's grooves across the front face */}
       {Array.from({ length: 9 }, (_, index) => (
         <mesh
@@ -1697,10 +1822,9 @@ function BeamBlock({ palette, axis }: ModelProps) {
       ))}
       {/* bare fin edges at each end */}
       {[-1, 1].map((side) => (
-        <mesh key={side} position={[0, axis, side * (BLOCK_FINS_Z / 2 + 1)]}>
-          <boxGeometry args={[BLOCK_FINS_X - 2, BLOCK_FINS_Y, 2]} />
+        <Bevelled args={[BLOCK_FINS_X - 2, BLOCK_FINS_Y, 2]} radiusMm={0.6} key={side} position={[0, axis, side * (BLOCK_FINS_Z / 2 + 1)]}>
           <Hardware palette={palette} />
-        </mesh>
+        </Bevelled>
       ))}
       <mesh position={[0, axis + plateY + 2.5, 0]}>
         <cylinderGeometry args={[3.2, 3.2, 4, 16]} />
@@ -1806,7 +1930,7 @@ function GenericBlock({ palette, color, axis, size, symbol, yaw }: ModelProps & 
   if (symbol) return (
     <group>
       <Pillar palette={palette} top={axis - dy / 2} />
-      <RoundedBox args={[dx, dy, dz]} radius={Math.min(1.2, Math.min(dx, dy, dz) / 4)} smoothness={3} position={[0, axis, 0]}>
+      <RoundedBox args={[dx, dy, dz]} radius={Math.min(3, Math.min(dx, dy, dz) / 4)} smoothness={3} position={[0, axis, 0]}>
         <Enamel color={color ?? palette.body} />
         <Edges color={palette.anodise} threshold={18} />
       </RoundedBox>
@@ -1818,7 +1942,7 @@ function GenericBlock({ palette, color, axis, size, symbol, yaw }: ModelProps & 
       <Pillar palette={palette} top={axis - dy / 2} />
       <RoundedBox
         args={[dx, dy, dz]}
-        radius={Math.min(1.2, Math.min(dx, dy, dz) / 4)}
+        radius={Math.min(3, Math.min(dx, dy, dz) / 4)}
         smoothness={3}
         position={[0, axis, 0]}
       >
@@ -1901,7 +2025,7 @@ function Photodiode({ palette, color, axis, stub }: ModelProps & { stub: boolean
           <boxGeometry args={[0.2, PD_CHIP_SIDE_MM, PD_CHIP_SIDE_MM]} />
           <meshStandardMaterial color={SENSOR_SILICON} roughness={0.12} metalness={0.5} />
         </mesh>
-        {palette.theme === "2001" ? <HalEye xMm={-2.3} radiusMm={PD_CUP_RADIUS - 0.3} /> : null}
+        {palette.theme === "space" ? <HalEye xMm={-2.3} radiusMm={PD_CUP_RADIUS - 0.3} /> : null}
         <mesh rotation={[0, 0, -Math.PI / 2]}>
           <sphereGeometry args={[PD_RADIUS, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <Enamel color={color ?? DEFAULT_PHOTODIODE_COLOR} />
@@ -1935,16 +2059,15 @@ function Aom({ palette, axis }: ModelProps) {
       <Pillar palette={palette} top={axis - height / 2 - 4} />
       <RoundedBox
         args={[length + 10, 4, width + 12]}
-        radius={0.8}
+        radius={1.5}
         smoothness={2}
         position={[0, axis - height / 2 - 2, 0]}
       >
         <Anodised color={palette.anodise} />
       </RoundedBox>
-      <mesh position={[0, axis, 0]}>
-        <boxGeometry args={AOM_CRYSTAL} />
+      <Bevelled args={AOM_CRYSTAL} radiusMm={0.8} position={[0, axis, 0]}>
         <Glass tint={CRYSTAL_CLEAR} thickness={width} />
-      </mesh>
+      </Bevelled>
       {Array.from({ length: 5 }, (_, index) => (
         <mesh
           key={index}
@@ -1967,10 +2090,9 @@ function Aom({ palette, axis }: ModelProps) {
         <boxGeometry args={[length * 0.6, 0.6, width]} />
         <meshStandardMaterial color={GOLD} roughness={0.3} metalness={0.9} />
       </mesh>
-      <mesh position={[0, top + 2, 0]}>
-        <boxGeometry args={[length * 0.6, 3, width]} />
+      <Bevelled args={[length * 0.6, 3, width]} radiusMm={0.6} position={[0, top + 2, 0]}>
         <Enamel color="#1b1f26" />
-      </mesh>
+      </Bevelled>
       <SmaConnector palette={palette} at={[0, top + AOM_SMA_RISE_MM, 0]} />
     </group>
   );
@@ -1987,16 +2109,15 @@ function Eom({ palette, axis }: ModelProps) {
       <Pillar palette={palette} top={axis - EOM_SIDE / 2 - 5} />
       <RoundedBox
         args={[EOM_LENGTH + 10, 4, EOM_SIDE + 14]}
-        radius={0.8}
+        radius={1.5}
         smoothness={2}
         position={[0, axis - EOM_SIDE / 2 - 3, 0]}
       >
         <Anodised color={palette.anodise} />
       </RoundedBox>
-      <mesh position={[0, axis, 0]}>
-        <boxGeometry args={[EOM_LENGTH, EOM_SIDE, EOM_SIDE]} />
+      <Bevelled args={[EOM_LENGTH, EOM_SIDE, EOM_SIDE]} radiusMm={0.8} position={[0, axis, 0]}>
         <Glass tint={CRYSTAL_AMBER} dense thickness={EOM_SIDE} />
-      </mesh>
+      </Bevelled>
       {[-1, 1].map((side) => (
         <mesh key={side} position={[0, axis + side * (EOM_SIDE / 2 + 0.4), 0]}>
           <boxGeometry args={[EOM_LENGTH - 4, 0.8, EOM_SIDE]} />
@@ -2025,7 +2146,7 @@ function CameraBody({ palette, color, axis }: ModelProps) {
       <Pillar palette={palette} top={axis - CAMERA_HALF_MM} />
       <RoundedBox
         args={[CAMERA_DEPTH_MM, 2 * CAMERA_HALF_MM, 2 * CAMERA_HALF_MM]}
-        radius={0.8}
+        radius={3}
         smoothness={3}
         position={[CAMERA_FRONT_X + CAMERA_DEPTH_MM / 2, axis, 0]}
       >
@@ -2040,7 +2161,7 @@ function CameraBody({ palette, color, axis }: ModelProps) {
         <cylinderGeometry args={[CAMERA_OPENING_RADIUS_MM, CAMERA_OPENING_RADIUS_MM, CAMERA_MOUNT_RING.depth, 28]} />
         <Enamel color="#12161d" />
       </mesh>
-      {palette.theme === "2001" ? (
+      {palette.theme === "space" ? (
         <group position={[0, axis, 0]}>
           {/* a hair in front of the opening's face, so the two never fight */}
           <HalEye xMm={CAMERA_MOUNT_RING.x - CAMERA_MOUNT_RING.depth / 2 - 0.1} radiusMm={CAMERA_OPENING_RADIUS_MM} />
@@ -2054,24 +2175,22 @@ function Spectrometer({ palette, color, axis }: ModelProps) {
   const body = axis + 20;
   return (
     <group>
-      <mesh position={[0, body / 2, 0]}>
-        <boxGeometry args={[SPECTROMETER_BODY_MM, body, 80]} />
+      <Bevelled args={[SPECTROMETER_BODY_MM, body, 80]} radiusMm={3} position={[0, body / 2, 0]}>
         <Enamel color={color ?? palette.body} />
-      </mesh>
+      </Bevelled>
       {/* input slit / fibre port, on the shared axis */}
       <mesh position={[SPECTROMETER_PORT.x, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT_RADIUS_MM, SPECTROMETER_PORT.length, 20]} />
         <Enamel color="#1b1f26" />
       </mesh>
-      {palette.theme === "2001" ? (
+      {palette.theme === "space" ? (
         <group position={[0, axis, 0]}>
           <HalEye xMm={SPECTROMETER_PORT.x - SPECTROMETER_PORT.length / 2 - 0.1} radiusMm={SPECTROMETER_PORT_RADIUS_MM} />
         </group>
       ) : null}
-      <mesh position={[0, body + 1, 0]}>
-        <boxGeometry args={[100, 2, 70]} />
+      <Bevelled args={[100, 2, 70]} radiusMm={1} position={[0, body + 1, 0]}>
         <Hardware palette={palette} />
-      </mesh>
+      </Bevelled>
     </group>
   );
 }
@@ -2099,7 +2218,7 @@ function SinglePhotonDetector({ palette, color, axis }: ModelProps) {
       <Pillar palette={palette} top={axis - SPCM_HALF_MM} />
       <RoundedBox
         args={[SPCM_DEPTH_MM, 2 * SPCM_HALF_MM, SPCM_WIDTH_MM]}
-        radius={0.8}
+        radius={3}
         smoothness={3}
         position={[SPCM_FACE_X + SPCM_DEPTH_MM / 2, axis, 0]}
       >
@@ -2107,10 +2226,9 @@ function SinglePhotonDetector({ palette, color, axis }: ModelProps) {
       </RoundedBox>
       {/* the FC receptacle: a square flange flat on the face, a threaded
           barrel, and the ceramic sleeve with the dark bore the fiber meets */}
-      <mesh position={[SPCM_FACE_X - FC_FLANGE_DEPTH_MM / 2, axis, 0]}>
-        <boxGeometry args={[FC_FLANGE_DEPTH_MM, FC_FLANGE_MM, FC_FLANGE_MM]} />
+      <Bevelled args={[FC_FLANGE_DEPTH_MM, FC_FLANGE_MM, FC_FLANGE_MM]} radiusMm={0.8} position={[SPCM_FACE_X - FC_FLANGE_DEPTH_MM / 2, axis, 0]}>
         <Stainless palette={palette} />
-      </mesh>
+      </Bevelled>
       <mesh position={[flangeOut - FC_BARREL_LENGTH_MM / 2, axis, 0]} rotation={[0, 0, Math.PI / 2]}>
         <cylinderGeometry args={[FC_BARREL_RADIUS_MM, FC_BARREL_RADIUS_MM, FC_BARREL_LENGTH_MM, 24]} />
         <Stainless palette={palette} />
@@ -2173,16 +2291,15 @@ function TimeTagger({ palette, axis }: ModelProps) {
       )}
       <RoundedBox
         args={[TAGGER_DEPTH_MM, 2 * TAGGER_HALF_MM, TAGGER_WIDTH_MM]}
-        radius={2}
+        radius={3}
         smoothness={3}
         position={[0, axis, 0]}
       >
         <Enamel color={palette.anodise} />
       </RoundedBox>
-      <mesh position={[front - TAGGER_PANEL_MM / 2, axis, 0]}>
-        <boxGeometry args={[TAGGER_PANEL_MM, 2 * TAGGER_HALF_MM - 6, TAGGER_WIDTH_MM - 6]} />
+      <Bevelled args={[TAGGER_PANEL_MM, 2 * TAGGER_HALF_MM - 6, TAGGER_WIDTH_MM - 6]} radiusMm={1.5} position={[front - TAGGER_PANEL_MM / 2, axis, 0]}>
         <Hardware palette={palette} />
-      </mesh>
+      </Bevelled>
       {Array.from({ length: TAGGER_INPUTS }, (_, index) => {
         return (
           <group key={index} position={[panel, axis, taggerInputZ(index)]} rotation={[0, 0, Math.PI / 2]}>
@@ -2256,6 +2373,18 @@ function BeamOrderBadge({ order, height }: { order: number; height: number }) {
   );
 }
 
+/**
+ * In Space a part's name is etched low on its acrylic post, where the parts
+ * standing in front hide it less than a tag above them would; a part with no
+ * post carries it low on its body.
+ */
+const SPACE_LABEL_HEIGHT_FRACTION = 0.4;
+const SPACE_LABEL_MIN_HEIGHT_MM = 10;
+
+function spaceLabelHeightMm(axis: number): number {
+  return Math.max(SPACE_LABEL_MIN_HEIGHT_MM, axis * SPACE_LABEL_HEIGHT_FRACTION);
+}
+
 /** how much of a faded part's opacity is left */
 const FADED_OPACITY = 0.18;
 
@@ -2314,7 +2443,7 @@ const COMPONENT_MODELS: Record<
   ComponentType,
   (component: BuilderComponent, context: ModelContext) => ReactNode
 > = {
-  "laser-source": (_, { modelProps }) => <LaserSource {...modelProps} />,
+  "laser-source": (component, { modelProps }) => <LaserSource {...modelProps} light={laserLightColor(component)} />,
   "fiber-collimator": (_, { modelProps, stubTaken }) => (
     <FiberCollimator {...modelProps} stub={!stubTaken} />
   ),
@@ -2512,12 +2641,12 @@ export const ComponentMesh = memo(function ComponentMesh({
 
         {showLabel && !component.host ? (
           <Html
-            position={[0, axis + top + 12, 0]}
+            position={[0, palette.theme === "space" ? spaceLabelHeightMm(axis) : axis + top + 12, 0]}
             center
             zIndexRange={[0, 0]}
             className="builderHtmlLayer"
           >
-            <span className={`builderLabel${selected ? " is-selected" : ""}${faded ? " is-faded" : ""}`}>
+            <span className={`builderLabel${selected ? " is-selected" : ""}${faded ? " is-faded" : ""}${palette.theme === "space" ? " is-etched" : ""}`}>
               {componentDisplayName(component)}
             </span>
           </Html>

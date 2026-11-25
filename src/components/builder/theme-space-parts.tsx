@@ -1,46 +1,74 @@
 "use client";
 
-// The 2001 theme's touches on the parts (issue #421): colour and light only,
-// never a change of a part's shape.
+// The Space theme's touches on the parts (issue #421): mostly colour and
+// light. The laser is the exception: a round head with a HAL eye for an output.
 
-import { AdditiveBlending, CanvasTexture, SRGBColorSpace } from "three";
+import { AdditiveBlending, CanvasTexture, Color, SRGBColorSpace } from "three";
 
 const EYE_TEXTURE_PX = 256;
-let eyeTexture: CanvasTexture | null = null;
+/** HAL's own red; an eye given no iris colour keeps it */
+const HAL_RED = "#ff3b0a";
+const eyeTextures = new Map<string, CanvasTexture>();
 
-/** HAL's lens: a yellow-white pinpoint in a red iris, falling to black glass, in a thin steel bezel */
-function halEyeTexture(): CanvasTexture {
-  if (eyeTexture) return eyeTexture;
+function shade(hex: string, lightness: number): string {
+  const color = new Color(hex);
+  const hsl = { h: 0, s: 0, l: 0 };
+  color.getHSL(hsl);
+  return `#${color.setHSL(hsl.h, Math.min(1, hsl.s * 1.1), lightness).getHexString()}`;
+}
+
+/**
+ * HAL's lens: a pale pinpoint in a bright iris, falling to black glass, in a
+ * thin steel bezel. The iris takes `iris`, so a laser's eye glows its beam's colour.
+ */
+function halEyeTexture(iris: string): CanvasTexture {
+  const cached = eyeTextures.get(iris);
+  if (cached) return cached;
+  const red = iris === HAL_RED;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = EYE_TEXTURE_PX;
   const context = canvas.getContext("2d")!;
   const half = EYE_TEXTURE_PX / 2;
   const gradient = context.createRadialGradient(half, half, 0, half, half, half);
   gradient.addColorStop(0, "#fffbe0");
-  gradient.addColorStop(0.05, "#ffd84a");
-  gradient.addColorStop(0.14, "#ff3b0a");
-  gradient.addColorStop(0.36, "#b30000");
-  gradient.addColorStop(0.62, "#2a0000");
+  gradient.addColorStop(0.05, red ? "#ffd84a" : shade(iris, 0.8));
+  gradient.addColorStop(0.14, iris);
+  gradient.addColorStop(0.36, red ? "#b30000" : shade(iris, 0.32));
+  gradient.addColorStop(0.62, red ? "#2a0000" : shade(iris, 0.08));
   gradient.addColorStop(0.86, "#050505");
   gradient.addColorStop(0.92, "#9aa1a8");
   gradient.addColorStop(0.96, "#e6e9ec");
   gradient.addColorStop(1, "#5d636a");
   context.fillStyle = gradient;
   context.fillRect(0, 0, EYE_TEXTURE_PX, EYE_TEXTURE_PX);
-  eyeTexture = new CanvasTexture(canvas);
-  eyeTexture.colorSpace = SRGBColorSpace;
-  return eyeTexture;
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  eyeTextures.set(iris, texture);
+  return texture;
 }
 
 /**
- * A HAL eye in a detector's opening, facing -x, where the light comes from.
+ * A HAL eye looking along `facing` x: -x in a detector's opening, where the
+ * light comes from; +x on a laser, where it leaves.
  * Unlit and not tone mapped, so it glows the same in day and night.
  */
-export function HalEye({ xMm, radiusMm }: { xMm: number; radiusMm: number }) {
+export function HalEye({
+  xMm,
+  yMm = 0,
+  radiusMm,
+  facing = -1,
+  iris = HAL_RED,
+}: {
+  xMm: number;
+  yMm?: number;
+  radiusMm: number;
+  facing?: 1 | -1;
+  iris?: string;
+}) {
   return (
-    <mesh position={[xMm, 0, 0]} rotation={[0, -Math.PI / 2, 0]} raycast={() => null}>
+    <mesh position={[xMm, yMm, 0]} rotation={[0, (facing * Math.PI) / 2, 0]} raycast={() => null}>
       <circleGeometry args={[radiusMm, 48]} />
-      <meshBasicMaterial map={halEyeTexture()} toneMapped={false} />
+      <meshBasicMaterial map={halEyeTexture(iris)} toneMapped={false} />
     </mesh>
   );
 }

@@ -1,10 +1,10 @@
 import { expect, test } from "./checks";
 
-test("2001 sets labels in Gillius and keeps the Light panel's buttons on the screen", async ({ page }) => {
+test("Space sets labels in Gillius and keeps the Light panel's buttons on the screen", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  await page.evaluate(() => localStorage.setItem("site-theme", "2001"));
+  await page.evaluate(() => localStorage.setItem("site-theme", "space"));
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
 
   const title = page.locator(".builderLightList__panel .builderPanelBar__title");
   await expect(title).toHaveCSS("font-family", /gillius/i);
@@ -15,9 +15,9 @@ test("2001 sets labels in Gillius and keeps the Light panel's buttons on the scr
   await expect(readout).toHaveCSS("background-color", "rgb(5, 8, 11)");
 });
 
-test("2001 draws part labels as acrylic slides in Gillius", async ({ page }) => {
+test("Space draws part labels as acrylic slides in Gillius", async ({ page }) => {
   await page.goto("builder/tabletop/");
-  await page.evaluate(() => localStorage.setItem("site-theme", "2001"));
+  await page.evaluate(() => localStorage.setItem("site-theme", "space"));
   await page.reload();
   const label = page.locator(".builderLabel").first();
   await expect(label).toHaveCSS("font-family", /gillius/i);

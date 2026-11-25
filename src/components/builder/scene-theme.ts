@@ -37,9 +37,9 @@ export type ScenePalette = {
   /** the hover ring: the ink a third of the way back to the backdrop */
   hover: string;
   /**
-   * 2001 only: the CRT trace colour that selection and hover rings, the
+   * Space only: the CRT trace colour that selection and hover rings, the
    * rotation and stage handles and the Flip chip take instead of the accent.
-   * Must match `--look-trace` in builder-theme-2001.css (scene-theme.test.ts checks)
+   * Must match `--look-trace` in builder-theme-space.css (scene-theme.test.ts checks)
    */
   trace: string | null;
   ambient: number;
@@ -95,7 +95,7 @@ type Inkless = Omit<ScenePalette, "theme" | "accent" | "hover" | "trace">;
  * Phosphor yellow by night; by day a darker amber, as pure yellow vanishes
  * on the white sweep.
  */
-export const TRACE_2001 = { light: "#c08600", dark: "#ffd23f" } as const;
+export const TRACE_SPACE = { light: "#c08600", dark: "#ffd23f" } as const;
 
 export const LIGHT_PALETTE: Inkless = {
   mode: "light",
@@ -141,13 +141,13 @@ export const DARK_PALETTE: Inkless = {
 };
 
 /*
- * The 2001 theme (`data-theme="2001"`, see site-theme.ts): the same parts in
+ * The Space theme (`data-theme="space"`, see site-theme.ts): the same parts in
  * the film's colour and light, never a new shape. Day is the space station's
  * lounge: a cooler, brighter white sweep, pure white enamel and blacker
  * anodise, with softer shadows from a stronger ambient. Night is space itself:
  * a near-black void, a harder cold rim light and a deeper vignette.
  */
-export const LIGHT_2001_PALETTE: Inkless = {
+export const LIGHT_SPACE_PALETTE: Inkless = {
   ...LIGHT_PALETTE,
   backdrop: ["#f3f4f5", "#e3e5e8", "#b9bec5"],
   shadow: "#1d2733",
@@ -167,7 +167,7 @@ export const LIGHT_2001_PALETTE: Inkless = {
   stageSeam: "#c4cad2",
 };
 
-export const DARK_2001_PALETTE: Inkless = {
+export const DARK_SPACE_PALETTE: Inkless = {
   ...DARK_PALETTE,
   backdrop: ["#10131a", "#05060a", "#000000"],
   shadowOpacity: 0.6,
@@ -231,7 +231,7 @@ let cached: { key: string; snapshot: string } | null = null;
 function getSnapshot(): string {
   const root = document.documentElement;
   const mode = root.dataset.mode === "dark" ? "dark" : "light";
-  const theme = root.dataset.theme === "2001" || root.dataset.theme === "blueprint" ? root.dataset.theme : "station";
+  const theme = root.dataset.theme === "space" || root.dataset.theme === "blueprint" ? root.dataset.theme : "station";
   const key = `${mode} ${theme}`;
   if (!cached || cached.key !== key) {
     cached = { key, snapshot: `${key} ${readRing(root)}` };
@@ -249,13 +249,13 @@ export function useScenePalette(): ScenePalette {
     const [mode, theme, ring] = snapshot.split(" ");
     const base = theme === "blueprint"
       ? mode === "dark" ? DARK_BLUEPRINT_PALETTE : LIGHT_BLUEPRINT_PALETTE
-      : theme === "2001"
-      ? mode === "dark" ? DARK_2001_PALETTE : LIGHT_2001_PALETTE
+      : theme === "space"
+      ? mode === "dark" ? DARK_SPACE_PALETTE : LIGHT_SPACE_PALETTE
       : mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
     // before the tokens are read (the server render), a neutral the canvas never shows
     const accent = new Color(theme === "blueprint" ? mode === "dark" ? "#dce8f8" : "#111111" : ring || base.post);
     const hover = accent.clone().lerp(new Color(base.backdrop[0]), 1 / 3);
-    const trace = theme === "2001" ? TRACE_2001[mode === "dark" ? "dark" : "light"] : null;
+    const trace = theme === "space" ? TRACE_SPACE[mode === "dark" ? "dark" : "light"] : null;
     return { ...base, theme: theme as SiteTheme, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}`, trace };
   }, [snapshot]);
 }

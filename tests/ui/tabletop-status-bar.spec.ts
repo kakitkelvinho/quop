@@ -121,7 +121,7 @@ test("an upgraded Setup keeps its notice in the bar", async ({ page }) => {
   await expect(statusBar(page).locator(".builderStatusBar__upgrade")).toHaveAttribute("aria-label", /This file was upgraded/);
 });
 
-test("the theme menu opens upward, switches to 2001 and persists across pages", async ({ page }) => {
+test("the theme menu opens upward, switches to Space and persists across pages", async ({ page }) => {
   await page.goto("builder/tabletop/");
   const trigger = statusBar(page).getByRole("button", { name: /^Theme:/ });
   await expect(trigger).toHaveText(/Station/);
@@ -130,16 +130,24 @@ test("the theme menu opens upward, switches to 2001 and persists across pages", 
   const [menuBox, triggerBox] = [await menu.boundingBox(), await trigger.boundingBox()];
   expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(triggerBox!.y);
   await expect(menu.getByRole("menuitemradio", { name: "Station" })).toHaveAttribute("aria-checked", "true");
-  await menu.getByRole("menuitemradio", { name: "2001" }).click();
+  await menu.getByRole("menuitemradio", { name: "Space" }).click();
   await expect(menu).toHaveCount(0);
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
   await page.reload();
-  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/2001/);
+  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/Space/);
   await page.goto("calculators/");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
 });
 
-test("saved preferences migrate without resetting night mode or the 2001 theme", async ({ page }, testInfo) => {
+test("a theme saved as 2001 opens as Space", async ({ page }) => {
+  await page.goto("./");
+  await page.evaluate(() => localStorage.setItem("site-theme", "2001"));
+  await page.goto("builder/tabletop/");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
+  expect(await page.evaluate(() => localStorage.getItem("site-theme"))).toBe("space");
+});
+
+test("saved preferences migrate without resetting night mode or the Space theme", async ({ page }, testInfo) => {
   await page.goto("./");
   await page.evaluate(() => {
     localStorage.setItem(["theme", "preference"].join("-"), "dark");
@@ -147,18 +155,18 @@ test("saved preferences migrate without resetting night mode or the 2001 theme",
   });
   await page.goto("builder/tabletop/");
   await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
-  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/2001/);
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
+  await expect(statusBar(page).getByRole("button", { name: /^Theme:/ })).toHaveText(/Space/);
   const saved = await page.evaluate(() => ({
     mode: localStorage.getItem("mode-preference"),
     theme: localStorage.getItem("site-theme"),
     oldMode: localStorage.getItem(["theme", "preference"].join("-")),
     oldTheme: localStorage.getItem(["builder", "look"].join("-")),
   }));
-  expect(saved).toEqual({ mode: "dark", theme: "2001", oldMode: null, oldTheme: null });
+  expect(saved).toEqual({ mode: "dark", theme: "space", oldMode: null, oldTheme: null });
   await page.goto("calculators/");
   await expect(page.locator("html")).toHaveAttribute("data-mode", "dark");
-  await expect(page.locator("html")).toHaveAttribute("data-theme", "2001");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
   await page.evaluate(() => localStorage.removeItem("mode-preference"));
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-mode", testInfo.project.name);

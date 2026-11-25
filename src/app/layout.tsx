@@ -26,7 +26,7 @@ const ebGaramond = localFont({
   adjustFontFallback: "Times New Roman",
 });
 
-// The Tabletop's 2001 and Blueprint themes: open stand-ins for the film's
+// The Tabletop's Space and Blueprint themes: open stand-ins for the film's
 // faces. Gillius ADF (from CTAN, GPL with the font exception) for Gill Sans,
 // and Archivo Narrow (Google Fonts) for Univers Condensed.
 const gillius = localFont({
@@ -83,8 +83,13 @@ const preferencesScript = `
       }
       return null;
     };
-    const theme = migrate("site-theme", ["builder", "look"].join("-"), ["station", "2001"]);
-    document.documentElement.dataset.theme = theme === "2001" || theme === "blueprint" ? theme : "station";
+    let theme = migrate("site-theme", ["builder", "look"].join("-"), ["station", "2001"]);
+    // the Space theme was called 2001 until 1.x; a saved "2001" keeps it
+    if (theme === "2001") {
+      theme = "space";
+      try { localStorage.setItem("site-theme", theme); } catch { /* storage can be unavailable */ }
+    }
+    document.documentElement.dataset.theme = theme === "space" || theme === "blueprint" ? theme : "station";
     migrate("mode-preference", ["theme", "preference"].join("-"), ["light", "dark"]);
     const applyMode = () => {
       const savedMode = read("mode-preference");

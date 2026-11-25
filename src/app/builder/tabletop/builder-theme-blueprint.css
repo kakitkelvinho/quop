@@ -1,4 +1,4 @@
-/* Blueprint uses the 2001 screen geometry and type in paper and ink. */
+/* Blueprint uses the Space screen geometry and type in paper and ink. */
 html[data-theme="blueprint"] {
   --bp-paper: #ffffff;
   --bp-ink: #111111;
