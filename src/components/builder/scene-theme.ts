@@ -143,13 +143,14 @@ export const DARK_PALETTE: Inkless = {
 /*
  * The Space theme (`data-theme="space"`, see site-theme.ts): the same parts in
  * the film's colour and light, never a new shape. Day is the space station's
- * lounge: a cooler, brighter white sweep, pure white enamel and blacker
- * anodise, with softer shadows from a stronger ambient. Night is space itself:
- * a near-black void, a harder cold rim light and a deeper vignette.
+ * lounge: grey enamel on white, so a figure reads on a white page, and
+ * blacker anodise, with softer shadows from a stronger ambient. Night is space itself:
+ * a pitch-black void and a harder cold rim light. Both backdrops are flat,
+ * with no sweep or vignette: solid white, solid black.
  */
 export const LIGHT_SPACE_PALETTE: Inkless = {
   ...LIGHT_PALETTE,
-  backdrop: ["#f3f4f5", "#e3e5e8", "#b9bec5"],
+  backdrop: ["#ffffff", "#ffffff", "#ffffff"],
   shadow: "#1d2733",
   shadowOpacity: 0.26,
   holeGrid: { plate: "#d9dce0", plateOpacity: 0.8, hole: "#1a1d22", rim: "#ffffff", row: "#c3c7cd" },
@@ -158,9 +159,11 @@ export const LIGHT_SPACE_PALETTE: Inkless = {
   rimLight: 0.4,
   rimColor: "#cfe0ff",
   occlusion: 2.6,
-  vignette: 0.2,
-  body: "#ffffff",
-  post: "#9aa0a7",
+  vignette: 0,
+  // grey, like the lit-floor room at the film's end: white enamel on the white
+  // backdrop vanished, and a figure for a white page needs its parts to read
+  body: "#aeb3ba",
+  post: "#7b828b",
   metal: "#e4e8ee",
   anodise: "#0d0e10",
   stage: "#121316",
@@ -169,7 +172,7 @@ export const LIGHT_SPACE_PALETTE: Inkless = {
 
 export const DARK_SPACE_PALETTE: Inkless = {
   ...DARK_PALETTE,
-  backdrop: ["#10131a", "#05060a", "#000000"],
+  backdrop: ["#000000", "#000000", "#000000"],
   shadowOpacity: 0.6,
   holeGrid: { plate: "#111318", plateOpacity: 0.9, hole: "#000000", rim: "#3a4250", row: "#1e222a" },
   ambient: 0.06,
@@ -177,7 +180,7 @@ export const DARK_SPACE_PALETTE: Inkless = {
   rimLight: 2.8,
   rimColor: "#8fb8ff",
   occlusion: 3.2,
-  vignette: 0.7,
+  vignette: 0,
   body: "#f4f4f2",
   post: "#5f656d",
   metal: "#cdd4de",
@@ -185,6 +188,13 @@ export const DARK_SPACE_PALETTE: Inkless = {
   stage: "#383c43",
   stageSeam: "#aeb8c6",
 };
+
+/**
+ * Blueprint's night ink: a neon cyan-green on black, glowing like a vector
+ * display. Must match `--bp-ink` in builder-theme-blueprint.css
+ * (scene-theme.test.ts checks); blueprint-pass.tsx draws with this one.
+ */
+export const BLUEPRINT_NEON = "#62f5e3";
 
 export const LIGHT_BLUEPRINT_PALETTE: Inkless = {
   ...LIGHT_PALETTE,
@@ -194,8 +204,8 @@ export const LIGHT_BLUEPRINT_PALETTE: Inkless = {
 
 export const DARK_BLUEPRINT_PALETTE: Inkless = {
   ...DARK_PALETTE,
-  backdrop: ["#0a1f3d", "#0a1f3d", "#0a1f3d"],
-  holeGrid: { plate: "#0a1f3d", plateOpacity: 0, hole: "#dce8f8", rim: "#0a1f3d", row: "#42617d" },
+  backdrop: ["#000000", "#000000", "#000000"],
+  holeGrid: { plate: "#000000", plateOpacity: 0, hole: "#62f5e3", rim: "#000000", row: "#14524b" },
 };
 
 /** The root attributes carry both preferences; the scene redraws when either changes. */
@@ -253,7 +263,7 @@ export function useScenePalette(): ScenePalette {
       ? mode === "dark" ? DARK_SPACE_PALETTE : LIGHT_SPACE_PALETTE
       : mode === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
     // before the tokens are read (the server render), a neutral the canvas never shows
-    const accent = new Color(theme === "blueprint" ? mode === "dark" ? "#dce8f8" : "#111111" : ring || base.post);
+    const accent = new Color(theme === "blueprint" ? mode === "dark" ? BLUEPRINT_NEON : "#111111" : ring || base.post);
     const hover = accent.clone().lerp(new Color(base.backdrop[0]), 1 / 3);
     const trace = theme === "space" ? TRACE_SPACE[mode === "dark" ? "dark" : "light"] : null;
     return { ...base, theme: theme as SiteTheme, accent: `#${accent.getHexString()}`, hover: `#${hover.getHexString()}`, trace };

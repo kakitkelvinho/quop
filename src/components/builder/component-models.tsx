@@ -345,11 +345,11 @@ function Acrylic({ palette }: { palette: ScenePalette }) {
   const night = palette.mode === "dark";
   return (
     <meshPhysicalMaterial
-      color={night ? "#9fb7c8" : "#d6e6f0"}
+      color={night ? "#9fb7c8" : "#9fbccd"}
       roughness={0.08}
       metalness={0}
       transparent
-      opacity={night ? 0.34 : 0.42}
+      opacity={night ? 0.34 : 0.5}
       clearcoat={1}
       clearcoatRoughness={0.05}
       depthWrite={false}

@@ -13,7 +13,7 @@ import {
   useThree,
   type ThreeEvent,
 } from "@react-three/fiber";
-import { EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
+import { Bloom, EffectComposer, N8AO, Vignette } from "@react-three/postprocessing";
 import {
   Fragment,
   memo,
@@ -1778,7 +1778,11 @@ export default function BuilderCanvas({
           vignette pulls the eye to the middle of the layout. Light quality
           keeps only the composer's anti-aliasing. */}
       <EffectComposer multisampling={4}>
-        {settings.effects ? (
+        {blueprint && palette.mode === "dark" ? (
+          // Blueprint's night: neon lines on black glow like a vector display.
+          // Only the ink is bright enough to bloom; the black paper never does.
+          <Bloom mipmapBlur luminanceThreshold={0.25} luminanceSmoothing={0.2} intensity={1.4} radius={0.55} />
+        ) : settings.effects ? (
           <>
             <N8AO
               ref={aoRef}

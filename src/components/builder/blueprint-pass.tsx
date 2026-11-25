@@ -4,8 +4,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
   BackSide,
+  BoxGeometry,
   BufferGeometry,
   EdgesGeometry,
+  ExtrudeGeometry,
   LineBasicMaterial,
   LineSegments,
   Material,
@@ -14,14 +16,44 @@ import {
   MeshStandardMaterial,
   Object3D,
   OrthographicCamera,
+  Vector3,
 } from "three";
+
+import { BLUEPRINT_NEON } from "@/components/builder/scene-theme";
 
 export const BLUEPRINT_STYLES = {
   light: { paper: "#ffffff", fill: "#ffffff", ink: "#111111", hullPx: 0.9 },
-  dark: { paper: "#0a1f3d", fill: "#0d2648", ink: "#dce8f8", hullPx: 1.2 },
+  // black of space with a neon outline; the canvas adds a glow (builder-canvas.tsx, Bloom)
+  dark: { paper: "#000000", fill: "#000000", ink: BLUEPRINT_NEON, hullPx: 1.2 },
 } as const;
 
 export type BlueprintStyle = (typeof BLUEPRINT_STYLES)[keyof typeof BLUEPRINT_STYLES];
+
+/** what drei's RoundedBox makes: an extruded square with a fine, many-step bevel */
+const ROUNDED_BOX_MIN_BEVEL_SEGMENTS = 8;
+
+/**
+ * The lines a part's shape is drawn with. A crease sharper than 28° is an
+ * edge. A rounded box has none: its corners turn in steps too small to count,
+ * so only its outline would show. It is drawn as the box it rounds instead,
+ * each edge along the middle of its round, where it lies on the surface.
+ */
+function featureEdges(geometry: BufferGeometry): EdgesGeometry {
+  const options = geometry instanceof ExtrudeGeometry ? geometry.parameters.options : null;
+  if (options?.bevelEnabled && (options.bevelSegments ?? 0) >= ROUNDED_BOX_MIN_BEVEL_SEGMENTS) {
+    const radius = options.bevelThickness ?? 0;
+    const inset = 2 * radius * (1 - Math.SQRT1_2);
+    if (!geometry.boundingBox) geometry.computeBoundingBox();
+    const box = geometry.boundingBox!;
+    const size = box.getSize(new Vector3());
+    const centre = box.getCenter(new Vector3());
+    const sharp = new BoxGeometry(size.x - inset, size.y - inset, size.z - inset).translate(centre.x, centre.y, centre.z);
+    const edges = new EdgesGeometry(sharp);
+    sharp.dispose();
+    return edges;
+  }
+  return new EdgesGeometry(geometry, 28);
+}
 
 type SavedMesh = {
   geometry: BufferGeometry;
@@ -96,7 +128,7 @@ export function BlueprintPass({ style }: { style: BlueprintStyle }) {
       const seeThrough = material.transparent && material.opacity < 0.95;
       let geometry = edges.current.get(object.geometry);
       if (!geometry) {
-        geometry = new EdgesGeometry(object.geometry, 28);
+        geometry = featureEdges(object.geometry);
         edges.current.set(object.geometry, geometry);
       }
       const lines = new LineSegments(geometry, materials.line);

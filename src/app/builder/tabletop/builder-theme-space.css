@@ -1,15 +1,18 @@
 /* ===========================================================================
    The Tabletop's Space theme (html[data-theme="space"], set by site-theme.ts).
-   Every HUD surface is a flat dark screen in either site mode, like the
-   film's displays set into a white console. It keeps the builder's own rules:
+   Every HUD surface is a flat screen in the mode's colour: white by day, as
+   the station's lounge, and the black of space by night. It keeps the builder's own rules:
    opaque, square, one 1px hairline, no shadow, glow or texture. Light text
    on a screen is the ink; the one colour is the fault orange, for what is
    actually wrong. The scene's colour and light change in scene-theme.ts.
    =========================================================================== */
 
 html[data-theme="space"] {
-  --look-screen: #05080b;
-  --look-phosphor: #e8f1f5;
+  --look-screen: #ffffff;
+  --look-phosphor: #0d1317;
+  /* the phosphor as rgb channels, for its see-through tints */
+  --look-ink-rgb: 13 19 23;
+  --look-ground: #f2f4f5;
   /* about 6:1 on the screen */
   --look-fault: #ff6a3d;
   /* the CRT trace that marks a selection in the scene; TRACE_SPACE in
@@ -19,6 +22,10 @@ html[data-theme="space"] {
 }
 
 html[data-theme="space"][data-mode="dark"] {
+  --look-screen: #000000;
+  --look-phosphor: #e8f1f5;
+  --look-ink-rgb: 232 241 245;
+  --look-ground: #0b1014;
   --look-trace: #ffd23f;
 }
 
@@ -37,18 +44,18 @@ html[data-theme="space"]
   ) {
   /* the HUD reads these tokens, so a screen restyles everything inside it */
   --foreground: var(--look-phosphor);
-  --muted: rgb(232 241 245 / 0.62);
-  --border: rgb(232 241 245 / 0.16);
-  --builder-hairline: rgb(232 241 245 / 0.28);
-  --builder-hover: rgb(232 241 245 / 0.1);
+  --muted: rgb(var(--look-ink-rgb) / 0.62);
+  --border: rgb(var(--look-ink-rgb) / 0.16);
+  --builder-hairline: rgb(var(--look-ink-rgb) / 0.28);
+  --builder-hover: rgb(var(--look-ink-rgb) / 0.1);
   --surface: var(--look-screen);
   --surface-strong: var(--look-screen);
-  --background: #0b1014;
+  --background: var(--look-ground);
   /* what is live inverts to a lit block, as the film's readouts do; no hue */
   --accent: var(--look-phosphor);
   --accent-strong: var(--look-phosphor);
   --accent-text: var(--look-phosphor);
-  --accent-soft: rgb(232 241 245 / 0.14);
+  --accent-soft: rgb(var(--look-ink-rgb) / 0.14);
   --focus-ring: var(--look-phosphor);
   --on-accent: var(--look-screen);
 

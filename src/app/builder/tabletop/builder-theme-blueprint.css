@@ -7,9 +7,10 @@ html[data-theme="blueprint"] {
 }
 
 html[data-theme="blueprint"][data-mode="dark"] {
-  --bp-paper: #0a1f3d;
-  --bp-ink: #dce8f8;
-  --bp-ink-rgb: 220 232 248;
+  /* BLUEPRINT_NEON in scene-theme.ts must match */
+  --bp-paper: #000000;
+  --bp-ink: #62f5e3;
+  --bp-ink-rgb: 98 245 227;
 }
 
 html[data-theme="blueprint"] .builderPage {
@@ -93,4 +94,10 @@ html[data-theme="blueprint"] .builderLabel {
 
 html[data-theme="blueprint"] .builderBeamRow__dot {
   background: var(--bp-ink) !important;
+}
+
+/* by night the labels glow as the scene's neon lines do */
+html[data-theme="blueprint"][data-mode="dark"] .builderLabel {
+  text-shadow: 0 0 calc(5px * var(--label-size, 1)) rgb(var(--bp-ink-rgb) / 0.65);
+  box-shadow: 0 0 calc(6px * var(--label-size, 1)) rgb(var(--bp-ink-rgb) / 0.35);
 }
