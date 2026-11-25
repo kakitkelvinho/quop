@@ -278,6 +278,13 @@ test("Light reveals an unpinned route, pins it for export, and labels distances 
   await expect.poll(() => panel.evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThan(closedWidth);
   await pathLength.click();
   await expect(pathLength).toHaveAttribute("aria-pressed", "false");
+  // polarization is an icon in the readouts, its word shown only on a click
+  await expect(route).not.toContainText("Polarization:");
+  const polarization = route.getByRole("button", { name: /^Polarization: / });
+  await polarization.click();
+  await expect(polarization).toHaveAttribute("aria-pressed", "true");
+  await expect(polarization.locator(".builderLightList__readoutValue")).toBeVisible();
+  await polarization.click();
   const canvas = page.locator("canvas").first();
   const before = await canvas.screenshot();
   await route.getByRole("button", { name: "Highlight route to Dump" }).focus();

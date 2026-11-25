@@ -24,5 +24,7 @@ test("Space draws part labels as acrylic slides in Gillius", async ({ page }) =>
   await page.reload();
   const label = page.locator(".builderLabel").first();
   await expect(label).toHaveCSS("font-family", /gillius/i);
-  await expect(label).toHaveCSS("backdrop-filter", "blur(1.5px)");
+  // labels float over the WebGL canvas: a filter on each re-runs every frame
+  await expect(label).toHaveCSS("backdrop-filter", "none");
+  await expect(label).toHaveCSS("filter", "none");
 });

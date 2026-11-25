@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import type { CameraView } from "@/components/builder/builder-canvas";
 import { measureBeam } from "@/components/builder/beam-measurement";
 import { branchDepth } from "@/components/builder/beam-branches";
-import { Icon, IconButton, type IconName } from "@/components/builder/builder-icons";
+import { Icon, IconButton, PolarizationIcon, type IconName } from "@/components/builder/builder-icons";
 import { CheatSheet, CoachMarks } from "@/components/builder/builder-guide";
 import PartsPanel from "@/components/builder/builder-parts-panel";
 import { SCENE_TEXT_MAX_BYTES, checkSceneText } from "@/components/builder/scene-text";
@@ -39,7 +39,7 @@ import { BRIGHTNESS_RANGE, type Lighting } from "@/components/builder/scene-them
 import type { GraphicsQuality } from "@/components/builder/graphics-quality";
 import { tracedBeamLengthMm, type TraceResult } from "@/components/builder/trace-scene";
 import { looseTraceChecks, traceRoutes, type LightRoute } from "@/components/builder/trace-routes";
-import { polarizationLabel } from "@/components/builder/polarization";
+import { polarizationLabel, polarizationState } from "@/components/builder/polarization";
 import type { AimStatus } from "@/components/builder/aim-settling";
 import {
   COMPONENT_SPECS,
@@ -553,6 +553,23 @@ function LightList({
                     <span className="builderLightList__readoutValue">{readout.value}</span>
                   </button>;
                 })}
+                {(() => {
+                  const end = route.segments.at(-1);
+                  if (!end?.field || !end.direction) return null;
+                  const id = `${route.id}:polarization`;
+                  const value = polarizationLabel(end.field, end.direction);
+                  return <button
+                    type="button"
+                    className="builderLightList__readout"
+                    aria-label={`Polarization: ${value}`}
+                    aria-pressed={openReadout === id}
+                    title={`Polarization · ${value}`}
+                    onClick={() => toggleReadout(id)}
+                  >
+                    <PolarizationIcon state={polarizationState(end.field, end.direction)} size={16} />
+                    <span className="builderLightList__readoutValue">{value}</span>
+                  </button>;
+                })()}
               </span>
               {route.beam ? <IconButton icon={route.beam.hidden ? "eyeOff" : "eye"} label={`${route.beam.hidden ? "Show" : "Hide"} ${beamDisplayName(route.beam)}`} active={Boolean(route.beam.hidden)} onClick={() => onSetHidden(route.beam!.id, !route.beam!.hidden)} /> : null}
               <IconButton
@@ -564,9 +581,6 @@ function LightList({
                 onClick={() => route.beam ? onUnpin(route.beam.id) : onPin(route)}
               />
             </div>
-            {route.segments.at(-1)?.field && route.segments.at(-1)?.direction ? (
-              <div className="builderLightList__readouts">Polarization: {polarizationLabel(route.segments.at(-1)!.field!, route.segments.at(-1)!.direction!)}</div>
-            ) : null}
             {route.checks.map((check) => <button type="button" className="builderLightList__check" key={`${check.kind}-${check.componentId}`} onClick={() => onSelectComponent(check.componentId)}>{check.message}</button>)}
           </div>)}
           {trace.losses?.filter((loss) => loss.laserId === tree.laserId).map((loss, index) => (

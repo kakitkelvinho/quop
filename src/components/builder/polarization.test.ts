@@ -4,7 +4,7 @@ import fc from "fast-check";
 
 import { fromYawDeg, fromYawPitchRollDeg, type Vec3 } from "./quaternion.ts";
 import {
-  component, faradayField, mirrorField, norm2, pbsFields, polarizationLabel,
+  component, faradayField, mirrorField, norm2, pbsFields, polarizationLabel, polarizationState,
   polarizerField, sourceField, waveplateField,
 } from "./polarization.ts";
 import { traceScene } from "./trace-scene.ts";
@@ -114,6 +114,15 @@ describe("polarization across surfaces", () => {
     assert.equal(polarizationLabel(output, Z), "circular");
     near(norm2(output), 1);
     near(Math.hypot(component(output, Z).re, component(output, Z).im), 0);
+  });
+
+  it("reads linear light as an angle from horizontal and names the two axes", () => {
+    assert.deepEqual(polarizationState(sourceField(X, Y, 0), Z), { kind: "linear", angleDeg: 0 });
+    near((polarizationState(sourceField(X, Y, 30), Z) as { angleDeg: number }).angleDeg, 30);
+    near((polarizationState(sourceField(X, Y, -30), Z) as { angleDeg: number }).angleDeg, -30);
+    assert.equal(polarizationLabel(sourceField(X, Y, 0), Z), "horizontal");
+    assert.equal(polarizationLabel(sourceField(X, Y, 90), Z), "vertical");
+    assert.equal(polarizationLabel(sourceField(X, Y, 30), Z), "linear 30°");
   });
 
   it("turns the field through a vertical mirror bend and keeps it transverse", () => {

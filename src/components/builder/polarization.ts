@@ -123,7 +123,13 @@ export function faradayField(field: Field, direction: Vec3, magneticAxis: Vec3, 
   return turnField(field, direction, angle);
 }
 
-export function polarizationLabel(field: Field, direction: Vec3): string {
+/** Linear light carries its angle in (-90, 90], from horizontal and positive when tilted up. */
+export type PolarizationState =
+  | { kind: "linear"; angleDeg: number }
+  | { kind: "circular"; handedness: 1 | -1 }
+  | { kind: "elliptical"; handedness: 1 | -1 };
+
+export function polarizationState(field: Field, direction: Vec3): PolarizationState {
   const vertical = transverseAxis(direction, [0, 1, 0]);
   const horizontal = cross(vertical, direction);
   const h = component(field, horizontal);
@@ -131,11 +137,20 @@ export function polarizationLabel(field: Field, direction: Vec3): string {
   const hPower = magnitude2(h);
   const vPower = magnitude2(v);
   const circularity = 2 * (h.re * v.im - h.im * v.re);
-  if (hPower > 1 - 1e-6) return "horizontal";
-  if (vPower > 1 - 1e-6) return "vertical";
-  if (Math.abs(circularity) > 1 - 1e-6) return "circular";
-  if (Math.abs(circularity) > 1e-6) return "elliptical";
+  if (hPower > 1 - 1e-6) return { kind: "linear", angleDeg: 0 };
+  if (vPower > 1 - 1e-6) return { kind: "linear", angleDeg: 90 };
+  const handedness = circularity > 0 ? 1 : -1;
+  if (Math.abs(circularity) > 1 - 1e-6) return { kind: "circular", handedness };
+  if (Math.abs(circularity) > 1e-6) return { kind: "elliptical", handedness };
   const diagonal = h.re * v.re + h.im * v.im;
-  const angle = Math.atan2(2 * diagonal, hPower - vPower) * 90 / Math.PI;
-  return `linear ${Math.round(angle)}°`;
+  return { kind: "linear", angleDeg: Math.atan2(2 * diagonal, hPower - vPower) * 90 / Math.PI };
+}
+
+export function polarizationLabel(field: Field, direction: Vec3): string {
+  const state = polarizationState(field, direction);
+  if (state.kind !== "linear") return state.kind;
+  const angle = Math.round(state.angleDeg);
+  if (angle === 0) return "horizontal";
+  if (angle === 90 || angle === -90) return "vertical";
+  return `linear ${angle}°`;
 }
