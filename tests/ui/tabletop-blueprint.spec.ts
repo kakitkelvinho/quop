@@ -3,7 +3,7 @@ import { expect, test } from "./checks";
 
 const themeMenu = (page: import("@playwright/test").Page) => page.getByRole("menu", { name: "Theme" });
 
-async function chooseTheme(page: import("@playwright/test").Page, name: "Blueprint" | "Station") {
+async function chooseTheme(page: import("@playwright/test").Page, name: "Blueprint" | "Station" | "Space") {
   await page.getByRole("toolbar", { name: "Tabletop status" }).getByRole("button", { name: /^Theme:/ }).click();
   await themeMenu(page).getByRole("menuitemradio", { name }).click();
 }
@@ -17,6 +17,27 @@ test("Blueprint draws the example in day and night", async ({ page }, testInfo) 
   await expect(page.locator(".builderWorkspace")).toHaveScreenshot(`blueprint-example-${testInfo.project.name}.png`, {
     maxDiffPixelRatio: 0.01,
   });
+});
+
+test("switching from Space to Blueprint keeps the canvas drawing", async ({ page }) => {
+  const blitErrors: string[] = [];
+  page.on("console", (message) => { if (message.text().includes("glBlitFramebuffer")) blitErrors.push(message.text()); });
+  await page.goto("builder/tabletop/");
+  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
+  await chooseTheme(page, "Space");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "space");
+  await chooseTheme(page, "Blueprint");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "blueprint");
+  const canvas = page.locator(".builderWorkspace canvas").first();
+  const box = (await canvas.boundingBox())!;
+  const before = await canvas.screenshot();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 3);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 150, box.y + box.height / 3 + 60, { steps: 8 });
+  await page.mouse.up();
+  // a composer left with Space's buffers froze the canvas while the labels panned on
+  await expect.poll(async () => (await canvas.screenshot()).equals(before)).toBe(false);
+  expect(blitErrors).toEqual([]);
 });
 
 test("Blueprint persists, exports the drawing, and restores the lit scene", async ({ page }, testInfo) => {
