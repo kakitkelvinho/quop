@@ -1200,7 +1200,8 @@ function Lens({
   );
   return (
     <group>
-      <SlimRod palette={palette} top={axis - OPTIC_D / 2 + 1} />
+      {/* the collar ends at the glass's lowest point: higher, it would hide the rim circle */}
+      <SlimRod palette={palette} top={axis - OPTIC_D / 2 - 1} />
       <mesh position={[0, axis, 0]} rotation={[0, 0, -Math.PI / 2]}>
         <latheGeometry args={[profile, 48]} />
         <Glass tint={GLASS_BLUE} />
