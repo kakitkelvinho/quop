@@ -1492,6 +1492,7 @@ export default function BuilderCanvas({
   const blueprint = palette.theme === "blueprint";
   const blueprintInk = blueprint ? BLUEPRINT_STYLES[palette.mode].ink : undefined;
   const settings = blueprint ? QUALITY_SETTINGS.light : QUALITY_SETTINGS[quality];
+  const composerPasses = blueprint && palette.mode === "dark" ? "bloom" : settings.effects ? "occlusion" : "none";
   const aoRef = useRef<AoPass>(null);
   const aoPass = useCallback(() => aoRef.current, []);
   return (
@@ -1777,12 +1778,15 @@ export default function BuilderCanvas({
       {/* the miniature finish: contact occlusion grounds every part, the
           vignette pulls the eye to the middle of the layout. Light quality
           keeps only the composer's anti-aliasing. */}
-      <EffectComposer multisampling={4}>
-        {blueprint && palette.mode === "dark" ? (
+      {/* keyed by its passes: switching N8AO for Bloom in place left the
+          composer's buffers in the old depth format, every blit to the screen
+          failed, and the canvas froze on the last frame until a reload */}
+      <EffectComposer key={composerPasses} multisampling={4}>
+        {composerPasses === "bloom" ? (
           // Blueprint's night: neon lines on black glow like a vector display.
           // Only the ink is bright enough to bloom; the black paper never does.
           <Bloom mipmapBlur luminanceThreshold={0.25} luminanceSmoothing={0.2} intensity={1.4} radius={0.55} />
-        ) : settings.effects ? (
+        ) : composerPasses === "occlusion" ? (
           <>
             <N8AO
               ref={aoRef}

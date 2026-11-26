@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from "react";
 
+import type { PolarizationState } from "@/components/builder/polarization";
 import type { ComponentType } from "@/components/builder/types";
 
 /** One stroke family for every builder control: 24-unit box, 1.7 stroke, round joins. */
@@ -317,6 +318,28 @@ export function Icon({ name, size = 18, off = false }: { name: IconName; size?: 
         </>
       ) : (
         ICONS[name]
+      )}
+    </svg>
+  );
+}
+
+/**
+ * The field's trace seen looking along the beam: a double arrow at the linear
+ * angle, or a circle or ellipse with an arrowhead showing which way it turns.
+ * SVG y runs down, so a counter-clockwise angle rotates by its negative.
+ */
+export function PolarizationIcon({ state, size = 18 }: { state: PolarizationState; size?: number }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      {state.kind === "linear" ? (
+        <path d="M3.5 12h17M7 8.5 3.5 12 7 15.5M17 8.5l3.5 3.5-3.5 3.5" transform={`rotate(${-state.angleDeg} 12 12)`} />
+      ) : (
+        <g transform={state.handedness < 0 ? "matrix(1 0 0 -1 0 24)" : undefined}>
+          {state.kind === "circular"
+            ? <circle cx="12" cy="12" r="7.5" />
+            : <ellipse cx="12" cy="12" rx="8.5" ry="4.5" transform="rotate(-30 12 12)" />}
+          <path d={state.kind === "circular" ? "m16.5 3.5 3 2.5-3.5 1.5" : "m16.5 4.2 3.6 1.6-3 2.4"} />
+        </g>
       )}
     </svg>
   );
