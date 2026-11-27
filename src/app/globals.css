@@ -4731,9 +4731,8 @@ body[data-panel-gesture="se"] * {
   border-radius: var(--builder-radius);
 }
 
-/* bottom right: the camera, and right of it the day / night switch. The
-   switch has no plate, so it reads as the page's own rather than a table
-   tool, and the camera's ring clears it */
+/* bottom right: the axis gizmo, and the camera at the edge. The day / night
+   switch lives in the status bar, with the page's own theme menu */
 .builderHud__viewRow {
   position: absolute;
   z-index: 5;
@@ -4748,24 +4747,13 @@ body[data-panel-gesture="se"] * {
   position: static;
 }
 
-/* bottom left: the panel rail, three slots that are always there, and the axis gizmo beside it */
-.builderHud__bottomLeft {
-  position: absolute;
-  z-index: 5;
+/* bottom left: the panel rail, three slots that are always there */
+.builderRail {
   left: 0.9rem;
   bottom: calc(0.9rem + var(--builder-status-height));
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  pointer-events: none;
 }
 
-.builderHud__bottomLeft > .builderRail {
-  position: static;
-  pointer-events: auto;
-}
-
-/* no taller than the rail beside it, so its Y arrow stays clear of the lists stacked above the rail */
+/* as tall as the camera button beside it */
 .builderAxes {
   flex: none;
   width: 2.8rem;

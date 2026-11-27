@@ -2036,13 +2036,11 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {/* bottom left: the panel rail, the same three slots every time */}
-      <div className="builderHud__bottomLeft">
-        <PanelRail slots={railSlots} />
-        <AxisGizmo />
-      </div>
+      <PanelRail slots={railSlots} />
 
-      {/* bottom right: the camera, its menu running up the edge, and the page's own day / night switch, plateless */}
+      {/* bottom right: the axes, then the camera at the edge with its menu running up it */}
       <div className="builderHud__viewRow">
+        <AxisGizmo />
         <div className="builderIsland builderHud__view">
           <CornerFan
             corner="br"
@@ -2054,16 +2052,6 @@ export default function BuilderHud(props: BuilderHudProps) {
             <Icon name={view === "top" ? "top" : "iso"} />
           </CornerFan>
         </div>
-        <button
-          type="button"
-          className="builderIconBtn builderMode"
-          aria-label="Day / night"
-          title="Day / night"
-          data-guide="mode"
-          onClick={props.onToggleMode}
-        >
-          <Icon name="theme" />
-        </button>
       </div>
       {coachOpen ? <CoachMarks onClose={closeCoach} onShowCheatSheet={showSheet} /> : null}
 
@@ -2118,8 +2106,18 @@ export default function BuilderHud(props: BuilderHudProps) {
           <strong>Upgraded</strong><span className="builderStatusBar__upgradeDetail"> · {props.upgradeMessage.replace(/^This file was upgraded\.\s*/, "")}</span>
         </span> : null}
         <span className="builderStatusBar__message" role="status" aria-live="polite" title={props.status ?? undefined}>{props.status}</span>
-        <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
-          {props.traced ? "Legacy view" : "Switch to traced Beams"}
+        {props.traced ? null : <button type="button" className="builderStatusBar__switch" onClick={() => { setChecksOpen(false); props.onToggleTraced(); }}>
+          Switch to traced Beams
+        </button>}
+        <button
+          type="button"
+          className="builderIconBtn builderMode"
+          aria-label="Day / night"
+          title="Day / night"
+          data-guide="mode"
+          onClick={props.onToggleMode}
+        >
+          <Icon name="theme" />
         </button>
         <ThemeMenu />
       </div>
