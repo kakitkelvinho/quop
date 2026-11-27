@@ -64,13 +64,12 @@ test("checks popover closes with Esc and selects its Component", async ({ page }
 
 test("Legacy switch and back keep query settings and the page view", async ({ page }) => {
   await page.goto("builder/tabletop/?foo=bar");
-  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Got it" }).click();
   await page.getByRole("button", { name: "Camera" }).click();
   await page.getByRole("menuitem", { name: /Top: Top view/ }).click();
   const bar = statusBar(page);
   await expect(bar.getByRole("group", { name: "Light view" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Light", exact: true }).getByRole("button", { name: /^Power:/ }).first()).toBeVisible();
-  await bar.getByRole("button", { name: "Legacy view" }).click();
+  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Use earlier view" }).click();
   await expect(bar).toContainText("Legacy view: drawn Beams, not traced");
   await expect(page).toHaveURL(/foo=bar.*traced=0/);
   await expect(page.getByRole("region", { name: "Light", exact: true })).toHaveCount(0);
@@ -100,7 +99,7 @@ test("the 400 px bar has no wrapping or overlapping controls", async ({ page }) 
   expect(geometry.width).toBe(400);
   for (let at = 1; at < geometry.children.length; at++) expect(geometry.children[at].left).toBeGreaterThanOrEqual(geometry.children[at - 1].right - 1);
   expect(geometry.children.every((child) => child.height <= geometry.height)).toBe(true);
-  await bar.getByRole("button", { name: "Legacy view" }).click();
+  await page.getByRole("region", { name: "Light follows the table" }).getByRole("button", { name: "Use earlier view" }).click();
   await expect(bar.getByRole("button", { name: "Switch to traced Beams" })).toBeVisible();
   const legacy = await measure();
   for (let at = 1; at < legacy.children.length; at++) expect(legacy.children[at].left).toBeGreaterThanOrEqual(legacy.children[at - 1].right - 1);

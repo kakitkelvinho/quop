@@ -27,6 +27,11 @@ make it. A guard 5 m out from the origin only stops a runaway drag. Positions sn
 and rotation snaps to 15°. The numbers in the inspector are the
 numbers you would set on a real bench.
 
+**An axis gizmo says which way X, Y and Z run.** A small red, green and blue
+triad sits bottom right, left of the camera button, and turns with the camera:
+X and Z run along the table, Y is up, the same axes as the inspector's numbers.
+It is not in a PNG export.
+
 **Height per component, 100 mm by default.** Every component has its own
 height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or
@@ -461,9 +466,9 @@ The builder is a full-window workspace: the site nav steps aside and the canvas
 fills the viewport. A few small islands float over its edges, and nothing else
 is on screen until it is needed:
 
-At rest there are twelve controls and nothing else: the QUOP mark, the +, the
-dock (undo, the eye, redo), Share, the ?, the camera, the day/night switch and
-the three slots of the panel rail. Related controls are grouped behind one
+At rest there are eleven controls and nothing else: the QUOP mark, the +, the
+dock (undo, the eye, redo), Share, the ?, the camera and the three slots of the
+panel rail. The day/night switch sits in the status bar, left of the theme menu. Related controls are grouped behind one
 button each, in the spirit of a game's minimal HUD.
 
 **One menu idiom: boxes.** Every menu is made of the dock's own parts: square
@@ -585,10 +590,8 @@ Keyboard shortcuts to open the menus are issue #347.
   them; the selection and the inspector still show them.
 - **Bottom right**: the camera, a button showing the current view's icon (iso
   cube or top). Its column: **Fit**, **Top** and **Iso**, the current view's
-  box pressed in. Right of it,
-  the day/night switch: a plain icon with no plate, so it reads as the page's
-  own switch rather than a table tool. There is no readout: the inspector and
-  the beams box already carry every number worth reading.
+  box pressed in. Left of it, the axis gizmo. There is no readout: the
+  inspector and the beams box already carry every number worth reading.
 - **Quick guide**, in two sizes, both from the ? menu. **Guide** opens *coach
   marks*: the builder dims and each control on screen is ringed and tagged in
   place with what its menu or slots hold, in their own words ("Home · .json ·

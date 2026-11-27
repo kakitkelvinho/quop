@@ -48,6 +48,7 @@ import {
   Vector3,
 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { publishCameraOrientation } from "@/components/builder/camera-orientation";
 
 import { BeamDistances } from "@/components/builder/beam-distances";
 import { BLUEPRINT_STYLES, BlueprintPass } from "@/components/builder/blueprint-pass";
@@ -1334,6 +1335,14 @@ export type CanvasApi = {
   tableAt: (clientX: number, clientY: number) => [number, number] | null;
 };
 
+/** Hands the camera's turn to the HUD's axis gizmo after every frame drawn. */
+function CameraOrientationPublisher() {
+  useFrame(({ camera }) => {
+    publishCameraOrientation([camera.quaternion.x, camera.quaternion.y, camera.quaternion.z, camera.quaternion.w]);
+  });
+  return null;
+}
+
 function CanvasHandle({ onReady }: { onReady: (handle: CanvasApi) => void }) {
   const gl = useThree((state) => state.gl);
   const get = useThree((state) => state.get);
@@ -1513,6 +1522,7 @@ export default function BuilderCanvas({
       dpr={settings.dpr}
     >
       <CanvasHandle onReady={onCanvasReady} />
+      <CameraOrientationPublisher />
       {/* before the labels, so a zoom sizes them before they are placed */}
       <LabelZoom />
       {/* the edge colour, for the instant before the backdrop plane is placed */}
