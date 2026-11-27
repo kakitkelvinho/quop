@@ -27,6 +27,12 @@ make it. A guard 5 m out from the origin only stops a runaway drag. Positions sn
 and rotation snaps to 15°. The numbers in the inspector are the
 numbers you would set on a real bench.
 
+**An axis gizmo says which way X, Y and Z run.** A small red, green and blue
+triad sits bottom left, beside the panel rail, and turns with the camera: X and
+Z run along the table, Y is up, the same axes as the inspector's numbers. It
+sits in the rail's row, no taller than the rail, because everything above it is
+a stack of lists, and the labels over the table cover the rest of the view.
+
 **Height per component, 100 mm by default.** Every component has its own
 height: its optical centre above the breadboard, in mm. A new part lands at
 the lab's beam height, 100 mm, the height its posts are cut for. Raising or

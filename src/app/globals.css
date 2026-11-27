@@ -4748,10 +4748,34 @@ body[data-panel-gesture="se"] * {
   position: static;
 }
 
-/* bottom left: the panel rail, three slots that are always there */
-.builderRail {
+/* bottom left: the panel rail, three slots that are always there, and the axis gizmo beside it */
+.builderHud__bottomLeft {
+  position: absolute;
+  z-index: 5;
   left: 0.9rem;
   bottom: calc(0.9rem + var(--builder-status-height));
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.builderHud__bottomLeft > .builderRail {
+  position: static;
+  pointer-events: auto;
+}
+
+/* no taller than the rail beside it, so its Y arrow stays clear of the lists stacked above the rail */
+.builderAxes {
+  flex: none;
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+.builderAxes__letter {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 700;
 }
 
 .builderRail__slot {

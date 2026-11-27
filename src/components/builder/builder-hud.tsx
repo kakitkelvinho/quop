@@ -20,6 +20,7 @@ import { ShowBoxes, type ShowBox } from "@/components/builder/show-boxes";
 import { CornerFan, type CornerFanItem } from "@/components/builder/corner-fan";
 import { FileFan } from "@/components/builder/file-fan";
 import { ShareMenu } from "@/components/builder/share-menu";
+import { AxisGizmo } from "@/components/builder/axis-gizmo";
 import { PanelRail, type RailSlot } from "@/components/builder/panel-rail";
 import { toggleListPanel } from "@/components/builder/rail-slots";
 import { groupModeHints, groupSlotLabel, type ModeHint } from "@/components/builder/group-mode";
@@ -2035,7 +2036,10 @@ export default function BuilderHud(props: BuilderHudProps) {
       ) : null}
 
       {/* bottom left: the panel rail, the same three slots every time */}
-      <PanelRail slots={railSlots} />
+      <div className="builderHud__bottomLeft">
+        <PanelRail slots={railSlots} />
+        <AxisGizmo />
+      </div>
 
       {/* bottom right: the camera, its menu running up the edge, and the page's own day / night switch, plateless */}
       <div className="builderHud__viewRow">
